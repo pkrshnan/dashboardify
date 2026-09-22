@@ -87,8 +87,8 @@ func TestParserFallsBackToNoteWithoutReinterpretingContent(t *testing.T) {
 	if proposal.Title != text {
 		t.Fatalf("Title = %q, want exact note text", proposal.Title)
 	}
-	if proposal.ScheduledAt != nil || len(proposal.Highlights) != 0 {
-		t.Fatalf("note unexpectedly parsed scheduling fields: %#v", proposal)
+	if proposal.ScheduledAt != nil || len(proposal.Highlights) != 0 || !proposal.NeedsReview {
+		t.Fatalf("note fallback should remain unchanged and enter Inbox: %#v", proposal)
 	}
 }
 
@@ -107,6 +107,7 @@ func TestParserAcceptsEquivalentNaturalLanguageForms(t *testing.T) {
 		{"Schedule dentist next Tuesday at 9:15 am", KindEvent, "dentist"},
 		{"Lunch at 12:30 tomorrow", KindEvent, "Lunch"},
 		{"note: the game starts Wednesday at 2:30", KindNote, "the game starts Wednesday at 2:30"},
+		{"Idea: move the plants into the office", KindNote, "move the plants into the office"},
 	}
 
 	for _, test := range tests {
@@ -118,7 +119,26 @@ func TestParserAcceptsEquivalentNaturalLanguageForms(t *testing.T) {
 			if proposal.Title != test.title {
 				t.Fatalf("Title = %q, want %q", proposal.Title, test.title)
 			}
+			if test.kind == KindNote && proposal.NeedsReview {
+				t.Fatalf("explicit note proposal unexpectedly requires review: %#v", proposal)
+			}
 		})
+	}
+}
+
+func TestParserRecognizesNaturalFactAndActivityExamples(t *testing.T) {
+	location := mustLocation(t, "America/Los_Angeles")
+	parser := NewParser(location)
+	now := time.Date(2026, time.January, 5, 10, 0, 0, 0, location)
+
+	fact := parser.Parse("Sam likes Ethiopian food", now)
+	if fact.Kind != KindFact || fact.Subject != "Sam" || fact.Title != "likes Ethiopian food" || fact.NeedsReview {
+		t.Fatalf("fact proposal = %#v", fact)
+	}
+
+	activity := parser.Parse("I gymmed today", now)
+	if activity.Kind != KindActivity || activity.Title != "Gym" || activity.OccurredDate != "2026-01-05" {
+		t.Fatalf("activity proposal = %#v", activity)
 	}
 }
 

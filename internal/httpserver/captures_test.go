@@ -59,6 +59,53 @@ func TestCaptureAPIParsesPersistsAndListsRecord(t *testing.T) {
 	}
 }
 
+func TestTodayAndTaskResourceAPIsPersistLifecycle(t *testing.T) {
+	service := newCaptureService(t)
+	handler := NewHandler(discardLogger(), nil, service)
+	create := captureJSONRequest(t, http.MethodPost, "/api/captures", map[string]string{
+		"text":            "Remind me to review Dashboardify today at 11 am",
+		"idempotency_key": "today-task",
+	})
+	createResponse := httptest.NewRecorder()
+	handler.ServeHTTP(createResponse, create)
+	if createResponse.Code != http.StatusCreated {
+		t.Fatalf("create status = %d: %s", createResponse.Code, createResponse.Body.String())
+	}
+
+	todayResponse := httptest.NewRecorder()
+	handler.ServeHTTP(todayResponse, httptest.NewRequest(http.MethodGet, "http://example.com/api/today?date=2026-09-22", nil))
+	if todayResponse.Code != http.StatusOK {
+		t.Fatalf("Today status = %d: %s", todayResponse.Code, todayResponse.Body.String())
+	}
+	var today capture.TodayView
+	if err := json.NewDecoder(todayResponse.Body).Decode(&today); err != nil {
+		t.Fatalf("decode Today response: %v", err)
+	}
+	if len(today.Tasks) != 1 || today.Tasks[0].Status != "open" {
+		t.Fatalf("Today tasks = %#v", today.Tasks)
+	}
+
+	update := captureJSONRequest(t, http.MethodPut, "/api/tasks/"+today.Tasks[0].ID, map[string]any{
+		"title":   "Review the Dashboardify checkpoint",
+		"due_at":  today.Tasks[0].DueAt.Format(time.RFC3339),
+		"place":   "home",
+		"status":  "completed",
+		"all_day": false,
+	})
+	updateResponse := httptest.NewRecorder()
+	handler.ServeHTTP(updateResponse, update)
+	if updateResponse.Code != http.StatusOK {
+		t.Fatalf("task update status = %d: %s", updateResponse.Code, updateResponse.Body.String())
+	}
+	var updated capture.TaskRecord
+	if err := json.NewDecoder(updateResponse.Body).Decode(&updated); err != nil {
+		t.Fatalf("decode task update: %v", err)
+	}
+	if updated.Status != "completed" || updated.CompletedAt == nil || updated.Title != "Review the Dashboardify checkpoint" {
+		t.Fatalf("updated task = %#v", updated)
+	}
+}
+
 func TestCaptureMutationRejectsCrossOriginRequest(t *testing.T) {
 	service := newCaptureService(t)
 	handler := NewHandler(discardLogger(), nil, service)
@@ -100,6 +147,6 @@ func captureJSONRequest(t *testing.T, method, path string, body any) *http.Reque
 	request := httptest.NewRequest(method, "http://example.com"+path, bytes.NewReader(encoded))
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Origin", "http://example.com")
-	request.Header.Set(captureRequestHeader, "capture-ui")
+	request.Header.Set(mutationRequestHeader, "dashboard-ui")
 	return request
 }

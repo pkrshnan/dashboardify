@@ -1,0 +1,22 @@
+.section-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.section-heading h2 {
+  flex: none;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+  font-weight: 720;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.section-heading [data-slot="separator"] {
+  background: var(--border);
+  flex: 1 1 0%;
+  min-width: 0;
+  width: auto;
+}

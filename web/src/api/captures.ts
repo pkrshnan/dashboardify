@@ -1,26 +1,5 @@
-import type { CaptureProposal, CaptureRecord } from './types';
-
-const mutationHeaders = {
-  'Content-Type': 'application/json',
-  'X-Dashboardify-Request': 'capture-ui',
-};
-
-export class APIError extends Error {
-  constructor(message: string, readonly status: number) {
-    super(message);
-  }
-}
-
-async function responseJSON<T>(response: Response): Promise<T> {
-  const value = await response.json().catch(() => null) as T | { error?: string } | null;
-  if (!response.ok) {
-    const message = value && typeof value === 'object' && 'error' in value && typeof value.error === 'string'
-      ? value.error
-      : 'Dashboardify could not complete the request';
-    throw new APIError(message, response.status);
-  }
-  return value as T;
-}
+import { mutationHeaders, responseJSON } from './client';
+import type { CaptureDetail, CaptureProposal, CaptureRecord, ClassificationInput } from '@/types';
 
 export async function previewCapture(text: string, signal: AbortSignal): Promise<CaptureProposal> {
   const response = await fetch('/api/captures/preview', {
@@ -45,4 +24,18 @@ export async function listCaptures(signal?: AbortSignal): Promise<CaptureRecord[
   const response = await fetch('/api/captures', { signal });
   const result = await responseJSON<{ captures: CaptureRecord[] }>(response);
   return result.captures;
+}
+
+export async function captureDetail(id: string, signal?: AbortSignal): Promise<CaptureDetail> {
+  const response = await fetch(`/api/captures/${encodeURIComponent(id)}`, { signal });
+  return responseJSON<CaptureDetail>(response);
+}
+
+export async function classifyCapture(id: string, classification: ClassificationInput): Promise<CaptureRecord> {
+  const response = await fetch(`/api/captures/${encodeURIComponent(id)}/classification`, {
+    method: 'PUT',
+    headers: mutationHeaders,
+    body: JSON.stringify(classification),
+  });
+  return responseJSON<CaptureRecord>(response);
 }

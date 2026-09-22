@@ -14,6 +14,8 @@ const (
 	KindReminder Kind = "reminder"
 	KindEvent    Kind = "event"
 	KindNote     Kind = "note"
+	KindFact     Kind = "fact"
+	KindActivity Kind = "activity"
 )
 
 type Highlight struct {
@@ -26,12 +28,15 @@ type Highlight struct {
 type Proposal struct {
 	Kind              Kind        `json:"kind"`
 	Title             string      `json:"title"`
+	Subject           string      `json:"subject,omitempty"`
 	ScheduledAt       *time.Time  `json:"scheduled_at,omitempty"`
 	ScheduledDate     string      `json:"scheduled_date,omitempty"`
+	OccurredDate      string      `json:"occurred_date,omitempty"`
 	ScheduledTimezone string      `json:"scheduled_timezone,omitempty"`
 	AllDay            bool        `json:"all_day,omitempty"`
 	DisplayWhen       string      `json:"display_when,omitempty"`
 	Place             string      `json:"place,omitempty"`
+	NeedsReview       bool        `json:"needs_review"`
 	Highlights        []Highlight `json:"highlights"`
 }
 
@@ -42,9 +47,13 @@ type Parser struct {
 var (
 	reminderPrefixPattern = regexp.MustCompile(`(?i)^\s*(?:remind\s+me\s+(?:to|that)|remember\s+to|don'?t\s+forget\s+to|task\s*:|todo\s*:|reminder\s*:)\s*`)
 	eventPrefixPattern    = regexp.MustCompile(`(?i)^\s*(?:event\s*:|calendar\s*:|schedule(?:\s+an?\s+event)?\s+)\s*`)
-	notePrefixPattern     = regexp.MustCompile(`(?i)^\s*note\s*:\s*`)
+	notePrefixPattern     = regexp.MustCompile(`(?i)^\s*(?:note|idea)\s*:\s*`)
+	factPrefixPattern     = regexp.MustCompile(`(?i)^\s*fact\s*:\s*`)
+	activityPrefixPattern = regexp.MustCompile(`(?i)^\s*(?:activity|log)\s*:\s*`)
+	factPattern           = regexp.MustCompile(`^\s*([[:upper:]][[:alpha:]'-]*(?:\s+[[:upper:]][[:alpha:]'-]*)?)\s+((?:likes|loves|prefers|dislikes|hates)\b.+?)\s*$`)
+	activityPattern       = regexp.MustCompile(`(?i)^\s*i\s+(gymmed|worked\s+out|ran|walked|cycled|swam)(?:\s+(today|yesterday))?\s*$`)
 	timePattern           = regexp.MustCompile(`(?i)(?:\bat\s+|@\s*)([0-9]{1,2})(?::([0-9]{2}))?(?:\s*(a\.?m\.?|p\.?m\.?))?`)
-	datePattern           = regexp.MustCompile(`(?i)(?:\b(?:on|this|next)\s+)?\b(today|tonight|tomorrow|mon(?:day)?|tue(?:sday)?|wed(?:nesday|ensday)?|thu(?:rsday)?|fri(?:day)?|sat(?:urday)?|sun(?:day)?)\b`)
+	datePattern           = regexp.MustCompile(`(?i)(?:\b(?:on|this|next)\s+)?\b(today|tonight|tomorrow|yesterday|mon(?:day)?|tue(?:sday)?|wed(?:nesday|ensday)?|thu(?:rsday)?|fri(?:day)?|sat(?:urday)?|sun(?:day)?)\b`)
 	placePattern          = regexp.MustCompile(`(?i)\b(?:at|in)\s+([[:alpha:]][[:alnum:] .'-]{0,59})\s*$`)
 )
 
@@ -63,19 +72,49 @@ func (parser *Parser) Parse(text string, now time.Time) Proposal {
 	}
 
 	var removed [][2]int
-	explicitNote := false
+	explicitIntent := false
 	if match := reminderPrefixPattern.FindStringIndex(text); match != nil {
 		proposal.Kind = KindReminder
+		explicitIntent = true
 		removed = append(removed, [2]int{match[0], match[1]})
 		proposal.Highlights = append(proposal.Highlights, highlight(text, match, "intent", "Reminder"))
 	} else if match := eventPrefixPattern.FindStringIndex(text); match != nil {
 		proposal.Kind = KindEvent
+		explicitIntent = true
 		removed = append(removed, [2]int{match[0], match[1]})
 		proposal.Highlights = append(proposal.Highlights, highlight(text, match, "intent", "Event"))
 	} else if match := notePrefixPattern.FindStringIndex(text); match != nil {
-		explicitNote = true
+		explicitIntent = true
 		removed = append(removed, [2]int{match[0], match[1]})
 		proposal.Highlights = append(proposal.Highlights, highlight(text, match, "intent", "Note"))
+	} else if match := factPrefixPattern.FindStringIndex(text); match != nil {
+		proposal.Kind = KindFact
+		explicitIntent = true
+		removed = append(removed, [2]int{match[0], match[1]})
+		proposal.Highlights = append(proposal.Highlights, highlight(text, match, "intent", "Fact"))
+	} else if match := activityPrefixPattern.FindStringIndex(text); match != nil {
+		proposal.Kind = KindActivity
+		explicitIntent = true
+		removed = append(removed, [2]int{match[0], match[1]})
+		proposal.Highlights = append(proposal.Highlights, highlight(text, match, "intent", "Activity"))
+	} else if match := factPattern.FindStringSubmatchIndex(text); match != nil {
+		proposal.Kind = KindFact
+		proposal.Subject = strings.TrimSpace(text[match[2]:match[3]])
+		proposal.Title = strings.TrimSpace(text[match[4]:match[5]])
+		return proposal
+	} else if match := activityPattern.FindStringSubmatchIndex(text); match != nil {
+		proposal.Kind = KindActivity
+		proposal.Title = activityTitle(text[match[2]:match[3]])
+		dateName := "today"
+		if match[4] >= 0 {
+			dateName = text[match[4]:match[5]]
+			proposal.Highlights = append(proposal.Highlights, highlight(text, match[4:6], "date", "Date"))
+		}
+		day := resolveAllDay(dateName, now.In(parser.location))
+		proposal.OccurredDate = day.Format(time.DateOnly)
+		proposal.ScheduledTimezone = parser.location.String()
+		proposal.DisplayWhen = day.Format("Mon, Jan 2")
+		return proposal
 	}
 
 	timeMatch := timePattern.FindStringSubmatchIndex(text)
@@ -83,17 +122,23 @@ func (parser *Parser) Parse(text string, now time.Time) Proposal {
 	if timeMatch != nil {
 		_, _, timeIsValid = parseClock(text, timeMatch)
 	}
-	if proposal.Kind == KindNote && !explicitNote && timeIsValid {
+	if proposal.Kind == KindNote && !explicitIntent && timeIsValid {
 		proposal.Kind = KindEvent
 	}
 	if proposal.Kind == KindNote {
 		proposal.Title = cleanTitle(text, removed)
+		proposal.NeedsReview = !explicitIntent
+		return proposal
+	}
+	if proposal.Kind == KindFact {
+		proposal.Title = cleanTitle(text, removed)
+		proposal.NeedsReview = proposal.Subject == ""
 		return proposal
 	}
 
 	var hour, minute int
 	hasTime := false
-	if timeMatch != nil {
+	if proposal.Kind != KindActivity && timeMatch != nil {
 		if parsedHour, parsedMinute, ok := parseClock(text, timeMatch); ok {
 			hour, minute, hasTime = parsedHour, parsedMinute, true
 			span := [2]int{timeMatch[0], timeMatch[1]}
@@ -110,11 +155,13 @@ func (parser *Parser) Parse(text string, now time.Time) Proposal {
 		proposal.Highlights = append(proposal.Highlights, highlight(text, span[:], "date", "Date"))
 	}
 
-	if match := placePattern.FindStringSubmatchIndex(text); match != nil {
-		proposal.Place = strings.TrimSpace(text[match[2]:match[3]])
-		span := [2]int{match[0], match[1]}
-		removed = append(removed, span)
-		proposal.Highlights = append(proposal.Highlights, highlight(text, span[:], "place", "Place"))
+	if proposal.Kind != KindActivity {
+		if match := placePattern.FindStringSubmatchIndex(text); match != nil {
+			proposal.Place = strings.TrimSpace(text[match[2]:match[3]])
+			span := [2]int{match[0], match[1]}
+			removed = append(removed, span)
+			proposal.Highlights = append(proposal.Highlights, highlight(text, span[:], "place", "Place"))
+		}
 	}
 
 	proposal.Title = cleanTitle(text, removed)
@@ -122,7 +169,12 @@ func (parser *Parser) Parse(text string, now time.Time) Proposal {
 		proposal.Title = strings.TrimSpace(text)
 	}
 	localNow := now.In(parser.location)
-	if hasTime {
+	if proposal.Kind == KindActivity {
+		day := resolveAllDay(dateName, localNow)
+		proposal.OccurredDate = day.Format(time.DateOnly)
+		proposal.ScheduledTimezone = parser.location.String()
+		proposal.DisplayWhen = day.Format("Mon, Jan 2")
+	} else if hasTime {
 		day := resolveDay(dateName, localNow, hour, minute)
 		localScheduled := time.Date(day.Year(), day.Month(), day.Day(), hour, minute, 0, 0, parser.location)
 		utcScheduled := localScheduled.UTC()
@@ -141,6 +193,23 @@ func (parser *Parser) Parse(text string, now time.Time) Proposal {
 		return proposal.Highlights[i].Start < proposal.Highlights[j].Start
 	})
 	return proposal
+}
+
+func activityTitle(verb string) string {
+	switch strings.ToLower(strings.Join(strings.Fields(verb), " ")) {
+	case "gymmed", "worked out":
+		return "Gym"
+	case "ran":
+		return "Run"
+	case "walked":
+		return "Walk"
+	case "cycled":
+		return "Cycling"
+	case "swam":
+		return "Swim"
+	default:
+		return strings.TrimSpace(verb)
+	}
 }
 
 func parseClock(text string, match []int) (int, int, bool) {
@@ -199,6 +268,8 @@ func resolveDay(name string, now time.Time, hour, minute int) time.Time {
 	switch strings.ToLower(name) {
 	case "today":
 		return candidate
+	case "yesterday":
+		return candidate.AddDate(0, 0, -1)
 	case "tomorrow":
 		return candidate.AddDate(0, 0, 1)
 	case "mon", "monday":
@@ -228,6 +299,8 @@ func resolveAllDay(name string, now time.Time) time.Time {
 	switch strings.ToLower(name) {
 	case "today", "tonight":
 		return candidate
+	case "yesterday":
+		return candidate.AddDate(0, 0, -1)
 	case "tomorrow":
 		return candidate.AddDate(0, 0, 1)
 	case "mon", "monday":

@@ -60,12 +60,18 @@ func New(cfg ServerConfig, logger *slog.Logger) *http.Server {
 func NewHandler(logger *slog.Logger, authenticator Authenticator, captures *capture.Service) http.Handler {
 	application := http.NewServeMux()
 	application.HandleFunc("GET /{$}", shell)
+	application.HandleFunc("GET /inbox", shell)
 	application.Handle("GET /assets/", http.HandlerFunc(dashboardAsset))
 	if captures != nil {
 		api := captureAPI{service: captures, logger: logger}
 		application.HandleFunc("GET /api/captures", api.list)
 		application.HandleFunc("POST /api/captures", api.create)
 		application.HandleFunc("POST /api/captures/preview", api.preview)
+		application.HandleFunc("GET /api/inbox", api.inbox)
+		application.HandleFunc("GET /api/captures/{id}", api.detail)
+		application.HandleFunc("PUT /api/captures/{id}/classification", api.classify)
+		application.HandleFunc("GET /api/today", api.today)
+		application.HandleFunc("PUT /api/tasks/{id}", api.updateTask)
 	}
 	var protected http.Handler = application
 	if authenticator != nil {
@@ -183,6 +189,10 @@ func routeName(path string) string {
 		return "captures"
 	case "/api/captures/preview":
 		return "capture_preview"
+	case "/api/inbox":
+		return "inbox"
+	case "/api/today":
+		return "today"
 	default:
 		return "not_found"
 	}

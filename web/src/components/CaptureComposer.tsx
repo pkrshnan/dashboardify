@@ -1,5 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
+import styles from './CaptureComposer.module.css';
+
 import { createCapture, previewCapture } from '@/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,6 +12,13 @@ import type { CaptureHighlight, CaptureProposal, CaptureRecord } from '@/types';
 interface CaptureComposerProps {
   onCreated(record: CaptureRecord): void;
 }
+
+const highlightStyles: Record<CaptureHighlight['kind'], string> = {
+  intent: styles.captureTokenIntent,
+  time: styles.captureTokenTime,
+  date: styles.captureTokenDate,
+  place: styles.captureTokenPlace,
+};
 
 function newRequestKey(): string {
   if (crypto.randomUUID) return crypto.randomUUID();
@@ -26,7 +35,7 @@ function HighlightedText({ text, highlights }: { text: string; highlights: Captu
     if (token.start < cursor || token.end > characters.length || token.start >= token.end) continue;
     parts.push(characters.slice(cursor, token.start).join(''));
     parts.push(
-      <mark className={`capture-token capture-token-${token.kind}`} key={`${token.start}-${token.end}`} title={token.label}>
+      <mark className={`${styles.captureToken} ${highlightStyles[token.kind]}`} key={`${token.start}-${token.end}`} title={token.label}>
         {characters.slice(token.start, token.end).join('')}
       </mark>,
     );
@@ -126,23 +135,23 @@ export function CaptureComposer({ onCreated }: CaptureComposerProps) {
   }
 
   return (
-    <Card className="capture-composer">
+    <Card className={styles.captureComposer}>
       <form
-        className="capture-form"
+        className={styles.captureForm}
         onSubmit={(event) => {
           event.preventDefault();
           void submit();
         }}
       >
         <label className="sr-only" htmlFor="capture-text">Capture a reminder, event, or note</label>
-        <div className="capture-editor">
-          <div className="capture-highlights" ref={highlights} aria-hidden="true">
+        <div className={styles.captureEditor}>
+          <div className={styles.captureHighlights} ref={highlights} aria-hidden="true">
             <HighlightedText text={text} highlights={activeHighlights} />
           </div>
           <Textarea
             id="capture-text"
             ref={input}
-            className="capture-input"
+            className={styles.captureInput}
             value={text}
             maxLength={4096}
             rows={1}
@@ -164,16 +173,16 @@ export function CaptureComposer({ onCreated }: CaptureComposerProps) {
             }}
           />
         </div>
-        <Button className="capture-submit" type="submit" disabled={saving || !text.trim()}>
-          <span className="capture-submit-label">Save</span>
+        <Button className={styles.captureSubmit} type="submit" disabled={saving || !text.trim()}>
+          <span className={styles.captureSubmitLabel}>Save</span>
           <kbd aria-hidden="true">↵</kbd>
         </Button>
-        <div className="capture-meta">
-          <div className="capture-signals">
+        <div className={styles.captureMeta}>
+          <div className={styles.captureSignals}>
             <Badge variant={intent === 'note' ? 'secondary' : 'default'}>{intent}</Badge>
-            <span className="capture-detail">{proposalDetail(proposal, previewFailed)}</span>
+            <span className={styles.captureDetail}>{proposalDetail(proposal, previewFailed)}</span>
           </div>
-          <span className={error ? 'capture-state capture-state-error' : 'capture-state'} role="status" aria-live="polite">
+          <span className={error ? `${styles.captureState} ${styles.captureStateError}` : styles.captureState} role="status" aria-live="polite">
             {status}
           </span>
         </div>

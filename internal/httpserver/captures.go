@@ -1,18 +1,13 @@
 package httpserver
 
 import (
-	"encoding/json"
 	"errors"
-	"io"
 	"log/slog"
-	"mime"
 	"net/http"
-	"net/url"
+	"time"
 
 	"dashboardify/internal/capture"
 )
-
-const captureRequestHeader = "X-Dashboardify-Request"
 
 type captureAPI struct {
 	service *capture.Service
@@ -22,6 +17,18 @@ type captureAPI struct {
 type captureRequest struct {
 	Text           string `json:"text"`
 	IdempotencyKey string `json:"idempotency_key,omitempty"`
+}
+
+type classificationRequest struct {
+	Kind              capture.Kind `json:"kind"`
+	Title             string       `json:"title"`
+	Subject           string       `json:"subject,omitempty"`
+	ScheduledAt       string       `json:"scheduled_at,omitempty"`
+	ScheduledDate     string       `json:"scheduled_date,omitempty"`
+	OccurredDate      string       `json:"occurred_date,omitempty"`
+	ScheduledTimezone string       `json:"scheduled_timezone,omitempty"`
+	AllDay            bool         `json:"all_day,omitempty"`
+	Place             string       `json:"place,omitempty"`
 }
 
 func (api captureAPI) preview(response http.ResponseWriter, request *http.Request) {
@@ -78,37 +85,47 @@ func (api captureAPI) list(response http.ResponseWriter, request *http.Request) 
 	writeJSON(response, http.StatusOK, map[string]any{"captures": records})
 }
 
-func acceptSameOriginJSON(response http.ResponseWriter, request *http.Request) bool {
-	if request.Header.Get(captureRequestHeader) != "capture-ui" {
-		http.Error(response, "forbidden", http.StatusForbidden)
-		return false
+func (api captureAPI) detail(response http.ResponseWriter, request *http.Request) {
+	detail, err := api.service.Detail(request.Context(), request.PathValue("id"))
+	if err != nil {
+		writeCaptureError(response, err)
+		return
 	}
-	origin, err := url.Parse(request.Header.Get("Origin"))
-	if err != nil || origin.Scheme == "" || origin.Host != request.Host || origin.User != nil {
-		http.Error(response, "forbidden", http.StatusForbidden)
-		return false
-	}
-	mediaType, _, err := mime.ParseMediaType(request.Header.Get("Content-Type"))
-	if err != nil || mediaType != "application/json" {
-		http.Error(response, "content type must be application/json", http.StatusUnsupportedMediaType)
-		return false
-	}
-	return true
+	writeJSON(response, http.StatusOK, detail)
 }
 
-func decodeJSON(response http.ResponseWriter, request *http.Request, target any) bool {
-	request.Body = http.MaxBytesReader(response, request.Body, 8<<10)
-	decoder := json.NewDecoder(request.Body)
-	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(target); err != nil {
-		http.Error(response, "invalid request body", http.StatusBadRequest)
-		return false
+func (api captureAPI) classify(response http.ResponseWriter, request *http.Request) {
+	if !acceptSameOriginJSON(response, request) {
+		return
 	}
-	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
-		http.Error(response, "invalid request body", http.StatusBadRequest)
-		return false
+	var input classificationRequest
+	if !decodeJSON(response, request, &input) {
+		return
 	}
-	return true
+	proposal := capture.Proposal{
+		Kind:              input.Kind,
+		Title:             input.Title,
+		Subject:           input.Subject,
+		ScheduledDate:     input.ScheduledDate,
+		OccurredDate:      input.OccurredDate,
+		ScheduledTimezone: input.ScheduledTimezone,
+		AllDay:            input.AllDay,
+		Place:             input.Place,
+	}
+	if input.ScheduledAt != "" {
+		value, err := time.Parse(time.RFC3339, input.ScheduledAt)
+		if err != nil {
+			writeJSON(response, http.StatusUnprocessableEntity, map[string]string{"error": "scheduled_at must use RFC 3339"})
+			return
+		}
+		proposal.ScheduledAt = &value
+	}
+	record, err := api.service.File(request.Context(), request.PathValue("id"), proposal)
+	if err != nil {
+		writeCaptureError(response, err)
+		return
+	}
+	writeJSON(response, http.StatusOK, record)
 }
 
 func writeCaptureError(response http.ResponseWriter, err error) {
@@ -116,18 +133,16 @@ func writeCaptureError(response http.ResponseWriter, err error) {
 	case errors.Is(err, capture.ErrTextRequired),
 		errors.Is(err, capture.ErrTextTooLong),
 		errors.Is(err, capture.ErrIdempotencyRequired),
-		errors.Is(err, capture.ErrIdempotencyInvalid):
+		errors.Is(err, capture.ErrIdempotencyInvalid),
+		errors.Is(err, capture.ErrKindInvalid),
+		errors.Is(err, capture.ErrSubjectRequired),
+		errors.Is(err, capture.ErrDateInvalid):
 		writeJSON(response, http.StatusUnprocessableEntity, map[string]string{"error": err.Error()})
 	case errors.Is(err, capture.ErrIdempotencyConflict):
 		writeJSON(response, http.StatusConflict, map[string]string{"error": "capture request conflicts with an earlier submission"})
+	case errors.Is(err, capture.ErrCaptureNotFound):
+		writeJSON(response, http.StatusNotFound, map[string]string{"error": err.Error()})
 	default:
 		http.Error(response, "service unavailable", http.StatusServiceUnavailable)
 	}
-}
-
-func writeJSON(response http.ResponseWriter, status int, value any) {
-	response.Header().Set("Cache-Control", "no-store")
-	response.Header().Set("Content-Type", "application/json; charset=utf-8")
-	response.WriteHeader(status)
-	_ = json.NewEncoder(response).Encode(value)
 }
