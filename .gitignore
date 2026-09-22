@@ -1,0 +1,8 @@
+/dashboardify
+/.env
+/data/
+*.db
+*.db-shm
+*.db-wal
+/web/node_modules/
+/web/.vite/

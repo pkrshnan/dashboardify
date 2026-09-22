@@ -1,0 +1,1179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f2f5f1" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#101511" media="(prefers-color-scheme: dark)">
+  <title>Dashboardify — Today design prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,200..800;1,200..800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: light;
+      --canvas: #f2f5f1;
+      --surface: #fcfdfb;
+      --ink: #1d231f;
+      --muted: #626b64;
+      --line: #d7ded8;
+      --accent: #246b4a;
+      --accent-wash: #e5f1e9;
+      --on-accent: #ffffff;
+      --on-ink: #ffffff;
+      --hover: rgba(29, 35, 31, .05);
+      --focus: rgba(36, 107, 74, .24);
+      --glass: rgba(252, 253, 251, .92);
+      --shadow: rgba(29, 35, 31, .16);
+      --backdrop: rgba(17, 24, 19, .4);
+      --font-sans: "Atkinson Hyperlegible Next", "Segoe UI", sans-serif;
+      --font-mono: "JetBrains Mono", "Cascadia Mono", monospace;
+      --sidebar: 208px;
+      --rail: 264px;
+      --radius: 8px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --canvas: #101511;
+        --surface: #181e1a;
+        --ink: #edf3ee;
+        --muted: #a4aea6;
+        --line: #353d37;
+        --accent: #78c99c;
+        --accent-wash: #20392b;
+        --on-accent: #102218;
+        --on-ink: #101511;
+        --hover: rgba(237, 243, 238, .06);
+        --focus: rgba(120, 201, 156, .3);
+        --glass: rgba(24, 30, 26, .9);
+        --shadow: rgba(0, 0, 0, .44);
+        --backdrop: rgba(0, 0, 0, .58);
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    html { font-size: 16px; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      min-height: 100vh;
+      color: var(--ink);
+      background: var(--canvas);
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.42;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button,
+    input,
+    textarea { font: inherit; }
+
+    button { color: inherit; }
+
+    svg {
+      width: 19px;
+      height: 19px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex: 0 0 auto;
+    }
+
+    .skip-link {
+      position: fixed;
+      z-index: 100;
+      top: 8px;
+      left: 8px;
+      padding: 9px 12px;
+      color: var(--on-ink);
+      background: var(--ink);
+      border-radius: 6px;
+      transform: translateY(-160%);
+    }
+
+    .skip-link:focus { transform: translateY(0); }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: var(--sidebar) minmax(0, 1fr) var(--rail);
+      min-height: 100vh;
+      max-width: 1480px;
+      margin: 0 auto;
+      border-inline: 1px solid var(--line);
+      background: var(--surface);
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      padding: 26px 18px 20px;
+      border-right: 1px solid var(--line);
+      background: var(--canvas);
+    }
+
+    .wordmark {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 8px 34px;
+      font-weight: 600;
+      letter-spacing: -0.025em;
+    }
+
+    .wordmark-mark {
+      display: grid;
+      width: 25px;
+      height: 25px;
+      grid-template-columns: repeat(2, 7px);
+      grid-template-rows: repeat(2, 7px);
+      place-content: center;
+      gap: 3px;
+      color: var(--on-ink);
+      background: var(--ink);
+      border-radius: 7px;
+    }
+
+    .wordmark-mark span { background: currentColor; border-radius: 1px; }
+    .wordmark-mark span:last-child { opacity: .42; }
+
+    .nav-list,
+    .mobile-nav-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .nav-list { display: grid; gap: 3px; }
+
+    .nav-button {
+      display: flex;
+      width: 100%;
+      min-height: 42px;
+      align-items: center;
+      gap: 11px;
+      padding: 0 11px;
+      border: 0;
+      border-radius: 7px;
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .nav-button:hover { color: var(--ink); background: var(--hover); }
+    .nav-button.active { color: var(--ink); background: var(--surface); font-weight: 600; }
+
+    .nav-badge {
+      min-width: 22px;
+      margin-left: auto;
+      padding: 1px 7px;
+      color: var(--accent);
+      background: var(--accent-wash);
+      border-radius: 999px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      text-align: center;
+    }
+
+    .sidebar-bottom { margin-top: auto; }
+
+    .profile {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+      padding: 12px 9px 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .avatar {
+      display: grid;
+      width: 30px;
+      height: 30px;
+      place-items: center;
+      color: var(--on-ink);
+      background: var(--ink);
+      border-radius: 50%;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .main {
+      min-width: 0;
+      padding: 44px clamp(28px, 5vw, 72px) 80px;
+      background: var(--surface);
+    }
+
+    .main-inner { max-width: 720px; margin: 0 auto; }
+
+    .page-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 30px;
+    }
+
+    .eyebrow,
+    .section-label,
+    .date-meta,
+    .time,
+    .key,
+    .chip,
+    .rail-value {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .eyebrow {
+      margin: 0 0 4px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(27px, 3vw, 34px);
+      font-weight: 600;
+      line-height: 1.08;
+      letter-spacing: -.025em;
+    }
+
+    .date-switcher { display: flex; align-items: center; gap: 4px; }
+
+    .icon-button {
+      display: grid;
+      width: 40px;
+      height: 40px;
+      place-items: center;
+      border: 1px solid transparent;
+      border-radius: 7px;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .icon-button:hover { border-color: var(--line); background: var(--canvas); }
+
+    .date-meta {
+      min-width: 78px;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .capture-composer {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      margin-bottom: 18px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--surface);
+      box-shadow: 0 1px 0 var(--hover);
+    }
+
+    .capture-composer:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--focus); }
+
+    .capture-editor {
+      position: relative;
+      min-width: 0;
+      min-height: 44px;
+    }
+
+    .capture-highlight-layer,
+    .capture-input {
+      width: 100%;
+      min-height: 44px;
+      margin: 0;
+      padding: 10px 8px;
+      border: 0;
+      font: 400 17px/1.42 var(--font-sans);
+      letter-spacing: 0;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .capture-highlight-layer {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      color: var(--ink);
+      pointer-events: none;
+    }
+
+    .capture-highlight-layer mark {
+      color: inherit;
+      border-radius: 4px;
+      box-decoration-break: clone;
+      -webkit-box-decoration-break: clone;
+    }
+
+    .capture-highlight-layer .token-intent { background: var(--accent-wash); box-shadow: inset 0 -1px 0 var(--accent); }
+    .capture-highlight-layer .token-time { background: color-mix(in srgb, var(--accent-wash) 72%, transparent); box-shadow: inset 0 -2px 0 var(--accent); }
+    .capture-highlight-layer .token-date { background: color-mix(in srgb, var(--accent-wash) 48%, transparent); box-shadow: inset 0 -2px 0 var(--accent); }
+    .capture-highlight-layer .token-place { background: var(--hover); box-shadow: inset 0 -2px 0 var(--muted); }
+
+    .capture-input {
+      position: relative;
+      z-index: 1;
+      display: block;
+      max-height: 150px;
+      resize: none;
+      color: transparent;
+      caret-color: var(--ink);
+      background: transparent;
+      outline: 0;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .capture-input::placeholder { color: var(--muted); opacity: 1; -webkit-text-fill-color: var(--muted); }
+    .capture-input::selection { color: transparent; background: var(--focus); }
+
+    .capture-submit {
+      min-width: 96px;
+      min-height: 44px;
+      padding: 0 13px;
+      border: 1px solid var(--accent);
+      border-radius: 7px;
+      color: var(--on-accent);
+      background: var(--accent);
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .capture-submit:hover { filter: brightness(.96); }
+    .capture-submit:disabled { cursor: wait; opacity: .58; }
+
+    .capture-meta {
+      display: flex;
+      min-width: 0;
+      grid-column: 1 / -1;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0 8px 2px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .capture-signals { display: flex; min-width: 0; align-items: center; gap: 8px; }
+    .capture-detail { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .capture-state { min-height: 17px; flex: 0 0 auto; text-align: right; }
+    .capture-state.error { color: #a43e35; }
+
+    .intent-pill {
+      padding: 3px 7px;
+      color: var(--muted);
+      background: var(--canvas);
+      border-radius: 5px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 500;
+      text-transform: uppercase;
+    }
+
+    .intent-pill[data-kind="reminder"],
+    .intent-pill[data-kind="event"] { color: var(--accent); background: var(--accent-wash); }
+
+    .key {
+      margin-left: 6px;
+      padding: 2px 5px;
+      border: 1px solid currentColor;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      opacity: .72;
+    }
+
+    .section-heading {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 0 0 10px;
+    }
+
+    .section-label {
+      margin: 0;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    .section-rule { height: 1px; flex: 1; background: var(--line); }
+
+    .timeline { margin-bottom: 34px; }
+
+    .timeline-row {
+      display: grid;
+      grid-template-columns: 64px 20px minmax(0, 1fr) auto;
+      min-height: 72px;
+      align-items: start;
+      column-gap: 10px;
+      padding: 15px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .time {
+      padding-top: 2px;
+      color: var(--muted);
+      font-size: 11px;
+      text-align: right;
+    }
+
+    .record-mark {
+      display: grid;
+      width: 20px;
+      height: 20px;
+      place-items: center;
+      color: var(--accent);
+    }
+
+    .record-mark::before {
+      width: 7px;
+      height: 7px;
+      border: 2px solid currentColor;
+      border-radius: 50%;
+      content: "";
+    }
+
+    .record-title { margin: 0 0 3px; font-weight: 600; letter-spacing: -.005em; }
+    .record-meta { color: var(--muted); font-size: 14px; }
+
+    .chip {
+      align-self: center;
+      padding: 4px 8px;
+      color: var(--muted);
+      background: var(--canvas);
+      border-radius: 5px;
+      font-size: 10px;
+    }
+
+    .now-row {
+      display: grid;
+      grid-template-columns: 64px 20px minmax(0, 1fr);
+      align-items: center;
+      gap: 10px;
+      margin: 5px 0;
+      color: var(--accent);
+    }
+
+    .now-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 500;
+      text-align: right;
+      text-transform: uppercase;
+    }
+
+    .now-dot { width: 8px; height: 8px; justify-self: center; background: currentColor; border-radius: 50%; }
+    .now-line { height: 1px; background: currentColor; }
+
+    .task-list { margin: 0; padding: 0; list-style: none; }
+
+    .task {
+      display: grid;
+      grid-template-columns: 32px minmax(0, 1fr) auto;
+      min-height: 61px;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .check {
+      position: relative;
+      display: grid;
+      width: 22px;
+      height: 22px;
+      place-items: center;
+      border: 1.5px solid var(--muted);
+      border-radius: 50%;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .check::after {
+      width: 7px;
+      height: 4px;
+      border: solid var(--on-accent);
+      border-width: 0 0 2px 2px;
+      content: "";
+      opacity: 0;
+      transform: translateY(-1px) rotate(-45deg);
+    }
+
+    .task.done .check { border-color: var(--accent); background: var(--accent); }
+    .task.done .check::after { opacity: 1; }
+    .task.done .task-name { color: var(--muted); text-decoration: line-through; }
+
+    .task-name { font-weight: 600; }
+    .task-detail { color: var(--muted); font-size: 13px; }
+
+    .mini-progress {
+      width: 64px;
+      height: 4px;
+      margin-top: 5px;
+      overflow: hidden;
+      background: var(--line);
+      border-radius: 99px;
+    }
+
+    .mini-progress span { display: block; width: 66%; height: 100%; background: var(--accent); }
+
+    .right-rail {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 40px 24px;
+      overflow: auto;
+      border-left: 1px solid var(--line);
+      background: var(--canvas);
+    }
+
+    .rail-section { padding: 0 0 28px; margin-bottom: 28px; border-bottom: 1px solid var(--line); }
+    .rail-section:last-child { border-bottom: 0; }
+
+    .rail-title {
+      margin: 0 0 16px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    .rail-row { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 10px; margin-bottom: 15px; }
+    .rail-value { color: var(--muted); font-size: 10px; padding-top: 2px; }
+    .rail-name { font-size: 14px; font-weight: 600; }
+    .rail-note { margin-top: 2px; color: var(--muted); font-size: 12px; }
+
+    .inbox-summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 0;
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .inbox-count { font-size: 26px; font-weight: 600; line-height: 1; }
+    .inbox-copy { color: var(--muted); font-size: 13px; }
+
+    .mobile-nav { display: none; }
+
+    .recent-captures { margin-bottom: 34px; }
+    .recent-captures[hidden] { display: none; }
+    .capture-list { margin: 0; padding: 0; list-style: none; }
+
+    .capture-record {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 4px 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .capture-record-title { overflow: hidden; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+    .capture-record-meta { color: var(--muted); font-size: 12px; }
+    .capture-record .chip { grid-row: 1 / span 2; grid-column: 2; }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .toast {
+      position: fixed;
+      z-index: 110;
+      right: 22px;
+      bottom: 22px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      color: var(--on-ink);
+      background: var(--ink);
+      border-radius: 8px;
+      box-shadow: 0 10px 35px var(--shadow);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(10px);
+      transition: 160ms ease;
+    }
+
+    .toast.visible { opacity: 1; transform: translateY(0); }
+
+    :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+    @media (max-width: 1180px) {
+      .app-shell { grid-template-columns: var(--sidebar) minmax(0, 1fr); border-right: 0; }
+      .right-rail { display: none; }
+    }
+
+    @media (max-width: 760px) {
+      body { background: var(--canvas); }
+      .app-shell { display: block; min-height: 100dvh; border: 0; background: var(--canvas); }
+      .sidebar { display: none; }
+
+      .main {
+        padding: 24px 16px calc(96px + env(safe-area-inset-bottom));
+        background: var(--canvas);
+      }
+
+      .main-inner { max-width: none; }
+
+      .page-header {
+        align-items: flex-end;
+        margin: 0 2px 20px;
+      }
+
+      .page-header > div:first-child {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .page-header h1 {
+        order: 0;
+        font-size: 34px;
+        font-weight: 600;
+        letter-spacing: -.02em;
+      }
+
+      .page-header .eyebrow {
+        order: 1;
+        margin: 5px 0 0;
+        font-family: var(--font-sans);
+        font-size: 14px;
+        font-weight: 400;
+        letter-spacing: 0;
+        text-transform: none;
+      }
+
+      .date-switcher {
+        gap: 0;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--surface);
+      }
+
+      .date-switcher .icon-button { width: 36px; height: 36px; border: 0; }
+      .date-meta { min-width: 54px; font-size: 10px; }
+
+      .capture-composer {
+        grid-template-columns: minmax(0, 1fr) auto;
+        margin-bottom: 16px;
+        padding: 8px;
+        border-radius: 14px;
+        box-shadow: none;
+      }
+
+      .capture-submit { min-width: 52px; padding: 0 11px; font-size: 0; }
+      .capture-submit .key { margin: 0; font-size: 11px; }
+      .capture-meta { align-items: flex-start; padding-inline: 6px; }
+      .capture-state { max-width: 42%; }
+
+      .timeline,
+      .task-section,
+      .recent-captures {
+        margin-bottom: 20px;
+        padding: 0 14px;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: var(--surface);
+      }
+
+      .timeline .section-heading,
+      .task-section .section-heading,
+      .recent-captures .section-heading {
+        min-height: 44px;
+        margin: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .section-label {
+        font-family: var(--font-sans);
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0;
+        text-transform: none;
+      }
+
+      .section-rule { display: none; }
+
+      .timeline-row {
+        grid-template-columns: 54px minmax(0, 1fr);
+        min-height: 72px;
+        column-gap: 10px;
+        padding: 15px 0;
+      }
+
+      .timeline-row:last-child { border-bottom: 0; }
+      .timeline-row .record-mark,
+      .timeline-row .chip { display: none; }
+      .time { padding-top: 3px; font-size: 10px; text-align: left; }
+      .record-title { font-size: 16px; }
+      .record-meta { font-size: 14px; }
+
+      .now-row {
+        grid-template-columns: 54px minmax(0, 1fr);
+        gap: 10px;
+        min-height: 25px;
+        margin: 0;
+      }
+
+      .now-label { text-align: left; }
+      .now-dot { display: none; }
+
+      .task { min-height: 66px; }
+      .task:last-child { border-bottom: 0; }
+
+      .mobile-nav {
+        position: fixed;
+        z-index: 30;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        display: block;
+        padding-bottom: env(safe-area-inset-bottom);
+        border-top: 1px solid var(--line);
+        background: var(--glass);
+        backdrop-filter: blur(18px) saturate(130%);
+      }
+
+      .mobile-nav-list {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        height: 70px;
+        align-items: center;
+      }
+
+      .mobile-nav-button {
+        display: grid;
+        min-width: 0;
+        width: 100%;
+        height: 64px;
+        place-items: center;
+        align-content: center;
+        gap: 4px;
+        border: 0;
+        color: var(--muted);
+        background: transparent;
+        font-size: 11px;
+        font-weight: 400;
+      }
+
+      .mobile-nav-button svg { width: 21px; height: 21px; }
+      .mobile-nav-button.active { color: var(--accent); font-weight: 600; }
+
+      .recent-captures { padding: 0 14px; }
+      .capture-record:last-child { border-bottom: 0; }
+      .toast { right: 14px; bottom: calc(82px + env(safe-area-inset-bottom)); left: 14px; justify-content: center; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Primary navigation">
+      <div class="wordmark">
+        <span class="wordmark-mark" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
+        Dashboardify
+      </div>
+
+      <nav>
+        <ul class="nav-list">
+          <li><button class="nav-button active" type="button" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h6V4H4zM14 20h6v-9h-6zM4 20h6v-3H4zM14 7h6V4h-6z"/></svg>Today</button></li>
+          <li><button class="nav-button" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h5"/></svg>Inbox <span class="nav-badge">3</span></button></li>
+          <li><button class="nav-button" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4v3M19 4v3M4 9h16M5 6h14a1 1 0 0 1 1 1v13H4V7a1 1 0 0 1 1-1Z"/></svg>Calendar</button></li>
+          <li><button class="nav-button" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5zM15 4v4h4M8 12h8M8 16h6"/></svg>Notes</button></li>
+          <li><button class="nav-button" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M5 20c.5-4 2.8-6 7-6s6.5 2 7 6"/></svg>People</button></li>
+          <li><button class="nav-button" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17c4.5 0 8-3.5 8-8 0 4.5 2 7 5 8-3 0-5 1-5 3 0-2-3.5-3-8-3Z"/><path d="M4 4v5M1.5 6.5h5"/></svg>Habits</button></li>
+        </ul>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <button class="nav-button" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6 1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/></svg>Settings</button>
+        <div class="profile"><span class="avatar">PK</span><span>Personal space</span></div>
+      </div>
+    </aside>
+
+
+    <main class="main" id="main">
+      <div class="main-inner">
+        <header class="page-header">
+          <div>
+            <p class="eyebrow">Saturday · September 20</p>
+            <h1>Today</h1>
+          </div>
+          <div class="date-switcher" aria-label="Change date">
+            <button class="icon-button" type="button" aria-label="Previous day"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
+            <span class="date-meta">SEP 20</span>
+            <button class="icon-button" type="button" aria-label="Next day"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+          </div>
+        </header>
+
+        <form class="capture-composer" id="capture-form" novalidate>
+          <label class="sr-only" for="capture-text">Capture a reminder, event, or note</label>
+          <div class="capture-editor">
+            <div class="capture-highlight-layer" id="capture-highlights" aria-hidden="true"></div>
+            <textarea class="capture-input" id="capture-text" rows="1" maxlength="4096" placeholder="Capture anything…  Try “Baseball at 2:30 on Wednesday”" autocomplete="off" spellcheck="true"></textarea>
+          </div>
+          <button class="capture-submit" type="submit"><span class="capture-submit-label">Save</span><span class="key" aria-hidden="true">↵</span></button>
+          <div class="capture-meta">
+            <div class="capture-signals">
+              <span class="intent-pill" id="capture-intent" data-kind="note">Note</span>
+              <span class="capture-detail" id="capture-detail">Unscheduled text is saved as a note</span>
+            </div>
+            <span class="capture-state" id="capture-state" role="status" aria-live="polite"></span>
+          </div>
+        </form>
+
+        <section class="recent-captures" id="recent-captures" aria-labelledby="recent-captures-label" hidden>
+          <div class="section-heading">
+            <h2 class="section-label" id="recent-captures-label">Recently captured</h2>
+            <span class="section-rule"></span>
+          </div>
+          <ul class="capture-list" id="capture-list"></ul>
+        </section>
+
+        <section class="timeline" aria-labelledby="schedule-label">
+          <div class="section-heading">
+            <h2 class="section-label" id="schedule-label">Schedule</h2>
+            <span class="section-rule"></span>
+          </div>
+
+          <article class="timeline-row">
+            <time class="time" datetime="2026-09-20T09:30">09:30</time>
+            <span class="record-mark" aria-hidden="true"></span>
+            <div><p class="record-title">Design review</p><div class="record-meta">Work · Video call · 45 min</div></div>
+            <span class="chip">EVENT</span>
+          </article>
+
+          <article class="timeline-row">
+            <time class="time" datetime="2026-09-20T12:00">12:00</time>
+            <span class="record-mark" aria-hidden="true"></span>
+            <div><p class="record-title">Renew passport</p><div class="record-meta">Reminder · At home</div></div>
+            <span class="chip">TASK</span>
+          </article>
+
+          <div class="now-row" aria-label="Current time"><span class="now-label">Now</span><span class="now-dot"></span><span class="now-line"></span></div>
+
+          <article class="timeline-row">
+            <time class="time" datetime="2026-09-20T18:00">18:00</time>
+            <span class="record-mark" aria-hidden="true"></span>
+            <div><p class="record-title">Gym</p><div class="record-meta">Upper body · 2 of 3 this week</div></div>
+            <span class="chip">HABIT</span>
+          </article>
+        </section>
+
+        <section class="task-section" aria-labelledby="tasks-label">
+          <div class="section-heading">
+            <h2 class="section-label" id="tasks-label">Any time today</h2>
+            <span class="section-rule"></span>
+          </div>
+          <ul class="task-list">
+            <li class="task">
+              <button class="check" type="button" aria-label="Complete Water plants"></button>
+              <div><div class="task-name">Water plants</div><div class="task-detail">Home</div></div>
+              <span class="chip">TASK</span>
+            </li>
+            <li class="task">
+              <button class="check" type="button" aria-label="Complete Read for 30 minutes"></button>
+              <div><div class="task-name">Read for 30 minutes</div><div class="task-detail">Weekly goal<div class="mini-progress" aria-label="Two thirds complete"><span></span></div></div></div>
+              <span class="chip">HABIT</span>
+            </li>
+            <li class="task done">
+              <button class="check" type="button" aria-label="Mark Take vitamins incomplete"></button>
+              <div><div class="task-name">Take vitamins</div><div class="task-detail">Completed at 08:12</div></div>
+              <span class="chip">DONE</span>
+            </li>
+          </ul>
+        </section>
+      </div>
+    </main>
+
+    <aside class="right-rail" aria-label="Today summary">
+      <section class="rail-section">
+        <h2 class="rail-title">Up next</h2>
+        <div class="rail-row"><time class="rail-value">09:30</time><div><div class="rail-name">Design review</div><div class="rail-note">in 42 minutes</div></div></div>
+        <div class="rail-row"><time class="rail-value">12:00</time><div><div class="rail-name">Renew passport</div><div class="rail-note">At home</div></div></div>
+        <div class="rail-row"><time class="rail-value">18:00</time><div><div class="rail-name">Gym</div><div class="rail-note">Upper body</div></div></div>
+      </section>
+
+      <section class="rail-section">
+        <h2 class="rail-title">This week</h2>
+        <div class="rail-row"><span class="rail-value">GYM</span><div><div class="rail-name">2 of 3</div><div class="rail-note">One session left</div></div></div>
+        <div class="rail-row"><span class="rail-value">READ</span><div><div class="rail-name">4 of 5</div><div class="rail-note">120 minutes</div></div></div>
+      </section>
+
+      <section class="rail-section">
+        <h2 class="rail-title">Inbox</h2>
+        <a class="inbox-summary" href="#inbox"><span><span class="inbox-count">3</span><br><span class="inbox-copy">need filing</span></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a>
+      </section>
+    </aside>
+  </div>
+
+  <nav class="mobile-nav" aria-label="Mobile navigation">
+    <ul class="mobile-nav-list">
+      <li><button class="mobile-nav-button active" type="button" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h6V4H4zM14 20h6v-9h-6zM4 20h6v-3H4zM14 7h6V4h-6z"/></svg><span>Today</span></button></li>
+      <li><button class="mobile-nav-button" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h5"/></svg><span>Inbox</span></button></li>
+      <li><button class="mobile-nav-button" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4v3M19 4v3M4 9h16M5 6h14a1 1 0 0 1 1 1v13H4V7a1 1 0 0 1 1-1Z"/></svg><span>Calendar</span></button></li>
+      <li><button class="mobile-nav-button" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg><span>More</span></button></li>
+    </ul>
+  </nav>
+
+
+  <div class="toast" role="status" aria-live="polite" id="toast"></div>
+
+  <script>
+    const captureForm = document.querySelector('#capture-form');
+    const captureInput = document.querySelector('#capture-text');
+    const captureHighlights = document.querySelector('#capture-highlights');
+    const captureIntent = document.querySelector('#capture-intent');
+    const captureDetail = document.querySelector('#capture-detail');
+    const captureState = document.querySelector('#capture-state');
+    const captureSubmit = captureForm.querySelector('.capture-submit');
+    const recentCaptures = document.querySelector('#recent-captures');
+    const captureList = document.querySelector('#capture-list');
+    const toast = document.querySelector('#toast');
+    let previewTimer;
+    let previewController;
+    let requestKey = createRequestKey();
+
+    function createRequestKey() {
+      if (crypto.randomUUID) return crypto.randomUUID();
+      const bytes = crypto.getRandomValues(new Uint8Array(16));
+      return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+    }
+
+    function setCaptureState(message, isError = false) {
+      captureState.textContent = message;
+      captureState.classList.toggle('error', isError);
+    }
+
+    function renderHighlightedText(text, highlights = []) {
+      const characters = Array.from(text);
+      const fragment = document.createDocumentFragment();
+      let cursor = 0;
+      for (const token of highlights) {
+        if (token.start < cursor || token.end > characters.length || token.start >= token.end) continue;
+        fragment.append(document.createTextNode(characters.slice(cursor, token.start).join('')));
+        const mark = document.createElement('mark');
+        mark.className = `token-${['intent', 'time', 'date', 'place'].includes(token.kind) ? token.kind : 'intent'}`;
+        mark.textContent = characters.slice(token.start, token.end).join('');
+        mark.title = token.label;
+        fragment.append(mark);
+        cursor = token.end;
+      }
+      fragment.append(document.createTextNode(characters.slice(cursor).join('')));
+      captureHighlights.replaceChildren(fragment);
+      captureHighlights.scrollTop = captureInput.scrollTop;
+    }
+
+    function resizeCaptureInput() {
+      captureInput.style.height = 'auto';
+      const height = Math.min(150, Math.max(44, captureInput.scrollHeight));
+      captureInput.style.height = `${height}px`;
+      captureHighlights.style.height = `${height}px`;
+    }
+
+    function renderProposal(proposal) {
+      captureIntent.textContent = proposal.kind;
+      captureIntent.dataset.kind = proposal.kind;
+      const details = [];
+      if (proposal.display_when) details.push(proposal.display_when);
+      if (proposal.place) details.push(`at ${proposal.place}`);
+      if (details.length === 0) {
+        details.push(proposal.kind === 'note' ? 'Unscheduled text is saved as a note' : `${proposal.kind} without a scheduled time`);
+      }
+      captureDetail.textContent = details.join(' · ');
+      renderHighlightedText(captureInput.value, proposal.highlights);
+    }
+
+    function resetProposal() {
+      captureIntent.textContent = 'note';
+      captureIntent.dataset.kind = 'note';
+      captureDetail.textContent = 'Unscheduled text is saved as a note';
+      renderHighlightedText(captureInput.value);
+    }
+
+    async function previewCapture(text) {
+      previewController?.abort();
+      previewController = new AbortController();
+      const response = await fetch('/api/captures/preview', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Dashboardify-Request': 'capture-ui'
+        },
+        body: JSON.stringify({ text }),
+        signal: previewController.signal
+      });
+      if (!response.ok) throw new Error('Preview unavailable');
+      return response.json();
+    }
+
+    function schedulePreview() {
+      const text = captureInput.value;
+      resizeCaptureInput();
+      renderHighlightedText(text);
+      window.clearTimeout(previewTimer);
+      if (!text.trim()) {
+        previewController?.abort();
+        resetProposal();
+        setCaptureState('');
+        return;
+      }
+      previewTimer = window.setTimeout(async () => {
+        try {
+          const proposal = await previewCapture(text);
+          if (captureInput.value === text) renderProposal(proposal);
+        } catch (error) {
+          if (error.name !== 'AbortError' && captureInput.value === text) {
+            captureDetail.textContent = 'Intent preview unavailable; your text is still safe to submit';
+          }
+        }
+      }, 80);
+    }
+
+    function captureMetadata(record) {
+      const details = [];
+      if (record.display_when) details.push(record.display_when);
+      if (record.place) details.push(record.place);
+      return details.length ? details.join(' · ') : 'Saved without a schedule';
+    }
+
+    function addCapture(record, prepend = false) {
+      if (captureList.querySelector(`[data-capture-id="${CSS.escape(record.id)}"]`)) return;
+      const item = document.createElement('li');
+      item.className = 'capture-record';
+      item.dataset.captureId = record.id;
+      const title = document.createElement('div');
+      title.className = 'capture-record-title';
+      title.textContent = record.title || record.raw_text;
+      const metadata = document.createElement('div');
+      metadata.className = 'capture-record-meta';
+      metadata.textContent = captureMetadata(record);
+      const kind = document.createElement('span');
+      kind.className = 'chip';
+      kind.textContent = record.kind;
+      item.append(title, metadata, kind);
+      prepend ? captureList.prepend(item) : captureList.append(item);
+      recentCaptures.hidden = false;
+    }
+
+    async function loadCaptures() {
+      try {
+        const response = await fetch('/api/captures');
+        if (!response.ok) return;
+        const result = await response.json();
+        result.captures.forEach(record => addCapture(record));
+      } catch {
+        // The composer remains usable; an explicit save error is shown on submission.
+      }
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('visible');
+      window.clearTimeout(showToast.timeout);
+      showToast.timeout = window.setTimeout(() => toast.classList.remove('visible'), 2600);
+    }
+
+    captureForm.addEventListener('submit', async event => {
+      event.preventDefault();
+      const text = captureInput.value;
+      if (!text.trim() || captureSubmit.disabled) return;
+      captureSubmit.disabled = true;
+      setCaptureState('Saving…');
+      try {
+        const response = await fetch('/api/captures', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Dashboardify-Request': 'capture-ui'
+          },
+          body: JSON.stringify({ text, idempotency_key: requestKey })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Capture could not be saved');
+        addCapture(result, true);
+        captureInput.value = '';
+        requestKey = createRequestKey();
+        resizeCaptureInput();
+        resetProposal();
+        setCaptureState(`Saved as ${result.kind}`);
+      } catch (error) {
+        setCaptureState(`Not saved — ${error.message}`, true);
+      } finally {
+        captureSubmit.disabled = false;
+        captureInput.focus();
+      }
+    });
+
+    captureInput.addEventListener('input', schedulePreview);
+    captureInput.addEventListener('scroll', () => { captureHighlights.scrollTop = captureInput.scrollTop; });
+    captureInput.addEventListener('keydown', event => {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        captureForm.requestSubmit();
+      }
+    });
+
+    document.querySelectorAll('.check').forEach(button => button.addEventListener('click', () => {
+      const task = button.closest('.task');
+      task.classList.toggle('done');
+      const name = task.querySelector('.task-name').textContent;
+      button.setAttribute('aria-label', `${task.classList.contains('done') ? 'Mark' : 'Complete'} ${name}${task.classList.contains('done') ? ' incomplete' : ''}`);
+      showToast(task.classList.contains('done') ? `${name} completed` : `${name} restored`);
+    }));
+
+    document.addEventListener('keydown', event => {
+      const key = event.key.toLowerCase();
+      if ((event.metaKey || event.ctrlKey) && key === 'k') {
+        event.preventDefault();
+        captureInput.focus();
+      } else if (key === 'c' && !event.metaKey && !event.ctrlKey && !event.altKey && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+        event.preventDefault();
+        captureInput.focus();
+      }
+    });
+
+    resizeCaptureInput();
+    resetProposal();
+    loadCaptures();
+  </script>
+</body>
+</html>
