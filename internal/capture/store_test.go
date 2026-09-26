@@ -76,11 +76,36 @@ func TestOpenStoreMigratesExistingCaptureDatabaseForAllDayRecords(t *testing.T) 
 	if _, err := database.Exec(schemaV1); err != nil {
 		t.Fatalf("apply legacy schema: %v", err)
 	}
+	if _, err := database.Exec(schemaV2); err != nil {
+		t.Fatalf("apply all-day legacy migration: %v", err)
+	}
+	appliedAt := time.Now().UTC().Format(time.RFC3339Nano)
 	if _, err := database.Exec(
-		`INSERT INTO schema_migrations(version, applied_at_utc) VALUES(1, ?)`,
-		time.Now().UTC().Format(time.RFC3339Nano),
+		`INSERT INTO schema_migrations(version, applied_at_utc) VALUES(1, ?), (2, ?)`,
+		appliedAt,
+		appliedAt,
 	); err != nil {
-		t.Fatalf("record legacy migration: %v", err)
+		t.Fatalf("record legacy migrations: %v", err)
+	}
+	if _, err := database.Exec(`
+INSERT INTO captures(
+    id, idempotency_key, raw_text, captured_at_utc, interpreted_timezone,
+    resolution_state, kind, title, scheduled_at_utc, place, scheduled_date_local, all_day
+)
+VALUES(
+    'legacy-capture', 'legacy-key', 'Remind me to renew passport',
+    '2026-09-22T17:00:00Z', 'America/Los_Angeles', 'resolved', 'reminder',
+    'renew passport', '2026-09-23T02:00:00Z', 'home', '', 0
+);
+INSERT INTO tasks(
+    id, capture_id, title, remind_at_utc, timezone, place, status,
+    created_at_utc, due_date_local, all_day
+)
+VALUES(
+    'legacy-task', 'legacy-capture', 'renew passport', '2026-09-23T02:00:00Z',
+    'America/Los_Angeles', 'home', 'open', '2026-09-22T17:00:00Z', '', 0
+);`); err != nil {
+		t.Fatalf("seed populated legacy database: %v", err)
 	}
 	if err := database.Close(); err != nil {
 		t.Fatalf("close legacy database: %v", err)
@@ -91,6 +116,20 @@ func TestOpenStoreMigratesExistingCaptureDatabaseForAllDayRecords(t *testing.T) 
 		t.Fatalf("OpenStore() migration error = %v", err)
 	}
 	defer store.Close()
+	legacyTask, err := store.TaskByID(context.Background(), "legacy-task")
+	if err != nil {
+		t.Fatalf("read migrated legacy task: %v", err)
+	}
+	if legacyTask.CaptureID != "legacy-capture" || legacyTask.DueAt == nil || legacyTask.Place != "home" {
+		t.Fatalf("migrated legacy task = %#v", legacyTask)
+	}
+	var foreignKeyViolations int
+	if err := store.database.QueryRow(`SELECT COUNT(*) FROM pragma_foreign_key_check`).Scan(&foreignKeyViolations); err != nil {
+		t.Fatalf("check migrated foreign keys: %v", err)
+	}
+	if foreignKeyViolations != 0 {
+		t.Fatalf("foreign key violations after migration = %d", foreignKeyViolations)
+	}
 	location := mustLocation(t, "America/Los_Angeles")
 	now := time.Date(2026, time.September, 22, 10, 0, 0, 0, location)
 	record, err := NewService(store, NewParser(location), func() time.Time { return now }).Create(

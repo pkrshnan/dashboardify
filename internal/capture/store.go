@@ -97,8 +97,6 @@ ALTER TABLE events ADD COLUMN all_day INTEGER NOT NULL DEFAULT 0 CHECK (all_day 
 `
 
 const schemaV3 = `
-PRAGMA defer_foreign_keys = ON;
-
 CREATE TABLE captures_next (
     id TEXT PRIMARY KEY,
     idempotency_key TEXT NOT NULL UNIQUE,
@@ -129,15 +127,75 @@ SELECT
     scheduled_date_local, all_day, place, captured_at_utc
 FROM captures;
 
+CREATE TABLE tasks_next (
+    id TEXT PRIMARY KEY,
+    capture_id TEXT NOT NULL UNIQUE REFERENCES captures_next(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    remind_at_utc TEXT,
+    timezone TEXT NOT NULL,
+    place TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'completed', 'archived')),
+    created_at_utc TEXT NOT NULL,
+    due_date_local TEXT NOT NULL DEFAULT '',
+    all_day INTEGER NOT NULL DEFAULT 0 CHECK (all_day IN (0, 1)),
+    completed_at_utc TEXT,
+    deferred_until_date_local TEXT NOT NULL DEFAULT '',
+    updated_at_utc TEXT NOT NULL DEFAULT ''
+);
+
+INSERT INTO tasks_next(
+    id, capture_id, title, remind_at_utc, timezone, place, status,
+    created_at_utc, due_date_local, all_day, updated_at_utc
+)
+SELECT
+    id, capture_id, title, remind_at_utc, timezone, place, status,
+    created_at_utc, due_date_local, all_day, created_at_utc
+FROM tasks;
+
+CREATE TABLE events_next (
+    id TEXT PRIMARY KEY,
+    capture_id TEXT NOT NULL UNIQUE REFERENCES captures_next(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    start_at_utc TEXT,
+    timezone TEXT NOT NULL,
+    place TEXT NOT NULL DEFAULT '',
+    created_at_utc TEXT NOT NULL,
+    start_date_local TEXT NOT NULL DEFAULT '',
+    all_day INTEGER NOT NULL DEFAULT 0 CHECK (all_day IN (0, 1))
+);
+
+INSERT INTO events_next(
+    id, capture_id, title, start_at_utc, timezone, place, created_at_utc,
+    start_date_local, all_day
+)
+SELECT
+    id, capture_id, title, start_at_utc, timezone, place, created_at_utc,
+    start_date_local, all_day
+FROM events;
+
+CREATE TABLE notes_next (
+    id TEXT PRIMARY KEY,
+    capture_id TEXT NOT NULL UNIQUE REFERENCES captures_next(id) ON DELETE CASCADE,
+    body TEXT NOT NULL,
+    created_at_utc TEXT NOT NULL
+);
+
+INSERT INTO notes_next(id, capture_id, body, created_at_utc)
+SELECT id, capture_id, body, created_at_utc
+FROM notes;
+
+DROP TABLE tasks;
+DROP TABLE events;
+DROP TABLE notes;
 DROP TABLE captures;
+
 ALTER TABLE captures_next RENAME TO captures;
+ALTER TABLE tasks_next RENAME TO tasks;
+ALTER TABLE events_next RENAME TO events;
+ALTER TABLE notes_next RENAME TO notes;
 
 CREATE INDEX captures_captured_at_idx ON captures(captured_at_utc DESC);
 CREATE INDEX captures_inbox_idx ON captures(inbox_state, captured_at_utc DESC);
-
-ALTER TABLE tasks ADD COLUMN completed_at_utc TEXT;
-ALTER TABLE tasks ADD COLUMN deferred_until_date_local TEXT NOT NULL DEFAULT '';
-ALTER TABLE tasks ADD COLUMN updated_at_utc TEXT NOT NULL DEFAULT '';
 
 CREATE TABLE facts (
     id TEXT PRIMARY KEY,
