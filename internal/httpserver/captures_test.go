@@ -106,6 +106,65 @@ func TestTodayAndTaskResourceAPIsPersistLifecycle(t *testing.T) {
 	}
 }
 
+func TestNotificationFallbackResourceQueuesAndDismissesDueReminder(t *testing.T) {
+	service := newCaptureService(t)
+	handler := NewHandler(discardLogger(), nil, service)
+	create := captureJSONRequest(t, http.MethodPost, "/api/captures", map[string]string{
+		"text":            "Remind me to renew passport today at 7 pm",
+		"idempotency_key": "notification-reminder",
+	})
+	createResponse := httptest.NewRecorder()
+	handler.ServeHTTP(createResponse, create)
+	if createResponse.Code != http.StatusCreated {
+		t.Fatalf("create status = %d: %s", createResponse.Code, createResponse.Body.String())
+	}
+	todayResponse := httptest.NewRecorder()
+	handler.ServeHTTP(todayResponse, httptest.NewRequest(http.MethodGet, "http://example.com/api/today", nil))
+	var today capture.TodayView
+	if err := json.NewDecoder(todayResponse.Body).Decode(&today); err != nil || len(today.Tasks) != 1 {
+		t.Fatalf("decode Today response = %#v, %v", today, err)
+	}
+	task := today.Tasks[0]
+	update := captureJSONRequest(t, http.MethodPut, "/api/tasks/"+task.ID, map[string]any{
+		"title":       task.Title,
+		"due_at":      task.DueAt.Format(time.RFC3339),
+		"reminder_at": "2026-09-22T16:59:00Z",
+		"status":      "open",
+	})
+	updateResponse := httptest.NewRecorder()
+	handler.ServeHTTP(updateResponse, update)
+	if updateResponse.Code != http.StatusOK {
+		t.Fatalf("task update status = %d: %s", updateResponse.Code, updateResponse.Body.String())
+	}
+
+	var queued struct {
+		Notifications []capture.NotificationRecord `json:"notifications"`
+	}
+	for attempt := range 2 {
+		queueResponse := httptest.NewRecorder()
+		handler.ServeHTTP(queueResponse, httptest.NewRequest(http.MethodGet, "http://example.com/api/notifications", nil))
+		if queueResponse.Code != http.StatusOK {
+			t.Fatalf("notifications status = %d: %s", queueResponse.Code, queueResponse.Body.String())
+		}
+		queued.Notifications = nil
+		if err := json.NewDecoder(queueResponse.Body).Decode(&queued); err != nil || len(queued.Notifications) != 1 {
+			t.Fatalf("notification attempt %d = %#v, %v", attempt, queued.Notifications, err)
+		}
+	}
+	dismiss := captureJSONRequest(t, http.MethodPatch, "/api/notifications/"+queued.Notifications[0].ID, map[string]string{"state": "read"})
+	dismissResponse := httptest.NewRecorder()
+	handler.ServeHTTP(dismissResponse, dismiss)
+	if dismissResponse.Code != http.StatusNoContent {
+		t.Fatalf("dismiss status = %d: %s", dismissResponse.Code, dismissResponse.Body.String())
+	}
+	queueResponse := httptest.NewRecorder()
+	handler.ServeHTTP(queueResponse, httptest.NewRequest(http.MethodGet, "http://example.com/api/notifications", nil))
+	queued.Notifications = nil
+	if err := json.NewDecoder(queueResponse.Body).Decode(&queued); err != nil || len(queued.Notifications) != 0 {
+		t.Fatalf("notifications after dismissal = %#v, %v", queued.Notifications, err)
+	}
+}
+
 func TestCaptureMutationRejectsCrossOriginRequest(t *testing.T) {
 	service := newCaptureService(t)
 	handler := NewHandler(discardLogger(), nil, service)

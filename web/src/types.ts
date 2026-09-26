@@ -110,3 +110,12 @@ export type TaskUpdate = Pick<
   TaskRecord,
   'title' | 'due_at' | 'due_date' | 'reminder_at' | 'all_day' | 'place' | 'status' | 'completed_at' | 'deferred_until_date'
 >;
+
+export interface NotificationRecord {
+  id: string;
+  task_id: string;
+  title: string;
+  place?: string;
+  scheduled_at: string;
+  created_at: string;
+}

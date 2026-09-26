@@ -108,8 +108,8 @@ func TestOpenStoreMigratesExistingCaptureDatabaseForAllDayRecords(t *testing.T) 
 	if err := store.database.QueryRow(`SELECT MAX(version) FROM schema_migrations`).Scan(&version); err != nil {
 		t.Fatalf("read migrated schema version: %v", err)
 	}
-	if version != 4 {
-		t.Fatalf("schema version = %d, want 4", version)
+	if version != 5 {
+		t.Fatalf("schema version = %d, want 5", version)
 	}
 }
 
@@ -238,6 +238,52 @@ func TestTodayTaskLifecyclePersistsCompletionAndDeferral(t *testing.T) {
 	}
 	if len(nextDay.Tasks) != 1 || nextDay.Tasks[0].ID != allDay.ID {
 		t.Fatalf("Today(next day) tasks = %#v", nextDay.Tasks)
+	}
+}
+
+func TestDueNotificationQueuePersistsAndDeduplicatesFallback(t *testing.T) {
+	store, err := OpenStore(filepath.Join(t.TempDir(), "dashboardify.db"))
+	if err != nil {
+		t.Fatalf("OpenStore() error = %v", err)
+	}
+	defer store.Close()
+	location := mustLocation(t, "America/Los_Angeles")
+	now := time.Date(2026, time.January, 7, 9, 0, 0, 0, location)
+	service := NewService(store, NewParser(location), func() time.Time { return now })
+	if _, err := service.Create(context.Background(), "notification-task", "Remind me to submit report today at 2:30 pm"); err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+	view, err := service.Today(context.Background(), "2026-01-07")
+	if err != nil || len(view.Tasks) != 1 {
+		t.Fatalf("Today() = %#v, %v", view, err)
+	}
+	task := view.Tasks[0]
+	reminderAt := now.Add(-time.Minute)
+	if _, err := service.UpdateTask(context.Background(), task.ID, TaskUpdate{
+		Title:      task.Title,
+		DueAt:      task.DueAt,
+		DueDate:    task.DueDate,
+		ReminderAt: &reminderAt,
+		AllDay:     task.AllDay,
+		Place:      task.Place,
+		Status:     "open",
+	}); err != nil {
+		t.Fatalf("UpdateTask() error = %v", err)
+	}
+	for attempt := range 2 {
+		notifications, err := service.Notifications(context.Background())
+		if err != nil || len(notifications) != 1 {
+			t.Fatalf("Notifications() attempt %d = %#v, %v", attempt, notifications, err)
+		}
+		if attempt == 1 {
+			if err := service.DismissNotification(context.Background(), notifications[0].ID); err != nil {
+				t.Fatalf("DismissNotification() error = %v", err)
+			}
+		}
+	}
+	notifications, err := service.Notifications(context.Background())
+	if err != nil || len(notifications) != 0 {
+		t.Fatalf("Notifications() after dismissal = %#v, %v", notifications, err)
 	}
 }
 

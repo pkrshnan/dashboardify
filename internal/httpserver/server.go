@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"runtime/debug"
+	"strings"
 	"time"
 
 	"dashboardify/internal/capture"
@@ -72,6 +73,8 @@ func NewHandler(logger *slog.Logger, authenticator Authenticator, captures *capt
 		application.HandleFunc("PUT /api/captures/{id}/classification", api.classify)
 		application.HandleFunc("GET /api/today", api.today)
 		application.HandleFunc("PUT /api/tasks/{id}", api.updateTask)
+		application.HandleFunc("GET /api/notifications", api.notifications)
+		application.HandleFunc("PATCH /api/notifications/{id}", api.updateNotification)
 	}
 	var protected http.Handler = application
 	if authenticator != nil {
@@ -194,7 +197,16 @@ func routeName(path string) string {
 	case "/api/today":
 		return "today"
 	default:
-		return "not_found"
+		switch {
+		case strings.HasPrefix(path, "/api/tasks/"):
+			return "tasks"
+		case strings.HasPrefix(path, "/api/notifications"):
+			return "notifications"
+		case strings.HasPrefix(path, "/api/captures/"):
+			return "capture_detail"
+		default:
+			return "not_found"
+		}
 	}
 }
 

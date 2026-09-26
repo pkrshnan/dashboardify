@@ -5,6 +5,7 @@ import styles from './TodayScreen.module.css';
 
 import { getToday, updateTask } from '@/api';
 import { CaptureComposer } from '@/components/CaptureComposer';
+import { NotificationQueue } from '@/components/NotificationQueue';
 import { SectionHeading } from '@/components/SectionHeading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -370,6 +371,7 @@ export function TodayScreen({ captures, inboxCount, onCaptureCreated, onNavigate
     <>
       {activeDate ? <DateHeader date={activeDate} isToday={activeDate === todayDate} onChange={setSelectedDate} /> : null}
       <CaptureComposer onCreated={(record) => { onCaptureCreated(record); setReload((value) => value + 1); }} />
+      <NotificationQueue />
       {error ? <p className={styles.error} role="alert">{error}</p> : null}
       {undo ? <div className={styles.undoBar} role="status"><span>{undo.message}</span><Button size="sm" variant="ghost" onClick={() => void undoLastAction()}><RotateCcw />Undo</Button></div> : null}
       <RecentCaptures captures={captures} />

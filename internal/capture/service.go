@@ -15,16 +15,17 @@ const (
 )
 
 var (
-	ErrTextRequired        = errors.New("capture text is required")
-	ErrTextTooLong         = errors.New("capture text exceeds 4096 bytes")
-	ErrIdempotencyRequired = errors.New("idempotency key is required")
-	ErrIdempotencyInvalid  = errors.New("idempotency key is invalid")
-	ErrCaptureNotFound     = errors.New("capture was not found")
-	ErrKindInvalid         = errors.New("capture kind is invalid")
-	ErrSubjectRequired     = errors.New("a fact requires a subject")
-	ErrDateInvalid         = errors.New("capture date must use YYYY-MM-DD")
-	ErrTaskNotFound        = errors.New("task was not found")
-	ErrTaskStatusInvalid   = errors.New("task status is invalid")
+	ErrTextRequired         = errors.New("capture text is required")
+	ErrTextTooLong          = errors.New("capture text exceeds 4096 bytes")
+	ErrIdempotencyRequired  = errors.New("idempotency key is required")
+	ErrIdempotencyInvalid   = errors.New("idempotency key is invalid")
+	ErrCaptureNotFound      = errors.New("capture was not found")
+	ErrKindInvalid          = errors.New("capture kind is invalid")
+	ErrSubjectRequired      = errors.New("a fact requires a subject")
+	ErrDateInvalid          = errors.New("capture date must use YYYY-MM-DD")
+	ErrTaskNotFound         = errors.New("task was not found")
+	ErrTaskStatusInvalid    = errors.New("task status is invalid")
+	ErrNotificationNotFound = errors.New("notification was not found")
 )
 
 type Service struct {
@@ -237,6 +238,20 @@ func (service *Service) UpdateTask(ctx context.Context, id string, update TaskUp
 		return TaskRecord{}, err
 	}
 	return task, nil
+}
+
+func (service *Service) Notifications(ctx context.Context) ([]NotificationRecord, error) {
+	return service.store.DueNotifications(ctx, service.now())
+}
+
+func (service *Service) DismissNotification(ctx context.Context, id string) error {
+	if err := service.store.DismissNotification(ctx, id, service.now()); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrNotificationNotFound
+		}
+		return err
+	}
+	return nil
 }
 
 func (service *Service) decorate(record Record) Record {

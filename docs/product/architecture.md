@@ -104,7 +104,7 @@ The initial parser is intentionally bounded but accepts equivalent natural phras
 2. `event:`, `schedule`, `@ <time>`, or an otherwise unqualified scheduled phrase selects event intent.
 3. Weekdays, `today`, `tomorrow`, common 12/24-hour clock forms, and trailing `at <place>`/`in <place>` are extracted against the configured home timezone. A reminder date without a time is stored as a local calendar date with `all_day=true`, never converted through UTC midnight.
 4. Bare hours from one through seven resolve to PM; highlighted interpretation is visible before submission. Explicit `am`/`pm` always wins.
-5. `note:` forces note intent; unmatched text becomes a note rather than being discarded.
+5. `note:` or `idea:` forces note intent; explicit fact/activity prefixes and the bounded natural fact/activity forms file their typed records. Unmatched text becomes an Inbox note rather than being discarded.
 
 Parsing returns the proposed type, normalized fields, and source-text spans. The browser highlights those spans without rewriting input. The immutable raw capture retains the original phrase and timezone context so interpretation can be audited or corrected.
 
@@ -194,22 +194,25 @@ Production UI stack:
 - Vite's hashed build output embedded in the Go binary; no Node runtime in production.
 - JSON capture endpoints protected by the same Cloudflare Access middleware, origin checks, and custom mutation header as the shell.
 
+Application code is split by resource, not by individual route: Go HTTP handlers use one file per top-level resource (`captures`, `inbox`, `tasks`, `today`, `notifications`), and the TypeScript API client mirrors those resources behind one shared transport/error helper. Project-authored screen and component styles are colocated CSS Modules; only tokens, reset/accessibility rules, and shadcn/Tailwind utilities remain global.
+
 Representative routes:
 
 ```text
-GET  /today/:date
-GET  /inbox
-POST /captures
-GET  /captures/:id/proposal
-POST /captures/:id/file
-POST /tasks/:id/complete
-POST /tasks/:id/defer
-GET  /calendar/week/:date
-GET  /search?q=&type=&from=&to=
-GET  /people/:id
-POST /activities
-GET  /settings/security
-POST /exports
+GET   /api/today?date=2026-09-20
+GET   /api/inbox
+GET   /api/captures
+POST  /api/captures
+POST  /api/captures/preview
+GET   /api/captures/:id
+PUT   /api/captures/:id/classification
+PUT   /api/tasks/:id
+GET   /api/notifications
+PATCH /api/notifications/:id
+GET   /api/calendar?from=&to=
+GET   /api/search?q=&type=&from=&to=
+POST  /api/activities
+POST  /api/exports
 ```
 
 The browser uses JSON endpoints for interactive reads and mutations. Write endpoints require authentication, expected origin, JSON content type, a bounded body, and an idempotency or optimistic-concurrency key where retries or concurrent edits matter. Domain interpretation stays in Go; React renders server proposals rather than reimplementing the parser.
@@ -266,9 +269,31 @@ Store recurrence as RFC 5545 RRULE plus explicit timezone, start, duration, excl
 
 Two-way synchronization is deferred because deletion, concurrent edits, recurrence exceptions, and provider-specific sequence rules need an explicit conflict contract.
 
+## Obsidian and Apple Calendar integration boundaries
+
+### Obsidian
+
+Obsidian stores Markdown files in a user-controlled vault and does not expose a general hosted synchronization API. Dashboardify must not edit Obsidian's internal metadata, depend on an Obsidian plugin for ordinary capture, or assume the server can see a vault stored on a laptop.
+
+The first integration is a repeatable, one-way Markdown projection of explicitly selected Dashboardify notes and captures into a dedicated `Dashboardify/` vault folder. Each file carries stable frontmatter (`dashboardify_id`, record type, source capture ID, and `updated_at`) so reruns update the same projection rather than creating duplicates. Delivery can target a server-mounted vault or a downloadable archive; Git, Syncthing, iCloud Drive, and Obsidian Sync remain user-chosen transport mechanisms rather than application dependencies. Dashboardify remains authoritative in this mode, and files outside the managed folder are never changed.
+
+Two-way note editing is deferred until the product defines rename detection, deletions/tombstones, Markdown/frontmatter preservation, concurrent-edit conflicts, and the authority of an Obsidian edit versus a Dashboardify edit. If that mode is added, mismatched content hashes produce a visible conflict; neither side silently wins.
+
+### Apple Calendar
+
+The browser/server product cannot use EventKit, and requiring a native Apple client would violate the cross-platform constraint. Integration therefore uses calendar standards:
+
+1. Dashboardify can publish a private, revocable ICS subscription containing selected native events. Apple Calendar may subscribe to that feed, but refresh latency is controlled by Apple and the feed is read-only.
+2. Dashboardify can ingest configured HTTPS ICS feeds read-only. Imported occurrences remain external projections keyed by calendar UID plus recurrence ID and retain provider revision/hash metadata; they never masquerade as writable native events.
+3. Feed URLs containing bearer tokens are treated as secrets: high-entropy, scoped, revocable, excluded from logs, and rotatable without changing core event IDs.
+
+Editable iCloud Calendar synchronization requires a later CalDAV adapter with encrypted credentials, sync tokens, recurrence exception handling, deletion semantics, and an explicit conflict policy. Native Dashboardify events and provider projections remain separate until that contract is implemented. Dashboardify reminders remain authoritative because ICS subscription refresh cannot guarantee timely device alerts.
+
 ## Notifications
 
 Browser notification support is best-effort, not the source of truth. Reminder records remain visible in Today and an in-app notification list. Web Push subscriptions are per device, encrypted at rest, revocable, and pruned after permanent delivery failures. Notification bodies default to a privacy-preserving generic message, with an opt-in setting for titles.
+
+The initial Phase 2 implementation materializes a deduplicated durable fallback queue when the authenticated client polls for due reminders, then uses the browser Notification API only while the app is open and permission is granted. It does not claim closed-page delivery. Web Push and the background scheduler below are the later delivery path; the in-app queue remains the recovery surface when either path misses.
 
 A scheduler queries a bounded indexed window and creates idempotent delivery jobs. Exact-once external delivery is impossible; deduplication keys prevent normal retries from producing duplicates.
 

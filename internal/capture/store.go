@@ -182,6 +182,19 @@ CREATE INDEX tasks_deferred_idx ON tasks(status, deferred_until_date_local);
 CREATE INDEX events_agenda_idx ON events(start_date_local, start_at_utc);
 `
 
+const schemaV5 = `
+CREATE TABLE notifications (
+    id TEXT PRIMARY KEY,
+    task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    scheduled_at_utc TEXT NOT NULL,
+    state TEXT NOT NULL DEFAULT 'unread' CHECK (state IN ('unread', 'read')),
+    created_at_utc TEXT NOT NULL,
+    read_at_utc TEXT,
+    UNIQUE(task_id, scheduled_at_utc)
+);
+CREATE INDEX notifications_queue_idx ON notifications(state, scheduled_at_utc);
+`
+
 func OpenStore(path string) (*Store, error) {
 	if path == "" {
 		return nil, errors.New("database path is required")
@@ -231,7 +244,7 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 	if err := transaction.QueryRowContext(ctx, `SELECT COALESCE(MAX(version), 0) FROM schema_migrations`).Scan(&currentVersion); err != nil {
 		return fmt.Errorf("read schema version: %w", err)
 	}
-	for index, migration := range []string{schemaV1, schemaV2, schemaV3, schemaV4} {
+	for index, migration := range []string{schemaV1, schemaV2, schemaV3, schemaV4, schemaV5} {
 		version := index + 1
 		if version <= currentVersion {
 			continue
@@ -630,6 +643,135 @@ WHERE id = ?`,
 		return TaskRecord{}, sql.ErrNoRows
 	}
 	return store.TaskByID(ctx, id)
+}
+
+type NotificationRecord struct {
+	ID          string    `json:"id"`
+	TaskID      string    `json:"task_id"`
+	Title       string    `json:"title"`
+	Place       string    `json:"place,omitempty"`
+	ScheduledAt time.Time `json:"scheduled_at"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+func (store *Store) DueNotifications(ctx context.Context, now time.Time) ([]NotificationRecord, error) {
+	transaction, err := store.database.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("begin notification queue refresh: %w", err)
+	}
+	defer transaction.Rollback()
+
+	rows, err := transaction.QueryContext(ctx, `
+SELECT tasks.id, tasks.reminder_at_utc
+FROM tasks
+WHERE tasks.status = 'open'
+  AND tasks.reminder_at_utc IS NOT NULL
+  AND tasks.reminder_at_utc <= ?
+  AND NOT EXISTS (
+      SELECT 1
+      FROM notifications
+      WHERE notifications.task_id = tasks.id
+        AND notifications.scheduled_at_utc = tasks.reminder_at_utc
+  )
+ORDER BY tasks.reminder_at_utc
+LIMIT 50`, now.UTC().Format(time.RFC3339Nano))
+	if err != nil {
+		return nil, fmt.Errorf("find due notifications: %w", err)
+	}
+	type dueTask struct {
+		id          string
+		scheduledAt string
+	}
+	due := make([]dueTask, 0, 8)
+	for rows.Next() {
+		var task dueTask
+		if err := rows.Scan(&task.id, &task.scheduledAt); err != nil {
+			rows.Close()
+			return nil, fmt.Errorf("scan due notification: %w", err)
+		}
+		due = append(due, task)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return nil, fmt.Errorf("iterate due notifications: %w", err)
+	}
+	rows.Close()
+
+	createdAt := now.UTC().Format(time.RFC3339Nano)
+	for _, task := range due {
+		id, err := uuid.NewV7()
+		if err != nil {
+			return nil, fmt.Errorf("generate notification id: %w", err)
+		}
+		if _, err := transaction.ExecContext(ctx, `
+INSERT INTO notifications(id, task_id, scheduled_at_utc, created_at_utc)
+VALUES(?, ?, ?, ?)
+ON CONFLICT(task_id, scheduled_at_utc) DO NOTHING`,
+			id.String(), task.id, task.scheduledAt, createdAt,
+		); err != nil {
+			return nil, fmt.Errorf("enqueue due notification: %w", err)
+		}
+	}
+
+	notificationRows, err := transaction.QueryContext(ctx, `
+SELECT notifications.id, notifications.task_id, tasks.title, tasks.place,
+       notifications.scheduled_at_utc, notifications.created_at_utc
+FROM notifications
+JOIN tasks ON tasks.id = notifications.task_id
+WHERE notifications.state = 'unread'
+  AND tasks.status = 'open'
+ORDER BY notifications.scheduled_at_utc
+LIMIT 50`)
+	if err != nil {
+		return nil, fmt.Errorf("list notification queue: %w", err)
+	}
+	defer notificationRows.Close()
+	notifications := make([]NotificationRecord, 0, 8)
+	for notificationRows.Next() {
+		var notification NotificationRecord
+		var scheduledAt, notificationCreatedAt string
+		if err := notificationRows.Scan(
+			&notification.ID, &notification.TaskID, &notification.Title, &notification.Place,
+			&scheduledAt, &notificationCreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan notification queue: %w", err)
+		}
+		if notification.ScheduledAt, err = time.Parse(time.RFC3339Nano, scheduledAt); err != nil {
+			return nil, fmt.Errorf("parse notification schedule: %w", err)
+		}
+		if notification.CreatedAt, err = time.Parse(time.RFC3339Nano, notificationCreatedAt); err != nil {
+			return nil, fmt.Errorf("parse notification creation time: %w", err)
+		}
+		notifications = append(notifications, notification)
+	}
+	if err := notificationRows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate notification queue: %w", err)
+	}
+	if err := notificationRows.Close(); err != nil {
+		return nil, fmt.Errorf("close notification queue: %w", err)
+	}
+	if err := transaction.Commit(); err != nil {
+		return nil, fmt.Errorf("commit notification queue refresh: %w", err)
+	}
+	return notifications, nil
+}
+
+func (store *Store) DismissNotification(ctx context.Context, id string, readAt time.Time) error {
+	result, err := store.database.ExecContext(ctx, `
+UPDATE notifications
+SET state = 'read', read_at_utc = ?
+WHERE id = ? AND state = 'unread'`, readAt.UTC().Format(time.RFC3339Nano), id)
+	if err != nil {
+		return fmt.Errorf("dismiss notification: %w", err)
+	}
+	changed, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("inspect notification dismissal: %w", err)
+	}
+	if changed == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 const taskQuery = `
