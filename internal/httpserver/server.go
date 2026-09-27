@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"dashboardify/internal/calendar"
 	"dashboardify/internal/capture"
 	webui "dashboardify/web"
 )
@@ -46,12 +47,13 @@ type ServerConfig struct {
 	IdleTimeout   time.Duration
 	Authenticator Authenticator
 	Captures      *capture.Service
+	Calendar      *calendar.Service
 }
 
 func New(cfg ServerConfig, logger *slog.Logger) *http.Server {
 	return &http.Server{
 		Addr:         cfg.Address,
-		Handler:      NewHandler(logger, cfg.Authenticator, cfg.Captures),
+		Handler:      NewHandlerWithCalendar(logger, cfg.Authenticator, cfg.Captures, cfg.Calendar),
 		ReadTimeout:  cfg.ReadTimeout,
 		WriteTimeout: cfg.WriteTimeout,
 		IdleTimeout:  cfg.IdleTimeout,
@@ -59,9 +61,14 @@ func New(cfg ServerConfig, logger *slog.Logger) *http.Server {
 }
 
 func NewHandler(logger *slog.Logger, authenticator Authenticator, captures *capture.Service) http.Handler {
+	return NewHandlerWithCalendar(logger, authenticator, captures, nil)
+}
+
+func NewHandlerWithCalendar(logger *slog.Logger, authenticator Authenticator, captures *capture.Service, calendars *calendar.Service) http.Handler {
 	application := http.NewServeMux()
 	application.HandleFunc("GET /{$}", shell)
 	application.HandleFunc("GET /inbox", shell)
+	application.HandleFunc("GET /calendar", shell)
 	application.Handle("GET /assets/", http.HandlerFunc(dashboardAsset))
 	if captures != nil {
 		api := captureAPI{service: captures, logger: logger}
@@ -71,10 +78,19 @@ func NewHandler(logger *slog.Logger, authenticator Authenticator, captures *capt
 		application.HandleFunc("GET /api/inbox", api.inbox)
 		application.HandleFunc("GET /api/captures/{id}", api.detail)
 		application.HandleFunc("PUT /api/captures/{id}/classification", api.classify)
-		application.HandleFunc("GET /api/today", api.today)
+		application.HandleFunc("GET /api/today", (todayAPI{captures: captures, calendar: calendars, logger: logger}).list)
 		application.HandleFunc("PUT /api/tasks/{id}", api.updateTask)
 		application.HandleFunc("GET /api/notifications", api.notifications)
 		application.HandleFunc("PATCH /api/notifications/{id}", api.updateNotification)
+	}
+	if calendars != nil {
+		api := calendarAPI{service: calendars, logger: logger}
+		application.HandleFunc("GET /api/calendar/status", api.status)
+		application.HandleFunc("POST /api/calendar/discover", api.discover)
+		application.HandleFunc("POST /api/calendar/sync", api.sync)
+		application.HandleFunc("GET /api/calendar/conflicts", api.conflicts)
+		application.HandleFunc("PUT /api/calendar/conflicts/{id}", api.resolveConflict)
+		application.HandleFunc("PUT /api/events/{id}", api.updateEvent)
 	}
 	var protected http.Handler = application
 	if authenticator != nil {
@@ -196,10 +212,22 @@ func routeName(path string) string {
 		return "inbox"
 	case "/api/today":
 		return "today"
+	case "/api/calendar/status":
+		return "calendar_status"
+	case "/api/calendar/discover":
+		return "calendar_discover"
+	case "/api/calendar/sync":
+		return "calendar_sync"
+	case "/api/calendar/conflicts":
+		return "calendar_conflicts"
 	default:
 		switch {
 		case strings.HasPrefix(path, "/api/tasks/"):
 			return "tasks"
+		case strings.HasPrefix(path, "/api/calendar/conflicts/"):
+			return "calendar_conflict"
+		case strings.HasPrefix(path, "/api/events/"):
+			return "events"
 		case strings.HasPrefix(path, "/api/notifications"):
 			return "notifications"
 		case strings.HasPrefix(path, "/api/captures/"):

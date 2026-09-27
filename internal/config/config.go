@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -25,6 +26,15 @@ type AccessConfig struct {
 	AllowedSubject string
 }
 
+type CalDAVConfig struct {
+	Enabled      bool
+	Endpoint     string
+	Username     string
+	Password     string
+	CalendarName string
+	SyncInterval time.Duration
+}
+
 type Config struct {
 	Environment     Environment
 	ListenAddress   string
@@ -32,6 +42,7 @@ type Config struct {
 	LogLevel        string
 	DatabasePath    string
 	Access          AccessConfig
+	CalDAV          CalDAVConfig
 	ReadTimeout     time.Duration
 	WriteTimeout    time.Duration
 	IdleTimeout     time.Duration
@@ -93,6 +104,33 @@ func Load() (Config, error) {
 		return Config{}, ErrAccessConfigRequired
 	}
 
+	cfg.CalDAV = CalDAVConfig{
+		Endpoint:     value("DASHBOARDIFY_CALDAV_ENDPOINT", "https://caldav.icloud.com/"),
+		Username:     value("DASHBOARDIFY_CALDAV_USERNAME", ""),
+		Password:     value("DASHBOARDIFY_CALDAV_PASSWORD", ""),
+		CalendarName: value("DASHBOARDIFY_CALDAV_CALENDAR_NAME", "Dashboardify"),
+	}
+	syncInterval, err := time.ParseDuration(value("DASHBOARDIFY_CALDAV_SYNC_INTERVAL", "5m"))
+	if err != nil || syncInterval < time.Minute {
+		return Config{}, errors.New("DASHBOARDIFY_CALDAV_SYNC_INTERVAL must be a duration of at least 1m")
+	}
+	cfg.CalDAV.SyncInterval = syncInterval
+	calendarCredentials := 0
+	for _, item := range []string{cfg.CalDAV.Username, cfg.CalDAV.Password} {
+		if item != "" {
+			calendarCredentials++
+		}
+	}
+	if calendarCredentials != 0 && calendarCredentials != 2 {
+		return Config{}, errors.New("CalDAV configuration must include both username and password")
+	}
+	cfg.CalDAV.Enabled = calendarCredentials == 2
+	if cfg.CalDAV.Enabled {
+		if err := validateCalDAVEndpoint(cfg.Environment, cfg.CalDAV.Endpoint); err != nil {
+			return Config{}, err
+		}
+	}
+
 	return cfg, nil
 }
 
@@ -116,4 +154,24 @@ func requireLoopback(address string) error {
 		return fmt.Errorf("DASHBOARDIFY_LISTEN_ADDR must use a loopback host during development, got %q", host)
 	}
 	return nil
+}
+
+func validateCalDAVEndpoint(environment Environment, endpoint string) error {
+	parsed, err := url.Parse(endpoint)
+	if err != nil || parsed.Host == "" || parsed.User != nil || parsed.RawQuery != "" || parsed.Fragment != "" {
+		return errors.New("DASHBOARDIFY_CALDAV_ENDPOINT must be an absolute URL without credentials, query, or fragment")
+	}
+	if parsed.Scheme == "https" {
+		return nil
+	}
+	host := parsed.Hostname()
+	if environment == Development && parsed.Scheme == "http" {
+		if ip := net.ParseIP(host); ip != nil && ip.IsLoopback() {
+			return nil
+		}
+		if strings.EqualFold(host, "localhost") {
+			return nil
+		}
+	}
+	return errors.New("DASHBOARDIFY_CALDAV_ENDPOINT must use HTTPS")
 }

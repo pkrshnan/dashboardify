@@ -12,22 +12,21 @@ This directory is the implementation brief for the first usable Dashboardify rel
 ## Decisions fixed for initial implementation
 
 1. Single-user and web-first; responsive PWA rather than native clients.
-2. Cloudflare Tunnel + Access as the first ingress, plus application-side token validation and sessions.
-3. Go modular monolith with server-rendered HTML and focused JavaScript enhancements.
+2. Cloudflare Tunnel + Access as the first ingress, plus application-side token validation.
+3. Go modular monolith with a React/TypeScript client embedded in the production binary.
 4. SQLite WAL on a durable local volume with encrypted off-host continuous backup.
 5. Raw capture commits before parsing; ambiguous input stays in Inbox.
 6. Deterministic parsing before optional cloud/local model classification.
-7. Quiet Ledger visual direction: Atkinson Hyperlegible Next at 400–600 weights, JetBrains Mono metadata, adaptive neutrals plus one forest green accent, chronological desktop content, and simplified iOS-inspired mobile grouping.
+7. Quiet Ledger visual direction with adaptive neutrals, one forest green accent, chronological desktop content, and simplified mobile grouping.
+8. Apple Calendar uses CalDAV with external app-specific credentials, a dedicated Dashboardify calendar, conditional writes, and explicit conflict resolution.
+9. The first Obsidian integration writes only a Dashboardify-owned folder in the local vault and requires no plugin.
 
 ## Decisions intentionally deferred
 
 - Hosting vendor beyond the requirement for a durable volume.
-- Exact OIDC provider connected to Cloudflare Access.
-- Standard Go templates versus `templ`; select once during Phase 0 and use one convention.
-- Calendar provider and any two-way synchronization.
 - Cloud versus local classifier provider.
 - Structured exercise/set tracking, pending actual fitness usage.
-- Offline writes, native wrappers, and multi-user sharing.
+- Two-way Obsidian editing, offline writes, native wrappers, and multi-user sharing.
 
 ## Phase entry rule
 
@@ -42,14 +41,14 @@ Before code starts for a phase, convert that phase’s numbered items into imple
 
 Do not decompose all late phases up front. Their shape should respond to actual usage and the invariants established by earlier phases.
 
-## Immediate next build slice
+## Current and next build slices
 
-Phase 0’s first vertical slice should end at an authenticated production URL, not a local scaffold:
+Phase 3 connects Apple Calendar end to end:
 
-1. Create the Go binary and redacted configuration/logging.
-2. Serve a minimal semantic shell and `/live` endpoint.
-3. Connect Cloudflare Access and validate its JWT inside the application.
-4. Bind the approved identity subject to the sole local user and session.
-5. Deploy through tunnel-only ingress and verify anonymous, wrong-user, expired-session, and approved-user behavior.
+1. Discover or create the dedicated iCloud calendar through CalDAV.
+2. Push native events and pull external projections on startup, on an interval, and on demand.
+3. Use ETags, content hashes, and tombstones to detect edits and deletions.
+4. Require an explicit user choice for concurrent changes.
+5. Expose connection health and sync controls in the Calendar screen.
 
-Then add SQLite capture persistence and restore proof before building feature UI.
+Phase 4 starts with safe Markdown notes, retrieval, and a one-way projection into the local Obsidian vault.

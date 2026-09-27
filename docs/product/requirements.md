@@ -96,7 +96,8 @@ The original capture remains linked to any record created from it. A classificat
 - Events can be created, moved, resized, and cancelled.
 - Recurrence supports common daily, weekly, monthly, weekday, and custom interval rules without inventing a separate recurrence format.
 - Notifications are opt-in per device. A missed browser notification remains visible in the app.
-- External calendar ingestion begins read-only through ICS subscriptions. Two-way sync is deferred until conflict behavior is designed and tested.
+- Apple Calendar synchronization uses CalDAV with an app-specific password supplied outside the repository. Native Dashboardify events synchronize both ways through a dedicated calendar; other Apple events remain read-only projections in Dashboardify.
+- Conditional writes, ETags, tombstones, and visible conflict choices prevent concurrent edits or deletions from silently overwriting either side.
 
 ### P1 — Habits, activity, and fitness
 
@@ -195,17 +196,29 @@ Smallest tasks first:
 
 **Exit:** the app can replace a daily paper task list and agenda without any external integration.
 
-### Phase 3 — Memory and retrieval
+### Phase 3 — Apple Calendar synchronization
+
+1. Add external CalDAV configuration, discovery, and durable provider metadata without storing credentials in the application database.
+2. Create or select a dedicated Dashboardify calendar in iCloud and push native events with conditional writes.
+3. Pull Apple events into Today and Calendar as read-only projections, including bounded recurrence expansion.
+4. Apply remote changes and deletions to linked native events when the local version is unchanged.
+5. Surface concurrent changes as explicit conflicts with “Use Apple” and “Keep Dashboardify” resolution.
+6. Show connection state, last success, last error, conflict count, and manual sync controls.
+
+**Exit:** native Dashboardify events appear in Apple Calendar and accept remote edits; Apple events appear in Dashboardify; neither concurrent changes nor deletions silently overwrite local work.
+
+### Phase 4 — Memory and retrieval
 
 1. Add notes with safe Markdown rendering.
 2. Add people, places, aliases, and fact history.
 3. Add record links and source-capture views.
 4. Implement SQLite full-text search and filters.
 5. Add archive, restore, export, and retention-based permanent deletion.
+6. Add a repeatable Dashboardify-owned Markdown projection into the local Obsidian vault.
 
-**Exit:** “What does Sam like?” and similar queries are answerable quickly, with provenance.
+**Exit:** “What does Sam like?” and similar queries are answerable quickly, with provenance; selected notes are available in Obsidian without a plugin.
 
-### Phase 4 — Habits and fitness
+### Phase 5 — Habits and fitness
 
 1. Add habit definitions, schedules, pause dates, and prompts.
 2. Add one-tap and natural-language activity logging.
@@ -214,16 +227,6 @@ Smallest tasks first:
 5. Observe real workout usage before deciding whether structured sets and exercises are warranted.
 
 **Exit:** “I gymmed today” is filed correctly and changes a useful weekly view.
-
-### Phase 5 — Calendar and import
-
-1. Build week and three-day calendar surfaces.
-2. Implement recurring events using RFC 5545 recurrence rules.
-3. Add read-only ICS subscriptions with durable sync state.
-4. Add repeatable JSON/CSV/ICS import and duplicate review.
-5. Design conflict semantics before enabling any two-way provider sync.
-
-**Exit:** external commitments can be viewed alongside native records without risking changes to the source calendar.
 
 ### Phase 6 — Assisted filing
 
@@ -238,13 +241,13 @@ Smallest tasks first:
 
 ### Phase 7 — Selective expansion
 
-Only usage evidence can promote these: richer fitness structure, automation rules, share-sheet/mobile wrapper, two-way calendar sync, household/multi-user support, or advanced analytics.
+Only usage evidence can promote these: richer calendar surfaces, JSON/CSV/ICS import, richer fitness structure, automation rules, share-sheet/mobile wrapper, two-way Obsidian editing, household/multi-user support, or advanced analytics.
 
 ## Explicit non-goals for the first release
 
 - Native macOS, Linux, iOS, or Android applications.
 - Multi-user sharing or social features.
-- Two-way calendar sync.
+- Additional writable calendar providers beyond the configured iCloud CalDAV account.
 - Autonomous model actions.
 - Medical interpretation, calorie coaching, or health diagnosis.
 - A generic plugin platform.

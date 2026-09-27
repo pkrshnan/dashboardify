@@ -70,6 +70,38 @@ func TestLoadRejectsPartialAccessConfig(t *testing.T) {
 	}
 }
 
+func TestLoadAcceptsCompleteCalDAVConfig(t *testing.T) {
+	clearConfigEnvironment(t)
+	t.Setenv("DASHBOARDIFY_CALDAV_ENDPOINT", "http://127.0.0.1:8181/")
+	t.Setenv("DASHBOARDIFY_CALDAV_USERNAME", "calendar-owner")
+	t.Setenv("DASHBOARDIFY_CALDAV_PASSWORD", "app-specific-password")
+	t.Setenv("DASHBOARDIFY_CALDAV_CALENDAR_NAME", "Dashboardify Test")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if !cfg.CalDAV.Enabled || cfg.CalDAV.CalendarName != "Dashboardify Test" {
+		t.Fatalf("CalDAV config = %#v", cfg.CalDAV)
+	}
+}
+
+func TestLoadRejectsPartialOrInsecureCalDAVConfig(t *testing.T) {
+	clearConfigEnvironment(t)
+	t.Setenv("DASHBOARDIFY_CALDAV_USERNAME", "calendar-owner")
+	if _, err := Load(); err == nil {
+		t.Fatal("Load() accepted CalDAV username without password")
+	}
+
+	clearConfigEnvironment(t)
+	t.Setenv("DASHBOARDIFY_CALDAV_ENDPOINT", "http://calendar.example.com/")
+	t.Setenv("DASHBOARDIFY_CALDAV_USERNAME", "calendar-owner")
+	t.Setenv("DASHBOARDIFY_CALDAV_PASSWORD", "app-specific-password")
+	if _, err := Load(); err == nil {
+		t.Fatal("Load() accepted non-loopback HTTP CalDAV endpoint")
+	}
+}
+
 func clearConfigEnvironment(t *testing.T) {
 	t.Helper()
 	for _, key := range []string{
@@ -81,6 +113,11 @@ func clearConfigEnvironment(t *testing.T) {
 		"DASHBOARDIFY_CF_ACCESS_TEAM_DOMAIN",
 		"DASHBOARDIFY_CF_ACCESS_AUD",
 		"DASHBOARDIFY_ALLOWED_SUBJECT",
+		"DASHBOARDIFY_CALDAV_ENDPOINT",
+		"DASHBOARDIFY_CALDAV_USERNAME",
+		"DASHBOARDIFY_CALDAV_PASSWORD",
+		"DASHBOARDIFY_CALDAV_CALENDAR_NAME",
+		"DASHBOARDIFY_CALDAV_SYNC_INTERVAL",
 	} {
 		t.Setenv(key, "")
 	}

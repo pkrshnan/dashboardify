@@ -194,7 +194,7 @@ Production UI stack:
 - Vite's hashed build output embedded in the Go binary; no Node runtime in production.
 - JSON capture endpoints protected by the same Cloudflare Access middleware, origin checks, and custom mutation header as the shell.
 
-Application code is split by resource, not by individual route: Go HTTP handlers use one file per top-level resource (`captures`, `inbox`, `tasks`, `today`, `notifications`), and the TypeScript API client mirrors those resources behind one shared transport/error helper. Project-authored screen and component styles are colocated CSS Modules; only tokens, reset/accessibility rules, and shadcn/Tailwind utilities remain global.
+Application code is split by resource, not by individual route: Go HTTP handlers use one file per top-level resource (`captures`, `inbox`, `tasks`, `today`, `calendar`, `notifications`), and the TypeScript API client mirrors those resources behind one shared transport/error helper. Project-authored screen and component styles are colocated CSS Modules; only tokens, reset/accessibility rules, and shadcn/Tailwind utilities remain global.
 
 Representative routes:
 
@@ -209,7 +209,12 @@ PUT   /api/captures/:id/classification
 PUT   /api/tasks/:id
 GET   /api/notifications
 PATCH /api/notifications/:id
-GET   /api/calendar?from=&to=
+GET   /api/calendar/status
+POST  /api/calendar/discover
+POST  /api/calendar/sync
+GET   /api/calendar/conflicts
+PUT   /api/calendar/conflicts/:event_id
+PUT   /api/events/:id
 GET   /api/search?q=&type=&from=&to=
 POST  /api/activities
 POST  /api/exports
@@ -265,29 +270,29 @@ Relevance combines FTS rank, exact title/name match, and a modest recency adjust
 
 ## Calendar and recurrence
 
-Store recurrence as RFC 5545 RRULE plus explicit timezone, start, duration, exclusions, and overrides. Expand occurrences only for the requested bounded window; never materialize an unbounded recurrence. External read-only records retain provider payload version/hash and map into a projection without pretending to be native writable events.
+Native events remain core Dashboardify records. Their UTC start/end, local all-day dates, timezone, status, and source capture are provider-independent. Apple Calendar objects are stored separately as raw RFC 5545 payloads with UID, remote path, ETag, payload hash, and tombstone state.
 
-Two-way synchronization is deferred because deletion, concurrent edits, recurrence exceptions, and provider-specific sequence rules need an explicit conflict contract.
+Recurring Apple events are expanded only for the requested bounded day. The source object is retained rather than materializing an unbounded recurrence. Provider records not linked to native events are read-only projections in Dashboardify.
+
+Linked native events use separate last-synchronized local and remote hashes. A remote-only change updates the native event; a local-only change uses an ETag-conditional CalDAV write. Concurrent edits and edit/delete races become visible conflicts. Neither side silently wins. Resolving a conflict explicitly writes the selected version and advances both synchronization hashes.
 
 ## Obsidian and Apple Calendar integration boundaries
 
 ### Obsidian
 
-Obsidian stores Markdown files in a user-controlled vault and does not expose a general hosted synchronization API. Dashboardify must not edit Obsidian's internal metadata, depend on an Obsidian plugin for ordinary capture, or assume the server can see a vault stored on a laptop.
+Obsidian stores Markdown files in a user-controlled vault and does not expose a general hosted synchronization API. Dashboardify must not edit Obsidian's internal metadata or depend on an Obsidian plugin for ordinary capture.
 
-The first integration is a repeatable, one-way Markdown projection of explicitly selected Dashboardify notes and captures into a dedicated `Dashboardify/` vault folder. Each file carries stable frontmatter (`dashboardify_id`, record type, source capture ID, and `updated_at`) so reruns update the same projection rather than creating duplicates. Delivery can target a server-mounted vault or a downloadable archive; Git, Syncthing, iCloud Drive, and Obsidian Sync remain user-chosen transport mechanisms rather than application dependencies. Dashboardify remains authoritative in this mode, and files outside the managed folder are never changed.
+The first integration is a repeatable, one-way Markdown projection of explicitly selected Dashboardify notes and captures into a dedicated `Dashboardify/` folder in the configured local vault. Each file carries stable frontmatter (`dashboardify_id`, record type, source capture ID, and `updated_at`) so reruns update the same projection rather than creating duplicates. Files outside the managed folder are never changed.
 
 Two-way note editing is deferred until the product defines rename detection, deletions/tombstones, Markdown/frontmatter preservation, concurrent-edit conflicts, and the authority of an Obsidian edit versus a Dashboardify edit. If that mode is added, mismatched content hashes produce a visible conflict; neither side silently wins.
 
 ### Apple Calendar
 
-The browser/server product cannot use EventKit, and requiring a native Apple client would violate the cross-platform constraint. Integration therefore uses calendar standards:
+The browser/server product cannot use EventKit, so the Apple integration uses CalDAV. An Apple ID and app-specific password are supplied only through the service environment; credentials are never returned by the API or stored in SQLite. The adapter discovers the principal and calendar home, then selects or creates a dedicated `Dashboardify` VEVENT calendar.
 
-1. Dashboardify can publish a private, revocable ICS subscription containing selected native events. Apple Calendar may subscribe to that feed, but refresh latency is controlled by Apple and the feed is read-only.
-2. Dashboardify can ingest configured HTTPS ICS feeds read-only. Imported occurrences remain external projections keyed by calendar UID plus recurrence ID and retain provider revision/hash metadata; they never masquerade as writable native events.
-3. Feed URLs containing bearer tokens are treated as secrets: high-entropy, scoped, revocable, excluded from logs, and rotatable without changing core event IDs.
+Synchronization runs at startup, on a bounded interval, and on explicit user request. Native Dashboardify events are written to the dedicated calendar with stable UIDs and `If-None-Match`/`If-Match` preconditions. The adapter reads remote ETags and payload hashes, applies uncontested changes and deletions, and stores conflicts for user resolution. Other events found in that calendar are retained as read-only external projections and appear in Today and Calendar.
 
-Editable iCloud Calendar synchronization requires a later CalDAV adapter with encrypted credentials, sync tokens, recurrence exception handling, deletion semantics, and an explicit conflict policy. Native Dashboardify events and provider projections remain separate until that contract is implemented. Dashboardify reminders remain authoritative because ICS subscription refresh cannot guarantee timely device alerts.
+The `calendar` package owns CalDAV protocol behavior, provider metadata, raw objects, links, tombstones, synchronization runs, and conflict state. Core event tables contain no Apple credentials or provider protocol fields. Dashboardify reminders remain authoritative; calendar synchronization does not replace notification delivery.
 
 ## Notifications
 

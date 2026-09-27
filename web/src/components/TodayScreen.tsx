@@ -30,6 +30,7 @@ interface TimelineItem {
   allDay: boolean;
   place?: string;
   task?: TaskRecord;
+  provider?: 'apple_calendar';
 }
 
 function addDays(date: string, days: number): string {
@@ -247,8 +248,8 @@ function TimelineRow({ item, timeZone, selectedDate, pending, onChange }: {
     <article className={styles.timelineRow}>
       <time>{item.at ? formatTime(item.at, timeZone) : 'All day'}</time>
       <span className={styles.recordMark} aria-hidden="true" />
-      <div><strong>{item.title}</strong><small>{[item.kind === 'task' ? 'Reminder' : 'Event', item.place].filter(Boolean).join(' · ')}</small></div>
-      <Badge variant="outline">{item.task?.status === 'completed' ? 'done' : item.kind}</Badge>
+      <div><strong>{item.title}</strong><small>{[item.kind === 'task' ? 'Reminder' : item.provider === 'apple_calendar' ? 'Apple Calendar' : 'Event', item.place].filter(Boolean).join(' · ')}</small></div>
+      <Badge variant="outline">{item.task?.status === 'completed' ? 'done' : item.provider === 'apple_calendar' ? 'Apple' : item.kind}</Badge>
       {item.task ? <TaskActions task={item.task} selectedDate={selectedDate} pending={pending} onEdit={() => setEditing(true)} onChange={onChange} /> : null}
     </article>
   );
@@ -316,7 +317,7 @@ export function TodayScreen({ captures, inboxCount, onCaptureCreated, onNavigate
 
   const timeline = useMemo<TimelineItem[]>(() => {
     if (!view) return [];
-    const events: TimelineItem[] = view.events.map((event: EventRecord) => ({ id: event.id, kind: 'event', title: event.title, at: event.start_at, allDay: Boolean(event.all_day), place: event.place }));
+    const events: TimelineItem[] = view.events.map((event: EventRecord) => ({ id: event.id, kind: 'event', title: event.title, at: event.start_at, allDay: Boolean(event.all_day), place: event.place, provider: event.provider }));
     const tasks: TimelineItem[] = view.tasks.filter((task) => task.due_at && dateKey(task.due_at, view.timezone) === view.date && task.deferred_until_date !== view.date).map((task) => ({ id: task.id, kind: 'task', title: task.title, at: task.due_at, allDay: false, place: task.place, task }));
     return [...events, ...tasks].sort((left, right) => {
       if (left.allDay !== right.allDay) return left.allDay ? -1 : 1;

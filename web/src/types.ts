@@ -89,14 +89,21 @@ export interface TaskRecord {
 
 export interface EventRecord {
   id: string;
-  capture_id: string;
+  capture_id?: string;
   title: string;
   start_at?: string;
+  end_at?: string;
   start_date?: string;
+  end_date?: string;
   all_day?: boolean;
   timezone: string;
   place?: string;
-  created_at: string;
+  status: 'confirmed' | 'tentative' | 'cancelled';
+  created_at?: string;
+  updated_at?: string;
+  provider?: 'apple_calendar';
+  read_only?: boolean;
+  remote_path?: string;
 }
 
 export interface TodayView {
@@ -110,6 +117,38 @@ export type TaskUpdate = Pick<
   TaskRecord,
   'title' | 'due_at' | 'due_date' | 'reminder_at' | 'all_day' | 'place' | 'status' | 'completed_at' | 'deferred_until_date'
 >;
+
+export type EventUpdate = Pick<
+  EventRecord,
+  'title' | 'start_at' | 'end_at' | 'start_date' | 'end_date' | 'all_day' | 'timezone' | 'place' | 'status'
+>;
+
+export interface CalendarStatus {
+  configured: boolean;
+  state: 'not_configured' | 'configured' | 'discovered' | 'syncing' | 'ready' | 'error';
+  calendar_name?: string;
+  calendar_path?: string;
+  last_attempt_at?: string;
+  last_success_at?: string;
+  last_error?: string;
+  conflict_count: number;
+}
+
+export interface CalendarConflict {
+  local_event_id: string;
+  remote_path: string;
+  kind: string;
+  title: string;
+  updated_at: string;
+}
+
+export interface CalendarSyncSummary {
+  pulled: number;
+  pushed: number;
+  deleted: number;
+  conflicts: number;
+  synced_at: string;
+}
 
 export interface NotificationRecord {
   id: string;

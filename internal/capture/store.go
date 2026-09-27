@@ -253,6 +253,13 @@ CREATE TABLE notifications (
 CREATE INDEX notifications_queue_idx ON notifications(state, scheduled_at_utc);
 `
 
+const schemaV6 = `
+ALTER TABLE events ADD COLUMN end_at_utc TEXT;
+ALTER TABLE events ADD COLUMN end_date_local TEXT NOT NULL DEFAULT '';
+ALTER TABLE events ADD COLUMN status TEXT NOT NULL DEFAULT 'confirmed' CHECK (status IN ('confirmed', 'tentative', 'cancelled'));
+ALTER TABLE events ADD COLUMN updated_at_utc TEXT NOT NULL DEFAULT '';
+`
+
 func OpenStore(path string) (*Store, error) {
 	if path == "" {
 		return nil, errors.New("database path is required")
@@ -302,7 +309,7 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 	if err := transaction.QueryRowContext(ctx, `SELECT COALESCE(MAX(version), 0) FROM schema_migrations`).Scan(&currentVersion); err != nil {
 		return fmt.Errorf("read schema version: %w", err)
 	}
-	for index, migration := range []string{schemaV1, schemaV2, schemaV3, schemaV4, schemaV5} {
+	for index, migration := range []string{schemaV1, schemaV2, schemaV3, schemaV4, schemaV5, schemaV6} {
 		version := index + 1
 		if version <= currentVersion {
 			continue
@@ -402,10 +409,13 @@ VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			proposal.ScheduledTimezone, proposal.Place, classifiedAt, classifiedAt)
 	case KindEvent:
 		_, err = transaction.ExecContext(ctx, `
-INSERT INTO events(id, capture_id, title, start_at_utc, start_date_local, all_day, timezone, place, created_at_utc)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+INSERT INTO events(
+    id, capture_id, title, start_at_utc, start_date_local, all_day,
+    timezone, place, created_at_utc, updated_at_utc
+)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			recordID.String(), captureID, proposal.Title, when, proposal.ScheduledDate, allDay,
-			proposal.ScheduledTimezone, proposal.Place, classifiedAt)
+			proposal.ScheduledTimezone, proposal.Place, classifiedAt, classifiedAt)
 	case KindNote:
 		_, err = transaction.ExecContext(ctx, `
 INSERT INTO notes(id, capture_id, body, created_at_utc)
@@ -596,11 +606,15 @@ type EventRecord struct {
 	CaptureID string     `json:"capture_id"`
 	Title     string     `json:"title"`
 	StartAt   *time.Time `json:"start_at,omitempty"`
+	EndAt     *time.Time `json:"end_at,omitempty"`
 	StartDate string     `json:"start_date,omitempty"`
+	EndDate   string     `json:"end_date,omitempty"`
 	AllDay    bool       `json:"all_day,omitempty"`
 	Timezone  string     `json:"timezone"`
 	Place     string     `json:"place,omitempty"`
+	Status    string     `json:"status"`
 	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at"`
 }
 
 type TaskUpdate struct {
@@ -654,8 +668,9 @@ LIMIT 300`, date, end.UTC().Format(time.RFC3339Nano), end.UTC().Format(time.RFC3
 	taskRows.Close()
 
 	eventRows, err := store.database.QueryContext(ctx, eventQuery+`
-WHERE (start_at_utc >= ? AND start_at_utc < ?)
-   OR (all_day = 1 AND start_date_local = ?)
+WHERE status != 'cancelled'
+  AND ((start_at_utc >= ? AND start_at_utc < ?)
+   OR (all_day = 1 AND start_date_local = ?))
 ORDER BY COALESCE(start_at_utc, ''), created_at_utc
 LIMIT 200`, start.UTC().Format(time.RFC3339Nano), end.UTC().Format(time.RFC3339Nano), date)
 	if err != nil {
@@ -839,8 +854,8 @@ SELECT id, capture_id, title, due_at_utc, due_date_local, reminder_at_utc,
 FROM tasks`
 
 const eventQuery = `
-SELECT id, capture_id, title, start_at_utc, start_date_local, all_day,
-       timezone, place, created_at_utc
+SELECT id, capture_id, title, start_at_utc, end_at_utc, start_date_local,
+       end_date_local, all_day, timezone, place, status, created_at_utc, updated_at_utc
 FROM events`
 
 func scanTask(row rowScanner) (TaskRecord, error) {
@@ -879,12 +894,13 @@ func scanTask(row rowScanner) (TaskRecord, error) {
 
 func scanEvent(row rowScanner) (EventRecord, error) {
 	var event EventRecord
-	var startAt sql.NullString
+	var startAt, endAt sql.NullString
 	var allDay int
-	var createdAt string
+	var createdAt, updatedAt string
 	if err := row.Scan(
-		&event.ID, &event.CaptureID, &event.Title, &startAt, &event.StartDate,
-		&allDay, &event.Timezone, &event.Place, &createdAt,
+		&event.ID, &event.CaptureID, &event.Title, &startAt, &endAt,
+		&event.StartDate, &event.EndDate, &allDay, &event.Timezone, &event.Place,
+		&event.Status, &createdAt, &updatedAt,
 	); err != nil {
 		return EventRecord{}, fmt.Errorf("scan event: %w", err)
 	}
@@ -893,8 +909,16 @@ func scanEvent(row rowScanner) (EventRecord, error) {
 	if event.StartAt, err = parseNullableTime(startAt); err != nil {
 		return EventRecord{}, fmt.Errorf("parse event start time: %w", err)
 	}
+	if event.EndAt, err = parseNullableTime(endAt); err != nil {
+		return EventRecord{}, fmt.Errorf("parse event end time: %w", err)
+	}
 	if event.CreatedAt, err = time.Parse(time.RFC3339Nano, createdAt); err != nil {
 		return EventRecord{}, fmt.Errorf("parse event creation time: %w", err)
+	}
+	if updatedAt == "" {
+		event.UpdatedAt = event.CreatedAt
+	} else if event.UpdatedAt, err = time.Parse(time.RFC3339Nano, updatedAt); err != nil {
+		return EventRecord{}, fmt.Errorf("parse event update time: %w", err)
 	}
 	return event, nil
 }

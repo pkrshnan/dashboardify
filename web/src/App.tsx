@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 
 import { listCaptures, listInbox } from '@/api';
+import { CalendarScreen } from '@/components/CalendarScreen';
 import { InboxScreen } from '@/components/InboxScreen';
 import { TodayScreen } from '@/components/TodayScreen';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -25,7 +26,7 @@ import type { CaptureRecord } from '@/types';
 const navigation = [
   { label: 'Today', icon: LayoutDashboard, path: '/' },
   { label: 'Inbox', icon: Inbox, path: '/inbox' },
-  { label: 'Calendar', icon: CalendarDays },
+  { label: 'Calendar', icon: CalendarDays, path: '/calendar' },
   { label: 'Notes', icon: NotebookText },
   { label: 'People', icon: Users },
   { label: 'Habits', icon: Activity },
@@ -92,7 +93,7 @@ function MobileNavigation({ route, onNavigate }: { route: string; onNavigate(pat
 export function App() {
   const [captures, setCaptures] = useState<CaptureRecord[]>([]);
   const [inboxCount, setInboxCount] = useState(0);
-  const [route, setRoute] = useState(window.location.pathname === '/inbox' ? '/inbox' : '/');
+  const [route, setRoute] = useState(['/inbox', '/calendar'].includes(window.location.pathname) ? window.location.pathname : '/');
 
   useEffect(() => {
     const controller = new AbortController();
@@ -106,7 +107,7 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    const updateRoute = () => setRoute(window.location.pathname === '/inbox' ? '/inbox' : '/');
+    const updateRoute = () => setRoute(['/inbox', '/calendar'].includes(window.location.pathname) ? window.location.pathname : '/');
     window.addEventListener('popstate', updateRoute);
     return () => window.removeEventListener('popstate', updateRoute);
   }, []);
@@ -132,6 +133,8 @@ export function App() {
           <div className={route === '/inbox' ? `${shellStyles.mainInner} ${shellStyles.mainInnerInbox}` : shellStyles.mainInner}>
             {route === '/inbox' ? (
               <InboxScreen onNavigate={navigate} onInboxCountChange={setInboxCount} />
+            ) : route === '/calendar' ? (
+              <CalendarScreen />
             ) : (
               <TodayScreen
                 captures={captures}
