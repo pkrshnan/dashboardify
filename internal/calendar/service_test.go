@@ -427,6 +427,28 @@ func TestFakeProviderRejectsStaleETag(t *testing.T) {
 	}
 }
 
+func TestDecodeNativeEventFormatsNamedMultilineLocation(t *testing.T) {
+	payload := "BEGIN:VCALENDAR\r\n" +
+		"VERSION:2.0\r\n" +
+		"PRODID:-//Calendar Test//EN\r\n" +
+		"BEGIN:VEVENT\r\n" +
+		"UID:location@example.com\r\n" +
+		"DTSTAMP:20260701T120000Z\r\n" +
+		"DTSTART:20260708T160000Z\r\n" +
+		"DTEND:20260708T163000Z\r\n" +
+		"SUMMARY:D&D\r\n" +
+		"LOCATION:Alchemy\\n200 Buchanan St\\, San Francisco\\, CA 94102\r\n" +
+		"END:VEVENT\r\n" +
+		"END:VCALENDAR\r\n"
+	event, err := decodeNativeEvent(payload, "location-event", time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if event.Place != "Alchemy · 200 Buchanan St, San Francisco, CA 94102" {
+		t.Fatalf("Place = %q", event.Place)
+	}
+}
+
 func TestAgendaExpandsRecurringAppleEventForSelectedDay(t *testing.T) {
 	payload := "BEGIN:VCALENDAR\r\n" +
 		"VERSION:2.0\r\n" +

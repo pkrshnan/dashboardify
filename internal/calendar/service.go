@@ -443,7 +443,7 @@ func (service *Service) Event(ctx context.Context, id string) (NativeEvent, erro
 
 func (service *Service) UpdateEvent(ctx context.Context, event NativeEvent) (NativeEvent, error) {
 	event.Title = strings.TrimSpace(event.Title)
-	event.Place = strings.TrimSpace(event.Place)
+	event.Place = normalizeLocation(event.Place)
 	if event.Title == "" {
 		return NativeEvent{}, errors.New("event title is required")
 	}
@@ -651,6 +651,7 @@ func decodeNativeEvent(payload, id string, createdAt time.Time) (NativeEvent, er
 	if err != nil {
 		return NativeEvent{}, err
 	}
+	place = normalizeLocation(place)
 	status, err := component.Status()
 	if err != nil {
 		return NativeEvent{}, err
@@ -729,6 +730,7 @@ func agendaEvents(object RemoteObject, rangeStart, rangeEnd time.Time, fallbackL
 		if err != nil {
 			return nil, err
 		}
+		place = normalizeLocation(place)
 		startProperty := component.Props.Get(ical.PropDateTimeStart)
 		if startProperty == nil {
 			continue
@@ -794,6 +796,17 @@ func agendaEvents(object RemoteObject, rangeStart, rangeEnd time.Time, fallbackL
 		}
 	}
 	return result, nil
+}
+
+func normalizeLocation(value string) string {
+	lines := strings.Split(strings.ReplaceAll(value, "\r\n", "\n"), "\n")
+	parts := make([]string, 0, len(lines))
+	for _, line := range lines {
+		if normalized := strings.Join(strings.Fields(line), " "); normalized != "" {
+			parts = append(parts, normalized)
+		}
+	}
+	return strings.Join(parts, " · ")
 }
 
 func hashNativeEvent(event NativeEvent) string {

@@ -73,6 +73,15 @@ function formatEventTime(event: EventRecord, timeZone: string): string {
   return new Intl.DateTimeFormat(undefined, { timeZone, hour: 'numeric', minute: '2-digit' }).format(new Date(event.start_at));
 }
 
+function formatPlace(value: string | undefined): string {
+  if (!value) return '';
+  return value
+    .split(/\r?\n/)
+    .map((line) => line.trim().replace(/\s+/g, ' '))
+    .filter(Boolean)
+    .join(' · ');
+}
+
 function eventUpdate(event: EventRecord, changes: Partial<EventUpdate> = {}): EventUpdate {
   return {
     title: event.title,
@@ -82,7 +91,7 @@ function eventUpdate(event: EventRecord, changes: Partial<EventUpdate> = {}): Ev
     end_date: event.end_date,
     all_day: event.all_day,
     timezone: event.timezone,
-    place: event.place,
+    place: formatPlace(event.place) || undefined,
     status: event.status,
     ...changes,
   };
@@ -100,7 +109,7 @@ function EventEditor({ event, timeZone, pending, onCancel, onSave }: {
   const [endAt, setEndAt] = useState(localDateTime(event.end_at, timeZone));
   const [startDate, setStartDate] = useState(event.start_date ?? '');
   const [endDate, setEndDate] = useState(event.end_date ?? '');
-  const [place, setPlace] = useState(event.place ?? '');
+  const [place, setPlace] = useState(formatPlace(event.place));
 
   return (
     <div className={styles.eventEditor}>
@@ -116,7 +125,7 @@ function EventEditor({ event, timeZone, pending, onCancel, onSave }: {
           <label><span>Ends · {timeZone}</span><Input type="datetime-local" value={endAt} onChange={(input) => setEndAt(input.currentTarget.value)} /></label>
         </>
       )}
-      <label><span>Place</span><Input value={place} onChange={(input) => setPlace(input.currentTarget.value)} /></label>
+      <label className={styles.placeField}><span>Place</span><Input value={place} onChange={(input) => setPlace(input.currentTarget.value)} /></label>
       <div className={styles.editorActions}>
         <Button size="sm" disabled={pending || !title.trim()} onClick={() => onSave(eventUpdate(event, {
           title: title.trim(),
@@ -147,7 +156,7 @@ function EventRow({ event, timeZone, pending, onUpdate }: {
     <article className={styles.eventRow}>
       <time>{formatEventTime(event, timeZone)}</time>
       <span className={event.provider === 'apple_calendar' ? `${styles.eventMark} ${styles.appleMark}` : styles.eventMark} aria-hidden="true" />
-      <div className={styles.eventDetails}><strong>{event.title}</strong><small>{[provider, event.place].filter(Boolean).join(' · ')}</small></div>
+      <div className={styles.eventDetails}><strong>{event.title}</strong><small>{[provider, formatPlace(event.place)].filter(Boolean).join(' · ')}</small></div>
       <Badge variant="outline">{provider}</Badge>
       {!event.read_only ? (
         <div className={styles.eventActions}>

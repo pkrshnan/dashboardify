@@ -237,6 +237,7 @@
 }
 
 .event-editor label:first-child,
+.place-field,
 .editor-actions {
   grid-column: 1 / -1;
 }
