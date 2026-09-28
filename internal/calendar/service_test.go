@@ -163,6 +163,135 @@ func TestSyncPushesNativeEventsAndPullsRemoteChanges(t *testing.T) {
 	}
 }
 
+func TestSyncUpdatesReclassifiedEventWithoutCreatingDuplicate(t *testing.T) {
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "dashboardify.db")
+	captureStore, err := capture.OpenStore(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer captureStore.Close()
+	createdAt := time.Date(2026, time.July, 7, 9, 0, 0, 0, time.UTC)
+	captured, _, err := captureStore.InsertRaw(ctx, "calendar-reclassification", "D&D tomorrow at 7pm", "America/Los_Angeles", createdAt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	start := time.Date(2026, time.July, 8, 2, 0, 0, 0, time.UTC)
+	proposal := capture.Proposal{
+		Kind: capture.KindEvent, Title: "D&D", ScheduledAt: &start, ScheduledTimezone: "America/Los_Angeles",
+	}
+	if err := captureStore.Resolve(ctx, captured.ID, proposal, "filed", createdAt); err != nil {
+		t.Fatal(err)
+	}
+	store, err := OpenStore(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	provider := &fakeProvider{
+		discovery: Discovery{
+			PrincipalPath: "/principal/", HomeSetPath: "/calendars/user/",
+			Selected: CalendarChoice{Path: "/calendars/user/dashboardify/", Name: "Dashboardify"},
+		},
+		objects: make(map[string]RemoteObject),
+	}
+	service, err := NewService(ctx, Config{
+		Enabled: true, Endpoint: "https://caldav.example/", Username: "user",
+		Password: "secret", CalendarName: "Dashboardify",
+	}, store, provider)
+	if err != nil {
+		t.Fatal(err)
+	}
+	service.now = func() time.Time { return createdAt }
+	if _, err := service.Sync(ctx); err != nil {
+		t.Fatal(err)
+	}
+	before, err := store.NativeEvents(ctx)
+	if err != nil || len(before) != 1 {
+		t.Fatalf("native events before update = %+v, %v", before, err)
+	}
+	updatedStart := start.Add(time.Hour)
+	proposal.Title = "D&D campaign"
+	proposal.ScheduledAt = &updatedStart
+	if err := captureStore.Resolve(ctx, captured.ID, proposal, "filed", createdAt.Add(time.Minute)); err != nil {
+		t.Fatal(err)
+	}
+	after, err := store.NativeEvents(ctx)
+	if err != nil || len(after) != 1 {
+		t.Fatalf("native events after update = %+v, %v", after, err)
+	}
+	if after[0].ID != before[0].ID {
+		t.Fatalf("event identity changed from %q to %q", before[0].ID, after[0].ID)
+	}
+	if _, err := service.Sync(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if len(provider.objects) != 1 {
+		t.Fatalf("remote object count = %d, want 1", len(provider.objects))
+	}
+	link, err := store.LinkByLocalID(ctx, after[0].ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	remote, err := decodeNativeEvent(provider.objects[link.RemotePath].Payload, after[0].ID, after[0].CreatedAt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if remote.Title != "D&D campaign" || remote.StartAt == nil || !remote.StartAt.Equal(updatedStart) {
+		t.Fatalf("remote event after update = %+v", remote)
+	}
+}
+
+func TestSyncDeletesOrphanedDashboardifyRemoteObject(t *testing.T) {
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "dashboardify.db")
+	captureStore, err := capture.OpenStore(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer captureStore.Close()
+	store, err := OpenStore(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	start := time.Date(2026, time.July, 8, 2, 0, 0, 0, time.UTC)
+	payload, err := encodeNativeEvent(NativeEvent{
+		ID: "deleted-event", Title: "D&D", StartAt: &start, Timezone: "UTC", Status: "confirmed",
+	}, start)
+	if err != nil {
+		t.Fatal(err)
+	}
+	objectPath := "/calendars/user/dashboardify/deleted-event.ics"
+	provider := &fakeProvider{
+		discovery: Discovery{
+			PrincipalPath: "/principal/", HomeSetPath: "/calendars/user/",
+			Selected: CalendarChoice{Path: "/calendars/user/dashboardify/", Name: "Dashboardify"},
+		},
+		objects: map[string]RemoteObject{
+			objectPath: {
+				Path: objectPath, ETag: "orphan-v1", UID: "deleted-event@dashboardify",
+				Payload: payload, PayloadHash: hashText(payload),
+			},
+		},
+	}
+	service, err := NewService(ctx, Config{
+		Enabled: true, Endpoint: "https://caldav.example/", Username: "user",
+		Password: "secret", CalendarName: "Dashboardify",
+	}, store, provider)
+	if err != nil {
+		t.Fatal(err)
+	}
+	service.now = func() time.Time { return start }
+	summary, err := service.Sync(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if summary.Deleted != 1 || len(provider.objects) != 0 {
+		t.Fatalf("sync = %+v, remote objects = %d; want one orphan deleted", summary, len(provider.objects))
+	}
+}
+
 func TestSyncDetectsConcurrentChangesAndResolvesLocal(t *testing.T) {
 	ctx, service, store, provider, event := seededSyncedService(t)
 	local := event

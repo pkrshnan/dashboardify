@@ -380,19 +380,33 @@ func (store *Store) Resolve(ctx context.Context, captureID string, proposal Prop
 	}
 	defer transaction.Rollback()
 
-	var exists int
-	if err := transaction.QueryRowContext(ctx, `SELECT 1 FROM captures WHERE id = ?`, captureID).Scan(&exists); err != nil {
+	var currentKind Kind
+	if err := transaction.QueryRowContext(ctx, `SELECT kind FROM captures WHERE id = ?`, captureID).Scan(&currentKind); err != nil {
 		return fmt.Errorf("read capture: %w", err)
 	}
+	existingEventID := ""
+	if currentKind == KindEvent && proposal.Kind == KindEvent {
+		err := transaction.QueryRowContext(ctx, `SELECT id FROM events WHERE capture_id = ?`, captureID).Scan(&existingEventID)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("read prior event classification: %w", err)
+		}
+	}
 	for _, table := range []string{"tasks", "events", "notes", "facts", "activities"} {
+		if table == "events" && existingEventID != "" {
+			continue
+		}
 		if _, err := transaction.ExecContext(ctx, `DELETE FROM `+table+` WHERE capture_id = ?`, captureID); err != nil {
 			return fmt.Errorf("remove prior %s classification: %w", table, err)
 		}
 	}
 
-	recordID, err := uuid.NewV7()
-	if err != nil {
-		return fmt.Errorf("generate record id: %w", err)
+	recordID := existingEventID
+	if recordID == "" {
+		generated, err := uuid.NewV7()
+		if err != nil {
+			return fmt.Errorf("generate record id: %w", err)
+		}
+		recordID = generated.String()
 	}
 	when := nullableTime(proposal.ScheduledAt)
 	allDay := boolInt(proposal.AllDay)
@@ -405,30 +419,41 @@ INSERT INTO tasks(
     timezone, place, created_at_utc, updated_at_utc
 )
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-			recordID.String(), captureID, proposal.Title, when, proposal.ScheduledDate, allDay,
+			recordID, captureID, proposal.Title, when, proposal.ScheduledDate, allDay,
 			proposal.ScheduledTimezone, proposal.Place, classifiedAt, classifiedAt)
 	case KindEvent:
-		_, err = transaction.ExecContext(ctx, `
+		if existingEventID != "" {
+			_, err = transaction.ExecContext(ctx, `
+UPDATE events
+SET title = ?, start_at_utc = ?, end_at_utc = NULL, start_date_local = ?,
+    end_date_local = '', all_day = ?, timezone = ?, place = ?,
+    status = 'confirmed', updated_at_utc = ?
+WHERE id = ?`,
+				proposal.Title, when, proposal.ScheduledDate, allDay,
+				proposal.ScheduledTimezone, proposal.Place, classifiedAt, existingEventID)
+		} else {
+			_, err = transaction.ExecContext(ctx, `
 INSERT INTO events(
     id, capture_id, title, start_at_utc, start_date_local, all_day,
     timezone, place, created_at_utc, updated_at_utc
 )
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-			recordID.String(), captureID, proposal.Title, when, proposal.ScheduledDate, allDay,
-			proposal.ScheduledTimezone, proposal.Place, classifiedAt, classifiedAt)
+				recordID, captureID, proposal.Title, when, proposal.ScheduledDate, allDay,
+				proposal.ScheduledTimezone, proposal.Place, classifiedAt, classifiedAt)
+		}
 	case KindNote:
 		_, err = transaction.ExecContext(ctx, `
 INSERT INTO notes(id, capture_id, body, created_at_utc)
-VALUES(?, ?, ?, ?)`, recordID.String(), captureID, proposal.Title, classifiedAt)
+VALUES(?, ?, ?, ?)`, recordID, captureID, proposal.Title, classifiedAt)
 	case KindFact:
 		_, err = transaction.ExecContext(ctx, `
 INSERT INTO facts(id, capture_id, subject, statement, created_at_utc)
-VALUES(?, ?, ?, ?, ?)`, recordID.String(), captureID, proposal.Subject, proposal.Title, classifiedAt)
+VALUES(?, ?, ?, ?, ?)`, recordID, captureID, proposal.Subject, proposal.Title, classifiedAt)
 	case KindActivity:
 		_, err = transaction.ExecContext(ctx, `
 INSERT INTO activities(id, capture_id, title, occurred_date_local, timezone, created_at_utc)
 VALUES(?, ?, ?, ?, ?, ?)`,
-			recordID.String(), captureID, proposal.Title, proposal.OccurredDate,
+			recordID, captureID, proposal.Title, proposal.OccurredDate,
 			proposal.ScheduledTimezone, classifiedAt)
 	default:
 		return fmt.Errorf("unsupported capture kind %q", proposal.Kind)

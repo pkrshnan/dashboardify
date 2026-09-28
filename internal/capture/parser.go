@@ -45,8 +45,8 @@ type Parser struct {
 }
 
 var (
-	reminderPrefixPattern = regexp.MustCompile(`(?i)^\s*(?:remind\s+me\s+(?:to|that)|remember\s+to|don'?t\s+forget\s+to|task\s*:|todo\s*:|reminder\s*:)\s*`)
-	eventPrefixPattern    = regexp.MustCompile(`(?i)^\s*(?:event\s*:|calendar\s*:|schedule(?:\s+an?\s+event)?\s+)\s*`)
+	reminderPrefixPattern = regexp.MustCompile(`(?i)^\s*(?:(?:please|(?:can|could|would)\s+you)\s+)*(?:remind\s*me(?:(?:\s*(?:to|that|about)\b)\s*|\s+)|remember(?:\s+(?:to|about))?\s+|don'?t\s+forget(?:\s+(?:to|about))?\s+|task\s*:|todo\s*:|reminder\s*:)\s*`)
+	eventPrefixPattern    = regexp.MustCompile(`(?i)^\s*(?:(?:please|(?:can|could|would)\s+you)\s+)*(?:event\s*:|calendar\s*:|schedule\b(?:\s+(?:an?\s+)?event)?(?:\s+(?:for|called))?|(?:add|create)\s+(?:an?\s+)?event(?:\s+(?:for|called))?\s*:?)\s*`)
 	notePrefixPattern     = regexp.MustCompile(`(?i)^\s*(?:note|idea)\s*:\s*`)
 	factPrefixPattern     = regexp.MustCompile(`(?i)^\s*fact\s*:\s*`)
 	activityPrefixPattern = regexp.MustCompile(`(?i)^\s*(?:activity|log)\s*:\s*`)

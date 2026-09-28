@@ -119,8 +119,12 @@ export function App() {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }
 
-  function captureCreated(record: CaptureRecord) {
+  function captureChanged(record: CaptureRecord) {
     setCaptures((items) => [record, ...items.filter((item) => item.id !== record.id)]);
+  }
+
+  function captureCreated(record: CaptureRecord) {
+    captureChanged(record);
     if (record.inbox_state === 'open') setInboxCount((count) => count + 1);
   }
 
@@ -132,7 +136,7 @@ export function App() {
         <main className={shellStyles.main} id="main">
           <div className={route === '/inbox' ? `${shellStyles.mainInner} ${shellStyles.mainInnerInbox}` : shellStyles.mainInner}>
             {route === '/inbox' ? (
-              <InboxScreen onNavigate={navigate} onInboxCountChange={setInboxCount} />
+              <InboxScreen onNavigate={navigate} onInboxCountChange={setInboxCount} onCaptureChange={captureChanged} />
             ) : route === '/calendar' ? (
               <CalendarScreen />
             ) : (

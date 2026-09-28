@@ -154,8 +154,7 @@ func (service *Service) pullObject(ctx context.Context, object RemoteObject, sum
 	}
 	link, err := service.store.LinkByRemotePath(ctx, object.Path)
 	if errors.Is(err, sql.ErrNoRows) {
-		summary.Pulled++
-		return nil
+		return service.reconcileUnlinkedManagedObject(ctx, object, summary, now)
 	}
 	if err != nil {
 		return fmt.Errorf("read remote event link: %w", err)
@@ -199,6 +198,83 @@ func (service *Service) pullObject(ctx context.Context, object RemoteObject, sum
 	}
 	summary.Pulled++
 	return nil
+}
+
+func (service *Service) reconcileUnlinkedManagedObject(
+	ctx context.Context,
+	object RemoteObject,
+	summary *SyncSummary,
+	now time.Time,
+) error {
+	localEventID, managed := managedEventID(object.UID)
+	if !managed {
+		summary.Pulled++
+		return nil
+	}
+	if existing, err := service.store.LinkByLocalID(ctx, localEventID); err == nil {
+		if existing.RemotePath != object.Path {
+			return service.deleteManagedOrphan(ctx, object, summary, now)
+		}
+	} else if !errors.Is(err, sql.ErrNoRows) {
+		return fmt.Errorf("read managed event link: %w", err)
+	}
+	local, err := service.store.NativeEventByID(ctx, localEventID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return service.deleteManagedOrphan(ctx, object, summary, now)
+	}
+	if err != nil {
+		return fmt.Errorf("read unlinked managed event: %w", err)
+	}
+	remote, err := decodeNativeEvent(object.Payload, local.ID, local.CreatedAt)
+	if err != nil {
+		return fmt.Errorf("decode unlinked managed event %q: %w", object.Path, err)
+	}
+	localHash := hashNativeEvent(local)
+	remoteLocalHash := hashNativeEvent(remote)
+	link := EventLink{
+		LocalEventID:   local.ID,
+		RemotePath:     object.Path,
+		RemoteUID:      object.UID,
+		ETag:           object.ETag,
+		LastRemoteHash: object.PayloadHash,
+	}
+	if localHash == remoteLocalHash {
+		link.LastLocalHash = localHash
+	} else {
+		link.ConflictState = "unlinked_managed_event_changed"
+		link.PendingRemotePayload = object.Payload
+		summary.Conflicts++
+	}
+	if err := service.store.SaveLink(ctx, link, now); err != nil {
+		return err
+	}
+	summary.Pulled++
+	return nil
+}
+
+func (service *Service) deleteManagedOrphan(
+	ctx context.Context,
+	object RemoteObject,
+	summary *SyncSummary,
+	now time.Time,
+) error {
+	if err := service.provider.Delete(ctx, object.Path, object.ETag); err != nil {
+		return fmt.Errorf("delete orphaned Dashboardify calendar object: %w", err)
+	}
+	if err := service.store.MarkRemoteDeleted(ctx, object.Path, now); err != nil {
+		return err
+	}
+	summary.Deleted++
+	return nil
+}
+
+func managedEventID(uid string) (string, bool) {
+	const suffix = "@dashboardify"
+	if !strings.HasSuffix(uid, suffix) {
+		return "", false
+	}
+	id := strings.TrimSuffix(uid, suffix)
+	return id, id != ""
 }
 
 func (service *Service) pullDeletion(ctx context.Context, object RemoteObject, summary *SyncSummary) error {

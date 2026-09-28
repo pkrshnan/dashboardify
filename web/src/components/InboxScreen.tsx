@@ -125,9 +125,11 @@ function ReviewCard({ record, onFiled }: { record: CaptureRecord; onFiled(record
 export function InboxScreen({
   onNavigate,
   onInboxCountChange,
+  onCaptureChange,
 }: {
   onNavigate(path: string): void;
   onInboxCountChange(count: number): void;
+  onCaptureChange(record: CaptureRecord): void;
 }) {
   const [openCaptures, setOpenCaptures] = useState<CaptureRecord[]>([]);
   const [recent, setRecent] = useState<CaptureRecord[]>([]);
@@ -152,6 +154,7 @@ export function InboxScreen({
   function replace(filed: CaptureRecord) {
     setOpenCaptures((items) => items.filter((item) => item.id !== filed.id));
     setRecent((items) => [filed, ...items.filter((item) => item.id !== filed.id)]);
+    onCaptureChange(filed);
   }
 
   return (

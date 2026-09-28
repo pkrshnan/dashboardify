@@ -126,6 +126,39 @@ func TestParserAcceptsEquivalentNaturalLanguageForms(t *testing.T) {
 	}
 }
 
+func TestParserStripsNaturalLanguageCommandPreambles(t *testing.T) {
+	location := mustLocation(t, "America/Los_Angeles")
+	parser := NewParser(location)
+	now := time.Date(2026, time.January, 5, 10, 0, 0, 0, location)
+	tests := []struct {
+		text  string
+		kind  Kind
+		title string
+	}{
+		{"Remind me about D&D tomorrow at 7pm", KindReminder, "D&D"},
+		{"Remind meabout D&D tomorrow at 7pm", KindReminder, "D&D"},
+		{"Could you please remind me to call Mom tomorrow at 7pm", KindReminder, "call Mom"},
+		{"Please schedule an event for D&D tomorrow at 7pm", KindEvent, "D&D"},
+		{"Create an event called design review tomorrow at 7pm", KindEvent, "design review"},
+	}
+	for _, test := range tests {
+		t.Run(test.text, func(t *testing.T) {
+			proposal := parser.Parse(test.text, now)
+			if proposal.Kind != test.kind || proposal.Title != test.title {
+				t.Fatalf("proposal = %#v, want kind %q title %q", proposal, test.kind, test.title)
+			}
+			if proposal.ScheduledAt == nil {
+				t.Fatal("ScheduledAt = nil, want tomorrow at 7 PM")
+			}
+			scheduled := proposal.ScheduledAt.In(location)
+			if scheduled.Year() != 2026 || scheduled.Month() != time.January || scheduled.Day() != 6 ||
+				scheduled.Hour() != 19 || scheduled.Minute() != 0 {
+				t.Fatalf("ScheduledAt = %v, want 2026-01-06 19:00 local", scheduled)
+			}
+		})
+	}
+}
+
 func TestParserRecognizesNaturalFactAndActivityExamples(t *testing.T) {
 	location := mustLocation(t, "America/Los_Angeles")
 	parser := NewParser(location)
