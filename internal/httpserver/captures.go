@@ -24,6 +24,7 @@ type classificationRequest struct {
 	Title             string       `json:"title"`
 	Subject           string       `json:"subject,omitempty"`
 	ScheduledAt       string       `json:"scheduled_at,omitempty"`
+	ScheduledEndAt    string       `json:"scheduled_end_at,omitempty"`
 	ScheduledDate     string       `json:"scheduled_date,omitempty"`
 	OccurredDate      string       `json:"occurred_date,omitempty"`
 	ScheduledTimezone string       `json:"scheduled_timezone,omitempty"`
@@ -120,6 +121,14 @@ func (api captureAPI) classify(response http.ResponseWriter, request *http.Reque
 		}
 		proposal.ScheduledAt = &value
 	}
+	if input.ScheduledEndAt != "" {
+		value, err := time.Parse(time.RFC3339, input.ScheduledEndAt)
+		if err != nil {
+			writeJSON(response, http.StatusUnprocessableEntity, map[string]string{"error": "scheduled_end_at must use RFC 3339"})
+			return
+		}
+		proposal.ScheduledEndAt = &value
+	}
 	record, err := api.service.File(request.Context(), request.PathValue("id"), proposal)
 	if err != nil {
 		writeCaptureError(response, err)
@@ -136,7 +145,8 @@ func writeCaptureError(response http.ResponseWriter, err error) {
 		errors.Is(err, capture.ErrIdempotencyInvalid),
 		errors.Is(err, capture.ErrKindInvalid),
 		errors.Is(err, capture.ErrSubjectRequired),
-		errors.Is(err, capture.ErrDateInvalid):
+		errors.Is(err, capture.ErrDateInvalid),
+		errors.Is(err, capture.ErrTimeRangeInvalid):
 		writeJSON(response, http.StatusUnprocessableEntity, map[string]string{"error": err.Error()})
 	case errors.Is(err, capture.ErrIdempotencyConflict):
 		writeJSON(response, http.StatusConflict, map[string]string{"error": "capture request conflicts with an earlier submission"})

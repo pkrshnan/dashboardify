@@ -27,6 +27,7 @@ function ReviewCard({ record, onFiled }: { record: CaptureRecord; onFiled(record
   const [title, setTitle] = useState(record.title || record.raw_text);
   const [subject, setSubject] = useState(record.subject ?? '');
   const [scheduledAt, setScheduledAt] = useState(localDateTime(record.scheduled_at));
+  const [scheduledEndAt, setScheduledEndAt] = useState(localDateTime(record.scheduled_end_at));
   const [scheduledDate, setScheduledDate] = useState(record.scheduled_date ?? '');
   const [occurredDate, setOccurredDate] = useState(record.occurred_date ?? '');
   const [place, setPlace] = useState(record.place ?? '');
@@ -48,6 +49,7 @@ function ReviewCard({ record, onFiled }: { record: CaptureRecord; onFiled(record
     if (kind === 'fact') classification.subject = subject;
     if ((kind === 'event' || kind === 'reminder') && scheduledAt) {
       classification.scheduled_at = new Date(scheduledAt).toISOString();
+      if (kind === 'event' && scheduledEndAt) classification.scheduled_end_at = new Date(scheduledEndAt).toISOString();
     } else if ((kind === 'event' || kind === 'reminder') && scheduledDate) {
       classification.scheduled_date = scheduledDate;
       classification.all_day = true;
@@ -93,8 +95,9 @@ function ReviewCard({ record, onFiled }: { record: CaptureRecord; onFiled(record
             <label className={styles.reviewTitle}><span>{kind === 'note' ? 'Body' : kind === 'fact' ? 'Statement' : 'Title'}</span><Input value={title} onChange={(event) => setTitle(event.currentTarget.value)} /></label>
             {kind === 'event' || kind === 'reminder' ? (
               <>
-                <label><span>Date and time</span><Input type="datetime-local" value={scheduledAt} onChange={(event) => { setScheduledAt(event.currentTarget.value); if (event.currentTarget.value) setScheduledDate(''); }} /></label>
-                <label><span>All-day date</span><Input type="date" value={scheduledDate} onChange={(event) => { setScheduledDate(event.currentTarget.value); if (event.currentTarget.value) setScheduledAt(''); }} /></label>
+                <label><span>{kind === 'event' ? 'Starts' : 'Date and time'}</span><Input type="datetime-local" value={scheduledAt} onChange={(event) => { setScheduledAt(event.currentTarget.value); if (event.currentTarget.value) setScheduledDate(''); }} /></label>
+                {kind === 'event' ? <label><span>Ends</span><Input type="datetime-local" value={scheduledEndAt} onChange={(event) => { setScheduledEndAt(event.currentTarget.value); if (event.currentTarget.value) setScheduledDate(''); }} /></label> : null}
+                <label><span>All-day date</span><Input type="date" value={scheduledDate} onChange={(event) => { setScheduledDate(event.currentTarget.value); if (event.currentTarget.value) { setScheduledAt(''); setScheduledEndAt(''); } }} /></label>
                 <label><span>Place</span><Input value={place} onChange={(event) => setPlace(event.currentTarget.value)} /></label>
               </>
             ) : null}

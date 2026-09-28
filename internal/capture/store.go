@@ -22,6 +22,7 @@ type Record struct {
 	Title             string     `json:"title"`
 	Subject           string     `json:"subject,omitempty"`
 	ScheduledAt       *time.Time `json:"scheduled_at,omitempty"`
+	ScheduledEndAt    *time.Time `json:"scheduled_end_at,omitempty"`
 	ScheduledDate     string     `json:"scheduled_date,omitempty"`
 	OccurredDate      string     `json:"occurred_date,omitempty"`
 	ScheduledTimezone string     `json:"scheduled_timezone,omitempty"`
@@ -260,6 +261,11 @@ ALTER TABLE events ADD COLUMN status TEXT NOT NULL DEFAULT 'confirmed' CHECK (st
 ALTER TABLE events ADD COLUMN updated_at_utc TEXT NOT NULL DEFAULT '';
 `
 
+const schemaV7 = `
+ALTER TABLE captures ADD COLUMN scheduled_end_at_utc TEXT;
+ALTER TABLE capture_classifications ADD COLUMN scheduled_end_at_utc TEXT;
+`
+
 func OpenStore(path string) (*Store, error) {
 	if path == "" {
 		return nil, errors.New("database path is required")
@@ -309,7 +315,7 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 	if err := transaction.QueryRowContext(ctx, `SELECT COALESCE(MAX(version), 0) FROM schema_migrations`).Scan(&currentVersion); err != nil {
 		return fmt.Errorf("read schema version: %w", err)
 	}
-	for index, migration := range []string{schemaV1, schemaV2, schemaV3, schemaV4, schemaV5, schemaV6} {
+	for index, migration := range []string{schemaV1, schemaV2, schemaV3, schemaV4, schemaV5, schemaV6, schemaV7} {
 		version := index + 1
 		if version <= currentVersion {
 			continue
@@ -409,6 +415,7 @@ func (store *Store) Resolve(ctx context.Context, captureID string, proposal Prop
 		recordID = generated.String()
 	}
 	when := nullableTime(proposal.ScheduledAt)
+	endWhen := nullableTime(proposal.ScheduledEndAt)
 	allDay := boolInt(proposal.AllDay)
 	classifiedAt := resolvedAt.UTC().Format(time.RFC3339Nano)
 	switch proposal.Kind {
@@ -425,20 +432,20 @@ VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		if existingEventID != "" {
 			_, err = transaction.ExecContext(ctx, `
 UPDATE events
-SET title = ?, start_at_utc = ?, end_at_utc = NULL, start_date_local = ?,
+SET title = ?, start_at_utc = ?, end_at_utc = ?, start_date_local = ?,
     end_date_local = '', all_day = ?, timezone = ?, place = ?,
     status = 'confirmed', updated_at_utc = ?
 WHERE id = ?`,
-				proposal.Title, when, proposal.ScheduledDate, allDay,
+				proposal.Title, when, endWhen, proposal.ScheduledDate, allDay,
 				proposal.ScheduledTimezone, proposal.Place, classifiedAt, existingEventID)
 		} else {
 			_, err = transaction.ExecContext(ctx, `
 INSERT INTO events(
-    id, capture_id, title, start_at_utc, start_date_local, all_day,
+    id, capture_id, title, start_at_utc, end_at_utc, start_date_local, all_day,
     timezone, place, created_at_utc, updated_at_utc
 )
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-				recordID, captureID, proposal.Title, when, proposal.ScheduledDate, allDay,
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+				recordID, captureID, proposal.Title, when, endWhen, proposal.ScheduledDate, allDay,
 				proposal.ScheduledTimezone, proposal.Place, classifiedAt, classifiedAt)
 		}
 	case KindNote:
@@ -465,10 +472,10 @@ VALUES(?, ?, ?, ?, ?, ?)`,
 	if _, err := transaction.ExecContext(ctx, `
 UPDATE captures
 SET resolution_state = 'resolved', inbox_state = ?, kind = ?, title = ?, subject = ?,
-    scheduled_at_utc = ?, scheduled_date_local = ?, occurred_date_local = ?,
+    scheduled_at_utc = ?, scheduled_end_at_utc = ?, scheduled_date_local = ?, occurred_date_local = ?,
     all_day = ?, place = ?, updated_at_utc = ?
 WHERE id = ?`,
-		inboxState, proposal.Kind, proposal.Title, proposal.Subject, when,
+		inboxState, proposal.Kind, proposal.Title, proposal.Subject, when, endWhen,
 		proposal.ScheduledDate, proposal.OccurredDate, allDay, proposal.Place,
 		classifiedAt, captureID,
 	); err != nil {
@@ -481,12 +488,12 @@ WHERE id = ?`,
 	}
 	if _, err := transaction.ExecContext(ctx, `
 INSERT INTO capture_classifications(
-    id, capture_id, kind, title, subject, scheduled_at_utc, scheduled_date_local,
-    occurred_date_local, all_day, place, classified_at_utc
+    id, capture_id, kind, title, subject, scheduled_at_utc, scheduled_end_at_utc,
+    scheduled_date_local, occurred_date_local, all_day, place, classified_at_utc
 )
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		historyID.String(), captureID, proposal.Kind, proposal.Title, proposal.Subject,
-		when, proposal.ScheduledDate, proposal.OccurredDate, allDay, proposal.Place,
+		when, endWhen, proposal.ScheduledDate, proposal.OccurredDate, allDay, proposal.Place,
 		classifiedAt,
 	); err != nil {
 		return fmt.Errorf("record classification history: %w", err)
@@ -550,21 +557,22 @@ func (store *Store) ListInbox(ctx context.Context, limit int) ([]Record, error) 
 }
 
 type Classification struct {
-	Kind          Kind       `json:"kind"`
-	Title         string     `json:"title"`
-	Subject       string     `json:"subject,omitempty"`
-	ScheduledAt   *time.Time `json:"scheduled_at,omitempty"`
-	ScheduledDate string     `json:"scheduled_date,omitempty"`
-	OccurredDate  string     `json:"occurred_date,omitempty"`
-	AllDay        bool       `json:"all_day,omitempty"`
-	Place         string     `json:"place,omitempty"`
-	ClassifiedAt  time.Time  `json:"classified_at"`
+	Kind           Kind       `json:"kind"`
+	Title          string     `json:"title"`
+	Subject        string     `json:"subject,omitempty"`
+	ScheduledAt    *time.Time `json:"scheduled_at,omitempty"`
+	ScheduledEndAt *time.Time `json:"scheduled_end_at,omitempty"`
+	ScheduledDate  string     `json:"scheduled_date,omitempty"`
+	OccurredDate   string     `json:"occurred_date,omitempty"`
+	AllDay         bool       `json:"all_day,omitempty"`
+	Place          string     `json:"place,omitempty"`
+	ClassifiedAt   time.Time  `json:"classified_at"`
 }
 
 func (store *Store) ClassificationHistory(ctx context.Context, captureID string) ([]Classification, error) {
 	rows, err := store.database.QueryContext(ctx, `
-SELECT kind, title, subject, scheduled_at_utc, scheduled_date_local,
-       occurred_date_local, all_day, place, classified_at_utc
+SELECT kind, title, subject, scheduled_at_utc, scheduled_end_at_utc,
+       scheduled_date_local, occurred_date_local, all_day, place, classified_at_utc
 FROM capture_classifications
 WHERE capture_id = ?
 ORDER BY classified_at_utc DESC, id DESC`, captureID)
@@ -578,10 +586,11 @@ ORDER BY classified_at_utc DESC, id DESC`, captureID)
 		var item Classification
 		var kind string
 		var scheduled sql.NullString
+		var scheduledEnd sql.NullString
 		var allDay int
 		var classified string
 		if err := rows.Scan(
-			&kind, &item.Title, &item.Subject, &scheduled, &item.ScheduledDate,
+			&kind, &item.Title, &item.Subject, &scheduled, &scheduledEnd, &item.ScheduledDate,
 			&item.OccurredDate, &allDay, &item.Place, &classified,
 		); err != nil {
 			return nil, fmt.Errorf("scan capture classification history: %w", err)
@@ -594,6 +603,13 @@ ORDER BY classified_at_utc DESC, id DESC`, captureID)
 				return nil, fmt.Errorf("parse classification schedule: %w", err)
 			}
 			item.ScheduledAt = &value
+		}
+		if scheduledEnd.Valid {
+			value, err := time.Parse(time.RFC3339Nano, scheduledEnd.String)
+			if err != nil {
+				return nil, fmt.Errorf("parse classification end schedule: %w", err)
+			}
+			item.ScheduledEndAt = &value
 		}
 		value, err := time.Parse(time.RFC3339Nano, classified)
 		if err != nil {
@@ -960,9 +976,9 @@ func parseNullableTime(value sql.NullString) (*time.Time, error) {
 }
 
 const recordQuery = `
-SELECT id, raw_text, kind, title, subject, scheduled_at_utc, scheduled_date_local,
-       occurred_date_local, interpreted_timezone, all_day, place, resolution_state,
-       inbox_state, captured_at_utc, idempotency_key
+SELECT id, raw_text, kind, title, subject, scheduled_at_utc, scheduled_end_at_utc,
+       scheduled_date_local, occurred_date_local, interpreted_timezone, all_day, place,
+       resolution_state, inbox_state, captured_at_utc, idempotency_key
 FROM captures`
 
 type rowScanner interface {
@@ -979,6 +995,7 @@ func scanRecord(row rowScanner) (Record, string, error) {
 	var record Record
 	var kind string
 	var scheduled sql.NullString
+	var scheduledEnd sql.NullString
 	var allDay int
 	var captured string
 	var idempotencyKey string
@@ -989,6 +1006,7 @@ func scanRecord(row rowScanner) (Record, string, error) {
 		&record.Title,
 		&record.Subject,
 		&scheduled,
+		&scheduledEnd,
 		&record.ScheduledDate,
 		&record.OccurredDate,
 		&record.ScheduledTimezone,
@@ -1014,6 +1032,13 @@ func scanRecord(row rowScanner) (Record, string, error) {
 			return Record{}, "", fmt.Errorf("parse scheduled timestamp: %w", err)
 		}
 		record.ScheduledAt = &scheduledAt
+	}
+	if scheduledEnd.Valid {
+		scheduledEndAt, err := time.Parse(time.RFC3339Nano, scheduledEnd.String)
+		if err != nil {
+			return Record{}, "", fmt.Errorf("parse scheduled end timestamp: %w", err)
+		}
+		record.ScheduledEndAt = &scheduledEndAt
 	}
 	return record, record.RawText, nil
 }

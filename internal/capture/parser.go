@@ -30,6 +30,7 @@ type Proposal struct {
 	Title             string      `json:"title"`
 	Subject           string      `json:"subject,omitempty"`
 	ScheduledAt       *time.Time  `json:"scheduled_at,omitempty"`
+	ScheduledEndAt    *time.Time  `json:"scheduled_end_at,omitempty"`
 	ScheduledDate     string      `json:"scheduled_date,omitempty"`
 	OccurredDate      string      `json:"occurred_date,omitempty"`
 	ScheduledTimezone string      `json:"scheduled_timezone,omitempty"`
@@ -53,6 +54,7 @@ var (
 	factPattern           = regexp.MustCompile(`^\s*([[:upper:]][[:alpha:]'-]*(?:\s+[[:upper:]][[:alpha:]'-]*)?)\s+((?:likes|loves|prefers|dislikes|hates)\b.+?)\s*$`)
 	activityPattern       = regexp.MustCompile(`(?i)^\s*i\s+(gymmed|worked\s+out|ran|walked|cycled|swam)(?:\s+(today|yesterday))?\s*$`)
 	timePattern           = regexp.MustCompile(`(?i)(?:\bat\s+|@\s*)([0-9]{1,2})(?::([0-9]{2}))?(?:\s*(a\.?m\.?|p\.?m\.?))?`)
+	timeRangePattern      = regexp.MustCompile(`(?i)\bfrom\s+([0-9]{1,2})(?::([0-9]{2}))?\s*(a\.?m\.?|p\.?m\.?)?\s+(?:to|-)\s+([0-9]{1,2})(?::([0-9]{2}))?\s*(a\.?m\.?|p\.?m\.?)?`)
 	datePattern           = regexp.MustCompile(`(?i)(?:\b(?:on|this|next)\s+)?\b(today|tonight|tomorrow|yesterday|mon(?:day)?|tue(?:sday)?|wed(?:nesday|ensday)?|thu(?:rsday)?|fri(?:day)?|sat(?:urday)?|sun(?:day)?)\b`)
 	placePrefixPattern    = regexp.MustCompile(`(?i)\b(?:at|in)\s+`)
 )
@@ -118,8 +120,17 @@ func (parser *Parser) Parse(text string, now time.Time) Proposal {
 	}
 
 	timeMatch := timePattern.FindStringSubmatchIndex(text)
+	timeRangeMatch := timeRangePattern.FindStringSubmatchIndex(text)
+	temporalMatch := timeMatch
 	timeIsValid := false
-	if timeMatch != nil {
+	if timeRangeMatch != nil {
+		_, _, startValid := parseClockGroup(text, timeRangeMatch, 1)
+		_, _, endValid := parseClockGroup(text, timeRangeMatch, 4)
+		timeIsValid = startValid && endValid
+		if timeIsValid {
+			temporalMatch = timeRangeMatch
+		}
+	} else if timeMatch != nil {
 		_, _, timeIsValid = parseClock(text, timeMatch)
 	}
 	if proposal.Kind == KindNote && !explicitIntent && timeIsValid {
@@ -136,9 +147,20 @@ func (parser *Parser) Parse(text string, now time.Time) Proposal {
 		return proposal
 	}
 
-	var hour, minute int
+	var hour, minute, endHour, endMinute int
 	hasTime := false
-	if proposal.Kind != KindActivity && timeMatch != nil {
+	hasEndTime := false
+	if proposal.Kind != KindActivity && timeRangeMatch != nil {
+		parsedHour, parsedMinute, startOK := parseClockGroup(text, timeRangeMatch, 1)
+		parsedEndHour, parsedEndMinute, endOK := parseClockGroup(text, timeRangeMatch, 4)
+		if startOK && endOK {
+			hour, minute, endHour, endMinute = parsedHour, parsedMinute, parsedEndHour, parsedEndMinute
+			hasTime, hasEndTime = true, true
+			span := [2]int{timeRangeMatch[0], timeRangeMatch[1]}
+			removed = append(removed, span)
+			proposal.Highlights = append(proposal.Highlights, highlight(text, span[:], "time", "Time range"))
+		}
+	} else if proposal.Kind != KindActivity && timeMatch != nil {
 		if parsedHour, parsedMinute, ok := parseClock(text, timeMatch); ok {
 			hour, minute, hasTime = parsedHour, parsedMinute, true
 			span := [2]int{timeMatch[0], timeMatch[1]}
@@ -156,7 +178,7 @@ func (parser *Parser) Parse(text string, now time.Time) Proposal {
 	}
 
 	if proposal.Kind != KindActivity {
-		if place, span, ok := findPlace(text, timeMatch); ok {
+		if place, span, ok := findPlace(text, temporalMatch); ok {
 			proposal.Place = place
 			removed = append(removed, span)
 			proposal.Highlights = append(proposal.Highlights, highlight(text, span[:], "place", "Place"))
@@ -180,6 +202,15 @@ func (parser *Parser) Parse(text string, now time.Time) Proposal {
 		proposal.ScheduledAt = &utcScheduled
 		proposal.ScheduledTimezone = parser.location.String()
 		proposal.DisplayWhen = localScheduled.Format("Mon, Jan 2 · 3:04 PM")
+		if hasEndTime {
+			localEnd := time.Date(day.Year(), day.Month(), day.Day(), endHour, endMinute, 0, 0, parser.location)
+			if !localEnd.After(localScheduled) {
+				localEnd = localEnd.AddDate(0, 0, 1)
+			}
+			utcEnd := localEnd.UTC()
+			proposal.ScheduledEndAt = &utcEnd
+			proposal.DisplayWhen = localScheduled.Format("Mon, Jan 2 · 3:04 PM") + "–" + localEnd.Format("3:04 PM")
+		}
 	} else if dateName != "" {
 		day := resolveAllDay(dateName, localNow)
 		proposal.ScheduledDate = day.Format(time.DateOnly)
@@ -225,20 +256,27 @@ func activityTitle(verb string) string {
 }
 
 func parseClock(text string, match []int) (int, int, bool) {
-	hour, ok := parseDecimal(text[match[2]:match[3]])
+	return parseClockGroup(text, match, 1)
+}
+
+func parseClockGroup(text string, match []int, group int) (int, int, bool) {
+	hourIndex := group * 2
+	minuteIndex := hourIndex + 2
+	meridiemIndex := hourIndex + 4
+	hour, ok := parseDecimal(text[match[hourIndex]:match[hourIndex+1]])
 	if !ok {
 		return 0, 0, false
 	}
 	minute := 0
-	if match[4] >= 0 {
-		minute, ok = parseDecimal(text[match[4]:match[5]])
+	if match[minuteIndex] >= 0 {
+		minute, ok = parseDecimal(text[match[minuteIndex]:match[minuteIndex+1]])
 		if !ok || minute > 59 {
 			return 0, 0, false
 		}
 	}
 	meridiem := ""
-	if match[6] >= 0 {
-		meridiem = strings.NewReplacer(".", "", " ", "").Replace(strings.ToLower(text[match[6]:match[7]]))
+	if match[meridiemIndex] >= 0 {
+		meridiem = strings.NewReplacer(".", "", " ", "").Replace(strings.ToLower(text[match[meridiemIndex]:match[meridiemIndex+1]]))
 	}
 	if meridiem != "" {
 		if hour < 1 || hour > 12 {

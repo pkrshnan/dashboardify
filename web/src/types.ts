@@ -12,6 +12,7 @@ export interface CaptureProposal {
   title: string;
   subject?: string;
   scheduled_at?: string;
+  scheduled_end_at?: string;
   scheduled_date?: string;
   scheduled_timezone?: string;
   occurred_date?: string;
@@ -29,6 +30,7 @@ export interface CaptureRecord {
   title: string;
   subject?: string;
   scheduled_at?: string;
+  scheduled_end_at?: string;
   scheduled_date?: string;
   scheduled_timezone?: string;
   all_day?: boolean;
@@ -45,6 +47,7 @@ export interface CaptureClassification {
   title: string;
   subject?: string;
   scheduled_at?: string;
+  scheduled_end_at?: string;
   scheduled_date?: string;
   occurred_date?: string;
   all_day?: boolean;
@@ -62,6 +65,7 @@ export interface ClassificationInput {
   title: string;
   subject?: string;
   scheduled_at?: string;
+  scheduled_end_at?: string;
   scheduled_date?: string;
   occurred_date?: string;
   scheduled_timezone?: string;

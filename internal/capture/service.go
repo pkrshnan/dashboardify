@@ -23,6 +23,7 @@ var (
 	ErrKindInvalid          = errors.New("capture kind is invalid")
 	ErrSubjectRequired      = errors.New("a fact requires a subject")
 	ErrDateInvalid          = errors.New("capture date must use YYYY-MM-DD")
+	ErrTimeRangeInvalid     = errors.New("event end time must be after its start time")
 	ErrTaskNotFound         = errors.New("task was not found")
 	ErrTaskStatusInvalid    = errors.New("task status is invalid")
 	ErrNotificationNotFound = errors.New("notification was not found")
@@ -140,6 +141,11 @@ func (service *Service) File(ctx context.Context, id string, proposal Proposal) 
 	default:
 		return Record{}, ErrKindInvalid
 	}
+	if proposal.Kind != KindEvent {
+		proposal.ScheduledEndAt = nil
+	} else if proposal.ScheduledEndAt != nil && (proposal.ScheduledAt == nil || !proposal.ScheduledEndAt.After(*proposal.ScheduledAt)) {
+		return Record{}, ErrTimeRangeInvalid
+	}
 	if proposal.ScheduledDate != "" {
 		if _, err := time.ParseInLocation(time.DateOnly, proposal.ScheduledDate, service.parser.location); err != nil {
 			return Record{}, ErrDateInvalid
@@ -256,7 +262,16 @@ func (service *Service) DismissNotification(ctx context.Context, id string) erro
 
 func (service *Service) decorate(record Record) Record {
 	if record.ScheduledAt != nil {
-		record.DisplayWhen = record.ScheduledAt.In(service.parser.location).Format("Mon, Jan 2 · 3:04 PM")
+		localStart := record.ScheduledAt.In(service.parser.location)
+		record.DisplayWhen = localStart.Format("Mon, Jan 2 · 3:04 PM")
+		if record.ScheduledEndAt != nil {
+			localEnd := record.ScheduledEndAt.In(service.parser.location)
+			if localStart.Year() == localEnd.Year() && localStart.YearDay() == localEnd.YearDay() {
+				record.DisplayWhen += "–" + localEnd.Format("3:04 PM")
+			} else {
+				record.DisplayWhen += "–" + localEnd.Format("Mon, Jan 2 · 3:04 PM")
+			}
+		}
 	} else if record.AllDay && record.ScheduledDate != "" {
 		if day, err := time.ParseInLocation(time.DateOnly, record.ScheduledDate, service.parser.location); err == nil {
 			record.DisplayWhen = day.Format("Mon, Jan 2") + " · all day"

@@ -147,8 +147,8 @@ VALUES(
 	if err := store.database.QueryRow(`SELECT MAX(version) FROM schema_migrations`).Scan(&version); err != nil {
 		t.Fatalf("read migrated schema version: %v", err)
 	}
-	if version != 6 {
-		t.Fatalf("schema version = %d, want 6", version)
+	if version != 7 {
+		t.Fatalf("schema version = %d, want 7", version)
 	}
 }
 
@@ -277,6 +277,46 @@ func TestTodayTaskLifecyclePersistsCompletionAndDeferral(t *testing.T) {
 	}
 	if len(nextDay.Tasks) != 1 || nextDay.Tasks[0].ID != allDay.ID {
 		t.Fatalf("Today(next day) tasks = %#v", nextDay.Tasks)
+	}
+}
+
+func TestEventTimeRangePersistsThroughCaptureClassification(t *testing.T) {
+	store, err := OpenStore(filepath.Join(t.TempDir(), "dashboardify.db"))
+	if err != nil {
+		t.Fatalf("OpenStore() error = %v", err)
+	}
+	defer store.Close()
+	location := mustLocation(t, "America/Los_Angeles")
+	now := time.Date(2026, time.September, 28, 10, 0, 0, 0, location)
+	service := NewService(store, NewParser(location), func() time.Time { return now })
+
+	record, err := service.Create(
+		context.Background(),
+		"ranged-event",
+		"Visit Sergiu from 6pm to 8pm on Wednesday at aparment",
+	)
+	if err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+	if record.ScheduledEndAt == nil || record.DisplayWhen != "Wed, Sep 30 · 6:00 PM–8:00 PM" {
+		t.Fatalf("capture record = %#v", record)
+	}
+
+	view, err := service.Today(context.Background(), "2026-09-30")
+	if err != nil {
+		t.Fatalf("Today() error = %v", err)
+	}
+	if len(view.Events) != 1 || view.Events[0].EndAt == nil ||
+		view.Events[0].Place != "aparment" || view.Events[0].Title != "Visit Sergiu" {
+		t.Fatalf("events = %#v", view.Events)
+	}
+
+	detail, err := service.Detail(context.Background(), record.ID)
+	if err != nil {
+		t.Fatalf("Detail() error = %v", err)
+	}
+	if len(detail.History) != 1 || detail.History[0].ScheduledEndAt == nil {
+		t.Fatalf("classification history = %#v", detail.History)
 	}
 }
 
