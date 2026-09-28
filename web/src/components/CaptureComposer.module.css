@@ -81,7 +81,7 @@
 .capture-token {
   border-radius: 0.2rem;
   color: inherit;
-  padding: 0 0.08rem;
+  padding: 0;
 }
 
 .capture-token-intent {

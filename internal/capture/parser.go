@@ -54,7 +54,7 @@ var (
 	activityPattern       = regexp.MustCompile(`(?i)^\s*i\s+(gymmed|worked\s+out|ran|walked|cycled|swam)(?:\s+(today|yesterday))?\s*$`)
 	timePattern           = regexp.MustCompile(`(?i)(?:\bat\s+|@\s*)([0-9]{1,2})(?::([0-9]{2}))?(?:\s*(a\.?m\.?|p\.?m\.?))?`)
 	datePattern           = regexp.MustCompile(`(?i)(?:\b(?:on|this|next)\s+)?\b(today|tonight|tomorrow|yesterday|mon(?:day)?|tue(?:sday)?|wed(?:nesday|ensday)?|thu(?:rsday)?|fri(?:day)?|sat(?:urday)?|sun(?:day)?)\b`)
-	placePattern          = regexp.MustCompile(`(?i)\b(?:at|in)\s+([[:alpha:]][[:alnum:] .'-]{0,59})\s*$`)
+	placePrefixPattern    = regexp.MustCompile(`(?i)\b(?:at|in)\s+`)
 )
 
 func NewParser(location *time.Location) *Parser {
@@ -156,9 +156,8 @@ func (parser *Parser) Parse(text string, now time.Time) Proposal {
 	}
 
 	if proposal.Kind != KindActivity {
-		if match := placePattern.FindStringSubmatchIndex(text); match != nil {
-			proposal.Place = strings.TrimSpace(text[match[2]:match[3]])
-			span := [2]int{match[0], match[1]}
+		if place, span, ok := findPlace(text, timeMatch); ok {
+			proposal.Place = place
 			removed = append(removed, span)
 			proposal.Highlights = append(proposal.Highlights, highlight(text, span[:], "place", "Place"))
 		}
@@ -193,6 +192,19 @@ func (parser *Parser) Parse(text string, now time.Time) Proposal {
 		return proposal.Highlights[i].Start < proposal.Highlights[j].Start
 	})
 	return proposal
+}
+
+func findPlace(text string, timeMatch []int) (string, [2]int, bool) {
+	for _, match := range placePrefixPattern.FindAllStringIndex(text, -1) {
+		if timeMatch != nil && match[0] < timeMatch[1] {
+			continue
+		}
+		place := strings.TrimSpace(text[match[1]:])
+		if place != "" {
+			return place, [2]int{match[0], len(text)}, true
+		}
+	}
+	return "", [2]int{}, false
 }
 
 func activityTitle(verb string) string {

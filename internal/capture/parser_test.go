@@ -31,6 +31,25 @@ func TestParserRecognizesReminderTimeDateAndPlace(t *testing.T) {
 	assertHighlightKinds(t, proposal.Highlights, "intent", "time", "date", "place")
 }
 
+func TestParserRecognizesStreetAddressAfterEventTime(t *testing.T) {
+	location := mustLocation(t, "America/Los_Angeles")
+	parser := NewParser(location)
+	now := time.Date(2026, time.September, 28, 10, 0, 0, 0, location)
+
+	proposal := parser.Parse("Visit Sergiu's house at 6pm on Wednesday at 500 Folsom St", now)
+
+	if proposal.Kind != KindEvent {
+		t.Fatalf("Kind = %q, want %q", proposal.Kind, KindEvent)
+	}
+	if proposal.Title != "Visit Sergiu's house" {
+		t.Fatalf("Title = %q, want Visit Sergiu's house", proposal.Title)
+	}
+	if proposal.Place != "500 Folsom St" {
+		t.Fatalf("Place = %q, want 500 Folsom St", proposal.Place)
+	}
+	assertHighlightKinds(t, proposal.Highlights, "time", "date", "place")
+}
+
 func TestParserRecognizesAllDayReminder(t *testing.T) {
 	location := mustLocation(t, "America/Los_Angeles")
 	parser := NewParser(location)
