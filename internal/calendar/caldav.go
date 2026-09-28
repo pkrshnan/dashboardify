@@ -3,6 +3,7 @@ package calendar
 import (
 	"bytes"
 	"context"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
@@ -83,35 +84,101 @@ func (provider *CalDAVProvider) Discover(ctx context.Context, calendarName strin
 }
 
 func (provider *CalDAVProvider) List(ctx context.Context, calendarPath string) ([]RemoteObject, error) {
-	objects, err := provider.client.QueryCalendar(ctx, calendarPath, &caldav.CalendarQuery{
-		CompRequest: caldav.CalendarCompRequest{Name: ical.CompCalendar, AllProps: true, AllComps: true},
-		CompFilter: caldav.CompFilter{
-			Name:  ical.CompCalendar,
-			Comps: []caldav.CompFilter{{Name: ical.CompEvent}},
-		},
-	})
+	const query = `<?xml version="1.0" encoding="utf-8"?>
+<C:calendar-query xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">
+  <D:prop><D:getetag/><C:calendar-data/></D:prop>
+  <C:filter>
+    <C:comp-filter name="VCALENDAR"><C:comp-filter name="VEVENT"/></C:comp-filter>
+  </C:filter>
+</C:calendar-query>`
+	request, err := http.NewRequestWithContext(ctx, "REPORT", provider.resolve(calendarPath), strings.NewReader(query))
+	if err != nil {
+		return nil, fmt.Errorf("build CalDAV calendar query: %w", err)
+	}
+	request.Header.Set("Content-Type", "application/xml; charset=utf-8")
+	request.Header.Set("Depth", "1")
+	response, err := provider.httpClient.Do(request)
 	if err != nil {
 		return nil, fmt.Errorf("query CalDAV calendar: %w", err)
 	}
-	remote := make([]RemoteObject, 0, len(objects))
-	for _, object := range objects {
-		payload, err := encodeCalendar(object.Data)
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusMultiStatus {
+		return nil, responseError("query CalDAV calendar", response)
+	}
+	var result calendarQueryMultiStatus
+	if err := xml.NewDecoder(response.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("decode CalDAV calendar query: %w", err)
+	}
+	remote := make([]RemoteObject, 0, len(result.Responses))
+	for _, item := range result.Responses {
+		objectPath, err := davPath(item.Href)
 		if err != nil {
-			return nil, fmt.Errorf("encode CalDAV object %q: %w", object.Path, err)
+			return nil, fmt.Errorf("parse CalDAV object path: %w", err)
 		}
-		_, uid, err := caldav.ValidateCalendarObject(object.Data)
+		if sameDAVCollection(objectPath, calendarPath) {
+			continue
+		}
+		etag, payload := item.successfulCalendarData()
+		if payload == "" {
+			return nil, fmt.Errorf("CalDAV object %q did not return calendar data", objectPath)
+		}
+		objectCalendar, err := ical.NewDecoder(strings.NewReader(payload)).Decode()
 		if err != nil {
-			return nil, fmt.Errorf("validate CalDAV object %q: %w", object.Path, err)
+			return nil, fmt.Errorf("decode CalDAV object %q: %w", objectPath, err)
+		}
+		_, uid, err := caldav.ValidateCalendarObject(objectCalendar)
+		if err != nil {
+			return nil, fmt.Errorf("validate CalDAV object %q: %w", objectPath, err)
 		}
 		remote = append(remote, RemoteObject{
-			Path:        object.Path,
-			ETag:        object.ETag,
+			Path:        objectPath,
+			ETag:        etag,
 			UID:         uid,
 			Payload:     payload,
 			PayloadHash: hashText(payload),
 		})
 	}
 	return remote, nil
+}
+
+type calendarQueryMultiStatus struct {
+	Responses []calendarQueryResponse `xml:"response"`
+}
+
+type calendarQueryResponse struct {
+	Href      string                  `xml:"href"`
+	PropStats []calendarQueryPropStat `xml:"propstat"`
+}
+
+type calendarQueryPropStat struct {
+	Status string             `xml:"status"`
+	Prop   calendarQueryProps `xml:"prop"`
+}
+
+type calendarQueryProps struct {
+	ETag         string `xml:"getetag"`
+	CalendarData string `xml:"calendar-data"`
+}
+
+func (response calendarQueryResponse) successfulCalendarData() (string, string) {
+	for _, propStat := range response.PropStats {
+		if strings.Contains(propStat.Status, " 200 ") && strings.TrimSpace(propStat.Prop.CalendarData) != "" {
+			return strings.TrimSpace(propStat.Prop.ETag), propStat.Prop.CalendarData
+		}
+	}
+	return "", ""
+}
+
+func davPath(href string) (string, error) {
+	parsed, err := url.Parse(href)
+	if err != nil {
+		return "", err
+	}
+	return parsed.Path, nil
+}
+
+func sameDAVCollection(left, right string) bool {
+	return strings.TrimRight(left, "/") == strings.TrimRight(right, "/")
 }
 
 func (provider *CalDAVProvider) Put(ctx context.Context, objectPath, payload, etag string) (RemoteObject, error) {
