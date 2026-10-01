@@ -147,8 +147,8 @@ VALUES(
 	if err := store.database.QueryRow(`SELECT MAX(version) FROM schema_migrations`).Scan(&version); err != nil {
 		t.Fatalf("read migrated schema version: %v", err)
 	}
-	if version != 7 {
-		t.Fatalf("schema version = %d, want 7", version)
+	if version != 8 {
+		t.Fatalf("schema version = %d, want 8", version)
 	}
 }
 
@@ -317,6 +317,69 @@ func TestEventTimeRangePersistsThroughCaptureClassification(t *testing.T) {
 	}
 	if len(detail.History) != 1 || detail.History[0].ScheduledEndAt == nil {
 		t.Fatalf("classification history = %#v", detail.History)
+	}
+}
+
+func TestMultiDayAndRecurringEventsAppearOnApplicableDays(t *testing.T) {
+	store, err := OpenStore(filepath.Join(t.TempDir(), "dashboardify.db"))
+	if err != nil {
+		t.Fatalf("OpenStore() error = %v", err)
+	}
+	defer store.Close()
+	location := mustLocation(t, "America/Los_Angeles")
+	now := time.Date(2026, time.September, 30, 10, 0, 0, 0, location)
+	service := NewService(store, NewParser(location), func() time.Time { return now })
+
+	vacation, err := service.Create(context.Background(), "vacation-range", "Vacation October 10 through October 17")
+	if err != nil {
+		t.Fatalf("create vacation: %v", err)
+	}
+	if vacation.ScheduledDate != "2026-10-10" || vacation.ScheduledEndDate != "2026-10-18" {
+		t.Fatalf("vacation = %#v", vacation)
+	}
+	recurring, err := service.Create(context.Background(), "weekly-event", "D&D every Wednesday from 7pm to 10pm")
+	if err != nil {
+		t.Fatalf("create recurring event: %v", err)
+	}
+	if recurring.RecurrenceRule != "FREQ=WEEKLY;BYDAY=WE" {
+		t.Fatalf("recurring = %#v", recurring)
+	}
+
+	vacationDay, err := service.Today(context.Background(), "2026-10-15")
+	if err != nil || len(vacationDay.Events) != 1 || vacationDay.Events[0].Title != "Vacation" {
+		t.Fatalf("vacation day = %#v, %v", vacationDay.Events, err)
+	}
+	nextWednesday, err := service.Today(context.Background(), "2026-10-07")
+	if err != nil || len(nextWednesday.Events) != 1 {
+		t.Fatalf("next Wednesday = %#v, %v", nextWednesday.Events, err)
+	}
+	event := nextWednesday.Events[0]
+	if event.Title != "D&D" || event.StartAt == nil || event.EndAt == nil ||
+		event.StartAt.In(location).Hour() != 19 || event.EndAt.In(location).Hour() != 22 {
+		t.Fatalf("recurring occurrence = %#v", event)
+	}
+}
+
+func TestRelativeReminderSchedulesItsNotification(t *testing.T) {
+	store, err := OpenStore(filepath.Join(t.TempDir(), "dashboardify.db"))
+	if err != nil {
+		t.Fatalf("OpenStore() error = %v", err)
+	}
+	defer store.Close()
+	location := mustLocation(t, "America/Los_Angeles")
+	now := time.Date(2026, time.September, 30, 10, 0, 0, 0, location)
+	service := NewService(store, NewParser(location), func() time.Time { return now })
+
+	if _, err := service.Create(context.Background(), "relative-reminder", "Remind me in 20 minutes to check the oven"); err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+	view, err := service.Today(context.Background(), "2026-09-30")
+	if err != nil || len(view.Tasks) != 1 {
+		t.Fatalf("Today() = %#v, %v", view.Tasks, err)
+	}
+	task := view.Tasks[0]
+	if task.DueAt == nil || task.ReminderAt == nil || !task.ReminderAt.Equal(*task.DueAt) {
+		t.Fatalf("relative reminder task = %#v", task)
 	}
 }
 

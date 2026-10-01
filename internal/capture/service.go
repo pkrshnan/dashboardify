@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"github.com/teambition/rrule-go"
 )
 
 const (
@@ -24,6 +26,8 @@ var (
 	ErrSubjectRequired      = errors.New("a fact requires a subject")
 	ErrDateInvalid          = errors.New("capture date must use YYYY-MM-DD")
 	ErrTimeRangeInvalid     = errors.New("event end time must be after its start time")
+	ErrDateRangeInvalid     = errors.New("event end date must be after its start date")
+	ErrRecurrenceInvalid    = errors.New("event recurrence rule is invalid")
 	ErrTaskNotFound         = errors.New("task was not found")
 	ErrTaskStatusInvalid    = errors.New("task status is invalid")
 	ErrNotificationNotFound = errors.New("notification was not found")
@@ -143,12 +147,29 @@ func (service *Service) File(ctx context.Context, id string, proposal Proposal) 
 	}
 	if proposal.Kind != KindEvent {
 		proposal.ScheduledEndAt = nil
+		proposal.ScheduledEndDate = ""
+		proposal.RecurrenceRule = ""
 	} else if proposal.ScheduledEndAt != nil && (proposal.ScheduledAt == nil || !proposal.ScheduledEndAt.After(*proposal.ScheduledAt)) {
 		return Record{}, ErrTimeRangeInvalid
 	}
 	if proposal.ScheduledDate != "" {
 		if _, err := time.ParseInLocation(time.DateOnly, proposal.ScheduledDate, service.parser.location); err != nil {
 			return Record{}, ErrDateInvalid
+		}
+	}
+	if proposal.ScheduledEndDate != "" {
+		end, err := time.ParseInLocation(time.DateOnly, proposal.ScheduledEndDate, service.parser.location)
+		if err != nil {
+			return Record{}, ErrDateInvalid
+		}
+		start, err := time.ParseInLocation(time.DateOnly, proposal.ScheduledDate, service.parser.location)
+		if err != nil || !end.After(start) {
+			return Record{}, ErrDateRangeInvalid
+		}
+	}
+	if proposal.RecurrenceRule != "" {
+		if _, err := rrule.StrToRRule(proposal.RecurrenceRule); err != nil {
+			return Record{}, ErrRecurrenceInvalid
 		}
 	}
 	if proposal.OccurredDate != "" {
@@ -272,9 +293,17 @@ func (service *Service) decorate(record Record) Record {
 				record.DisplayWhen += "–" + localEnd.Format("Mon, Jan 2 · 3:04 PM")
 			}
 		}
+		if record.RecurrenceRule != "" {
+			record.DisplayWhen += " · weekly"
+		}
 	} else if record.AllDay && record.ScheduledDate != "" {
 		if day, err := time.ParseInLocation(time.DateOnly, record.ScheduledDate, service.parser.location); err == nil {
 			record.DisplayWhen = day.Format("Mon, Jan 2") + " · all day"
+			if record.ScheduledEndDate != "" {
+				if end, endErr := time.ParseInLocation(time.DateOnly, record.ScheduledEndDate, service.parser.location); endErr == nil {
+					record.DisplayWhen = day.Format("Mon, Jan 2") + "–" + end.AddDate(0, 0, -1).Format("Mon, Jan 2")
+				}
+			}
 		}
 	} else if record.Kind == KindActivity && record.OccurredDate != "" {
 		if day, err := time.ParseInLocation(time.DateOnly, record.OccurredDate, service.parser.location); err == nil {

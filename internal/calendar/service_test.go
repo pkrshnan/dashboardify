@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -446,6 +447,30 @@ func TestDecodeNativeEventFormatsNamedMultilineLocation(t *testing.T) {
 	}
 	if event.Place != "Alchemy · 200 Buchanan St, San Francisco, CA 94102" {
 		t.Fatalf("Place = %q", event.Place)
+	}
+}
+
+func TestNativeEventRoundTripPreservesRecurrence(t *testing.T) {
+	start := time.Date(2026, time.September, 30, 19, 0, 0, 0, time.FixedZone("PDT", -7*60*60))
+	end := start.Add(3 * time.Hour)
+	event := NativeEvent{
+		ID: "weekly-event", Title: "D&D", StartAt: &start, EndAt: &end,
+		Timezone: "America/Los_Angeles", Status: "confirmed",
+		RecurrenceRule: "FREQ=WEEKLY;BYDAY=WE",
+	}
+	payload, err := encodeNativeEvent(event, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(payload, "RRULE:FREQ=WEEKLY;BYDAY=WE") {
+		t.Fatalf("payload missing recurrence: %s", payload)
+	}
+	decoded, err := decodeNativeEvent(payload, event.ID, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if decoded.RecurrenceRule != event.RecurrenceRule {
+		t.Fatalf("RecurrenceRule = %q", decoded.RecurrenceRule)
 	}
 }
 

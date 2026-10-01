@@ -14,11 +14,13 @@ export interface CaptureProposal {
   scheduled_at?: string;
   scheduled_end_at?: string;
   scheduled_date?: string;
+  scheduled_end_date?: string;
   scheduled_timezone?: string;
   occurred_date?: string;
   all_day?: boolean;
   display_when?: string;
   place?: string;
+  recurrence_rule?: string;
   needs_review: boolean;
   highlights: CaptureHighlight[];
 }
@@ -32,11 +34,13 @@ export interface CaptureRecord {
   scheduled_at?: string;
   scheduled_end_at?: string;
   scheduled_date?: string;
+  scheduled_end_date?: string;
   scheduled_timezone?: string;
   all_day?: boolean;
   occurred_date?: string;
   display_when?: string;
   place?: string;
+  recurrence_rule?: string;
   state: 'pending' | 'resolved';
   inbox_state: 'open' | 'filed';
   captured_at: string;
@@ -49,10 +53,12 @@ export interface CaptureClassification {
   scheduled_at?: string;
   scheduled_end_at?: string;
   scheduled_date?: string;
+  scheduled_end_date?: string;
   occurred_date?: string;
   all_day?: boolean;
   place?: string;
   classified_at: string;
+  recurrence_rule?: string;
 }
 
 export interface CaptureDetail {
@@ -67,10 +73,12 @@ export interface ClassificationInput {
   scheduled_at?: string;
   scheduled_end_at?: string;
   scheduled_date?: string;
+  scheduled_end_date?: string;
   occurred_date?: string;
   scheduled_timezone?: string;
   all_day?: boolean;
   place?: string;
+  recurrence_rule?: string;
 }
 
 export interface TaskRecord {
@@ -100,6 +108,7 @@ export interface EventRecord {
   start_date?: string;
   end_date?: string;
   all_day?: boolean;
+  recurrence_rule?: string;
   timezone: string;
   place?: string;
   status: 'confirmed' | 'tentative' | 'cancelled';

@@ -11,6 +11,8 @@ import (
 
 	"github.com/google/uuid"
 	_ "modernc.org/sqlite"
+
+	"github.com/teambition/rrule-go"
 )
 
 var ErrIdempotencyConflict = errors.New("idempotency key was already used for different capture text")
@@ -24,11 +26,13 @@ type Record struct {
 	ScheduledAt       *time.Time `json:"scheduled_at,omitempty"`
 	ScheduledEndAt    *time.Time `json:"scheduled_end_at,omitempty"`
 	ScheduledDate     string     `json:"scheduled_date,omitempty"`
+	ScheduledEndDate  string     `json:"scheduled_end_date,omitempty"`
 	OccurredDate      string     `json:"occurred_date,omitempty"`
 	ScheduledTimezone string     `json:"scheduled_timezone,omitempty"`
 	AllDay            bool       `json:"all_day,omitempty"`
 	DisplayWhen       string     `json:"display_when,omitempty"`
 	Place             string     `json:"place,omitempty"`
+	RecurrenceRule    string     `json:"recurrence_rule,omitempty"`
 	State             string     `json:"state"`
 	InboxState        string     `json:"inbox_state"`
 	CapturedAt        time.Time  `json:"captured_at"`
@@ -266,6 +270,14 @@ ALTER TABLE captures ADD COLUMN scheduled_end_at_utc TEXT;
 ALTER TABLE capture_classifications ADD COLUMN scheduled_end_at_utc TEXT;
 `
 
+const schemaV8 = `
+ALTER TABLE captures ADD COLUMN scheduled_end_date_local TEXT NOT NULL DEFAULT '';
+ALTER TABLE captures ADD COLUMN recurrence_rule TEXT NOT NULL DEFAULT '';
+ALTER TABLE capture_classifications ADD COLUMN scheduled_end_date_local TEXT NOT NULL DEFAULT '';
+ALTER TABLE capture_classifications ADD COLUMN recurrence_rule TEXT NOT NULL DEFAULT '';
+ALTER TABLE events ADD COLUMN recurrence_rule TEXT NOT NULL DEFAULT '';
+`
+
 func OpenStore(path string) (*Store, error) {
 	if path == "" {
 		return nil, errors.New("database path is required")
@@ -315,7 +327,7 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 	if err := transaction.QueryRowContext(ctx, `SELECT COALESCE(MAX(version), 0) FROM schema_migrations`).Scan(&currentVersion); err != nil {
 		return fmt.Errorf("read schema version: %w", err)
 	}
-	for index, migration := range []string{schemaV1, schemaV2, schemaV3, schemaV4, schemaV5, schemaV6, schemaV7} {
+	for index, migration := range []string{schemaV1, schemaV2, schemaV3, schemaV4, schemaV5, schemaV6, schemaV7, schemaV8} {
 		version := index + 1
 		if version <= currentVersion {
 			continue
@@ -422,31 +434,32 @@ func (store *Store) Resolve(ctx context.Context, captureID string, proposal Prop
 	case KindReminder:
 		_, err = transaction.ExecContext(ctx, `
 INSERT INTO tasks(
-    id, capture_id, title, due_at_utc, due_date_local, all_day,
+    id, capture_id, title, due_at_utc, reminder_at_utc, due_date_local, all_day,
     timezone, place, created_at_utc, updated_at_utc
 )
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-			recordID, captureID, proposal.Title, when, proposal.ScheduledDate, allDay,
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			recordID, captureID, proposal.Title, when, when, proposal.ScheduledDate, allDay,
 			proposal.ScheduledTimezone, proposal.Place, classifiedAt, classifiedAt)
 	case KindEvent:
 		if existingEventID != "" {
 			_, err = transaction.ExecContext(ctx, `
 UPDATE events
 SET title = ?, start_at_utc = ?, end_at_utc = ?, start_date_local = ?,
-    end_date_local = '', all_day = ?, timezone = ?, place = ?,
+    end_date_local = ?, all_day = ?, timezone = ?, place = ?, recurrence_rule = ?,
     status = 'confirmed', updated_at_utc = ?
 WHERE id = ?`,
-				proposal.Title, when, endWhen, proposal.ScheduledDate, allDay,
-				proposal.ScheduledTimezone, proposal.Place, classifiedAt, existingEventID)
+				proposal.Title, when, endWhen, proposal.ScheduledDate, proposal.ScheduledEndDate, allDay,
+				proposal.ScheduledTimezone, proposal.Place, proposal.RecurrenceRule, classifiedAt, existingEventID)
 		} else {
 			_, err = transaction.ExecContext(ctx, `
 INSERT INTO events(
-    id, capture_id, title, start_at_utc, end_at_utc, start_date_local, all_day,
-    timezone, place, created_at_utc, updated_at_utc
+    id, capture_id, title, start_at_utc, end_at_utc, start_date_local,
+    end_date_local, all_day, timezone, place, recurrence_rule, created_at_utc, updated_at_utc
 )
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-				recordID, captureID, proposal.Title, when, endWhen, proposal.ScheduledDate, allDay,
-				proposal.ScheduledTimezone, proposal.Place, classifiedAt, classifiedAt)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+				recordID, captureID, proposal.Title, when, endWhen, proposal.ScheduledDate,
+				proposal.ScheduledEndDate, allDay, proposal.ScheduledTimezone, proposal.Place,
+				proposal.RecurrenceRule, classifiedAt, classifiedAt)
 		}
 	case KindNote:
 		_, err = transaction.ExecContext(ctx, `
@@ -472,12 +485,13 @@ VALUES(?, ?, ?, ?, ?, ?)`,
 	if _, err := transaction.ExecContext(ctx, `
 UPDATE captures
 SET resolution_state = 'resolved', inbox_state = ?, kind = ?, title = ?, subject = ?,
-    scheduled_at_utc = ?, scheduled_end_at_utc = ?, scheduled_date_local = ?, occurred_date_local = ?,
-    all_day = ?, place = ?, updated_at_utc = ?
+    scheduled_at_utc = ?, scheduled_end_at_utc = ?, scheduled_date_local = ?,
+    scheduled_end_date_local = ?, occurred_date_local = ?, all_day = ?, place = ?,
+    recurrence_rule = ?, updated_at_utc = ?
 WHERE id = ?`,
 		inboxState, proposal.Kind, proposal.Title, proposal.Subject, when, endWhen,
-		proposal.ScheduledDate, proposal.OccurredDate, allDay, proposal.Place,
-		classifiedAt, captureID,
+		proposal.ScheduledDate, proposal.ScheduledEndDate, proposal.OccurredDate, allDay,
+		proposal.Place, proposal.RecurrenceRule, classifiedAt, captureID,
 	); err != nil {
 		return fmt.Errorf("finish capture resolution: %w", err)
 	}
@@ -489,12 +503,13 @@ WHERE id = ?`,
 	if _, err := transaction.ExecContext(ctx, `
 INSERT INTO capture_classifications(
     id, capture_id, kind, title, subject, scheduled_at_utc, scheduled_end_at_utc,
-    scheduled_date_local, occurred_date_local, all_day, place, classified_at_utc
+    scheduled_date_local, scheduled_end_date_local, occurred_date_local, all_day,
+    place, recurrence_rule, classified_at_utc
 )
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		historyID.String(), captureID, proposal.Kind, proposal.Title, proposal.Subject,
-		when, endWhen, proposal.ScheduledDate, proposal.OccurredDate, allDay, proposal.Place,
-		classifiedAt,
+		when, endWhen, proposal.ScheduledDate, proposal.ScheduledEndDate, proposal.OccurredDate,
+		allDay, proposal.Place, proposal.RecurrenceRule, classifiedAt,
 	); err != nil {
 		return fmt.Errorf("record classification history: %w", err)
 	}
@@ -557,22 +572,25 @@ func (store *Store) ListInbox(ctx context.Context, limit int) ([]Record, error) 
 }
 
 type Classification struct {
-	Kind           Kind       `json:"kind"`
-	Title          string     `json:"title"`
-	Subject        string     `json:"subject,omitempty"`
-	ScheduledAt    *time.Time `json:"scheduled_at,omitempty"`
-	ScheduledEndAt *time.Time `json:"scheduled_end_at,omitempty"`
-	ScheduledDate  string     `json:"scheduled_date,omitempty"`
-	OccurredDate   string     `json:"occurred_date,omitempty"`
-	AllDay         bool       `json:"all_day,omitempty"`
-	Place          string     `json:"place,omitempty"`
-	ClassifiedAt   time.Time  `json:"classified_at"`
+	Kind             Kind       `json:"kind"`
+	Title            string     `json:"title"`
+	Subject          string     `json:"subject,omitempty"`
+	ScheduledAt      *time.Time `json:"scheduled_at,omitempty"`
+	ScheduledEndAt   *time.Time `json:"scheduled_end_at,omitempty"`
+	ScheduledDate    string     `json:"scheduled_date,omitempty"`
+	ScheduledEndDate string     `json:"scheduled_end_date,omitempty"`
+	OccurredDate     string     `json:"occurred_date,omitempty"`
+	AllDay           bool       `json:"all_day,omitempty"`
+	Place            string     `json:"place,omitempty"`
+	RecurrenceRule   string     `json:"recurrence_rule,omitempty"`
+	ClassifiedAt     time.Time  `json:"classified_at"`
 }
 
 func (store *Store) ClassificationHistory(ctx context.Context, captureID string) ([]Classification, error) {
 	rows, err := store.database.QueryContext(ctx, `
 SELECT kind, title, subject, scheduled_at_utc, scheduled_end_at_utc,
-       scheduled_date_local, occurred_date_local, all_day, place, classified_at_utc
+       scheduled_date_local, scheduled_end_date_local, occurred_date_local,
+       all_day, place, recurrence_rule, classified_at_utc
 FROM capture_classifications
 WHERE capture_id = ?
 ORDER BY classified_at_utc DESC, id DESC`, captureID)
@@ -590,8 +608,9 @@ ORDER BY classified_at_utc DESC, id DESC`, captureID)
 		var allDay int
 		var classified string
 		if err := rows.Scan(
-			&kind, &item.Title, &item.Subject, &scheduled, &scheduledEnd, &item.ScheduledDate,
-			&item.OccurredDate, &allDay, &item.Place, &classified,
+			&kind, &item.Title, &item.Subject, &scheduled, &scheduledEnd,
+			&item.ScheduledDate, &item.ScheduledEndDate, &item.OccurredDate,
+			&allDay, &item.Place, &item.RecurrenceRule, &classified,
 		); err != nil {
 			return nil, fmt.Errorf("scan capture classification history: %w", err)
 		}
@@ -643,19 +662,20 @@ type TaskRecord struct {
 }
 
 type EventRecord struct {
-	ID        string     `json:"id"`
-	CaptureID string     `json:"capture_id"`
-	Title     string     `json:"title"`
-	StartAt   *time.Time `json:"start_at,omitempty"`
-	EndAt     *time.Time `json:"end_at,omitempty"`
-	StartDate string     `json:"start_date,omitempty"`
-	EndDate   string     `json:"end_date,omitempty"`
-	AllDay    bool       `json:"all_day,omitempty"`
-	Timezone  string     `json:"timezone"`
-	Place     string     `json:"place,omitempty"`
-	Status    string     `json:"status"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
+	ID             string     `json:"id"`
+	CaptureID      string     `json:"capture_id"`
+	Title          string     `json:"title"`
+	StartAt        *time.Time `json:"start_at,omitempty"`
+	EndAt          *time.Time `json:"end_at,omitempty"`
+	StartDate      string     `json:"start_date,omitempty"`
+	EndDate        string     `json:"end_date,omitempty"`
+	AllDay         bool       `json:"all_day,omitempty"`
+	Timezone       string     `json:"timezone"`
+	Place          string     `json:"place,omitempty"`
+	RecurrenceRule string     `json:"recurrence_rule,omitempty"`
+	Status         string     `json:"status"`
+	CreatedAt      time.Time  `json:"created_at"`
+	UpdatedAt      time.Time  `json:"updated_at"`
 }
 
 type TaskUpdate struct {
@@ -710,10 +730,12 @@ LIMIT 300`, date, end.UTC().Format(time.RFC3339Nano), end.UTC().Format(time.RFC3
 
 	eventRows, err := store.database.QueryContext(ctx, eventQuery+`
 WHERE status != 'cancelled'
-  AND ((start_at_utc >= ? AND start_at_utc < ?)
-   OR (all_day = 1 AND start_date_local = ?))
+  AND (recurrence_rule != ''
+   OR (start_at_utc >= ? AND start_at_utc < ?)
+   OR (all_day = 1 AND ((end_date_local = '' AND start_date_local = ?)
+       OR (end_date_local != '' AND start_date_local <= ? AND end_date_local > ?))))
 ORDER BY COALESCE(start_at_utc, ''), created_at_utc
-LIMIT 200`, start.UTC().Format(time.RFC3339Nano), end.UTC().Format(time.RFC3339Nano), date)
+LIMIT 200`, start.UTC().Format(time.RFC3339Nano), end.UTC().Format(time.RFC3339Nano), date, date, date)
 	if err != nil {
 		return nil, nil, fmt.Errorf("list Today events: %w", err)
 	}
@@ -724,12 +746,75 @@ LIMIT 200`, start.UTC().Format(time.RFC3339Nano), end.UTC().Format(time.RFC3339N
 		if err != nil {
 			return nil, nil, err
 		}
-		events = append(events, event)
+		expanded, err := expandEventOccurrences(event, start, end)
+		if err != nil {
+			return nil, nil, err
+		}
+		events = append(events, expanded...)
 	}
 	if err := eventRows.Err(); err != nil {
 		return nil, nil, fmt.Errorf("iterate Today events: %w", err)
 	}
 	return tasks, events, nil
+}
+func expandEventOccurrences(event EventRecord, rangeStart, rangeEnd time.Time) ([]EventRecord, error) {
+	if event.RecurrenceRule == "" {
+		return []EventRecord{event}, nil
+	}
+	rule, err := rrule.StrToRRule(event.RecurrenceRule)
+	if err != nil {
+		return nil, fmt.Errorf("parse event recurrence: %w", err)
+	}
+	location := time.UTC
+	if event.Timezone != "" {
+		if parsed, loadErr := time.LoadLocation(event.Timezone); loadErr == nil {
+			location = parsed
+		}
+	}
+	if event.AllDay {
+		startDate, err := time.ParseInLocation(time.DateOnly, event.StartDate, location)
+		if err != nil {
+			return nil, fmt.Errorf("parse recurring event date: %w", err)
+		}
+		duration := 24 * time.Hour
+		if event.EndDate != "" {
+			endDate, err := time.ParseInLocation(time.DateOnly, event.EndDate, location)
+			if err != nil {
+				return nil, fmt.Errorf("parse recurring event end date: %w", err)
+			}
+			duration = endDate.Sub(startDate)
+		}
+		rule.DTStart(startDate)
+		occurrences := rule.Between(rangeStart.In(location), rangeEnd.In(location), true)
+		result := make([]EventRecord, 0, len(occurrences))
+		for _, occurrence := range occurrences {
+			item := event
+			item.StartDate = occurrence.Format(time.DateOnly)
+			item.EndDate = occurrence.Add(duration).Format(time.DateOnly)
+			result = append(result, item)
+		}
+		return result, nil
+	}
+	if event.StartAt == nil {
+		return nil, errors.New("recurring timed event requires start time")
+	}
+	localStart := event.StartAt.In(location)
+	duration := time.Hour
+	if event.EndAt != nil {
+		duration = event.EndAt.Sub(*event.StartAt)
+	}
+	rule.DTStart(localStart)
+	occurrences := rule.Between(rangeStart.In(location), rangeEnd.In(location), true)
+	result := make([]EventRecord, 0, len(occurrences))
+	for _, occurrence := range occurrences {
+		item := event
+		startUTC := occurrence.UTC()
+		endUTC := occurrence.Add(duration).UTC()
+		item.StartAt = &startUTC
+		item.EndAt = &endUTC
+		result = append(result, item)
+	}
+	return result, nil
 }
 
 func (store *Store) TaskByID(ctx context.Context, id string) (TaskRecord, error) {
@@ -896,7 +981,8 @@ FROM tasks`
 
 const eventQuery = `
 SELECT id, capture_id, title, start_at_utc, end_at_utc, start_date_local,
-       end_date_local, all_day, timezone, place, status, created_at_utc, updated_at_utc
+       end_date_local, all_day, timezone, place, recurrence_rule, status,
+       created_at_utc, updated_at_utc
 FROM events`
 
 func scanTask(row rowScanner) (TaskRecord, error) {
@@ -941,7 +1027,7 @@ func scanEvent(row rowScanner) (EventRecord, error) {
 	if err := row.Scan(
 		&event.ID, &event.CaptureID, &event.Title, &startAt, &endAt,
 		&event.StartDate, &event.EndDate, &allDay, &event.Timezone, &event.Place,
-		&event.Status, &createdAt, &updatedAt,
+		&event.RecurrenceRule, &event.Status, &createdAt, &updatedAt,
 	); err != nil {
 		return EventRecord{}, fmt.Errorf("scan event: %w", err)
 	}
@@ -977,8 +1063,9 @@ func parseNullableTime(value sql.NullString) (*time.Time, error) {
 
 const recordQuery = `
 SELECT id, raw_text, kind, title, subject, scheduled_at_utc, scheduled_end_at_utc,
-       scheduled_date_local, occurred_date_local, interpreted_timezone, all_day, place,
-       resolution_state, inbox_state, captured_at_utc, idempotency_key
+       scheduled_date_local, scheduled_end_date_local, occurred_date_local,
+       interpreted_timezone, all_day, place, recurrence_rule, resolution_state,
+       inbox_state, captured_at_utc, idempotency_key
 FROM captures`
 
 type rowScanner interface {
@@ -1008,10 +1095,12 @@ func scanRecord(row rowScanner) (Record, string, error) {
 		&scheduled,
 		&scheduledEnd,
 		&record.ScheduledDate,
+		&record.ScheduledEndDate,
 		&record.OccurredDate,
 		&record.ScheduledTimezone,
 		&allDay,
 		&record.Place,
+		&record.RecurrenceRule,
 		&record.State,
 		&record.InboxState,
 		&captured,

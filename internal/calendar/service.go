@@ -596,6 +596,11 @@ func encodeNativeEvent(event NativeEvent, now time.Time) (string, error) {
 	if event.Place != "" {
 		component.Props.SetText(ical.PropLocation, event.Place)
 	}
+	if event.RecurrenceRule != "" {
+		property := ical.NewProp(ical.PropRecurrenceRule)
+		property.Value = event.RecurrenceRule
+		component.Props.Set(property)
+	}
 	component.SetStatus(ical.EventStatus(strings.ToUpper(event.Status)))
 	if event.AllDay {
 		start, err := time.Parse("2006-01-02", event.StartDate)
@@ -652,6 +657,10 @@ func decodeNativeEvent(payload, id string, createdAt time.Time) (NativeEvent, er
 		return NativeEvent{}, err
 	}
 	place = normalizeLocation(place)
+	recurrenceRule := ""
+	if property := component.Props.Get(ical.PropRecurrenceRule); property != nil {
+		recurrenceRule = property.Value
+	}
 	status, err := component.Status()
 	if err != nil {
 		return NativeEvent{}, err
@@ -664,7 +673,10 @@ func decodeNativeEvent(payload, id string, createdAt time.Time) (NativeEvent, er
 	if startProperty == nil {
 		return NativeEvent{}, errors.New("calendar event has no start")
 	}
-	event := NativeEvent{ID: id, Title: title, Place: place, Status: statusText, CreatedAt: createdAt}
+	event := NativeEvent{
+		ID: id, Title: title, Place: place, RecurrenceRule: recurrenceRule,
+		Status: statusText, CreatedAt: createdAt,
+	}
 	if startProperty.ValueType() == ical.ValueDate {
 		start, err := startProperty.DateTime(time.UTC)
 		if err != nil {
@@ -820,7 +832,8 @@ func hashNativeEvent(event NativeEvent) string {
 	}
 	return hashText(strings.Join([]string{
 		event.Title, start, end, event.StartDate, event.EndDate,
-		fmt.Sprintf("%t", event.AllDay), event.Timezone, event.Place, event.Status,
+		fmt.Sprintf("%t", event.AllDay), event.Timezone, event.Place,
+		event.RecurrenceRule, event.Status,
 	}, "\x00"))
 }
 

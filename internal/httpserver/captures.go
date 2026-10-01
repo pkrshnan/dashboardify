@@ -26,10 +26,12 @@ type classificationRequest struct {
 	ScheduledAt       string       `json:"scheduled_at,omitempty"`
 	ScheduledEndAt    string       `json:"scheduled_end_at,omitempty"`
 	ScheduledDate     string       `json:"scheduled_date,omitempty"`
+	ScheduledEndDate  string       `json:"scheduled_end_date,omitempty"`
 	OccurredDate      string       `json:"occurred_date,omitempty"`
 	ScheduledTimezone string       `json:"scheduled_timezone,omitempty"`
 	AllDay            bool         `json:"all_day,omitempty"`
 	Place             string       `json:"place,omitempty"`
+	RecurrenceRule    string       `json:"recurrence_rule,omitempty"`
 }
 
 func (api captureAPI) preview(response http.ResponseWriter, request *http.Request) {
@@ -109,9 +111,11 @@ func (api captureAPI) classify(response http.ResponseWriter, request *http.Reque
 		Subject:           input.Subject,
 		ScheduledDate:     input.ScheduledDate,
 		OccurredDate:      input.OccurredDate,
+		ScheduledEndDate:  input.ScheduledEndDate,
 		ScheduledTimezone: input.ScheduledTimezone,
 		AllDay:            input.AllDay,
 		Place:             input.Place,
+		RecurrenceRule:    input.RecurrenceRule,
 	}
 	if input.ScheduledAt != "" {
 		value, err := time.Parse(time.RFC3339, input.ScheduledAt)
@@ -146,7 +150,9 @@ func writeCaptureError(response http.ResponseWriter, err error) {
 		errors.Is(err, capture.ErrKindInvalid),
 		errors.Is(err, capture.ErrSubjectRequired),
 		errors.Is(err, capture.ErrDateInvalid),
-		errors.Is(err, capture.ErrTimeRangeInvalid):
+		errors.Is(err, capture.ErrTimeRangeInvalid),
+		errors.Is(err, capture.ErrDateRangeInvalid),
+		errors.Is(err, capture.ErrRecurrenceInvalid):
 		writeJSON(response, http.StatusUnprocessableEntity, map[string]string{"error": err.Error()})
 	case errors.Is(err, capture.ErrIdempotencyConflict):
 		writeJSON(response, http.StatusConflict, map[string]string{"error": "capture request conflicts with an earlier submission"})

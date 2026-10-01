@@ -63,18 +63,19 @@ type RemoteObject struct {
 }
 
 type NativeEvent struct {
-	ID        string     `json:"id"`
-	Title     string     `json:"title"`
-	StartAt   *time.Time `json:"start_at,omitempty"`
-	EndAt     *time.Time `json:"end_at,omitempty"`
-	StartDate string     `json:"start_date,omitempty"`
-	EndDate   string     `json:"end_date,omitempty"`
-	AllDay    bool       `json:"all_day,omitempty"`
-	Timezone  string     `json:"timezone"`
-	Place     string     `json:"place,omitempty"`
-	Status    string     `json:"status"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
+	ID             string     `json:"id"`
+	Title          string     `json:"title"`
+	StartAt        *time.Time `json:"start_at,omitempty"`
+	EndAt          *time.Time `json:"end_at,omitempty"`
+	StartDate      string     `json:"start_date,omitempty"`
+	EndDate        string     `json:"end_date,omitempty"`
+	AllDay         bool       `json:"all_day,omitempty"`
+	Timezone       string     `json:"timezone"`
+	Place          string     `json:"place,omitempty"`
+	RecurrenceRule string     `json:"recurrence_rule,omitempty"`
+	Status         string     `json:"status"`
+	CreatedAt      time.Time  `json:"created_at"`
+	UpdatedAt      time.Time  `json:"updated_at"`
 }
 
 type EventLink struct {

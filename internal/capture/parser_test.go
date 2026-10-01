@@ -74,6 +74,62 @@ func TestParserRecognizesEventTimeRangeAndPlace(t *testing.T) {
 	assertHighlightKinds(t, proposal.Highlights, "time", "date", "place")
 }
 
+func TestParserSupportsRecommendedCapturePhraseCorpus(t *testing.T) {
+	location := mustLocation(t, "America/Los_Angeles")
+	parser := NewParser(location)
+	now := time.Date(2026, time.September, 30, 10, 0, 0, 0, location)
+	tests := []struct {
+		text       string
+		kind       Kind
+		title      string
+		place      string
+		start      string
+		end        string
+		startDate  string
+		endDate    string
+		recurrence string
+	}{
+		{"Dinner tomorrow at 7pm at Nopa", KindEvent, "Dinner", "Nopa", "2026-10-01T19:00", "", "", "", ""},
+		{"Dentist October 5 at 9:30am", KindEvent, "Dentist", "", "2026-10-05T09:30", "", "", "", ""},
+		{"Design review Friday 2–3:30pm", KindEvent, "Design review", "", "2026-10-02T14:00", "2026-10-02T15:30", "", "", ""},
+		{"Gym tomorrow at 6pm for 45 minutes", KindEvent, "Gym", "", "2026-10-01T18:00", "2026-10-01T18:45", "", "", ""},
+		{"Remind me in 20 minutes to check the oven", KindReminder, "check the oven", "", "2026-09-30T10:20", "", "", "", ""},
+		{"Pay rent by Friday", KindReminder, "Pay rent", "", "", "", "2026-10-02", "", ""},
+		{"Vacation October 10 through October 17", KindEvent, "Vacation", "", "", "", "2026-10-10", "2026-10-18", ""},
+		{"D&D every Wednesday from 7pm to 10pm", KindEvent, "D&D", "", "2026-09-30T19:00", "2026-09-30T22:00", "", "", "FREQ=WEEKLY;BYDAY=WE"},
+		{"Meeting tomorrow at 2pm via Zoom", KindEvent, "Meeting", "Zoom", "2026-10-01T14:00", "", "", "", ""},
+		{"Put lunch with Alex on my calendar for Friday at noon", KindEvent, "lunch with Alex", "", "2026-10-02T12:00", "", "", "", ""},
+	}
+
+	for _, test := range tests {
+		t.Run(test.text, func(t *testing.T) {
+			proposal := parser.Parse(test.text, now)
+			if proposal.Kind != test.kind || proposal.Title != test.title || proposal.Place != test.place {
+				t.Fatalf("proposal = %#v", proposal)
+			}
+			if got := localMinute(proposal.ScheduledAt, location); got != test.start {
+				t.Fatalf("start = %q, want %q", got, test.start)
+			}
+			if got := localMinute(proposal.ScheduledEndAt, location); got != test.end {
+				t.Fatalf("end = %q, want %q", got, test.end)
+			}
+			if proposal.ScheduledDate != test.startDate || proposal.ScheduledEndDate != test.endDate {
+				t.Fatalf("date range = %q–%q, want %q–%q", proposal.ScheduledDate, proposal.ScheduledEndDate, test.startDate, test.endDate)
+			}
+			if proposal.RecurrenceRule != test.recurrence {
+				t.Fatalf("recurrence = %q, want %q", proposal.RecurrenceRule, test.recurrence)
+			}
+		})
+	}
+}
+
+func localMinute(value *time.Time, location *time.Location) string {
+	if value == nil {
+		return ""
+	}
+	return value.In(location).Format("2006-01-02T15:04")
+}
+
 func TestParserRecognizesAllDayReminder(t *testing.T) {
 	location := mustLocation(t, "America/Los_Angeles")
 	parser := NewParser(location)

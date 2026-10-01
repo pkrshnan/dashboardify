@@ -414,12 +414,12 @@ func (store *Store) UpdateNativeEvent(ctx context.Context, event NativeEvent, no
 	result, err := store.database.ExecContext(ctx, `
 UPDATE events
 SET title = ?, start_at_utc = ?, end_at_utc = ?, start_date_local = ?,
-    end_date_local = ?, all_day = ?, timezone = ?, place = ?, status = ?, updated_at_utc = ?
+    end_date_local = ?, all_day = ?, timezone = ?, place = ?, recurrence_rule = ?,
+    status = ?, updated_at_utc = ?
 WHERE id = ?`,
 		event.Title, nullableTime(event.StartAt), nullableTime(event.EndAt), event.StartDate,
-		event.EndDate, boolInt(event.AllDay), event.Timezone, event.Place, event.Status,
-		now.UTC().Format(time.RFC3339Nano), event.ID,
-	)
+		event.EndDate, boolInt(event.AllDay), event.Timezone, event.Place, event.RecurrenceRule, event.Status,
+		now.UTC().Format(time.RFC3339Nano), event.ID)
 	if err != nil {
 		return fmt.Errorf("update native event: %w", err)
 	}
@@ -507,8 +507,8 @@ WHERE integration_id = ? AND conflict_state != ''`, appleIntegrationID).Scan(&co
 const nativeEventQuery = `
 SELECT events.id, events.title, events.start_at_utc, events.end_at_utc,
        events.start_date_local, events.end_date_local, events.all_day,
-       events.timezone, events.place, events.status, events.created_at_utc,
-       events.updated_at_utc
+       events.timezone, events.place, events.recurrence_rule, events.status,
+       events.created_at_utc, events.updated_at_utc
 FROM events`
 
 const linkQuery = `
@@ -548,7 +548,8 @@ func scanNativeEvent(row rowScanner) (NativeEvent, error) {
 	var createdAt, updatedAt string
 	if err := row.Scan(
 		&event.ID, &event.Title, &startAt, &endAt, &event.StartDate, &event.EndDate,
-		&allDay, &event.Timezone, &event.Place, &event.Status, &createdAt, &updatedAt,
+		&allDay, &event.Timezone, &event.Place, &event.RecurrenceRule, &event.Status,
+		&createdAt, &updatedAt,
 	); err != nil {
 		return NativeEvent{}, err
 	}
