@@ -194,7 +194,7 @@ func newCaptureService(t *testing.T) *capture.Service {
 		t.Fatalf("load timezone: %v", err)
 	}
 	now := time.Date(2026, time.September, 22, 10, 0, 0, 0, location)
-	return capture.NewService(store, capture.NewParser(location), func() time.Time { return now })
+	return capture.NewService(store, capture.NewParser(location), func() time.Time { return now }, nil)
 }
 
 func captureJSONRequest(t *testing.T, method, path string, body any) *http.Request {

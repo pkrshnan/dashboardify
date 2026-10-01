@@ -102,6 +102,31 @@ func TestLoadRejectsPartialOrInsecureCalDAVConfig(t *testing.T) {
 	}
 }
 
+func TestLoadConfiguresTopLevelObsidianCaptureNote(t *testing.T) {
+	clearConfigEnvironment(t)
+	vault := t.TempDir()
+	t.Setenv("DASHBOARDIFY_OBSIDIAN_VAULT_PATH", vault)
+	t.Setenv("DASHBOARDIFY_OBSIDIAN_CAPTURE_FILE", "Inbox.md")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if !cfg.Obsidian.Enabled || cfg.Obsidian.VaultPath != vault || cfg.Obsidian.CaptureFile != "Inbox.md" {
+		t.Fatalf("Obsidian config = %#v", cfg.Obsidian)
+	}
+}
+
+func TestLoadRejectsNestedObsidianCaptureNote(t *testing.T) {
+	clearConfigEnvironment(t)
+	t.Setenv("DASHBOARDIFY_OBSIDIAN_VAULT_PATH", t.TempDir())
+	t.Setenv("DASHBOARDIFY_OBSIDIAN_CAPTURE_FILE", "Inbox/Captures.md")
+
+	if _, err := Load(); err == nil {
+		t.Fatal("Load() accepted a nested Obsidian capture file")
+	}
+}
+
 func clearConfigEnvironment(t *testing.T) {
 	t.Helper()
 	for _, key := range []string{
@@ -118,6 +143,8 @@ func clearConfigEnvironment(t *testing.T) {
 		"DASHBOARDIFY_CALDAV_PASSWORD",
 		"DASHBOARDIFY_CALDAV_CALENDAR_NAME",
 		"DASHBOARDIFY_CALDAV_SYNC_INTERVAL",
+		"DASHBOARDIFY_OBSIDIAN_VAULT_PATH",
+		"DASHBOARDIFY_OBSIDIAN_CAPTURE_FILE",
 	} {
 		t.Setenv(key, "")
 	}

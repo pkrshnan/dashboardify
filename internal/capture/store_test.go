@@ -18,7 +18,7 @@ func TestServicePersistsTypedCapturesAcrossRestart(t *testing.T) {
 	if err != nil {
 		t.Fatalf("OpenStore() error = %v", err)
 	}
-	service := NewService(store, NewParser(location), func() time.Time { return now })
+	service := NewService(store, NewParser(location), func() time.Time { return now }, nil)
 	inputs := []struct {
 		key  string
 		text string
@@ -49,7 +49,7 @@ func TestServicePersistsTypedCapturesAcrossRestart(t *testing.T) {
 		t.Fatalf("reopen store: %v", err)
 	}
 	defer reopened.Close()
-	records, err := NewService(reopened, NewParser(location), func() time.Time { return now }).List(context.Background(), 10)
+	records, err := NewService(reopened, NewParser(location), func() time.Time { return now }, nil).List(context.Background(), 10)
 	if err != nil {
 		t.Fatalf("List() error = %v", err)
 	}
@@ -132,7 +132,7 @@ VALUES(
 	}
 	location := mustLocation(t, "America/Los_Angeles")
 	now := time.Date(2026, time.September, 22, 10, 0, 0, 0, location)
-	record, err := NewService(store, NewParser(location), func() time.Time { return now }).Create(
+	record, err := NewService(store, NewParser(location), func() time.Time { return now }, nil).Create(
 		context.Background(),
 		"all-day-after-migration",
 		"Remind me to file taxes on Wednesday",
@@ -160,7 +160,7 @@ func TestInboxFilingReclassifiesWithoutChangingOriginalCapture(t *testing.T) {
 	defer store.Close()
 	location := mustLocation(t, "America/Los_Angeles")
 	now := time.Date(2026, time.September, 22, 10, 0, 0, 0, location)
-	service := NewService(store, NewParser(location), func() time.Time { return now })
+	service := NewService(store, NewParser(location), func() time.Time { return now }, nil)
 
 	created, err := service.Create(context.Background(), "ambiguous-capture", "Jordan brought cardamom coffee")
 	if err != nil {
@@ -206,7 +206,7 @@ func TestTodayTaskLifecyclePersistsCompletionAndDeferral(t *testing.T) {
 	defer store.Close()
 	location := mustLocation(t, "America/Los_Angeles")
 	now := time.Date(2026, time.January, 5, 10, 0, 0, 0, location)
-	service := NewService(store, NewParser(location), func() time.Time { return now })
+	service := NewService(store, NewParser(location), func() time.Time { return now }, nil)
 	for _, input := range []struct {
 		key  string
 		text string
@@ -288,7 +288,7 @@ func TestEventTimeRangePersistsThroughCaptureClassification(t *testing.T) {
 	defer store.Close()
 	location := mustLocation(t, "America/Los_Angeles")
 	now := time.Date(2026, time.September, 28, 10, 0, 0, 0, location)
-	service := NewService(store, NewParser(location), func() time.Time { return now })
+	service := NewService(store, NewParser(location), func() time.Time { return now }, nil)
 
 	record, err := service.Create(
 		context.Background(),
@@ -328,7 +328,7 @@ func TestMultiDayAndRecurringEventsAppearOnApplicableDays(t *testing.T) {
 	defer store.Close()
 	location := mustLocation(t, "America/Los_Angeles")
 	now := time.Date(2026, time.September, 30, 10, 0, 0, 0, location)
-	service := NewService(store, NewParser(location), func() time.Time { return now })
+	service := NewService(store, NewParser(location), func() time.Time { return now }, nil)
 
 	vacation, err := service.Create(context.Background(), "vacation-range", "Vacation October 10 through October 17")
 	if err != nil {
@@ -368,7 +368,7 @@ func TestRelativeReminderSchedulesItsNotification(t *testing.T) {
 	defer store.Close()
 	location := mustLocation(t, "America/Los_Angeles")
 	now := time.Date(2026, time.September, 30, 10, 0, 0, 0, location)
-	service := NewService(store, NewParser(location), func() time.Time { return now })
+	service := NewService(store, NewParser(location), func() time.Time { return now }, nil)
 
 	if _, err := service.Create(context.Background(), "relative-reminder", "Remind me in 20 minutes to check the oven"); err != nil {
 		t.Fatalf("Create() error = %v", err)
@@ -391,7 +391,7 @@ func TestDueNotificationQueuePersistsAndDeduplicatesFallback(t *testing.T) {
 	defer store.Close()
 	location := mustLocation(t, "America/Los_Angeles")
 	now := time.Date(2026, time.January, 7, 9, 0, 0, 0, location)
-	service := NewService(store, NewParser(location), func() time.Time { return now })
+	service := NewService(store, NewParser(location), func() time.Time { return now }, nil)
 	if _, err := service.Create(context.Background(), "notification-task", "Remind me to submit report today at 2:30 pm"); err != nil {
 		t.Fatalf("Create() error = %v", err)
 	}
@@ -437,7 +437,7 @@ func TestServiceDeduplicatesRetriedCapture(t *testing.T) {
 	defer store.Close()
 	location := mustLocation(t, "UTC")
 	now := time.Date(2026, time.September, 22, 12, 0, 0, 0, location)
-	service := NewService(store, NewParser(location), func() time.Time { return now })
+	service := NewService(store, NewParser(location), func() time.Time { return now }, nil)
 
 	first, err := service.Create(context.Background(), "same-request", "A durable note")
 	if err != nil {

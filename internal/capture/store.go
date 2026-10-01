@@ -546,6 +546,27 @@ func (store *Store) List(ctx context.Context, limit int) ([]Record, error) {
 	return records, nil
 }
 
+func (store *Store) ListAll(ctx context.Context) ([]Record, error) {
+	rows, err := store.database.QueryContext(ctx, recordQuery+` ORDER BY captured_at_utc, id`)
+	if err != nil {
+		return nil, fmt.Errorf("list all captures: %w", err)
+	}
+	defer rows.Close()
+
+	records := make([]Record, 0, 64)
+	for rows.Next() {
+		record, _, err := scanRecord(rows)
+		if err != nil {
+			return nil, err
+		}
+		records = append(records, record)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate all captures: %w", err)
+	}
+	return records, nil
+}
+
 func (store *Store) ListInbox(ctx context.Context, limit int) ([]Record, error) {
 	rows, err := store.database.QueryContext(
 		ctx,

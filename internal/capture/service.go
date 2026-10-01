@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -33,14 +34,19 @@ var (
 	ErrNotificationNotFound = errors.New("notification was not found")
 )
 
+type CaptureWriter interface {
+	WriteCapture(context.Context, Record) error
+}
+
 type Service struct {
 	store  *Store
 	parser *Parser
 	now    func() time.Time
+	writer CaptureWriter
 }
 
-func NewService(store *Store, parser *Parser, now func() time.Time) *Service {
-	return &Service{store: store, parser: parser, now: now}
+func NewService(store *Store, parser *Parser, now func() time.Time, writer CaptureWriter) *Service {
+	return &Service{store: store, parser: parser, now: now, writer: writer}
 }
 
 func (service *Service) Preview(text string) (Proposal, error) {
@@ -62,6 +68,11 @@ func (service *Service) Create(ctx context.Context, key, text string) (Record, e
 	record, inserted, err := service.store.InsertRaw(ctx, key, text, service.parser.location.String(), now)
 	if err != nil {
 		return Record{}, err
+	}
+	if service.writer != nil {
+		if err := service.writer.WriteCapture(ctx, record); err != nil {
+			return record, fmt.Errorf("write capture to Obsidian: %w", err)
+		}
 	}
 	if inserted || record.State == "pending" {
 		proposal := service.parser.Parse(text, now)

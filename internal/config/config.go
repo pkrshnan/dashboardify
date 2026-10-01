@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -35,6 +36,12 @@ type CalDAVConfig struct {
 	SyncInterval time.Duration
 }
 
+type ObsidianConfig struct {
+	Enabled     bool
+	VaultPath   string
+	CaptureFile string
+}
+
 type Config struct {
 	Environment     Environment
 	ListenAddress   string
@@ -43,6 +50,7 @@ type Config struct {
 	DatabasePath    string
 	Access          AccessConfig
 	CalDAV          CalDAVConfig
+	Obsidian        ObsidianConfig
 	ReadTimeout     time.Duration
 	WriteTimeout    time.Duration
 	IdleTimeout     time.Duration
@@ -128,6 +136,27 @@ func Load() (Config, error) {
 	if cfg.CalDAV.Enabled {
 		if err := validateCalDAVEndpoint(cfg.Environment, cfg.CalDAV.Endpoint); err != nil {
 			return Config{}, err
+		}
+	}
+
+	obsidianVault := strings.TrimSpace(os.Getenv("DASHBOARDIFY_OBSIDIAN_VAULT_PATH"))
+	obsidianFile := value("DASHBOARDIFY_OBSIDIAN_CAPTURE_FILE", "Dashboardify Captures.md")
+	if obsidianVault != "" {
+		absoluteVault, err := filepath.Abs(obsidianVault)
+		if err != nil {
+			return Config{}, fmt.Errorf("resolve DASHBOARDIFY_OBSIDIAN_VAULT_PATH: %w", err)
+		}
+		info, err := os.Stat(absoluteVault)
+		if err != nil || !info.IsDir() {
+			return Config{}, errors.New("DASHBOARDIFY_OBSIDIAN_VAULT_PATH must be an existing directory")
+		}
+		if filepath.Base(obsidianFile) != obsidianFile || filepath.Ext(obsidianFile) != ".md" {
+			return Config{}, errors.New("DASHBOARDIFY_OBSIDIAN_CAPTURE_FILE must be a top-level Markdown filename")
+		}
+		cfg.Obsidian = ObsidianConfig{
+			Enabled:     true,
+			VaultPath:   absoluteVault,
+			CaptureFile: obsidianFile,
 		}
 	}
 

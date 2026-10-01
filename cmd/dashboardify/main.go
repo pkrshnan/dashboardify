@@ -16,6 +16,7 @@ import (
 	"dashboardify/internal/config"
 	"dashboardify/internal/httpserver"
 	"dashboardify/internal/logging"
+	"dashboardify/internal/obsidian"
 )
 
 func main() {
@@ -38,7 +39,27 @@ func run() error {
 		return err
 	}
 	defer captureStore.Close()
-	captureService := capture.NewService(captureStore, capture.NewParser(cfg.HomeTimezone), time.Now)
+	var captureWriter capture.CaptureWriter
+	if cfg.Obsidian.Enabled {
+		writer, err := obsidian.New(cfg.Obsidian.VaultPath, cfg.Obsidian.CaptureFile, cfg.HomeTimezone)
+		if err != nil {
+			return err
+		}
+		records, err := captureStore.ListAll(context.Background())
+		if err != nil {
+			return err
+		}
+		if err := writer.SyncCaptures(context.Background(), records); err != nil {
+			return err
+		}
+		captureWriter = writer
+		logger.Info("obsidian.capture_sync_ready",
+			"vault", cfg.Obsidian.VaultPath,
+			"file", cfg.Obsidian.CaptureFile,
+			"captures", len(records),
+		)
+	}
+	captureService := capture.NewService(captureStore, capture.NewParser(cfg.HomeTimezone), time.Now, captureWriter)
 	calendarStore, err := calendar.OpenStore(cfg.DatabasePath)
 	if err != nil {
 		return err
