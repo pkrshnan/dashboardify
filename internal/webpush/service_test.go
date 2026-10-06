@@ -96,6 +96,18 @@ func TestDispatchDeliversOnceAndRemovesExpiredSubscriptions(t *testing.T) {
 	}
 }
 
+func TestLibrarySubscriber(t *testing.T) {
+	tests := map[string]string{
+		"mailto:owner@example.com": "owner@example.com",
+		"https://example.com/push": "https://example.com/push",
+	}
+	for subject, want := range tests {
+		if got := librarySubscriber(subject); got != want {
+			t.Errorf("librarySubscriber(%q) = %q, want %q", subject, got, want)
+		}
+	}
+}
+
 func testSubscription(endpoint string) Subscription {
 	publicKey := make([]byte, 65)
 	publicKey[0] = 4

@@ -173,7 +173,7 @@ func (sender *vapidSender) Send(ctx context.Context, payload []byte, subscriptio
 		},
 	}, &push.Options{
 		HTTPClient:      sender.client,
-		Subscriber:      sender.config.Subject,
+		Subscriber:      librarySubscriber(sender.config.Subject),
 		TTL:             24 * 60 * 60,
 		Urgency:         push.UrgencyHigh,
 		VAPIDPublicKey:  sender.config.PublicKey,
@@ -184,4 +184,10 @@ func (sender *vapidSender) Send(ctx context.Context, payload []byte, subscriptio
 	}
 	defer response.Body.Close()
 	return response.StatusCode, nil
+}
+
+// webpush-go treats every non-HTTPS subscriber value as a bare email address
+// and adds the mailto scheme itself.
+func librarySubscriber(subject string) string {
+	return strings.TrimPrefix(subject, "mailto:")
 }
