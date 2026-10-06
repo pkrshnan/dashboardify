@@ -101,9 +101,13 @@ func (service *Service) Dispatch(ctx context.Context) (DispatchSummary, error) {
 	}
 	var summary DispatchSummary
 	for _, delivery := range deliveries {
+		body := "Reminder due"
+		if delivery.Place != "" {
+			body += " · " + delivery.Place
+		}
 		payload, err := json.Marshal(map[string]string{
-			"title": "Dashboardify reminder",
-			"body":  "A reminder is due. Open Dashboardify for details.",
+			"title": delivery.Title,
+			"body":  body,
 			"tag":   "dashboardify-" + delivery.NotificationID,
 			"url":   "/",
 		})

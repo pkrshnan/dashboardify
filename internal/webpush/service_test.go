@@ -3,6 +3,7 @@ package webpush
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"path/filepath"
 	"testing"
 	"time"
@@ -12,11 +13,13 @@ import (
 
 type fakeSender struct {
 	statuses map[string]int
+	payloads [][]byte
 	calls    int
 }
 
-func (sender *fakeSender) Send(_ context.Context, _ []byte, subscription Subscription) (int, error) {
+func (sender *fakeSender) Send(_ context.Context, payload []byte, subscription Subscription) (int, error) {
 	sender.calls++
+	sender.payloads = append(sender.payloads, append([]byte(nil), payload...))
 	return sender.statuses[subscription.Endpoint], nil
 }
 
@@ -65,7 +68,7 @@ func TestDispatchDeliversOnceAndRemovesExpiredSubscriptions(t *testing.T) {
 	reminderAt := current.Add(-time.Minute)
 	if _, err := captures.UpdateTask(context.Background(), task.ID, capture.TaskUpdate{
 		Title: task.Title, DueAt: task.DueAt, DueDate: task.DueDate, ReminderAt: &reminderAt,
-		AllDay: task.AllDay, Place: task.Place, Status: "open",
+		AllDay: task.AllDay, Place: "Office", Status: "open",
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -81,6 +84,18 @@ func TestDispatchDeliversOnceAndRemovesExpiredSubscriptions(t *testing.T) {
 	}
 	if summary.Sent != 1 || summary.Removed != 1 || summary.Failed != 0 {
 		t.Fatalf("Dispatch() summary = %#v", summary)
+	}
+	if len(sender.payloads) != 2 {
+		t.Fatalf("Send() payload count = %d, want 2", len(sender.payloads))
+	}
+	for _, payload := range sender.payloads {
+		var notification map[string]string
+		if err := json.Unmarshal(payload, &notification); err != nil {
+			t.Fatalf("decode push payload: %v", err)
+		}
+		if notification["title"] != task.Title || notification["body"] != "Reminder due · Office" {
+			t.Errorf("push notification = %#v", notification)
+		}
 	}
 	if second, err := service.Dispatch(context.Background()); err != nil || second != (DispatchSummary{}) {
 		t.Fatalf("second Dispatch() = %#v, %v", second, err)

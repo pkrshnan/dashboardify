@@ -25,6 +25,8 @@ type SubscriptionKeys struct {
 
 type pendingDelivery struct {
 	NotificationID string
+	Title          string
+	Place          string
 	SubscriptionID string
 	Subscription   Subscription
 }
@@ -135,8 +137,8 @@ func (store *Store) deleteSubscriptionByID(ctx context.Context, id string) error
 
 func (store *Store) pendingDeliveries(ctx context.Context, limit int) ([]pendingDelivery, error) {
 	rows, err := store.database.QueryContext(ctx, `
-SELECT notifications.id, subscriptions.id, subscriptions.endpoint,
-       subscriptions.p256dh, subscriptions.auth
+SELECT notifications.id, tasks.title, tasks.place, subscriptions.id,
+       subscriptions.endpoint, subscriptions.p256dh, subscriptions.auth
 FROM notifications
 JOIN tasks ON tasks.id = notifications.task_id
 CROSS JOIN web_push_subscriptions AS subscriptions
@@ -161,6 +163,8 @@ LIMIT ?`, limit)
 		var delivery pendingDelivery
 		if err := rows.Scan(
 			&delivery.NotificationID,
+			&delivery.Title,
+			&delivery.Place,
 			&delivery.SubscriptionID,
 			&delivery.Subscription.Endpoint,
 			&delivery.Subscription.Keys.P256DH,
