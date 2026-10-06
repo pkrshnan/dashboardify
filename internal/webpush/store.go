@@ -27,6 +27,8 @@ type pendingDelivery struct {
 	NotificationID string
 	Title          string
 	Place          string
+	ScheduledAt    time.Time
+	Timezone       string
 	SubscriptionID string
 	Subscription   Subscription
 }
@@ -137,8 +139,9 @@ func (store *Store) deleteSubscriptionByID(ctx context.Context, id string) error
 
 func (store *Store) pendingDeliveries(ctx context.Context, limit int) ([]pendingDelivery, error) {
 	rows, err := store.database.QueryContext(ctx, `
-SELECT notifications.id, tasks.title, tasks.place, subscriptions.id,
-       subscriptions.endpoint, subscriptions.p256dh, subscriptions.auth
+SELECT notifications.id, tasks.title, tasks.place, notifications.scheduled_at_utc,
+       tasks.timezone, subscriptions.id, subscriptions.endpoint,
+       subscriptions.p256dh, subscriptions.auth
 FROM notifications
 JOIN tasks ON tasks.id = notifications.task_id
 CROSS JOIN web_push_subscriptions AS subscriptions
@@ -161,16 +164,23 @@ LIMIT ?`, limit)
 	deliveries := make([]pendingDelivery, 0, limit)
 	for rows.Next() {
 		var delivery pendingDelivery
+		var scheduledAt string
 		if err := rows.Scan(
 			&delivery.NotificationID,
 			&delivery.Title,
 			&delivery.Place,
+			&scheduledAt,
+			&delivery.Timezone,
 			&delivery.SubscriptionID,
 			&delivery.Subscription.Endpoint,
 			&delivery.Subscription.Keys.P256DH,
 			&delivery.Subscription.Keys.Auth,
 		); err != nil {
 			return nil, fmt.Errorf("scan pending web push delivery: %w", err)
+		}
+		delivery.ScheduledAt, err = time.Parse(time.RFC3339Nano, scheduledAt)
+		if err != nil {
+			return nil, fmt.Errorf("parse pending web push schedule: %w", err)
 		}
 		deliveries = append(deliveries, delivery)
 	}

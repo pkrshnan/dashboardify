@@ -44,7 +44,11 @@ func TestDispatchDeliversOnceAndRemovesExpiredSubscriptions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	current := time.Date(2026, time.January, 7, 9, 0, 0, 0, time.UTC)
+	location, err := time.LoadLocation("America/Los_Angeles")
+	if err != nil {
+		t.Fatal(err)
+	}
+	current := time.Date(2026, time.October, 7, 18, 31, 0, 0, location)
 	service.now = func() time.Time { return current }
 	active := testSubscription("https://push.example.com/active")
 	expired := testSubscription("https://push.example.com/expired")
@@ -56,11 +60,11 @@ func TestDispatchDeliversOnceAndRemovesExpiredSubscriptions(t *testing.T) {
 	}
 
 	current = current.Add(time.Hour)
-	captures := capture.NewService(captureStore, capture.NewParser(time.UTC), func() time.Time { return current }, nil)
-	if _, err := captures.Create(context.Background(), "push-reminder", "Remind me to submit report today at 2:30 pm"); err != nil {
+	captures := capture.NewService(captureStore, capture.NewParser(location), func() time.Time { return current }, nil)
+	if _, err := captures.Create(context.Background(), "push-reminder", "Remind me to submit report today at 8 pm"); err != nil {
 		t.Fatal(err)
 	}
-	view, err := captures.Today(context.Background(), "2026-01-07")
+	view, err := captures.Today(context.Background(), "2026-10-07")
 	if err != nil || len(view.Tasks) != 1 {
 		t.Fatalf("Today() = %#v, %v", view, err)
 	}
@@ -68,7 +72,7 @@ func TestDispatchDeliversOnceAndRemovesExpiredSubscriptions(t *testing.T) {
 	reminderAt := current.Add(-time.Minute)
 	if _, err := captures.UpdateTask(context.Background(), task.ID, capture.TaskUpdate{
 		Title: task.Title, DueAt: task.DueAt, DueDate: task.DueDate, ReminderAt: &reminderAt,
-		AllDay: task.AllDay, Place: "Office", Status: "open",
+		AllDay: task.AllDay, Place: "555 Folsom St", Status: "open",
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -93,7 +97,7 @@ func TestDispatchDeliversOnceAndRemovesExpiredSubscriptions(t *testing.T) {
 		if err := json.Unmarshal(payload, &notification); err != nil {
 			t.Fatalf("decode push payload: %v", err)
 		}
-		if notification["title"] != task.Title || notification["body"] != "Reminder due · Office" {
+		if notification["title"] != task.Title || notification["body"] != "Wednesday, Oct 7 - 7:30pm · 555 Folsom St" {
 			t.Errorf("push notification = %#v", notification)
 		}
 	}

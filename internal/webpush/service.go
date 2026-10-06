@@ -101,9 +101,9 @@ func (service *Service) Dispatch(ctx context.Context) (DispatchSummary, error) {
 	}
 	var summary DispatchSummary
 	for _, delivery := range deliveries {
-		body := "Reminder due"
-		if delivery.Place != "" {
-			body += " · " + delivery.Place
+		body, err := notificationSubtitle(delivery)
+		if err != nil {
+			return summary, err
 		}
 		payload, err := json.Marshal(map[string]string{
 			"title": delivery.Title,
@@ -135,6 +135,18 @@ func (service *Service) Dispatch(ctx context.Context) (DispatchSummary, error) {
 		}
 	}
 	return summary, nil
+}
+
+func notificationSubtitle(delivery pendingDelivery) (string, error) {
+	location, err := time.LoadLocation(delivery.Timezone)
+	if err != nil {
+		return "", fmt.Errorf("load notification timezone: %w", err)
+	}
+	subtitle := delivery.ScheduledAt.In(location).Format("Monday, Jan 2 - 3:04pm")
+	if delivery.Place != "" {
+		subtitle += " · " + delivery.Place
+	}
+	return subtitle, nil
 }
 
 func validateSubscription(subscription Subscription) error {
