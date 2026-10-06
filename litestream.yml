@@ -1,0 +1,23 @@
+logging:
+  level: info
+  type: json
+
+# Let Litestream prune only complete, recoverable backup chains.
+retention:
+  enabled: true
+
+snapshot:
+  interval: 24h
+  retention: 2160h
+
+dbs:
+  - path: ${DASHBOARDIFY_DATABASE_PATH}
+    replica:
+      type: s3
+      sync-interval: 10m
+      bucket: ${R2_BUCKET}
+      path: litestream/dashboardify
+      endpoint: ${CF_ACCOUNT_ID}.r2.cloudflarestorage.com
+      region: auto
+      access-key-id: ${R2_ACCESS_KEY_ID}
+      secret-access-key: ${R2_SECRET_ACCESS_KEY}

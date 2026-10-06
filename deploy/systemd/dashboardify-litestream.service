@@ -1,0 +1,19 @@
+[Unit]
+Description=Dashboardify SQLite replication to Cloudflare R2
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/Repos/dashboardify
+EnvironmentFile=%h/.config/dashboardify/environment
+ExecStart=%h/.local/bin/litestream replicate -config %h/Repos/dashboardify/litestream.yml
+Restart=on-failure
+RestartSec=5s
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+UMask=0077
+
+[Install]
+WantedBy=default.target

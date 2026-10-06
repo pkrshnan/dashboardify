@@ -19,6 +19,10 @@ type captureRequest struct {
 	IdempotencyKey string `json:"idempotency_key,omitempty"`
 }
 
+type publicCaptureRequest struct {
+	Text string `json:"text"`
+}
+
 type classificationRequest struct {
 	Kind              capture.Kind `json:"kind"`
 	Title             string       `json:"title"`
@@ -69,6 +73,19 @@ func (api captureAPI) create(response http.ResponseWriter, request *http.Request
 			writeJSON(response, http.StatusAccepted, record)
 			return
 		}
+		writeCaptureError(response, err)
+		return
+	}
+	writeJSON(response, http.StatusCreated, record)
+}
+
+func (api captureAPI) createPublic(response http.ResponseWriter, request *http.Request) {
+	var input publicCaptureRequest
+	if !decodeJSON(response, request, &input) {
+		return
+	}
+	record, err := api.service.Create(request.Context(), request.Header.Get("Idempotency-Key"), input.Text)
+	if err != nil {
 		writeCaptureError(response, err)
 		return
 	}

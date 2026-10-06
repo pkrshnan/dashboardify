@@ -1,0 +1,6 @@
+# Append these values to ~/.config/dashboardify/environment.
+# Keep that file private with mode 0600.
+CF_ACCOUNT_ID=your-cloudflare-account-id
+R2_BUCKET=dashboardify-backups
+R2_ACCESS_KEY_ID=your-r2-access-key-id
+R2_SECRET_ACCESS_KEY=your-r2-secret-access-key

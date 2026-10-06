@@ -3,20 +3,24 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	"dashboardify/internal/accessauth"
+	"dashboardify/internal/apikey"
 	"dashboardify/internal/calendar"
 	"dashboardify/internal/capture"
 	"dashboardify/internal/config"
 	"dashboardify/internal/httpserver"
 	"dashboardify/internal/logging"
 	"dashboardify/internal/obsidian"
+	"dashboardify/internal/webpush"
 )
 
 func main() {
@@ -27,12 +31,29 @@ func main() {
 }
 
 func run() error {
+	if len(os.Args) > 1 {
+		if os.Args[1] != "api-key" {
+			return fmt.Errorf("unknown command %q", os.Args[1])
+		}
+		databasePath := strings.TrimSpace(os.Getenv("DASHBOARDIFY_DATABASE_PATH"))
+		if databasePath == "" {
+			databasePath = "data/dashboardify.db"
+		}
+		return runAPIKeyCommand(context.Background(), databasePath, os.Args[2:], os.Stdout)
+	}
+
 	cfg, err := config.Load()
 	if err != nil {
 		return err
 	}
 	logger := logging.New(cfg.LogLevel)
 	slog.SetDefault(logger)
+
+	apiKeyStore, err := apikey.OpenStore(cfg.DatabasePath)
+	if err != nil {
+		return err
+	}
+	defer apiKeyStore.Close()
 
 	captureStore, err := capture.OpenStore(cfg.DatabasePath)
 	if err != nil {
@@ -84,6 +105,20 @@ func run() error {
 		return err
 	}
 
+	pushStore, err := webpush.OpenStore(cfg.DatabasePath)
+	if err != nil {
+		return err
+	}
+	defer pushStore.Close()
+	pushService, err := webpush.NewService(pushStore, webpush.Config{
+		PublicKey:  cfg.WebPush.PublicKey,
+		PrivateKey: cfg.WebPush.PrivateKey,
+		Subject:    cfg.WebPush.Subject,
+	})
+	if err != nil {
+		return err
+	}
+
 	var authenticator httpserver.Authenticator
 	if cfg.Access.Enabled {
 		authenticator, err = accessauth.New(accessauth.Config{
@@ -101,15 +136,22 @@ func run() error {
 		ReadTimeout:   cfg.ReadTimeout,
 		WriteTimeout:  cfg.WriteTimeout,
 		IdleTimeout:   cfg.IdleTimeout,
+		DashboardHost: cfg.DashboardHost,
+		APIHost:       cfg.APIHost,
+		APIKeys:       apiKeyStore,
 		Authenticator: authenticator,
 		Captures:      captureService,
 		Calendar:      calendarService,
+		WebPush:       pushService,
 	}, logger)
 
 	shutdownSignals, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 	if cfg.CalDAV.Enabled {
 		go runCalendarSync(shutdownSignals, calendarService, cfg.CalDAV.SyncInterval, logger)
+	}
+	if cfg.WebPush.Enabled {
+		go runPushDispatch(shutdownSignals, captureService, pushService, cfg.WebPush.DispatchInterval, logger)
 	}
 
 	serverError := make(chan error, 1)
@@ -168,6 +210,42 @@ func runCalendarSync(ctx context.Context, service *calendar.Service, interval ti
 			return
 		case <-ticker.C:
 			synchronize()
+		}
+	}
+}
+
+func runPushDispatch(ctx context.Context, captures *capture.Service, pushes *webpush.Service, interval time.Duration, logger *slog.Logger) {
+	dispatch := func() {
+		if _, err := captures.Notifications(ctx); err != nil {
+			if !errors.Is(err, context.Canceled) {
+				logger.ErrorContext(ctx, "web_push.queue_failed", "error", err)
+			}
+			return
+		}
+		summary, err := pushes.Dispatch(ctx)
+		if err != nil {
+			if !errors.Is(err, context.Canceled) {
+				logger.ErrorContext(ctx, "web_push.dispatch_failed", "error", err)
+			}
+			return
+		}
+		if summary.Sent != 0 || summary.Removed != 0 || summary.Failed != 0 {
+			logger.InfoContext(ctx, "web_push.dispatched",
+				"sent", summary.Sent,
+				"removed", summary.Removed,
+				"failed", summary.Failed,
+			)
+		}
+	}
+	dispatch()
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			dispatch()
 		}
 	}
 }

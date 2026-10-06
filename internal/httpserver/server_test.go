@@ -95,6 +95,24 @@ func TestReferencedJavaScriptBundleIsServedAsImmutableAsset(t *testing.T) {
 	}
 }
 
+func TestProgressiveWebAppAssetsSupportBackgroundPush(t *testing.T) {
+	handler := NewHandler(discardLogger(), nil, nil)
+	manifest := httptest.NewRecorder()
+	handler.ServeHTTP(manifest, httptest.NewRequest(http.MethodGet, "/manifest.webmanifest", nil))
+	if manifest.Code != http.StatusOK || !bytes.Contains(manifest.Body.Bytes(), []byte(`"display": "standalone"`)) {
+		t.Fatalf("manifest response = %d: %s", manifest.Code, manifest.Body.String())
+	}
+
+	worker := httptest.NewRecorder()
+	handler.ServeHTTP(worker, httptest.NewRequest(http.MethodGet, "/service-worker.js", nil))
+	if worker.Code != http.StatusOK || !bytes.Contains(worker.Body.Bytes(), []byte("notificationclick")) {
+		t.Fatalf("service worker response = %d: %s", worker.Code, worker.Body.String())
+	}
+	if worker.Header().Get("Cache-Control") != "no-cache" || worker.Header().Get("Service-Worker-Allowed") != "/" {
+		t.Fatalf("service worker headers = %#v", worker.Header())
+	}
+}
+
 func TestUnknownRouteDoesNotEchoPathOrQuery(t *testing.T) {
 	handler := NewHandler(discardLogger(), nil, nil)
 	request := httptest.NewRequest(http.MethodGet, "/private-value?secret=do-not-echo", nil)

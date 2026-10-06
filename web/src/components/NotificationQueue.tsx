@@ -1,60 +1,76 @@
 import { useEffect, useState } from 'react';
-import { Bell, BellOff, X } from 'lucide-react';
+import { Bell, BellOff, BellRing, X } from 'lucide-react';
 
 import styles from './NotificationQueue.module.css';
 
-import { dismissNotification, listNotifications } from '@/api';
+import {
+  deletePushSubscription,
+  dismissNotification,
+  getPushConfig,
+  listNotifications,
+  savePushSubscription,
+} from '@/api';
 import { SectionHeading } from '@/components/SectionHeading';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { applicationServerKey, registerDashboardServiceWorker } from '@/serviceWorker';
 import type { NotificationRecord } from '@/types';
 
-const seenStorageKey = 'dashboardify-browser-notifications';
+type AlertState = 'loading' | 'unsupported' | 'unavailable' | 'ready' | 'denied' | 'subscribed';
 
-type DevicePermission = NotificationPermission | 'unsupported';
-
-function currentPermission(): DevicePermission {
-  return typeof Notification === 'undefined' ? 'unsupported' : Notification.permission;
-}
-
-function notifyDevice(records: NotificationRecord[], permission: DevicePermission) {
-  if (permission !== 'granted' || records.length === 0) return;
-  let seen: string[] = [];
-  try {
-    seen = JSON.parse(sessionStorage.getItem(seenStorageKey) ?? '[]') as string[];
-  } catch {
-    seen = [];
-  }
-  const seenIDs = new Set(seen);
-  for (const record of records) {
-    if (seenIDs.has(record.id)) continue;
-    new Notification('Dashboardify reminder', {
-      body: 'A reminder is due. Open Dashboardify for details.',
-      tag: `dashboardify-${record.id}`,
-    });
-    seenIDs.add(record.id);
-  }
-  sessionStorage.setItem(seenStorageKey, JSON.stringify(Array.from(seenIDs).slice(-100)));
+function supportsWebPush() {
+  return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 }
 
 export function NotificationQueue() {
   const [records, setRecords] = useState<NotificationRecord[]>([]);
-  const [permission, setPermission] = useState<DevicePermission>(currentPermission);
+  const [alertState, setAlertState] = useState<AlertState>('loading');
+  const [publicKey, setPublicKey] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
     const controller = new AbortController();
-    async function load() {
+    async function loadNotifications() {
       try {
-        const queued = await listNotifications(controller.signal);
-        setRecords(queued);
-        notifyDevice(queued, currentPermission());
+        setRecords(await listNotifications(controller.signal));
       } catch (requestError) {
         if (!controller.signal.aborted) setError(requestError instanceof Error ? requestError.message : 'Reminders could not be loaded');
       }
     }
-    void load();
-    const timer = window.setInterval(() => void load(), 60_000);
+    async function loadPushState() {
+      if (!supportsWebPush()) {
+        setAlertState('unsupported');
+        return;
+      }
+      try {
+        const config = await getPushConfig(controller.signal);
+        if (!config.enabled || !config.public_key) {
+          setAlertState('unavailable');
+          return;
+        }
+        setPublicKey(config.public_key);
+        const registration = await registerDashboardServiceWorker();
+        if (!registration) {
+          setAlertState('unsupported');
+          return;
+        }
+        const subscription = await registration.pushManager.getSubscription();
+        if (subscription) {
+          await savePushSubscription(subscription);
+          setAlertState('subscribed');
+        } else {
+          setAlertState(Notification.permission === 'denied' ? 'denied' : 'ready');
+        }
+      } catch (requestError) {
+        if (!controller.signal.aborted) {
+          setAlertState('unavailable');
+          setError(requestError instanceof Error ? requestError.message : 'Device alerts could not be configured');
+        }
+      }
+    }
+    void loadNotifications();
+    void loadPushState();
+    const timer = window.setInterval(() => void loadNotifications(), 60_000);
     return () => {
       controller.abort();
       window.clearInterval(timer);
@@ -62,10 +78,45 @@ export function NotificationQueue() {
   }, []);
 
   async function enableDeviceAlerts() {
-    if (typeof Notification === 'undefined') return;
-    const nextPermission = await Notification.requestPermission();
-    setPermission(nextPermission);
-    notifyDevice(records, nextPermission);
+    setError('');
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        setAlertState(permission === 'denied' ? 'denied' : 'ready');
+        return;
+      }
+      const registration = await registerDashboardServiceWorker();
+      if (!registration) throw new Error('The service worker could not be registered');
+      const existing = await registration.pushManager.getSubscription();
+      const subscription = existing ?? await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: applicationServerKey(publicKey),
+      });
+      try {
+        await savePushSubscription(subscription);
+      } catch (requestError) {
+        if (!existing) await subscription.unsubscribe();
+        throw requestError;
+      }
+      setAlertState('subscribed');
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Device alerts could not be enabled');
+    }
+  }
+
+  async function disableDeviceAlerts() {
+    setError('');
+    try {
+      const registration = await registerDashboardServiceWorker();
+      const subscription = await registration?.pushManager.getSubscription();
+      if (subscription) {
+        await deletePushSubscription(subscription.endpoint);
+        await subscription.unsubscribe();
+      }
+      setAlertState(Notification.permission === 'denied' ? 'denied' : 'ready');
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Device alerts could not be disabled');
+    }
   }
 
   async function dismiss(record: NotificationRecord) {
@@ -78,16 +129,18 @@ export function NotificationQueue() {
     }
   }
 
-  if (records.length === 0 && permission === 'granted' && !error) return null;
-
   return (
     <Card className={styles.queue}>
       <div className={styles.queueHeader}>
         <SectionHeading>Reminders</SectionHeading>
-        {permission === 'default' ? <Button size="sm" variant="outline" onClick={() => void enableDeviceAlerts()}><Bell />Enable device alerts</Button> : null}
+        {alertState === 'ready' ? <Button size="sm" variant="outline" onClick={() => void enableDeviceAlerts()}><BellRing />Enable device alerts</Button> : null}
+        {alertState === 'subscribed' ? <Button size="sm" variant="ghost" onClick={() => void disableDeviceAlerts()}><BellOff />Disable device alerts</Button> : null}
       </div>
-      {permission === 'denied' ? <p className={styles.permissionNote}><BellOff />Browser alerts are blocked. Due reminders will still stay visible here.</p> : null}
-      {permission === 'unsupported' ? <p className={styles.permissionNote}><BellOff />This browser does not support device alerts. Due reminders will still stay visible here.</p> : null}
+      {alertState === 'loading' ? <p className={styles.permissionNote}><Bell />Checking device alerts…</p> : null}
+      {alertState === 'subscribed' ? <p className={styles.permissionNote}><BellRing />Background alerts are enabled on this device.</p> : null}
+      {alertState === 'denied' ? <p className={styles.permissionNote}><BellOff />Notifications are blocked. Enable them for Dashboardify in Settings, then reopen the app.</p> : null}
+      {alertState === 'unsupported' ? <p className={styles.permissionNote}><BellOff />On iPhone or iPad, add Dashboardify to the Home Screen and open it there to enable background alerts. iOS 16.4 or newer is required.</p> : null}
+      {alertState === 'unavailable' ? <p className={styles.permissionNote}><BellOff />Background alerts are not configured on the server.</p> : null}
       {error ? <p className={styles.error} role="alert">{error}</p> : null}
       {records.length > 0 ? (
         <ul className={styles.notificationList}>

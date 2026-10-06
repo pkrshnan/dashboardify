@@ -51,6 +51,8 @@ func TestLoadAcceptsCompleteProductionAccessConfig(t *testing.T) {
 	t.Setenv("DASHBOARDIFY_CF_ACCESS_TEAM_DOMAIN", "team.cloudflareaccess.com")
 	t.Setenv("DASHBOARDIFY_CF_ACCESS_AUD", "dashboard-audience")
 	t.Setenv("DASHBOARDIFY_ALLOWED_SUBJECT", "owner-subject")
+	t.Setenv("DASHBOARDIFY_DASHBOARD_HOST", "dashboard.pkrshnan.com")
+	t.Setenv("DASHBOARDIFY_API_HOST", "dashboard-api.pkrshnan.com")
 
 	cfg, err := Load()
 	if err != nil {
@@ -58,6 +60,27 @@ func TestLoadAcceptsCompleteProductionAccessConfig(t *testing.T) {
 	}
 	if !cfg.Access.Enabled {
 		t.Fatal("Access.Enabled = false, want true")
+	}
+}
+
+func TestLoadRequiresDistinctProductionHosts(t *testing.T) {
+	clearConfigEnvironment(t)
+	t.Setenv("DASHBOARDIFY_ENV", "production")
+	t.Setenv("DASHBOARDIFY_DASHBOARD_HOST", "dashboard.pkrshnan.com")
+	t.Setenv("DASHBOARDIFY_API_HOST", "dashboard.pkrshnan.com")
+
+	if _, err := Load(); err == nil {
+		t.Fatal("Load() accepted identical dashboard and API hosts")
+	}
+}
+
+func TestLoadRejectsHostnameWithPath(t *testing.T) {
+	clearConfigEnvironment(t)
+	t.Setenv("DASHBOARDIFY_DASHBOARD_HOST", "dashboard.pkrshnan.com/private")
+	t.Setenv("DASHBOARDIFY_API_HOST", "dashboard-api.pkrshnan.com")
+
+	if _, err := Load(); err == nil {
+		t.Fatal("Load() accepted a dashboard hostname with a path")
 	}
 }
 
@@ -102,6 +125,34 @@ func TestLoadRejectsPartialOrInsecureCalDAVConfig(t *testing.T) {
 	}
 }
 
+func TestLoadValidatesWebPushConfig(t *testing.T) {
+	clearConfigEnvironment(t)
+	t.Setenv("DASHBOARDIFY_VAPID_PUBLIC_KEY", "public-key")
+	t.Setenv("DASHBOARDIFY_VAPID_PRIVATE_KEY", "private-key")
+	t.Setenv("DASHBOARDIFY_VAPID_SUBJECT", "mailto:owner@example.com")
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if !cfg.WebPush.Enabled {
+		t.Fatal("WebPush.Enabled = false, want true")
+	}
+
+	clearConfigEnvironment(t)
+	t.Setenv("DASHBOARDIFY_VAPID_PUBLIC_KEY", "public-key")
+	if _, err := Load(); err == nil {
+		t.Fatal("Load() accepted partial Web Push credentials")
+	}
+
+	clearConfigEnvironment(t)
+	t.Setenv("DASHBOARDIFY_VAPID_PUBLIC_KEY", "public-key")
+	t.Setenv("DASHBOARDIFY_VAPID_PRIVATE_KEY", "private-key")
+	t.Setenv("DASHBOARDIFY_VAPID_SUBJECT", "owner@example.com")
+	if _, err := Load(); err == nil {
+		t.Fatal("Load() accepted an invalid VAPID subject")
+	}
+}
+
 func TestLoadConfiguresTopLevelObsidianCaptureNote(t *testing.T) {
 	clearConfigEnvironment(t)
 	vault := t.TempDir()
@@ -135,6 +186,8 @@ func clearConfigEnvironment(t *testing.T) {
 		"DASHBOARDIFY_HOME_TIMEZONE",
 		"DASHBOARDIFY_LOG_LEVEL",
 		"DASHBOARDIFY_DATABASE_PATH",
+		"DASHBOARDIFY_DASHBOARD_HOST",
+		"DASHBOARDIFY_API_HOST",
 		"DASHBOARDIFY_CF_ACCESS_TEAM_DOMAIN",
 		"DASHBOARDIFY_CF_ACCESS_AUD",
 		"DASHBOARDIFY_ALLOWED_SUBJECT",
@@ -143,6 +196,10 @@ func clearConfigEnvironment(t *testing.T) {
 		"DASHBOARDIFY_CALDAV_PASSWORD",
 		"DASHBOARDIFY_CALDAV_CALENDAR_NAME",
 		"DASHBOARDIFY_CALDAV_SYNC_INTERVAL",
+		"DASHBOARDIFY_VAPID_PUBLIC_KEY",
+		"DASHBOARDIFY_VAPID_PRIVATE_KEY",
+		"DASHBOARDIFY_VAPID_SUBJECT",
+		"DASHBOARDIFY_WEB_PUSH_INTERVAL",
 		"DASHBOARDIFY_OBSIDIAN_VAULT_PATH",
 		"DASHBOARDIFY_OBSIDIAN_CAPTURE_FILE",
 	} {

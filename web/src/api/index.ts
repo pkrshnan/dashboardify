@@ -3,5 +3,6 @@ export { captureDetail, classifyCapture, createCapture, listCaptures, previewCap
 export { discoverCalendar, getCalendarStatus, listCalendarConflicts, resolveCalendarConflict, syncCalendar, updateCalendarEvent } from './calendar';
 export { listInbox } from './inbox';
 export { dismissNotification, listNotifications } from './notifications';
+export { deletePushSubscription, getPushConfig, savePushSubscription } from './push';
 export { updateTask } from './tasks';
 export { getToday } from './today';
