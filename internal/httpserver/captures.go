@@ -114,6 +114,17 @@ func (api captureAPI) detail(response http.ResponseWriter, request *http.Request
 	writeJSON(response, http.StatusOK, detail)
 }
 
+func (api captureAPI) delete(response http.ResponseWriter, request *http.Request) {
+	if !acceptSameOriginJSON(response, request) {
+		return
+	}
+	if err := api.service.Delete(request.Context(), request.PathValue("id")); err != nil {
+		writeCaptureError(response, err)
+		return
+	}
+	response.WriteHeader(http.StatusNoContent)
+}
+
 func (api captureAPI) classify(response http.ResponseWriter, request *http.Request) {
 	if !acceptSameOriginJSON(response, request) {
 		return

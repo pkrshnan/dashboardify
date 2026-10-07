@@ -130,6 +130,7 @@ func dashboardApplication(logger *slog.Logger, authenticator Authenticator, capt
 		application.HandleFunc("POST /api/captures/preview", api.preview)
 		application.HandleFunc("GET /api/inbox", api.inbox)
 		application.HandleFunc("GET /api/captures/{id}", api.detail)
+		application.HandleFunc("DELETE /api/captures/{id}", api.delete)
 		application.HandleFunc("PUT /api/captures/{id}/classification", api.classify)
 		application.HandleFunc("GET /api/today", (todayAPI{captures: captures, calendar: calendars, logger: logger}).list)
 		application.HandleFunc("PUT /api/tasks/{id}", api.updateTask)

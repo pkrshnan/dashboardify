@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, History, Inbox } from 'lucide-react';
+import { ArrowLeft, History, Inbox, Trash2 } from 'lucide-react';
 
 import styles from './InboxScreen.module.css';
 
@@ -21,7 +21,7 @@ function localDateTime(value?: string): string {
   return local.toISOString().slice(0, 16);
 }
 
-function ReviewCard({ record, onFiled }: { record: CaptureRecord; onFiled(record: CaptureRecord): void }) {
+function ReviewCard({ record, onFiled, onDeleted }: { record: CaptureRecord; onFiled(record: CaptureRecord): void; onDeleted(record: CaptureRecord): Promise<void> }) {
   const [open, setOpen] = useState(record.inbox_state === 'open');
   const [kind, setKind] = useState<Exclude<CaptureKind, 'pending'>>(record.kind === 'pending' ? 'note' : record.kind);
   const [title, setTitle] = useState(record.title || record.raw_text);
@@ -72,6 +72,18 @@ function ReviewCard({ record, onFiled }: { record: CaptureRecord; onFiled(record
     }
   }
 
+  async function remove() {
+    if (!window.confirm('Delete this capture and its Dashboardify item? Its Obsidian entry will remain.')) return;
+    setSaving(true);
+    setStatus('Deleting…');
+    try {
+      await onDeleted(record);
+    } catch (requestError) {
+      setStatus(requestError instanceof Error ? requestError.message : 'Capture could not be deleted');
+      setSaving(false);
+    }
+  }
+
   return (
     <Card className={styles.reviewCard}>
       <button className={styles.reviewSummary} type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open}>
@@ -114,6 +126,7 @@ function ReviewCard({ record, onFiled }: { record: CaptureRecord; onFiled(record
           <div className={styles.reviewActions}>
             <Button type="button" onClick={() => void save()} disabled={saving || !title.trim()}>File capture</Button>
             <span role="status" aria-live="polite">{status}</span>
+            <Button className={styles.deleteAction} type="button" variant="destructive" onClick={() => void remove()} disabled={saving}><Trash2 />Delete</Button>
           </div>
           {detail && detail.history.length > 0 ? (
             <details className={styles.classificationHistory}>
@@ -135,10 +148,12 @@ export function InboxScreen({
   onNavigate,
   onInboxCountChange,
   onCaptureChange,
+  onCaptureDelete,
 }: {
   onNavigate(path: string): void;
   onInboxCountChange(count: number): void;
   onCaptureChange(record: CaptureRecord): void;
+  onCaptureDelete(record: CaptureRecord): Promise<void>;
 }) {
   const [openCaptures, setOpenCaptures] = useState<CaptureRecord[]>([]);
   const [recent, setRecent] = useState<CaptureRecord[]>([]);
@@ -166,6 +181,12 @@ export function InboxScreen({
     onCaptureChange(filed);
   }
 
+  async function remove(deleted: CaptureRecord) {
+    await onCaptureDelete(deleted);
+    setOpenCaptures((items) => items.filter((item) => item.id !== deleted.id));
+    setRecent((items) => items.filter((item) => item.id !== deleted.id));
+  }
+
   return (
     <div className={styles.inboxScreen}>
       <header className={styles.inboxHeader}>
@@ -176,13 +197,13 @@ export function InboxScreen({
         <SectionHeading>Needs filing</SectionHeading>
         {loading ? <p className={styles.emptyState}>Loading captures…</p> : null}
         {!loading && openCaptures.length === 0 ? <div className={styles.emptyState}><Inbox aria-hidden="true" /><strong>Inbox zero</strong><span>Every capture has been filed.</span></div> : null}
-        <div className={styles.reviewList}>{openCaptures.map((record) => <ReviewCard record={record} onFiled={replace} key={record.id} />)}</div>
+        <div className={styles.reviewList}>{openCaptures.map((record) => <ReviewCard record={record} onFiled={replace} onDeleted={remove} key={record.id} />)}</div>
       </section>
       {recent.length > 0 ? (
         <section className={styles.inboxSection}>
           <SectionHeading>Filed recently</SectionHeading>
           <p className={styles.sectionDescription}>Open any capture to correct its classification without changing the original text.</p>
-          <div className={styles.reviewList}>{recent.map((record) => <ReviewCard record={record} onFiled={replace} key={record.id} />)}</div>
+          <div className={styles.reviewList}>{recent.map((record) => <ReviewCard record={record} onFiled={replace} onDeleted={remove} key={record.id} />)}</div>
         </section>
       ) : null}
     </div>

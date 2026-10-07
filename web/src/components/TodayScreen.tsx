@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Pencil, RotateCcw } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Pencil, RotateCcw, Trash2 } from 'lucide-react';
 
 import styles from './TodayScreen.module.css';
 
@@ -19,6 +19,7 @@ interface TodayScreenProps {
   captures: CaptureRecord[];
   inboxCount: number;
   onCaptureCreated(record: CaptureRecord): void;
+  onCaptureDeleted(record: CaptureRecord): Promise<void>;
   onNavigate(path: string): void;
 }
 
@@ -105,19 +106,27 @@ function MetadataLabel({ children }: { children: React.ReactNode }) {
   return <span className={styles.metadataLabel}>{children}</span>;
 }
 
-function RecentCaptures({ captures }: { captures: CaptureRecord[] }) {
+function RecentCaptures({ captures, deletingID, onDelete }: {
+  captures: CaptureRecord[];
+  deletingID: string;
+  onDelete(record: CaptureRecord): void;
+}) {
   if (captures.length === 0) return null;
   return (
     <Card className={styles.recentCaptures}>
       <SectionHeading>Recently captured</SectionHeading>
       <ul className={styles.captureList}>
         {captures.map((record) => {
+          const title = record.subject ? `${record.subject}: ${record.title}` : record.title || record.raw_text;
           const metadata = [record.display_when, record.place ? `at ${record.place}` : undefined, record.subject].filter(Boolean).join(' · ') || 'Saved without a schedule';
           return (
             <li className={styles.captureRecord} key={record.id}>
-              <div className={styles.captureRecordTitle}>{record.subject ? `${record.subject}: ${record.title}` : record.title || record.raw_text}</div>
+              <div className={styles.captureRecordTitle}>{title}</div>
               <div className={styles.captureRecordMeta}>{metadata}</div>
-              <Badge variant="secondary">{record.kind}</Badge>
+              <div className={styles.captureRecordActions}>
+                <Badge variant="secondary">{record.kind}</Badge>
+                <Button size="icon-sm" variant="destructive" aria-label={`Delete ${title}`} disabled={deletingID === record.id} onClick={() => onDelete(record)}><Trash2 /></Button>
+              </div>
             </li>
           );
         })}
@@ -289,7 +298,7 @@ function RightRail({ upNext, timeZone, inboxCount, onNavigate }: { upNext: Timel
   );
 }
 
-export function TodayScreen({ captures, inboxCount, onCaptureCreated, onNavigate }: TodayScreenProps) {
+export function TodayScreen({ captures, inboxCount, onCaptureCreated, onCaptureDeleted, onNavigate }: TodayScreenProps) {
   const [view, setView] = useState<TodayView | null>(null);
   const [selectedDate, setSelectedDate] = useState('');
   const [todayDate, setTodayDate] = useState('');
@@ -297,6 +306,7 @@ export function TodayScreen({ captures, inboxCount, onCaptureCreated, onNavigate
   const [pendingIDs, setPendingIDs] = useState(new Set<string>());
   const [error, setError] = useState('');
   const [undo, setUndo] = useState<{ task: TaskRecord; message: string } | null>(null);
+  const [deletingCaptureID, setDeletingCaptureID] = useState('');
 
   useEffect(() => {
     const controller = new AbortController();
@@ -367,6 +377,20 @@ export function TodayScreen({ captures, inboxCount, onCaptureCreated, onNavigate
     }
   }
 
+  async function removeCapture(record: CaptureRecord) {
+    if (!window.confirm('Delete this capture and its Dashboardify item? Its Obsidian entry will remain.')) return;
+    setDeletingCaptureID(record.id);
+    setError('');
+    try {
+      await onCaptureDeleted(record);
+      setReload((value) => value + 1);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Capture could not be deleted');
+    } finally {
+      setDeletingCaptureID('');
+    }
+  }
+
   const activeDate = view?.date || selectedDate;
   return (
     <>
@@ -375,7 +399,7 @@ export function TodayScreen({ captures, inboxCount, onCaptureCreated, onNavigate
       <NotificationQueue />
       {error ? <p className={styles.error} role="alert">{error}</p> : null}
       {undo ? <div className={styles.undoBar} role="status"><span>{undo.message}</span><Button size="sm" variant="ghost" onClick={() => void undoLastAction()}><RotateCcw />Undo</Button></div> : null}
-      <RecentCaptures captures={captures} />
+      <RecentCaptures captures={captures} deletingID={deletingCaptureID} onDelete={(record) => void removeCapture(record)} />
       {view && activeDate ? <>
         <Timeline items={timeline} timeZone={view.timezone} selectedDate={activeDate} pendingIDs={pendingIDs} onChange={(task, update, message) => void changeTask(task, update, message)} />
         <Card className={`${styles.tasks} ${styles.sectionCard}`}>

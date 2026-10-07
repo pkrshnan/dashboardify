@@ -39,3 +39,11 @@ export async function classifyCapture(id: string, classification: Classification
   });
   return responseJSON<CaptureRecord>(response);
 }
+
+export async function deleteCapture(id: string): Promise<void> {
+  const response = await fetch(`/api/captures/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: mutationHeaders,
+  });
+  if (!response.ok) await responseJSON<never>(response);
+}

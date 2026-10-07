@@ -136,6 +136,10 @@ func (service *Service) Detail(ctx context.Context, id string) (Detail, error) {
 	return Detail{Capture: service.decorate(record), History: history}, nil
 }
 
+func (service *Service) Delete(ctx context.Context, id string) error {
+	return mapNotFound(service.store.DeleteCapture(ctx, id))
+}
+
 func (service *Service) File(ctx context.Context, id string, proposal Proposal) (Record, error) {
 	proposal.Title = strings.TrimSpace(proposal.Title)
 	proposal.Subject = strings.TrimSpace(proposal.Subject)

@@ -12,7 +12,7 @@ import {
   Users,
 } from 'lucide-react';
 
-import { listCaptures, listInbox } from '@/api';
+import { deleteCapture, listCaptures, listInbox } from '@/api';
 import { CalendarScreen } from '@/components/CalendarScreen';
 import { InboxScreen } from '@/components/InboxScreen';
 import { TodayScreen } from '@/components/TodayScreen';
@@ -128,6 +128,12 @@ export function App() {
     if (record.inbox_state === 'open') setInboxCount((count) => count + 1);
   }
 
+  async function captureDeleted(record: CaptureRecord) {
+    await deleteCapture(record.id);
+    setCaptures((items) => items.filter((item) => item.id !== record.id));
+    if (record.inbox_state === 'open') setInboxCount((count) => Math.max(0, count - 1));
+  }
+
   return (
     <TooltipProvider>
       <a className="skip-link" href="#main">Skip to main content</a>
@@ -136,7 +142,7 @@ export function App() {
         <main className={shellStyles.main} id="main">
           <div className={route === '/inbox' ? `${shellStyles.mainInner} ${shellStyles.mainInnerInbox}` : shellStyles.mainInner}>
             {route === '/inbox' ? (
-              <InboxScreen onNavigate={navigate} onInboxCountChange={setInboxCount} onCaptureChange={captureChanged} />
+              <InboxScreen onNavigate={navigate} onInboxCountChange={setInboxCount} onCaptureChange={captureChanged} onCaptureDelete={captureDeleted} />
             ) : route === '/calendar' ? (
               <CalendarScreen />
             ) : (
@@ -144,6 +150,7 @@ export function App() {
                 captures={captures}
                 inboxCount={inboxCount}
                 onCaptureCreated={captureCreated}
+                onCaptureDeleted={captureDeleted}
                 onNavigate={navigate}
               />
             )}

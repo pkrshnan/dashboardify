@@ -59,6 +59,64 @@ func TestCaptureAPIParsesPersistsAndListsRecord(t *testing.T) {
 	}
 }
 
+func TestCaptureAPIDeletesCaptureAndDerivedRecords(t *testing.T) {
+	service := newCaptureService(t)
+	handler := NewHandler(discardLogger(), nil, service)
+	create := captureJSONRequest(t, http.MethodPost, "/api/captures", map[string]string{
+		"text":            "Remind me to renew passport today at 9 am",
+		"idempotency_key": "delete-reminder",
+	})
+	createResponse := httptest.NewRecorder()
+	handler.ServeHTTP(createResponse, create)
+	if createResponse.Code != http.StatusCreated {
+		t.Fatalf("create status = %d: %s", createResponse.Code, createResponse.Body.String())
+	}
+	var record capture.Record
+	if err := json.NewDecoder(createResponse.Body).Decode(&record); err != nil {
+		t.Fatalf("decode created capture: %v", err)
+	}
+
+	queueResponse := httptest.NewRecorder()
+	handler.ServeHTTP(queueResponse, httptest.NewRequest(http.MethodGet, "http://example.com/api/notifications", nil))
+	var queued struct {
+		Notifications []capture.NotificationRecord `json:"notifications"`
+	}
+	if err := json.NewDecoder(queueResponse.Body).Decode(&queued); err != nil || len(queued.Notifications) != 1 {
+		t.Fatalf("notifications before deletion = %#v, %v", queued.Notifications, err)
+	}
+
+	deleteRequest := captureJSONRequest(t, http.MethodDelete, "/api/captures/"+record.ID, nil)
+	deleteResponse := httptest.NewRecorder()
+	handler.ServeHTTP(deleteResponse, deleteRequest)
+	if deleteResponse.Code != http.StatusNoContent {
+		t.Fatalf("delete status = %d: %s", deleteResponse.Code, deleteResponse.Body.String())
+	}
+
+	detailResponse := httptest.NewRecorder()
+	handler.ServeHTTP(detailResponse, httptest.NewRequest(http.MethodGet, "http://example.com/api/captures/"+record.ID, nil))
+	if detailResponse.Code != http.StatusNotFound {
+		t.Fatalf("detail after deletion status = %d, want %d", detailResponse.Code, http.StatusNotFound)
+	}
+	todayResponse := httptest.NewRecorder()
+	handler.ServeHTTP(todayResponse, httptest.NewRequest(http.MethodGet, "http://example.com/api/today", nil))
+	var today capture.TodayView
+	if err := json.NewDecoder(todayResponse.Body).Decode(&today); err != nil || len(today.Tasks) != 0 {
+		t.Fatalf("Today after deletion = %#v, %v", today, err)
+	}
+	queueResponse = httptest.NewRecorder()
+	handler.ServeHTTP(queueResponse, httptest.NewRequest(http.MethodGet, "http://example.com/api/notifications", nil))
+	queued.Notifications = nil
+	if err := json.NewDecoder(queueResponse.Body).Decode(&queued); err != nil || len(queued.Notifications) != 0 {
+		t.Fatalf("notifications after deletion = %#v, %v", queued.Notifications, err)
+	}
+
+	deleteResponse = httptest.NewRecorder()
+	handler.ServeHTTP(deleteResponse, captureJSONRequest(t, http.MethodDelete, "/api/captures/"+record.ID, nil))
+	if deleteResponse.Code != http.StatusNotFound {
+		t.Fatalf("repeated delete status = %d, want %d", deleteResponse.Code, http.StatusNotFound)
+	}
+}
+
 func TestTodayAndTaskResourceAPIsPersistLifecycle(t *testing.T) {
 	service := newCaptureService(t)
 	handler := NewHandler(discardLogger(), nil, service)

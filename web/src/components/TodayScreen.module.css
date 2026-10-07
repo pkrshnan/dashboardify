@@ -50,9 +50,15 @@
   font-size: 0.73rem;
 }
 
-.capture-record [data-slot="badge"] {
+.capture-record-actions {
+  display: flex;
   grid-column: 2;
   grid-row: 1 / 3;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.capture-record-actions [data-slot="badge"] {
   text-transform: capitalize;
 }
 

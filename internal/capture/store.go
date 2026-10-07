@@ -310,6 +310,21 @@ func (store *Store) Close() error {
 	return store.database.Close()
 }
 
+func (store *Store) DeleteCapture(ctx context.Context, id string) error {
+	result, err := store.database.ExecContext(ctx, `DELETE FROM captures WHERE id = ?`, id)
+	if err != nil {
+		return fmt.Errorf("delete capture: %w", err)
+	}
+	deleted, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("inspect capture deletion: %w", err)
+	}
+	if deleted == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
 func (store *Store) migrate(ctx context.Context) error {
 	transaction, err := store.database.BeginTx(ctx, nil)
 	if err != nil {

@@ -151,6 +151,10 @@
   font-size: 0.72rem;
 }
 
+.delete-action {
+  margin-left: auto;
+}
+
 .classification-history {
   margin-top: 1rem;
   border-top: 1px solid var(--border);
