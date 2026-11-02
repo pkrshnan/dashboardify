@@ -49,6 +49,7 @@ Marked `privacy: local-only`, so a cloud model never sees them. Each line ends w
 
 - 12:05 **Sam**: Moved dinner to 19:00. <!-- id:m1 -->
 ```
+<<<<<<< HEAD
 
 ## Reminders: `tasks/reminders.md`
 
@@ -73,3 +74,5 @@ If the vault is a git repo, the server commits what it writes and pushes it.
 - **Pulling:** before pushing, the server rebases onto the remote. It also pulls every 5 minutes (`GIT_PULL_INTERVAL_MS`), so edits from your other devices show up even when nothing new is written.
 - **Conflicts:** if your edits elsewhere conflict with the server's, the rebase is aborted. The server's commits are kept locally, nothing is pushed, and `GET /api/status` reports `conflict: true`. Resolve it from any clone, and the next sync goes through. The server never force-pushes.
 - **Server state:** `.cc/` is added to the vault's `.gitignore` on startup, so server state never gets committed.
+=======
+>>>>>>> origin/main
