@@ -1,6 +1,7 @@
 // The HTTP API. Each area lives in its own file under routes/; this file only wires them up.
 
 import { Hono } from "hono";
+import type { GitSyncStatus } from "../vault/git-sync";
 import { Vault } from "../vault/vault";
 import { type AuthEnv, bearerAuth } from "./auth";
 import type { Config } from "./config";
@@ -12,6 +13,8 @@ import { todayRoutes } from "./routes/today";
 
 export interface AppDeps {
   vault?: Vault;
+  /** Reported by GET /api/status. */
+  gitStatus?: () => GitSyncStatus | null;
 }
 
 export function createApp(config: Config, deps: AppDeps = {}): Hono<AuthEnv> {
@@ -24,6 +27,7 @@ export function createApp(config: Config, deps: AppDeps = {}): Hono<AuthEnv> {
   api.route("/ingest/reminders", reminderRoutes(vault, config));
   api.route("/ingest/messages", messageRoutes(vault));
   api.route("/today", todayRoutes(vault, config));
+  api.get("/status", (c) => c.json({ git: deps.gitStatus?.() ?? null }));
 
   const app = new Hono<AuthEnv>();
   app.get("/healthz", (c) => c.json({ ok: true }));

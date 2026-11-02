@@ -6,6 +6,12 @@ export interface Config {
   timeZone: string;
   /** device name -> bearer token */
   tokens: Map<string, string>;
+  git: {
+    /** "auto" syncs when the vault is a git repo; "off" never touches git. */
+    mode: "auto" | "off";
+    commitDelayMs: number;
+    pullIntervalMs: number;
+  };
 }
 
 export function loadConfig(env: Record<string, string | undefined> = process.env): Config {
@@ -23,6 +29,11 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     port: Number(env.PORT ?? 8787),
     timeZone,
     tokens: parseTokens(env.INGEST_TOKENS ?? ""),
+    git: {
+      mode: env.GIT_SYNC === "off" ? "off" : "auto",
+      commitDelayMs: Number(env.GIT_COMMIT_DELAY_MS ?? 30_000),
+      pullIntervalMs: Number(env.GIT_PULL_INTERVAL_MS ?? 300_000),
+    },
   };
 }
 

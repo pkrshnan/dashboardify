@@ -15,6 +15,7 @@ beforeEach(async () => {
     vaultPath: dir,
     port: 0,
     timeZone: "America/Los_Angeles",
+    git: { mode: "off", commitDelayMs: 0, pullIntervalMs: 0 },
     tokens: new Map([
       ["iphone", TOKEN],
       ["mac", "another-token-abcdefgh"],

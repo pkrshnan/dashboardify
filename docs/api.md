@@ -56,3 +56,7 @@ Appends to `inbox/messages/YYYY-MM-DD.md`, which is marked `local-only`. If `id`
 ## `GET /api/today?date=YYYY-MM-DD`
 
 Returns `{ date, path, frontmatter, body }` for that day's note. `date` defaults to today. If there is no note yet, `body` is `null`.
+
+## `GET /api/status`
+
+Returns `{ "git": { enabled, hasRemote, pending, lastCommitAt, lastPushAt, lastPullAt, conflict, lastError } }`, or `"git": null` when git sync is off.
