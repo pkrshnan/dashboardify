@@ -1,29 +1,29 @@
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+// Calendar helpers built on Temporal, which handles time zones and DST for us.
 
-/** YYYY-MM-DD for `at` in the given IANA time zone. */
+/** The wall-clock date and time of `at` in an IANA time zone. */
+function zoned(at: Date, timeZone: string): Temporal.ZonedDateTime {
+  return Temporal.Instant.fromEpochMilliseconds(at.getTime()).toZonedDateTimeISO(timeZone);
+}
+
+/** YYYY-MM-DD for `at` in the given time zone. */
 export function localDate(at: Date, timeZone: string): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(at);
+  return zoned(at, timeZone).toPlainDate().toString();
 }
 
-/** HH:MM (24h) for `at` in the given IANA time zone. */
+/** HH:MM (24h) for `at` in the given time zone. */
 export function localTime(at: Date, timeZone: string): string {
-  return new Intl.DateTimeFormat("en-GB", {
-    timeZone,
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).format(at);
+  return zoned(at, timeZone).toPlainTime().toString({ smallestUnit: "minute" });
 }
 
+/** True for a real calendar date written exactly as YYYY-MM-DD. */
 export function isIsoDate(value: unknown): value is string {
-  if (typeof value !== "string" || !DATE_RE.test(value)) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     return false;
   }
-  const d = new Date(`${value}T00:00:00Z`);
-  return !Number.isNaN(d.getTime()) && d.toISOString().startsWith(value);
+  try {
+    Temporal.PlainDate.from(value, { overflow: "reject" });
+    return true;
+  } catch {
+    return false;
+  }
 }

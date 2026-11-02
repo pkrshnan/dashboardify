@@ -1,6 +1,7 @@
 // Pure helpers for reading and rewriting Markdown notes.
 // Nothing here touches the filesystem, so it is easy to test.
 
+import matter from "gray-matter";
 import { parse, stringify } from "yaml";
 
 export type Frontmatter = Record<string, unknown>;
@@ -10,38 +11,46 @@ export interface Note {
   body: string;
 }
 
-const FENCE = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/;
+// gray-matter finds and strips the `---` block; the `yaml` package does the YAML itself, because
+// it keeps dates like `2026-11-02` as plain strings (gray-matter's default turns them into Dates).
+const MATTER_OPTIONS = {
+  engines: {
+    yaml: {
+      parse: (text: string): object => parse(text) ?? {},
+      stringify: (data: object): string => stringify(data, { lineWidth: 0 }),
+    },
+  },
+};
 
+/** Split a note into its frontmatter and body. A note without frontmatter has `{}`. */
 export function parseNote(text: string): Note {
-  const match = FENCE.exec(text);
-  if (!match) {
-    return { frontmatter: {}, body: text };
-  }
-  const data = parse(match[1] ?? "") ?? {};
+  const { data, content } = matter(text, MATTER_OPTIONS);
   if (typeof data !== "object" || Array.isArray(data)) {
     throw new Error("frontmatter must be a YAML mapping");
   }
-  return { frontmatter: data as Frontmatter, body: text.slice(match[0].length) };
+  return { frontmatter: data, body: content };
 }
 
+/** Join frontmatter and body back into a note. Empty frontmatter is left out entirely. */
 export function renderNote(note: Note): string {
-  const keys = Object.keys(note.frontmatter);
-  if (keys.length === 0) {
+  if (Object.keys(note.frontmatter).length === 0) {
     return note.body;
   }
-  const yaml = stringify(note.frontmatter, { lineWidth: 0 }).trimEnd();
-  return `---\n${yaml}\n---\n${note.body}`;
+  return matter.stringify({ content: note.body }, note.frontmatter, MATTER_OPTIONS);
 }
 
 /** Shallow-merge fields into frontmatter. `undefined` values are ignored. */
 export function mergeFrontmatter(note: Note, fields: Frontmatter): Note {
-  const next = { ...note.frontmatter };
-  for (const [key, value] of Object.entries(fields)) {
-    if (value !== undefined) {
-      next[key] = value;
-    }
-  }
-  return { ...note, frontmatter: next };
+  const defined = Object.entries(fields).filter(([, value]) => value !== undefined);
+  return { ...note, frontmatter: { ...note.frontmatter, ...Object.fromEntries(defined) } };
+}
+
+/**
+ * Parse a note, apply `edit`, and render it again: the one place notes are rewritten.
+ * `text` is null for a note that doesn't exist yet, in which case `empty` is the starting point.
+ */
+export function editNote(text: string | null, empty: Note, edit: (note: Note) => Note): string {
+  return renderNote(edit(text === null ? empty : parseNote(text)));
 }
 
 /**
