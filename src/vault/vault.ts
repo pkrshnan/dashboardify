@@ -6,6 +6,7 @@ import { dirname, join } from "node:path";
 import { Mutex } from "async-mutex";
 import { upsertCsvRow } from "./csv";
 import { appendToSection, editNote, mergeFrontmatter, type Note, parseNote } from "./markdown";
+<<<<<<< HEAD
 import {
   applySync,
   parseReminders,
@@ -13,6 +14,8 @@ import {
   type ReminderDiff,
   renderReminders,
 } from "./reminders";
+=======
+>>>>>>> origin/main
 import { localDate, localTime } from "./time";
 
 export type HealthMetrics = Record<string, number>;
@@ -55,6 +58,7 @@ export class Vault {
     return `inbox/messages/${date}.md`;
   }
 
+<<<<<<< HEAD
   readonly remindersPath = "tasks/reminders.md";
 
   /** Server state that is not part of your notes. Lives in `.cc/`, which is never synced. */
@@ -62,6 +66,8 @@ export class Vault {
     return `.cc/state/${name}.json`;
   }
 
+=======
+>>>>>>> origin/main
   // ---- low-level IO ------------------------------------------------------
 
   async read(rel: string): Promise<string | null> {
@@ -154,6 +160,7 @@ export class Vault {
     return { paths: [this.dailyPath(date), csv] };
   }
 
+<<<<<<< HEAD
   // ---- reminders ---------------------------------------------------------
 
   /**
@@ -192,6 +199,8 @@ export class Vault {
     await this.write(this.statePath(name), `${JSON.stringify(value, null, 2)}\n`);
   }
 
+=======
+>>>>>>> origin/main
   // ---- messages ----------------------------------------------------------
 
   /** Append to the day's local-only messages file. A repeated `id` is ignored. */
@@ -226,8 +235,13 @@ function newMessagesNote(date: string): Note {
 /** Collapse whitespace and strip comment markers so user text can't break the file structure. */
 export function oneLine(s: string): string {
   return s
+<<<<<<< HEAD
     .replace(/<!--|-->/g, "")
     .replace(/\s+/g, " ")
+=======
+    .replace(/\s+/g, " ")
+    .replace(/<!--|-->/g, "")
+>>>>>>> origin/main
     .trim();
 }
 
