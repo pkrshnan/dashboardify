@@ -49,3 +49,18 @@ Marked `privacy: local-only`, so a cloud model never sees them. Each line ends w
 
 - 12:05 **Sam**: Moved dinner to 19:00. <!-- id:m1 -->
 ```
+
+## Reminders: `tasks/reminders.md`
+
+A read-only mirror, grouped by list and sorted by due date. Each line ends with the reminder's ID, and that ID is how a sync matches it. Edit reminders in Apple Reminders, because changes made here are overwritten.
+
+```markdown
+## Personal
+
+- [ ] Renew lease 📅 2026-10-31 <!-- id:x-apple-reminder://A1 -->
+- [ ] Call insurance 📅 2026-11-02 ⏰ 17:00 <!-- id:x-apple-reminder://A2 -->
+```
+
+## Server state: `.cc/`
+
+The server's own bookkeeping, such as the time of the last Reminders sync. It is not part of your notes and is never synced.

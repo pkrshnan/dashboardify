@@ -7,6 +7,7 @@ import type { Config } from "./config";
 import { healthRoutes } from "./routes/health";
 import { journalRoutes } from "./routes/journal";
 import { messageRoutes } from "./routes/messages";
+import { reminderRoutes } from "./routes/reminders";
 import { todayRoutes } from "./routes/today";
 
 export interface AppDeps {
@@ -20,6 +21,7 @@ export function createApp(config: Config, deps: AppDeps = {}): Hono<AuthEnv> {
   api.use("*", bearerAuth(config.tokens));
   api.route("/ingest/journal", journalRoutes(vault));
   api.route("/ingest/health", healthRoutes(vault, config));
+  api.route("/ingest/reminders", reminderRoutes(vault, config));
   api.route("/ingest/messages", messageRoutes(vault));
   api.route("/today", todayRoutes(vault, config));
 
