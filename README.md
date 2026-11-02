@@ -21,4 +21,6 @@ bun run format  # auto-fix formatting and import order
 cp .env.example .env && set -a && . ./.env && set +a && bun run dev
 ```
 
+See [docs/style.md](docs/style.md) for the code style.
+
 CI runs on every pull request through GitHub Actions (`.github/workflows/ci.yml`).

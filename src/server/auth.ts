@@ -1,21 +1,43 @@
 import { timingSafeEqual } from "node:crypto";
 import type { MiddlewareHandler } from "hono";
 
+/** Hono context type for authenticated routes: the matched device name is available. */
+// biome-ignore lint/style/useNamingConvention: `Variables` is the key Hono expects.
 export type AuthEnv = { Variables: { device: string } };
 
-/** Accept `Authorization: Bearer <token>` for any configured device; the device name is set on the context. */
+/**
+ * Accept `Authorization: Bearer <token>` for any configured device, and set the device name
+ * on the context.
+ */
 export function bearerAuth(tokens: Map<string, string>): MiddlewareHandler<AuthEnv> {
-  const entries = [...tokens.entries()].map(([device, token]) => [device, Buffer.from(token)] as const);
+  const known = [...tokens].map(([device, token]) => ({ device, token: Buffer.from(token) }));
+
   return async (c, next) => {
-    const header = c.req.header("authorization") ?? "";
-    const given = Buffer.from(header.startsWith("Bearer ") ? header.slice(7) : "");
-    // Compare against every token so timing doesn't reveal which device matched.
-    let device: string | undefined;
-    for (const [name, token] of entries) {
-      if (token.length === given.length && timingSafeEqual(token, given)) device = name;
+    const device = matchDevice(known, bearerToken(c.req.header("authorization")));
+    if (!device) {
+      return c.json({ error: "unauthorized" }, 401);
     }
-    if (!device) return c.json({ error: "unauthorized" }, 401);
     c.set("device", device);
     await next();
   };
+}
+
+function bearerToken(header: string | undefined): Buffer {
+  const prefix = "Bearer ";
+  return Buffer.from(header?.startsWith(prefix) ? header.slice(prefix.length) : "");
+}
+
+/** Compare against every token, so the time taken doesn't reveal which device matched. */
+function matchDevice(
+  known: { device: string; token: Buffer }[],
+  given: Buffer,
+): string | undefined {
+  let match: string | undefined;
+  for (const { device, token } of known) {
+    const isEqual = token.length === given.length && timingSafeEqual(token, given);
+    if (isEqual) {
+      match = device;
+    }
+  }
+  return match;
 }

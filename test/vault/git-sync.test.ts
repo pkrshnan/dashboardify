@@ -19,7 +19,9 @@ async function git(cwd: string, ...args: string[]): Promise<string> {
     new Response(proc.stderr).text(),
     proc.exited,
   ]);
-  if (code !== 0) throw new Error(`git ${args.join(" ")}: ${err}`);
+  if (code !== 0) {
+    throw new Error(`git ${args.join(" ")}: ${err}`);
+  }
   return out.trim();
 }
 
@@ -90,7 +92,11 @@ describe("GitSync", () => {
 
     await vault.appendJournal(at, "from server");
     await sync.flush();
-    expect((await remoteLog()).split("\n")).toEqual(["dashboardify: update 2 files", "laptop edit", "seed"]);
+    expect((await remoteLog()).split("\n")).toEqual([
+      "dashboardify: update 2 files",
+      "laptop edit",
+      "seed",
+    ]);
     expect(await readFile(join(server, "notes.md"), "utf8")).toBe("from laptop\n");
   });
 
@@ -101,7 +107,10 @@ describe("GitSync", () => {
 
     // Both sides edit the same line of the same note.
     const note = "daily/2026/2026-11-02.md";
-    const laptopText = (await readFile(join(laptop, note), "utf8")).replace("server line", "laptop line");
+    const laptopText = (await readFile(join(laptop, note), "utf8")).replace(
+      "server line",
+      "laptop line",
+    );
     await writeFile(join(laptop, note), laptopText);
     await git(laptop, "commit", "--quiet", "-am", "laptop rewrite");
     await git(laptop, "push", "--quiet");
@@ -110,7 +119,9 @@ describe("GitSync", () => {
 
     expect(sync.status.conflict).toBe(true);
     expect(await git(server, "status", "--porcelain")).toBe("");
-    expect(await git(server, "log", "-1", "--format=%s")).toBe("dashboardify: update daily/2026/2026-11-02.md");
+    expect(await git(server, "log", "-1", "--format=%s")).toBe(
+      "dashboardify: update daily/2026/2026-11-02.md",
+    );
     expect((await remoteLog()).split("\n")[0]).toBe("laptop rewrite");
 
     // Resolve on the laptop by taking the server's version; the next sync goes through.

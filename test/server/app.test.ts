@@ -41,7 +41,9 @@ describe("auth", () => {
   });
 
   test("accepts any configured device", async () => {
-    expect((await post("/ingest/journal", { text: "hi" }, "another-token-abcdefgh")).status).toBe(201);
+    expect((await post("/ingest/journal", { text: "hi" }, "another-token-abcdefgh")).status).toBe(
+      201,
+    );
   });
 
   test("healthz is public", async () => {
@@ -67,7 +69,11 @@ describe("POST /api/ingest/journal", () => {
 
 describe("POST /api/ingest/health", () => {
   test("rounds numbers and accepts numeric strings", async () => {
-    const res = await post("/ingest/health", { date: "2026-11-02", source: "whoop", metrics: { hrv_ms: "58.237" } });
+    const res = await post("/ingest/health", {
+      date: "2026-11-02",
+      source: "whoop",
+      metrics: { hrv_ms: "58.237" },
+    });
     expect(res.status).toBe(201);
     expect(await file("health/2026/2026-11.csv")).toContain("2026-11-02,58.24,whoop");
   });
@@ -84,13 +90,20 @@ describe("POST /api/ingest/health", () => {
       { date: "2026-11-02", metrics: {} },
       { date: "2026-11-02", metrics: [1] },
     ];
-    for (const body of cases) expect((await post("/ingest/health", body)).status).toBe(400);
+    for (const body of cases) {
+      expect((await post("/ingest/health", body)).status).toBe(400);
+    }
   });
 });
 
 describe("POST /api/ingest/messages", () => {
   test("appends and reports duplicates", async () => {
-    const msg = { id: "m1", sender: "Sam", text: "Dinner at 19:00", received_at: "2026-11-02T20:05:00Z" };
+    const msg = {
+      id: "m1",
+      sender: "Sam",
+      text: "Dinner at 19:00",
+      received_at: "2026-11-02T20:05:00Z",
+    };
     expect(await (await post("/ingest/messages", msg)).json()).toEqual({
       path: "inbox/messages/2026-11-02.md",
       duplicate: false,
@@ -101,7 +114,9 @@ describe("POST /api/ingest/messages", () => {
   test("validates input", async () => {
     expect((await post("/ingest/messages", { text: "x" })).status).toBe(400);
     expect((await post("/ingest/messages", { sender: "a" })).status).toBe(400);
-    expect((await post("/ingest/messages", { sender: "a", text: "x", received_at: 5 })).status).toBe(400);
+    expect(
+      (await post("/ingest/messages", { sender: "a", text: "x", received_at: 5 })).status,
+    ).toBe(400);
   });
 });
 
@@ -112,7 +127,12 @@ describe("GET /api/today", () => {
     const found = await (await app.request("/api/today?date=2026-11-02", auth)).json();
     expect(found.frontmatter.sleep_h).toBe(7.1);
     const empty = await (await app.request("/api/today?date=2026-11-03", auth)).json();
-    expect(empty).toEqual({ date: "2026-11-03", path: "daily/2026/2026-11-03.md", frontmatter: {}, body: null });
+    expect(empty).toEqual({
+      date: "2026-11-03",
+      path: "daily/2026/2026-11-03.md",
+      frontmatter: {},
+      body: null,
+    });
     expect((await app.request("/api/today?date=nope", auth)).status).toBe(400);
   });
 });

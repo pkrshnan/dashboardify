@@ -77,21 +77,32 @@ export class GitSync {
       () => false,
     );
     this.status.enabled = true;
-    if (await this.ignoreServerState()) this.noteWrite(".gitignore");
+    if (await this.ignoreServerState()) {
+      this.noteWrite(".gitignore");
+    }
     if (this.status.hasRemote && this.pullIntervalMs > 0) {
-      this.interval = setInterval(() => void this.pull().catch(() => undefined), this.pullIntervalMs);
+      this.interval = setInterval(
+        () => void this.pull().catch(() => undefined),
+        this.pullIntervalMs,
+      );
     }
   }
 
   stop(): void {
-    if (this.timer) clearTimeout(this.timer);
-    if (this.interval) clearInterval(this.interval);
+    if (this.timer) {
+      clearTimeout(this.timer);
+    }
+    if (this.interval) {
+      clearInterval(this.interval);
+    }
     this.timer = this.interval = null;
   }
 
   /** Record a written vault-relative path; schedules a commit. */
   noteWrite(path: string): void {
-    if (!this.status.enabled) return;
+    if (!this.status.enabled) {
+      return;
+    }
     this.pending.add(path);
     this.status.pending = this.pending.size;
     this.timer ??= setTimeout(() => void this.flush().catch(() => undefined), this.commitDelayMs);
@@ -99,13 +110,15 @@ export class GitSync {
 
   /** Commit pending writes now, then rebase onto the remote and push. */
   flush(): Promise<void> {
-    if (this.timer) clearTimeout(this.timer);
+    if (this.timer) {
+      clearTimeout(this.timer);
+    }
     this.timer = null;
     return this.serial(async () => {
       const paths = [...this.pending];
       this.pending.clear();
       this.status.pending = 0;
-      if (paths.length) {
+      if (paths.length > 0) {
         await this.git(["add", "--", ...paths]);
         const staged = await this.git(["diff", "--cached", "--name-only"]);
         if (staged.trim()) {
@@ -113,14 +126,18 @@ export class GitSync {
           this.status.lastCommitAt = new Date().toISOString();
         }
       }
-      if (this.status.hasRemote) await this.rebaseAndPush();
+      if (this.status.hasRemote) {
+        await this.rebaseAndPush();
+      }
     });
   }
 
   /** Bring in remote changes without pushing. */
   pull(): Promise<void> {
     return this.serial(async () => {
-      if (!this.status.hasRemote) return;
+      if (!this.status.hasRemote) {
+        return;
+      }
       await this.rebaseOntoRemote();
     });
   }
@@ -128,9 +145,13 @@ export class GitSync {
   // ---- internals ---------------------------------------------------------
 
   private async rebaseAndPush(): Promise<void> {
-    if (!(await this.rebaseOntoRemote())) return;
+    if (!(await this.rebaseOntoRemote())) {
+      return;
+    }
     const ahead = await this.git(["rev-list", "--count", "@{upstream}..HEAD"]).catch(() => "1");
-    if (Number(ahead.trim()) === 0) return;
+    if (Number(ahead.trim()) === 0) {
+      return;
+    }
     await this.git(["push", "--quiet"]);
     this.status.lastPushAt = new Date().toISOString();
   }
@@ -157,7 +178,9 @@ export class GitSync {
   private async ignoreServerState(): Promise<boolean> {
     const path = join(this.root, ".gitignore");
     const current = await readFile(path, "utf8").catch(() => "");
-    if (current.split("\n").some((l) => l.trim() === ".cc/" || l.trim() === ".cc")) return false;
+    if (current.split("\n").some((l) => l.trim() === ".cc/" || l.trim() === ".cc")) {
+      return false;
+    }
     await appendFile(path, `${current && !current.endsWith("\n") ? "\n" : ""}.cc/\n`);
     return true;
   }
@@ -183,13 +206,17 @@ export class GitSync {
       new Response(proc.stderr).text(),
       proc.exited,
     ]);
-    if (code !== 0) throw new GitError(args, code, stderr);
+    if (code !== 0) {
+      throw new GitError(args, code, stderr);
+    }
     return stdout;
   }
 }
 
 export function commitMessage(paths: string[]): string {
   const sorted = [...paths].sort();
-  if (sorted.length === 1) return `dashboardify: update ${sorted[0]}`;
+  if (sorted.length === 1) {
+    return `dashboardify: update ${sorted[0]}`;
+  }
   return `dashboardify: update ${sorted.length} files\n\n${sorted.map((p) => `- ${p}`).join("\n")}`;
 }

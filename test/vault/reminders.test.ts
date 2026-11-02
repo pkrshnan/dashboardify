@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { applySync, parseReminders, type Reminder, renderReminders } from "../../src/vault/reminders";
+import {
+  applySync,
+  parseReminders,
+  type Reminder,
+  renderReminders,
+} from "../../src/vault/reminders";
 
 const r = (id: string, title: string, extra: Partial<Reminder> = {}): Reminder => ({
   id,
@@ -47,7 +52,11 @@ describe("applySync", () => {
   ]);
 
   test("full mode adds, updates and removes", () => {
-    const { next, diff } = applySync(current, "full", [r("a", "Renew lease"), r("b", "Call insurer"), r("c", "New")]);
+    const { next, diff } = applySync(current, "full", [
+      r("a", "Renew lease"),
+      r("b", "Call insurer"),
+      r("c", "New"),
+    ]);
     expect(diff).toEqual({ added: ["c"], updated: ["b"], removed: [] });
     expect([...next.keys()]).toEqual(["a", "b", "c"]);
     expect(applySync(current, "full", [r("a", "Renew lease")]).diff.removed).toEqual(["b"]);
@@ -60,6 +69,10 @@ describe("applySync", () => {
   });
 
   test("an identical full sync reports no changes", () => {
-    expect(applySync(current, "full", [...current.values()]).diff).toEqual({ added: [], updated: [], removed: [] });
+    expect(applySync(current, "full", [...current.values()]).diff).toEqual({
+      added: [],
+      updated: [],
+      removed: [],
+    });
   });
 });

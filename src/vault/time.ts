@@ -21,7 +21,9 @@ export function localTime(at: Date, timeZone: string): string {
 }
 
 export function isIsoDate(value: unknown): value is string {
-  if (typeof value !== "string" || !DATE_RE.test(value)) return false;
+  if (typeof value !== "string" || !DATE_RE.test(value)) {
+    return false;
+  }
   const d = new Date(`${value}T00:00:00Z`);
   return !Number.isNaN(d.getTime()) && d.toISOString().startsWith(value);
 }

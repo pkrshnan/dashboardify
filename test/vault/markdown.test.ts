@@ -1,5 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { appendToSection, mergeFrontmatter, parseNote, renderNote, replaceBlock } from "../../src/vault/markdown";
+import {
+  appendToSection,
+  mergeFrontmatter,
+  parseNote,
+  renderNote,
+  replaceBlock,
+} from "../../src/vault/markdown";
 
 describe("frontmatter", () => {
   test("round-trips and merges without touching the body", () => {
@@ -38,10 +44,14 @@ describe("appendToSection", () => {
 describe("replaceBlock", () => {
   test("replaces only the marked region", () => {
     const body = "before\n<!-- cc:health -->\nold\n<!-- /cc:health -->\nafter\n";
-    expect(replaceBlock(body, "health", "new")).toBe("before\n<!-- cc:health -->\nnew\n<!-- /cc:health -->\nafter\n");
+    expect(replaceBlock(body, "health", "new")).toBe(
+      "before\n<!-- cc:health -->\nnew\n<!-- /cc:health -->\nafter\n",
+    );
   });
 
   test("appends the region when absent", () => {
-    expect(replaceBlock("text\n", "agenda", "a")).toBe("text\n\n<!-- cc:agenda -->\na\n<!-- /cc:agenda -->\n");
+    expect(replaceBlock("text\n", "agenda", "a")).toBe(
+      "text\n\n<!-- cc:agenda -->\na\n<!-- /cc:agenda -->\n",
+    );
   });
 });

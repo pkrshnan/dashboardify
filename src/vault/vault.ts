@@ -5,7 +5,13 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { upsertCsvRow } from "./csv";
 import { appendToSection, mergeFrontmatter, type Note, parseNote, renderNote } from "./markdown";
-import { applySync, parseReminders, type Reminder, type ReminderDiff, renderReminders } from "./reminders";
+import {
+  applySync,
+  parseReminders,
+  type Reminder,
+  type ReminderDiff,
+  renderReminders,
+} from "./reminders";
 import { localDate, localTime } from "./time";
 
 export type HealthMetrics = Record<string, number>;
@@ -60,7 +66,9 @@ export class Vault {
     try {
       return await readFile(join(this.root, rel), "utf8");
     } catch (err) {
-      if ((err as NodeJS.ErrnoException).code === "ENOENT") return null;
+      if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+        return null;
+      }
       throw err;
     }
   }
@@ -75,23 +83,35 @@ export class Vault {
   }
 
   /**
-   * Serialised read-modify-write of one file. `fn` returns the new text, or `null` to leave
-   * the file untouched. Resolves to whether the file changed.
+   * Read-modify-write one file. `edit` returns the new text, or `null` to leave the file as it
+   * is. Updates to the same file run one at a time. Resolves to whether the file changed.
    */
-  async update(rel: string, fn: (current: string | null) => string | null): Promise<boolean> {
-    const prev = this.locks.get(rel) ?? Promise.resolve();
-    const run = prev.then(async () => {
+  update(rel: string, edit: (current: string | null) => string | null): Promise<boolean> {
+    return this.oneAtATime(rel, async () => {
       const current = await this.read(rel);
-      const next = fn(current);
-      if (next === null || next === current) return false;
+      const next = edit(current);
+      if (next === null || next === current) {
+        return false;
+      }
       await this.write(rel, next);
-      for (const listener of this.listeners) listener(rel);
+      for (const listener of this.listeners) {
+        listener(rel);
+      }
       return true;
     });
-    const settled = run.catch(() => undefined);
-    this.locks.set(rel, settled);
-    settled.then(() => {
-      if (this.locks.get(rel) === settled) this.locks.delete(rel);
+  }
+
+  /** Run `task` after every earlier task for the same `key` has finished. */
+  private oneAtATime<T>(key: string, task: () => Promise<T>): Promise<T> {
+    const previous = this.locks.get(key) ?? Promise.resolve();
+    const run = previous.then(task);
+    const done = run.catch(() => undefined);
+    this.locks.set(key, done);
+    // Forget the key once nothing is queued behind this task.
+    done.then(() => {
+      if (this.locks.get(key) === done) {
+        this.locks.delete(key);
+      }
     });
     return run;
   }
@@ -119,14 +139,21 @@ export class Vault {
     const time = localTime(at, this.timeZone);
     const [first, ...rest] = text.trim().split(/\r?\n/);
     const line = [`- ${time} ${first}`, ...rest.map((l) => `  ${l}`)].join("\n");
-    await this.updateDaily(date, (note) => ({ ...note, body: appendToSection(note.body, "Journal", line) }));
+    await this.updateDaily(date, (note) => ({
+      ...note,
+      body: appendToSection(note.body, "Journal", line),
+    }));
     return { path: this.dailyPath(date) };
   }
 
   // ---- health ------------------------------------------------------------
 
   /** Merge metrics into the daily note's frontmatter and that day's row in the monthly CSV. */
-  async recordHealth(date: string, metrics: HealthMetrics, source: string): Promise<{ paths: string[] }> {
+  async recordHealth(
+    date: string,
+    metrics: HealthMetrics,
+    source: string,
+  ): Promise<{ paths: string[] }> {
     await this.updateDaily(date, (note) => mergeFrontmatter(note, metrics));
     const csv = this.healthCsvPath(date);
     await this.update(csv, (text) => upsertCsvRow(text, date, metrics, source));
@@ -188,7 +215,12 @@ export class Vault {
       const note: Note =
         text === null
           ? {
-              frontmatter: { date, source: "ios-shortcut", privacy: "local-only", tags: ["messages"] },
+              frontmatter: {
+                date,
+                source: "ios-shortcut",
+                privacy: "local-only",
+                tags: ["messages"],
+              },
               body: `# Messages ${date}\n`,
             }
           : parseNote(text);

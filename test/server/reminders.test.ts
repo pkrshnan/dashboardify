@@ -38,7 +38,10 @@ const items = [
 test("full sync writes the mirror with local due times", async () => {
   const { status, json } = await sync({ items });
   expect(status).toBe(200);
-  expect(json).toMatchObject({ changed: true, diff: { added: ["a", "b"], updated: [], removed: [] } });
+  expect(json).toMatchObject({
+    changed: true,
+    diff: { added: ["a", "b"], updated: [], removed: [] },
+  });
   expect(await mirror()).toContain("- [ ] Call insurance 📅 2026-11-02 ⏰ 17:00 <!-- id:b -->");
 });
 
@@ -69,7 +72,11 @@ test("changes mode applies edits, completions and removals only", async () => {
 
 test("records the last sync time for the Shortcut to filter on", async () => {
   const state = async () =>
-    (await app.request("/api/ingest/reminders/state", { headers: { authorization: `Bearer ${TOKEN}` } })).json();
+    (
+      await app.request("/api/ingest/reminders/state", {
+        headers: { authorization: `Bearer ${TOKEN}` },
+      })
+    ).json();
   expect(await state()).toEqual({ last_sync: null });
   await sync({ items });
   expect((await state()).last_sync).toMatch(/^\d{4}-\d{2}-\d{2}T/);

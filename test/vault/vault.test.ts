@@ -18,7 +18,9 @@ const file = (rel: string) => readFile(join(dir, rel), "utf8");
 describe("journal", () => {
   test("appends to the note for the local day, across the DST change", async () => {
     // DST ended at 02:00 on 2026-11-01 in Los Angeles; 02:30Z on Nov 2 is 18:30 PST on Nov 1.
-    expect(await vault.appendJournal(new Date("2026-11-02T02:30:00Z"), "Long walk.\nFelt good.")).toEqual({
+    expect(
+      await vault.appendJournal(new Date("2026-11-02T02:30:00Z"), "Long walk.\nFelt good."),
+    ).toEqual({
       path: "daily/2026/2026-11-01.md",
     });
     await vault.appendJournal(new Date("2026-11-02T06:00:00Z"), "Bed.");

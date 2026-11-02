@@ -7,7 +7,9 @@ import { Vault } from "./vault/vault";
 
 if (import.meta.main) {
   const config = loadConfig();
-  if (config.tokens.size === 0) console.warn("INGEST_TOKENS is empty: every /api request will be rejected");
+  if (config.tokens.size === 0) {
+    console.warn("INGEST_TOKENS is empty: every /api request will be rejected");
+  }
 
   const vault = new Vault(config.vaultPath, config.timeZone);
   let git: GitSync | null = null;

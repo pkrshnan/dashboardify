@@ -29,7 +29,9 @@ const HEADING = /^## (.+)$/;
 /** Read the mirror file back into reminders keyed by ID. Lines it didn't write are ignored. */
 export function parseReminders(text: string | null): Map<string, Reminder> {
   const out = new Map<string, Reminder>();
-  if (!text) return out;
+  if (!text) {
+    return out;
+  }
   let list = DEFAULT_LIST;
   for (const line of text.split("\n")) {
     const heading = HEADING.exec(line);
@@ -38,40 +40,64 @@ export function parseReminders(text: string | null): Map<string, Reminder> {
       continue;
     }
     const m = LINE.exec(line);
-    if (!m?.[1] || !m[4]) continue;
+    if (!(m?.[1] && m[4])) {
+      continue;
+    }
     out.set(m[4], { id: m[4], title: m[1], list, dueDate: m[2], dueTime: m[3] });
   }
   return out;
 }
 
+const HEADER =
+  "# Reminders\n\n> Mirrored from Apple Reminders. Make changes there; edits here are overwritten.\n\n";
+
+/** Render the mirror file: one `## List` section per list, both sorted so output is stable. */
 export function renderReminders(items: Iterable<Reminder>): string {
-  const byList = new Map<string, Reminder[]>();
-  for (const r of items) byList.set(r.list, [...(byList.get(r.list) ?? []), r]);
-  const sections = [...byList.keys()].sort().map((list) => {
-    const lines = (byList.get(list) ?? [])
-      .sort(
-        (a, b) =>
-          (a.dueDate ?? "9999").localeCompare(b.dueDate ?? "9999") ||
-          (a.dueTime ?? "99").localeCompare(b.dueTime ?? "99") ||
-          a.title.localeCompare(b.title) ||
-          a.id.localeCompare(b.id),
-      )
-      .map((r) => {
-        const due = r.dueDate ? ` 📅 ${r.dueDate}${r.dueTime ? ` ⏰ ${r.dueTime}` : ""}` : "";
-        return `- [ ] ${r.title}${due} <!-- id:${r.id} -->`;
-      });
+  const lists = groupByList(items);
+  const sections = [...lists.keys()].sort().map((list) => {
+    const lines = (lists.get(list) ?? []).sort(byDueThenTitle).map(renderLine);
     return `## ${list}\n\n${lines.join("\n")}`;
   });
-  return renderNote({
-    frontmatter: { source: "apple-reminders" },
-    body:
-      "# Reminders\n\n> Mirrored from Apple Reminders. Make changes there; edits here are overwritten.\n\n" +
-      (sections.length ? `${sections.join("\n\n")}\n` : "_No open reminders._\n"),
-  });
+  const content = sections.length > 0 ? `${sections.join("\n\n")}\n` : "_No open reminders._\n";
+  return renderNote({ frontmatter: { source: "apple-reminders" }, body: HEADER + content });
+}
+
+function groupByList(items: Iterable<Reminder>): Map<string, Reminder[]> {
+  const lists = new Map<string, Reminder[]>();
+  for (const reminder of items) {
+    const list = lists.get(reminder.list) ?? [];
+    list.push(reminder);
+    lists.set(reminder.list, list);
+  }
+  return lists;
+}
+
+/** Soonest first; undated reminders go last. Ties break on title, then ID. */
+function byDueThenTitle(a: Reminder, b: Reminder): number {
+  return (
+    (a.dueDate ?? "9999").localeCompare(b.dueDate ?? "9999") ||
+    (a.dueTime ?? "99").localeCompare(b.dueTime ?? "99") ||
+    a.title.localeCompare(b.title) ||
+    a.id.localeCompare(b.id)
+  );
+}
+
+/** `- [ ] Title 📅 2026-11-02 ⏰ 09:30 <!-- id:… -->` */
+function renderLine(reminder: Reminder): string {
+  let due = "";
+  if (reminder.dueDate) {
+    due = ` 📅 ${reminder.dueDate}`;
+  }
+  if (reminder.dueDate && reminder.dueTime) {
+    due += ` ⏰ ${reminder.dueTime}`;
+  }
+  return `- [ ] ${reminder.title}${due} <!-- id:${reminder.id} -->`;
 }
 
 function same(a: Reminder, b: Reminder): boolean {
-  return a.title === b.title && a.list === b.list && a.dueDate === b.dueDate && a.dueTime === b.dueTime;
+  return (
+    a.title === b.title && a.list === b.list && a.dueDate === b.dueDate && a.dueTime === b.dueTime
+  );
 }
 
 /**
@@ -90,11 +116,20 @@ export function applySync(
   const diff: ReminderDiff = { added: [], updated: [], removed: [] };
   for (const r of upserts) {
     const before = current.get(r.id);
-    if (!before) diff.added.push(r.id);
-    else if (!same(before, r)) diff.updated.push(r.id);
+    if (!before) {
+      diff.added.push(r.id);
+    } else if (!same(before, r)) {
+      diff.updated.push(r.id);
+    }
     next.set(r.id, r);
   }
-  for (const id of removedIds) next.delete(id);
-  for (const id of current.keys()) if (!next.has(id)) diff.removed.push(id);
+  for (const id of removedIds) {
+    next.delete(id);
+  }
+  for (const id of current.keys()) {
+    if (!next.has(id)) {
+      diff.removed.push(id);
+    }
+  }
   return { next, diff };
 }
