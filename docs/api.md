@@ -20,6 +20,31 @@ All `/api` routes need `Authorization: Bearer <token>`, using a token from `INGE
 
 `date` defaults to today, and `source` defaults to `apple-health`. Metric names are lowercase `snake_case`. Values are numbers or numeric strings, rounded to 2 decimals. `date`, `source` and `tags` are reserved names. The metrics are merged into the daily note's frontmatter and into that day's row of `health/YYYY/YYYY-MM.csv`.
 
+## `POST /api/ingest/reminders`
+
+Keeps `tasks/reminders.md` in step with Apple Reminders, matching reminders by ID. The file is rewritten only when something actually changed, so an unchanged sync makes no git commit.
+
+```json
+{
+  "mode": "changes",
+  "items": [
+    { "id": "x-apple-reminder://A1", "title": "Call insurance", "list": "Personal", "due": "2026-11-02T17:00:00-08:00" },
+    { "id": "x-apple-reminder://A2", "title": "Renew lease", "completed": true }
+  ],
+  "removed_ids": []
+}
+```
+
+- `mode: "changes"` (hourly): send only reminders modified since the last sync. Completed items and `removed_ids` are dropped from the mirror, and everything else stays as it was.
+- `mode: "full"` (the default; run it daily): send every open reminder. Anything missing is removed, which catches reminders deleted on another device.
+- `due` is optional. Send `YYYY-MM-DD` for an all-day reminder, or an ISO timestamp if it has a time. Times are converted to `TZ_NAME`.
+
+The response is `{ path, changed, diff: { added, updated, removed } }`.
+
+## `GET /api/ingest/reminders/state`
+
+Returns `{ "last_sync": "2026-11-02T13:00:00.000Z" }`, or `null` before the first sync. The hourly Shortcut uses it to filter **Find Reminders** to items whose *Last Modified Date* is after this time.
+
 ## `POST /api/ingest/messages`
 
 ```json

@@ -5,6 +5,7 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { upsertCsvRow } from "./csv";
 import { appendToSection, mergeFrontmatter, type Note, parseNote, renderNote } from "./markdown";
+import { applySync, parseReminders, type Reminder, type ReminderDiff, renderReminders } from "./reminders";
 import { localDate, localTime } from "./time";
 
 export type HealthMetrics = Record<string, number>;
@@ -44,6 +45,13 @@ export class Vault {
 
   messagesPath(date: string): string {
     return `inbox/messages/${date}.md`;
+  }
+
+  readonly remindersPath = "tasks/reminders.md";
+
+  /** Server state that is not part of your notes. Lives in `.cc/`, which is never synced. */
+  private statePath(name: string): string {
+    return `.cc/state/${name}.json`;
   }
 
   // ---- low-level IO ------------------------------------------------------
@@ -125,6 +133,44 @@ export class Vault {
     return { paths: [this.dailyPath(date), csv] };
   }
 
+  // ---- reminders ---------------------------------------------------------
+
+  /**
+   * Mirror Apple Reminders into `tasks/reminders.md`, matching by ID. The file is only
+   * rewritten when the rendered result differs, and the sync time is recorded either way.
+   */
+  async syncReminders(
+    mode: "full" | "changes",
+    upserts: Reminder[],
+    removedIds: string[],
+    at: Date,
+  ): Promise<{ path: string; changed: boolean; diff: ReminderDiff }> {
+    let diff: ReminderDiff = { added: [], updated: [], removed: [] };
+    const clean = upserts.map((r) => ({
+      ...r,
+      id: oneLine(r.id),
+      title: oneLine(r.title),
+      list: oneLine(r.list) || "Reminders",
+    }));
+    const removed = removedIds.map(oneLine);
+    const changed = await this.update(this.remindersPath, (text) => {
+      const result = applySync(parseReminders(text), mode, clean, removed);
+      diff = result.diff;
+      return renderReminders(result.next.values());
+    });
+    await this.writeState("reminders", { last_sync: at.toISOString(), last_mode: mode });
+    return { path: this.remindersPath, changed, diff };
+  }
+
+  async readState(name: string): Promise<Record<string, unknown> | null> {
+    const text = await this.read(this.statePath(name));
+    return text === null ? null : JSON.parse(text);
+  }
+
+  private async writeState(name: string, value: Record<string, unknown>): Promise<void> {
+    await this.write(this.statePath(name), `${JSON.stringify(value, null, 2)}\n`);
+  }
+
   // ---- messages ----------------------------------------------------------
 
   /** Append to the day's local-only messages file. A repeated `id` is ignored. */
@@ -156,8 +202,8 @@ export class Vault {
 /** Collapse whitespace and strip comment markers so user text can't break the file structure. */
 export function oneLine(s: string): string {
   return s
-    .replace(/\s+/g, " ")
     .replace(/<!--|-->/g, "")
+    .replace(/\s+/g, " ")
     .trim();
 }
 

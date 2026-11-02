@@ -1,5 +1,6 @@
 import { Hono } from "hono";
-import { isIsoDate, localDate } from "../vault/time";
+import type { Reminder } from "../vault/reminders";
+import { isIsoDate, localDate, localTime } from "../vault/time";
 import { type HealthMetrics, Vault } from "../vault/vault";
 import { type AuthEnv, bearerAuth } from "./auth";
 import type { Config } from "./config";
@@ -49,6 +50,40 @@ export function createApp(config: Config, vault = new Vault(config.vaultPath, co
     return c.json(await vault.recordHealth(date, metrics, source), 201);
   });
 
+  api.post("/ingest/reminders", async (c) => {
+    const body = await readJson(c.req.raw);
+    const mode = body?.mode ?? "full";
+    if (mode !== "full" && mode !== "changes") return c.json({ error: 'mode must be "full" or "changes"' }, 400);
+    if (!Array.isArray(body?.items)) return c.json({ error: "items must be an array" }, 400);
+    if (body.items.length > 5000) return c.json({ error: "too many items" }, 400);
+    const removed = body.removed_ids ?? [];
+    if (!Array.isArray(removed) || !removed.every((id: unknown) => typeof id === "string")) {
+      return c.json({ error: "removed_ids must be an array of strings" }, 400);
+    }
+    if (mode === "full" && removed.length) return c.json({ error: "removed_ids only applies to changes mode" }, 400);
+    const items: Reminder[] = [];
+    for (const r of body.items) {
+      if (typeof r?.id !== "string" || !r.id || r.id.length > 200 || typeof r?.title !== "string") {
+        return c.json({ error: "each item needs a string id and title" }, 400);
+      }
+      const due = parseDue(r.due, config.timeZone);
+      if (due === null) return c.json({ error: `bad due for ${r.id}` }, 400);
+      const list = typeof r.list === "string" ? r.list : "Reminders";
+      if (r.completed === true) {
+        // A completed reminder in a changes batch means "drop it"; in a full batch it is skipped.
+        if (mode === "changes") removed.push(r.id);
+        continue;
+      }
+      items.push({ id: r.id, title: r.title, list, ...due });
+    }
+    return c.json(await vault.syncReminders(mode, items, removed, new Date()), 200);
+  });
+
+  api.get("/ingest/reminders/state", async (c) => {
+    const state = await vault.readState("reminders");
+    return c.json({ last_sync: state?.last_sync ?? null });
+  });
+
   api.post("/ingest/messages", async (c) => {
     const body = await readJson(c.req.raw);
     const sender = body?.sender;
@@ -90,6 +125,20 @@ async function readJson(req: Request): Promise<any> {
   } catch {
     return null;
   }
+}
+
+/**
+ * `undefined` -> no due date; "YYYY-MM-DD" -> all-day; an ISO timestamp -> local date and time.
+ * Returns null when the value is present but unusable.
+ */
+function parseDue(value: unknown, timeZone: string): { dueDate?: string; dueTime?: string } | null {
+  if (value === undefined || value === null || value === "") return {};
+  if (typeof value !== "string") return null;
+  if (isIsoDate(value)) return { dueDate: value };
+  if (!/^\d{4}-\d{2}-\d{2}T/.test(value)) return null;
+  const at = new Date(value);
+  if (Number.isNaN(at.getTime())) return null;
+  return { dueDate: localDate(at, timeZone), dueTime: localTime(at, timeZone) };
 }
 
 function parseInstant(value: unknown): Date | null {
