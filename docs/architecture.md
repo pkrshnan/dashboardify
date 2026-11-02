@@ -21,7 +21,8 @@ flowchart TD
     S[iOS Shortcuts: Health, Reminders, Messages, Journal]
   end
   W & C & M & S --> I[Ingest server]
-  I --> V[(Markdown vault, git)]
+  I --> V[(Markdown vault)]
+  V <--> L[LiveSync bridge + CouchDB] <--> O[Obsidian on your devices]
   V --> X[(Index: SQLite FTS + vectors)]
   X --> A[Ask agent]
   A --> P[Model provider: Claude or local]
@@ -34,7 +35,7 @@ flowchart TD
 | Component | Responsibility |
 | --- | --- |
 | Ingest server | Receives pushes from Shortcuts, polls Whoop, CalDAV and IMAP, and writes into the vault. Only edits regions it owns, so hand-written text is never touched. |
-| Vault | Daily notes, reminders mirror, health CSVs, message and mail digests, saved answers. Synced to other devices with git: the server pulls before writing and commits after. |
+| Vault | Daily notes, reminders mirror, health CSVs, message and mail digests, saved answers. Synced to your devices with Obsidian Self-hosted LiveSync. `livesync-bridge` keeps the server's plain-file vault and CouchDB in step. The server also commits its writes to a local git repo for history. |
 | Index | Full-text and vector search plus typed tables parsed from frontmatter and CSVs, so "average HRV on short-sleep nights" is a query, not a guess. |
 | Ask agent | Answers a question by searching the index with a fixed set of read-only tools, then writes a cited answer to the vault. |
 | Web app | The dashboard (Today view) on desktop and phone. |
