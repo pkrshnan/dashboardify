@@ -49,7 +49,6 @@ Marked `privacy: local-only`, so a cloud model never sees them. Each line ends w
 
 - 12:05 **Sam**: Moved dinner to 19:00. <!-- id:m1 -->
 ```
-<<<<<<< HEAD
 
 ## Reminders: `tasks/reminders.md`
 
@@ -65,5 +64,3 @@ A read-only mirror, grouped by list and sorted by due date. Each line ends with 
 ## Server state: `.cc/`
 
 The server's own bookkeeping, such as the time of the last Reminders sync. It is not part of your notes and is never synced.
-=======
->>>>>>> origin/main
