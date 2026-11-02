@@ -1,8 +1,5 @@
-/dashboardify
-/.env
-/data/
-*.db
-*.db-shm
-*.db-wal
-/web/node_modules/
-/web/.vite/
+node_modules/
+.env
+*.tmp
+/vault/
+.cc/
