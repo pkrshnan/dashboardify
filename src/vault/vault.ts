@@ -3,8 +3,9 @@
 
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import { Mutex } from "async-mutex";
 import { upsertCsvRow } from "./csv";
-import { appendToSection, mergeFrontmatter, type Note, parseNote, renderNote } from "./markdown";
+import { appendToSection, editNote, mergeFrontmatter, type Note, parseNote } from "./markdown";
 import { localDate, localTime } from "./time";
 
 export type HealthMetrics = Record<string, number>;
@@ -20,7 +21,8 @@ export interface IncomingMessage {
 export type WriteListener = (path: string) => void;
 
 export class Vault {
-  private locks = new Map<string, Promise<unknown>>();
+  /** One lock per file, so read-modify-write cycles on the same file never interleave. */
+  private locks = new Map<string, Mutex>();
   private listeners: WriteListener[] = [];
 
   constructor(
@@ -73,7 +75,7 @@ export class Vault {
    * is. Updates to the same file run one at a time. Resolves to whether the file changed.
    */
   update(rel: string, edit: (current: string | null) => string | null): Promise<boolean> {
-    return this.oneAtATime(rel, async () => {
+    return this.lockFor(rel).runExclusive(async () => {
       const current = await this.read(rel);
       const next = edit(current);
       if (next === null || next === current) {
@@ -87,19 +89,13 @@ export class Vault {
     });
   }
 
-  /** Run `task` after every earlier task for the same `key` has finished. */
-  private oneAtATime<T>(key: string, task: () => Promise<T>): Promise<T> {
-    const previous = this.locks.get(key) ?? Promise.resolve();
-    const run = previous.then(task);
-    const done = run.catch(() => undefined);
-    this.locks.set(key, done);
-    // Forget the key once nothing is queued behind this task.
-    done.then(() => {
-      if (this.locks.get(key) === done) {
-        this.locks.delete(key);
-      }
-    });
-    return run;
+  private lockFor(rel: string): Mutex {
+    let lock = this.locks.get(rel);
+    if (!lock) {
+      lock = new Mutex();
+      this.locks.set(rel, lock);
+    }
+    return lock;
   }
 
   // ---- daily notes -------------------------------------------------------
@@ -109,9 +105,7 @@ export class Vault {
   }
 
   private updateDaily(date: string, fn: (note: Note) => Note): Promise<boolean> {
-    return this.update(this.dailyPath(date), (text) =>
-      renderNote(fn(text === null ? this.newDaily(date) : parseNote(text))),
-    );
+    return this.update(this.dailyPath(date), (text) => editNote(text, this.newDaily(date), fn));
   }
 
   async readDaily(date: string): Promise<Note | null> {
@@ -160,23 +154,21 @@ export class Vault {
         duplicate = true;
         return null;
       }
-      const note: Note =
-        text === null
-          ? {
-              frontmatter: {
-                date,
-                source: "ios-shortcut",
-                privacy: "local-only",
-                tags: ["messages"],
-              },
-              body: `# Messages ${date}\n`,
-            }
-          : parseNote(text);
       const line = `- ${time} **${escapeMd(oneLine(msg.sender))}**: ${oneLine(msg.text)}${marker}`;
-      return renderNote({ ...note, body: appendToSection(note.body, "Received", line) });
+      return editNote(text, newMessagesNote(date), (note) => ({
+        ...note,
+        body: appendToSection(note.body, "Received", line),
+      }));
     });
     return { path, duplicate };
   }
+}
+
+function newMessagesNote(date: string): Note {
+  return {
+    frontmatter: { date, source: "ios-shortcut", privacy: "local-only", tags: ["messages"] },
+    body: `# Messages ${date}\n`,
+  };
 }
 
 /** Collapse whitespace and strip comment markers so user text can't break the file structure. */
