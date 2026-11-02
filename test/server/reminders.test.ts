@@ -10,7 +10,13 @@ let app: ReturnType<typeof createApp>;
 
 beforeEach(async () => {
   dir = await mkdtemp(join(tmpdir(), "vault-"));
-  app = createApp({ vaultPath: dir, port: 0, timeZone: "America/Los_Angeles", tokens: new Map([["iphone", TOKEN]]) });
+  app = createApp({
+    vaultPath: dir,
+    port: 0,
+    timeZone: "America/Los_Angeles",
+    git: { mode: "off", commitDelayMs: 0, pullIntervalMs: 0 },
+    tokens: new Map([["iphone", TOKEN]]),
+  });
 });
 afterEach(() => rm(dir, { recursive: true, force: true }));
 

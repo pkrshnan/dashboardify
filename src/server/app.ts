@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import type { GitSyncStatus } from "../vault/git-sync";
 import type { Reminder } from "../vault/reminders";
 import { isIsoDate, localDate, localTime } from "../vault/time";
 import { type HealthMetrics, Vault } from "../vault/vault";
@@ -10,7 +11,14 @@ const RESERVED_KEYS = new Set(["date", "source", "tags"]);
 const SOURCE = /^[a-z0-9][a-z0-9-]{0,39}$/;
 const MAX_TEXT = 20_000;
 
-export function createApp(config: Config, vault = new Vault(config.vaultPath, config.timeZone)) {
+export interface AppDeps {
+  vault?: Vault;
+  /** Reported by GET /api/status. */
+  gitStatus?: () => GitSyncStatus | null;
+}
+
+export function createApp(config: Config, deps: AppDeps = {}) {
+  const vault = deps.vault ?? new Vault(config.vaultPath, config.timeZone);
   const app = new Hono<AuthEnv>();
 
   app.get("/healthz", (c) => c.json({ ok: true }));
@@ -96,6 +104,8 @@ export function createApp(config: Config, vault = new Vault(config.vaultPath, co
     const id = typeof body.id === "string" && body.id.length <= 200 ? body.id : undefined;
     return c.json(await vault.appendMessage({ id, sender, text, receivedAt }), 201);
   });
+
+  api.get("/status", (c) => c.json({ git: deps.gitStatus?.() ?? null }));
 
   api.get("/today", async (c) => {
     const date = c.req.query("date") ?? localDate(new Date(), config.timeZone);
