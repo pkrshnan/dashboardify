@@ -8,3 +8,15 @@ Health, calendar, reminders, journal, mail and messages flow into a vault you ca
 
 - [Architecture](docs/architecture.md): principles, components, sources, vault layout
 - [Plan](docs/plan.md): phases, decisions so far, open questions
+
+## Development
+
+Requires [Bun](https://bun.sh) (version pinned in `package.json`).
+
+```sh
+bun install
+bun run check   # lint + typecheck + tests, the same as CI
+bun run format  # auto-fix formatting and import order
+```
+
+CI runs on every pull request through GitHub Actions (`.github/workflows/ci.yml`).
