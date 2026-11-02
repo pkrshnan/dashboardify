@@ -20,13 +20,16 @@ beforeEach(async () => {
 });
 afterEach(() => rm(dir, { recursive: true, force: true }));
 
+/** Loosely typed JSON body; each test checks the fields it cares about. */
+type Json = Record<string, unknown>;
+
 const sync = async (body: unknown) => {
   const res = await app.request("/api/ingest/reminders", {
     method: "POST",
     headers: { authorization: `Bearer ${TOKEN}` },
     body: JSON.stringify(body),
   });
-  return { status: res.status, json: await res.json() };
+  return { status: res.status, json: (await res.json()) as Json };
 };
 const mirror = () => readFile(join(dir, "tasks/reminders.md"), "utf8");
 
@@ -76,7 +79,7 @@ test("records the last sync time for the Shortcut to filter on", async () => {
       await app.request("/api/ingest/reminders/state", {
         headers: { authorization: `Bearer ${TOKEN}` },
       })
-    ).json();
+    ).json() as Promise<Json>;
   expect(await state()).toEqual({ last_sync: null });
   await sync({ items });
   expect((await state()).last_sync).toMatch(/^\d{4}-\d{2}-\d{2}T/);

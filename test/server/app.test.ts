@@ -108,7 +108,8 @@ describe("POST /api/ingest/messages", () => {
       path: "inbox/messages/2026-11-02.md",
       duplicate: false,
     });
-    expect((await (await post("/ingest/messages", msg)).json()).duplicate).toBe(true);
+    const again = (await (await post("/ingest/messages", msg)).json()) as { duplicate: boolean };
+    expect(again.duplicate).toBe(true);
   });
 
   test("validates input", async () => {
@@ -124,7 +125,9 @@ describe("GET /api/today", () => {
   test("returns the daily note, or an empty shell", async () => {
     await post("/ingest/health", { date: "2026-11-02", metrics: { sleep_h: 7.1 } });
     const auth = { headers: { authorization: `Bearer ${TOKEN}` } };
-    const found = await (await app.request("/api/today?date=2026-11-02", auth)).json();
+    const found = (await (await app.request("/api/today?date=2026-11-02", auth)).json()) as {
+      frontmatter: Record<string, unknown>;
+    };
     expect(found.frontmatter.sleep_h).toBe(7.1);
     const empty = await (await app.request("/api/today?date=2026-11-03", auth)).json();
     expect(empty).toEqual({
