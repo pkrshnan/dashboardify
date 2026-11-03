@@ -1,19 +1,19 @@
-// Short sentences for Siri to read aloud. Kept apart from the routes so the wording is easy to
-// find and change.
+// The `message` field of task responses: one plain sentence that Siri reads aloud and the
+// dashboard can show as is. Kept apart from the routes so the wording is easy to change.
 
 import type { Task } from "../vault/tasks";
 
 export type DueFilter = "today" | "overdue" | "week" | "all";
 
-export function sayAdded(task: Task, today: string): string {
+export function addedMessage(task: Task, today: string): string {
   return `Added ${task.description}${task.due ? `, due ${spokenDay(task.due, today)}` : ""}${task.time ? ` at ${task.time}` : ""}.`;
 }
 
-export function sayAlreadyAdded(task: Task): string {
+export function alreadyAddedMessage(task: Task): string {
   return `${task.description} is already on your list.`;
 }
 
-export function sayCompleted(task: Task, next: Task | undefined, today: string): string {
+export function completedMessage(task: Task, next: Task | undefined, today: string): string {
   if (next?.due) {
     return `Done: ${task.description}. Next one is ${spokenDay(next.due, today)}.`;
   }
@@ -34,7 +34,7 @@ const HEADING: Record<DueFilter, string> = {
 };
 
 /** "3 tasks due today: A, B and C." Long lists are cut to the first five. */
-export function sayList(tasks: Task[], filter: DueFilter): string {
+export function listMessage(tasks: Task[], filter: DueFilter): string {
   if (tasks.length === 0) {
     return EMPTY[filter];
   }

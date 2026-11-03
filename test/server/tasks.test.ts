@@ -54,7 +54,7 @@ describe("POST /api/tasks", () => {
     expect(res.status).toBe(201);
     const body = (await res.json()) as Json;
     expect(body.status).toBe("created");
-    expect(body.say).toBe("Added Call the bank, due tomorrow at 09:00.");
+    expect(body.message).toBe("Added Call the bank, due tomorrow at 09:00.");
     expect(await file("Inbox.md")).toBe(
       `- [ ] Call the bank ⏰ 09:00 📅 2026-11-03 ➕ 2026-11-02 🆔 ${body.id}\n`,
     );
@@ -110,8 +110,8 @@ describe("GET /api/tasks", () => {
   });
 
   test("includes a sentence to read aloud", async () => {
-    expect((await get("/tasks?due=today")).say).toBe("1 task due today: Water plants.");
-    expect((await get("/tasks?due=week")).say).toBe(
+    expect((await get("/tasks?due=today")).message).toBe("1 task due today: Water plants.");
+    expect((await get("/tasks?due=week")).message).toBe(
       "2 tasks due this week: Water plants and Clean gutters.",
     );
   });
@@ -127,7 +127,7 @@ describe("POST /api/tasks/:id/complete", () => {
     await put("Home.md", "# Home\n  - [ ] Fix the tap 🆔 abc123\nmore text\n");
     const res = await post("/tasks/abc123/complete");
     expect(res.status).toBe(200);
-    expect(((await res.json()) as Json).say).toBe("Done: Fix the tap.");
+    expect(((await res.json()) as Json).message).toBe("Done: Fix the tap.");
     expect(await file("Home.md")).toBe(
       "# Home\n  - [x] Fix the tap ✅ 2026-11-02 🆔 abc123\nmore text\n",
     );
@@ -139,7 +139,7 @@ describe("POST /api/tasks/:id/complete", () => {
   test("a recurring task gets its next occurrence above it", async () => {
     await put("Home.md", "- [ ] Take out bins 🔁 every week 📅 2026-11-02 🆔 bins01\n");
     const body = (await (await post("/tasks/bins01/complete")).json()) as Json;
-    expect(body.say).toBe("Done: Take out bins. Next one is November 9.");
+    expect(body.message).toBe("Done: Take out bins. Next one is November 9.");
     const [next, done] = (await file("Home.md")).split("\n");
     expect(next).toMatch(/^- \[ \] Take out bins 🔁 every week 📅 2026-11-09 🆔 [0-9a-f]{6}$/);
     expect(done).toBe("- [x] Take out bins 🔁 every week 📅 2026-11-02 ✅ 2026-11-02 🆔 bins01");
