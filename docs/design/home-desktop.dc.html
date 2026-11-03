@@ -10,88 +10,111 @@
 <helmet>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&amp;display=swap">
 <style>
+:root{color-scheme:dark}
 body{margin:0;background:#0C0C0E}
 a{color:#8AB4FF}a:hover{color:#B5D0FF}
+input.ring{appearance:none;-webkit-appearance:none;width:18px;height:18px;margin:0;border:1.5px solid #636366;border-radius:50%;flex:none;cursor:pointer;background:transparent}
+input.ring:checked{background:#8E8E93;border-color:#8E8E93;box-shadow:inset 0 0 0 3px #0C0C0E}
+input.ring.sm{width:15px;height:15px}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 </helmet>
-<div style="width: 1440px; min-height: 2860px; box-sizing: border-box; background: #0C0C0E; color: #F5F5F7; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', Inter, system-ui, sans-serif; font-variant-numeric: tabular-nums">
+<div style="width: 1440px; min-height: 2200px; box-sizing: border-box; background: #0C0C0E; color: #F5F5F7; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', Inter, system-ui, sans-serif; font-variant-numeric: tabular-nums">
 
-  <section style="height: 900px; box-sizing: border-box; padding: 56px 96px 40px; display: flex; flex-direction: column; justify-content: space-between">
-    <header style="display: flex; justify-content: space-between; align-items: baseline; font-size: 15px; color: #A1A1A6"><span>Tuesday 3 November</span><span>09:12</span></header>
-    <div style="display: flex; flex-direction: column; gap: 56px">
-      <p style="margin: 0; font-size: 52px; line-height: 1.18; font-weight: 300; letter-spacing: -0.025em; max-width: 1080px">Standup in 48 minutes. You’re <span style="color: #FFD60A; font-weight: 500">62% recovered</span>, and the lease is <span style="color: #FF9F0A; font-weight: 500">three days late</span>.</p>
-      <div style="display: flex; gap: 96px">
-        <div><div style="font-size: 88px; font-weight: 200; letter-spacing: -0.04em; line-height: 1; color: #FFD60A">62</div><div style="font-size: 15px; color: #A1A1A6; margin-top: 12px">Recovery</div></div>
-        <div><div style="font-size: 88px; font-weight: 200; letter-spacing: -0.04em; line-height: 1">78</div><div style="font-size: 15px; color: #A1A1A6; margin-top: 12px">Sleep</div></div>
-        <div><div style="font-size: 88px; font-weight: 200; letter-spacing: -0.04em; line-height: 1">6.8</div><div style="font-size: 15px; color: #A1A1A6; margin-top: 12px">Strain</div></div>
-        <div><div style="font-size: 88px; font-weight: 200; letter-spacing: -0.04em; line-height: 1">54</div><div style="font-size: 15px; color: #A1A1A6; margin-top: 12px">HRV</div></div>
+  <section style="padding: 40px 64px 40px; display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 64px; border-bottom: 1px solid #2C2C2E">
+    <div style="display: flex; flex-direction: column; gap: 28px">
+      <header style="display: flex; gap: 16px; align-items: baseline; font-size: 15px; color: #A1A1A6"><span>Tuesday 3 November</span><span>09:12</span></header>
+      <p style="margin: 0; font-size: 34px; line-height: 1.25; font-weight: 300; letter-spacing: -0.02em; max-width: 820px">Standup at 10:00. Recovery is below your usual, so keep today easy. The lease is 3 days late.</p>
+      <div style="display: flex; gap: 64px">
+        <sc-for list="{{focus}}" as="f" hint-placeholder-count="4">
+          <div>
+            <div style="font-size: 64px; font-weight: 200; letter-spacing: -0.04em; line-height: 1; color: {{f.valueColor}}">{{f.value}}<span style="font-size: 17px; font-weight: 400; letter-spacing: 0; color: #8E8E93; margin-left: 4px">{{f.unit}}</span></div>
+            <div style="display: flex; gap: 8px; align-items: baseline; margin-top: 10px; font-size: 15px"><span style="color: #A1A1A6">{{f.name}}</span><span style="color: {{f.deltaColor}}">{{f.delta}}</span></div>
+          </div>
+        </sc-for>
       </div>
     </div>
-    <div style="display: flex; gap: 40px; border-top: 1px solid #2C2C2E; padding-top: 24px; font-size: 16px; color: #A1A1A6">
-      <span>6 events</span><span>4 reminders today</span><span style="color: #FF9F0A">1 overdue</span><span style="margin-left: auto">Free 10:15–12:30 and 15:00–17:05</span>
-    </div>
+    <aside style="display: flex; flex-direction: column; gap: 24px; padding-top: 44px">
+      <div>
+        <div style="font-size: 13px; color: #8E8E93">Next</div>
+        <div style="display: flex; align-items: center; gap: 16px; margin-top: 6px">
+          <div style="flex: 1; min-width: 0"><div style="font-size: 22px; font-weight: 500">Standup</div><div style="font-size: 15px; color: #A1A1A6; margin-top: 2px">10:00 · in 48 min · Video call</div></div>
+          <a href="#" style="height: 44px; padding: 0 20px; border-radius: 22px; background: #1C1C1E; border: 1px solid #3A3A3C; color: #F5F5F7; font-size: 15px; font-weight: 500; text-decoration: none; display: flex; align-items: center">Join</a>
+        </div>
+      </div>
+      <div>
+        <div style="font-size: 13px; color: #8E8E93">Free</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px 20px; margin-top: 6px; font-size: 17px">
+          <span>10:15–12:30</span><span>13:15–14:00</span><span>15:00–17:05</span><span>18:15–19:00</span>
+        </div>
+      </div>
+    </aside>
   </section>
 
-  <section style="height: 960px; box-sizing: border-box; padding: 48px 96px 0; border-top: 1px solid #1C1C1E; display: flex; flex-direction: column; gap: 24px">
+  <section style="padding: 32px 64px 48px; border-bottom: 1px solid #2C2C2E; display: flex; flex-direction: column; gap: 20px">
     <div style="display: flex; align-items: center; justify-content: space-between">
       <h2 style="margin: 0; font-size: 22px; font-weight: 500">{{calTitle}}</h2>
       <div role="group" aria-label="Calendar range" style="display: flex; background: #1C1C1E; border-radius: 10px; padding: 3px">
-        <button type="button" onClick="{{showDay}}" style="height: 34px; padding: 0 18px; border: 0; border-radius: 8px; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; background: {{daySeg.bg}}; color: {{daySeg.fg}}">Day</button>
-        <button type="button" onClick="{{showWeek}}" style="height: 34px; padding: 0 18px; border: 0; border-radius: 8px; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; background: {{weekSeg.bg}}; color: {{weekSeg.fg}}">Week</button>
+        <button type="button" onClick="{{showDay}}" aria-pressed="{{isDay}}" style="height: 32px; padding: 0 18px; border: 0; border-radius: 8px; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; background: {{daySeg.bg}}; color: {{daySeg.fg}}">Day</button>
+        <button type="button" onClick="{{showWeek}}" aria-pressed="{{isWeek}}" style="height: 32px; padding: 0 18px; border: 0; border-radius: 8px; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; background: {{weekSeg.bg}}; color: {{weekSeg.fg}}">Week</button>
       </div>
     </div>
-    <div style="display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 56px">
+    <div style="display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 56px; align-items: start">
 
       <div>
         <sc-if value="{{isDay}}" hint-placeholder-val="{{true}}">
-          <div style="display: flex; gap: 10px; flex-wrap: wrap; margin: 0 0 18px 56px">
-            <sc-for list="{{dayAllDay}}" as="r" hint-placeholder-count="2">
-              <label style="display: flex; gap: 8px; align-items: center; height: 30px; padding: 0 12px; border-radius: 15px; background: #1C1C1E; font-size: 13px; color: {{r.color}}"><input type="checkbox" style="width: 14px; height: 14px; margin: 0; accent-color: #F5F5F7">{{r.text}}</label>
-            </sc-for>
-          </div>
-          <div style="position: relative; height: 720px; margin-left: 56px">
-            <div style="position: absolute; left: -56px; top: -8px; display: flex; flex-direction: column; font-size: 12px; color: #8E8E93">
-              <span style="height: 48px">07</span><span style="height: 48px">08</span><span style="height: 48px">09</span><span style="height: 48px">10</span><span style="height: 48px">11</span><span style="height: 48px">12</span><span style="height: 48px">13</span><span style="height: 48px">14</span><span style="height: 48px">15</span><span style="height: 48px">16</span><span style="height: 48px">17</span><span style="height: 48px">18</span><span style="height: 48px">19</span><span style="height: 48px">20</span><span style="height: 48px">21</span><span style="height: 48px">22</span>
+          <div style="position: relative; height: 728px; margin-left: 48px">
+            <div style="position: absolute; left: -48px; top: -8px; display: flex; flex-direction: column; font-size: 11px; color: #8E8E93">
+              <span style="height: 52px">08</span><span style="height: 52px">09</span><span style="height: 52px">10</span><span style="height: 52px">11</span><span style="height: 52px">12</span><span style="height: 52px">13</span><span style="height: 52px">14</span><span style="height: 52px">15</span><span style="height: 52px">16</span><span style="height: 52px">17</span><span style="height: 52px">18</span><span style="height: 52px">19</span><span style="height: 52px">20</span><span style="height: 52px">21</span><span style="height: 52px">22</span>
             </div>
-            <div style="position: absolute; inset: 0; background-image: repeating-linear-gradient(to bottom, #1C1C1E 0, #1C1C1E 1px, transparent 1px, transparent 48px)"></div>
+            <div style="position: absolute; inset: 0; background-image: repeating-linear-gradient(to bottom, #2C2C2E 0, #2C2C2E 1px, transparent 1px, transparent 52px)"></div>
+            <sc-for list="{{dayReminders}}" as="r" hint-placeholder-count="4">
+              <div style="position: absolute; left: 0; right: 0; top: {{r.top}}; height: 0; border-top: 1px dashed #3A3A3C"></div>
+            </sc-for>
             <sc-for list="{{dayBlocks}}" as="b" hint-placeholder-count="6">
-              <div style="position: absolute; left: 0; width: 60%; top: {{b.top}}; height: {{b.height}}; box-sizing: border-box; background: {{b.bg}}; border-left: 3px solid {{b.color}}; border-radius: 6px; padding: 6px 12px; overflow: hidden; opacity: {{b.opacity}}">
-                <div style="font-size: 14px; font-weight: 600">{{b.title}} <span style="font-weight: 400; color: #A1A1A6">{{b.time}}</span></div>
-                <div style="font-size: 13px; color: #A1A1A6; margin-top: 2px">{{b.detail}}</div>
+              <div style="position: absolute; left: 0; width: 62%; top: {{b.top}}; height: {{b.height}}; box-sizing: border-box; background: {{b.bg}}; border-left: 3px solid {{b.color}}; border-radius: 6px; padding: {{b.pad}}; overflow: hidden">
+                <sc-if value="{{b.oneLine}}" hint-placeholder-val="{{true}}">
+                  <div class="ell" style="font-size: 13px; line-height: 18px"><span style="font-weight: 600; color: {{b.titleColor}}">{{b.title}}</span> <span style="color: {{b.detailColor}}">{{b.start}} · {{b.detail}}</span></div>
+                </sc-if>
+                <sc-if value="{{b.twoLine}}" hint-placeholder-val="{{false}}">
+                  <div class="ell" style="font-size: 13px; line-height: 18px; font-weight: 600; color: {{b.titleColor}}">{{b.title}} <span style="font-weight: 400; color: {{b.detailColor}}">{{b.start}}</span></div>
+                  <div class="ell" style="font-size: 13px; line-height: 18px; color: {{b.detailColor}}">{{b.detail}}</div>
+                </sc-if>
               </div>
             </sc-for>
             <sc-for list="{{dayReminders}}" as="r" hint-placeholder-count="4">
-              <div style="position: absolute; left: 62%; right: 0; top: {{r.top}}; display: flex; align-items: center; gap: 8px; transform: translateY(-50%); opacity: {{r.opacity}}">
-                <div style="width: 14px; border-top: 1px dashed #636366"></div>
-                <label style="display: flex; gap: 8px; align-items: center; font-size: 14px; text-decoration: {{r.strike}}"><input type="checkbox" style="width: 15px; height: 15px; margin: 0; accent-color: #F5F5F7">{{r.text}} <span style="color: #8E8E93">{{r.time}}</span></label>
-              </div>
+              <label style="position: absolute; left: 64%; right: 0; top: {{r.top}}; transform: translateY(-50%); height: 32px; box-sizing: border-box; display: flex; align-items: center; gap: 8px; padding: 0 12px; border: 1px dashed #636366; border-radius: 16px; background: #0C0C0E; font-size: 13px; color: {{r.color}}">
+                <sc-if value="{{r.done}}" hint-placeholder-val="{{false}}"><input type="checkbox" class="ring sm" checked="{{true}}" readOnly="{{true}}" aria-label="Done"></sc-if>
+                <sc-if value="{{r.open}}" hint-placeholder-val="{{true}}"><input type="checkbox" class="ring sm"></sc-if>
+                <span class="ell" style="flex: 1; text-decoration: {{r.strike}}">{{r.text}}</span><span style="color: #8E8E93">{{r.time}}</span>
+              </label>
             </sc-for>
-            <div style="position: absolute; left: -8px; right: 0; top: 105px; height: 2px; background: #FF453A"></div>
+            <div style="position: absolute; left: -6px; right: 0; top: 62px; height: 2px; background: #FF453A"></div>
           </div>
         </sc-if>
 
         <sc-if value="{{isWeek}}" hint-placeholder-val="{{false}}">
           <div style="display: flex; gap: 8px">
-            <div style="width: 32px; flex: none; position: relative; font-size: 11px; color: #8E8E93">
-              <div style="position: absolute; top: 96px; left: 0; width: 32px; height: 540px">
-                <span style="position: absolute; top: -6px">07</span><span style="position: absolute; top: 102px">10</span><span style="position: absolute; top: 210px">13</span><span style="position: absolute; top: 318px">16</span><span style="position: absolute; top: 426px">19</span><span style="position: absolute; top: 534px">22</span>
+            <div style="width: 28px; flex: none; position: relative; font-size: 11px; color: #8E8E93">
+              <div style="position: absolute; top: 84px; left: 0; width: 28px; height: 540px">
+                <span style="position: absolute; top: -6px">07</span><span style="position: absolute; top: 66px">09</span><span style="position: absolute; top: 138px">11</span><span style="position: absolute; top: 210px">13</span><span style="position: absolute; top: 282px">15</span><span style="position: absolute; top: 354px">17</span><span style="position: absolute; top: 426px">19</span><span style="position: absolute; top: 498px">21</span>
               </div>
             </div>
             <div style="flex: 1; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px">
               <sc-for list="{{weekDays}}" as="d" hint-placeholder-count="7">
-                <div style="display: flex; flex-direction: column">
-                  <div style="height: 30px; padding: 0 4px; font-size: 14px; color: {{d.labelColor}}; font-weight: {{d.weight}}">{{d.label}}</div>
-                  <div style="height: 60px; padding: 0 2px; display: flex; flex-direction: column; gap: 4px; overflow: hidden">
-                    <sc-for list="{{d.allDay}}" as="r" hint-placeholder-count="1">
-                      <label style="display: flex; gap: 5px; align-items: center; font-size: 11px; padding: 3px 6px; border-radius: 4px; background: #1C1C1E; color: {{r.color}}; white-space: nowrap; overflow: hidden"><input type="checkbox" style="width: 11px; height: 11px; margin: 0; flex: none; accent-color: #F5F5F7">{{r.text}}</label>
+                <div style="display: flex; flex-direction: column; min-width: 0">
+                  <div style="height: 28px; padding: 0 4px; font-size: 13px; color: {{d.labelColor}}; font-weight: {{d.weight}}">{{d.label}}</div>
+                  <div style="height: 50px; padding: 0 2px; display: flex; flex-direction: column; gap: 4px">
+                    <sc-for list="{{d.dated}}" as="t" hint-placeholder-count="1">
+                      <div class="ell" style="display: flex; gap: 5px; align-items: center; font-size: 11px; color: {{t.color}}"><span style="width: 9px; height: 9px; border-radius: 50%; border: 1px solid #8E8E93; flex: none; box-sizing: border-box"></span><span class="ell">{{t.text}}</span></div>
                     </sc-for>
                   </div>
-                  <div style="margin-top: 6px; position: relative; height: 540px; border-radius: 8px; background-color: {{d.bg}}; background-image: repeating-linear-gradient(to bottom, #1C1C1E 0, #1C1C1E 1px, transparent 1px, transparent 108px)">
+                  <div style="margin-top: 6px; position: relative; height: 540px; background-image: repeating-linear-gradient(to bottom, #2C2C2E 0, #2C2C2E 1px, transparent 1px, transparent 72px)">
                     <sc-for list="{{d.events}}" as="e" hint-placeholder-count="2">
-                      <div style="position: absolute; left: 3px; right: 3px; top: {{e.top}}; height: {{e.height}}; box-sizing: border-box; background: {{e.bg}}; border-left: 2px solid {{e.color}}; border-radius: 4px; padding: 3px 6px; font-size: 11px; overflow: hidden; opacity: {{e.opacity}}">{{e.title}}</div>
+                      <div class="ell" style="position: absolute; left: 2px; right: 2px; top: {{e.top}}; height: {{e.height}}; box-sizing: border-box; background: {{e.bg}}; border-left: 2px solid {{e.color}}; border-radius: 4px; padding: 3px 6px; font-size: 11px; line-height: 14px">{{e.title}}</div>
                     </sc-for>
                     <sc-for list="{{d.reminders}}" as="r" hint-placeholder-count="1">
-                      <div style="position: absolute; left: 3px; right: 3px; top: {{r.top}}; transform: translateY(-50%); display: flex; align-items: center; gap: 4px; font-size: 11px; padding: 2px 6px; border-radius: 10px; border: 1px dashed #636366; background: #0C0C0E; white-space: nowrap; overflow: hidden"><span style="width: 8px; height: 8px; border-radius: 4px; border: 1px solid #A1A1A6; flex: none"></span>{{r.text}}</div>
+                      <div class="ell" style="position: absolute; left: 30%; right: 2px; top: {{r.top}}; transform: translateY(-50%); height: 20px; box-sizing: border-box; display: flex; align-items: center; gap: 4px; padding: 0 6px; border-radius: 10px; border: 1px dashed #636366; background: #0C0C0E; font-size: 11px"><span style="width: 8px; height: 8px; border-radius: 50%; border: 1px solid #8E8E93; flex: none; box-sizing: border-box"></span><span class="ell">{{r.text}}</span></div>
                     </sc-for>
                     <sc-if value="{{d.today}}" hint-placeholder-val="{{false}}"><div style="position: absolute; left: 0; right: 0; top: 79px; height: 2px; background: #FF453A"></div></sc-if>
                   </div>
@@ -102,18 +125,19 @@ a{color:#8AB4FF}a:hover{color:#B5D0FF}
         </sc-if>
       </div>
 
-      <aside style="display: flex; flex-direction: column; gap: 26px">
-        <label style="display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 14px; border-radius: 12px; background: #161618; color: #8E8E93; font-size: 14px">
+      <aside style="display: flex; flex-direction: column; gap: 24px">
+        <label style="display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 14px; border-radius: 12px; background: #1C1C1E; color: #8E8E93; font-size: 15px">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
-          <input type="text" aria-label="Add a task or reminder" placeholder="Call dentist Fri 10am" style="flex: 1; border: 0; background: transparent; color: #F5F5F7; font: inherit; outline: none">
+          <input type="text" aria-label="Add a task or reminder" placeholder="Call dentist Fri 10:00" style="flex: 1; border: 0; background: transparent; color: #F5F5F7; font: inherit; outline: none">
         </label>
         <sc-for list="{{groups}}" as="g" hint-placeholder-count="4">
           <div>
-            <h3 style="margin: 0 0 4px; font-size: 14px; font-weight: 500; color: {{g.color}}">{{g.name}}</h3>
+            <h3 style="margin: 0 0 2px; font-size: 13px; font-weight: 500; color: {{g.color}}">{{g.name}}</h3>
             <sc-for list="{{g.tasks}}" as="t" hint-placeholder-count="2">
-              <label style="display: flex; gap: 12px; align-items: flex-start; padding: 9px 0; border-bottom: 1px solid #1F1F22">
-                <input type="checkbox" style="width: 16px; height: 16px; margin: 2px 0 0; accent-color: #F5F5F7">
-                <span style="flex: 1"><span style="display: block; font-size: 15px">{{t.text}}</span><span style="display: block; font-size: 12px; color: #8E8E93; margin-top: 2px">{{t.meta}}</span></span>
+              <label style="display: flex; gap: 12px; align-items: center; min-height: 44px; border-bottom: 1px solid #2C2C2E">
+                <input type="checkbox" class="ring">
+                <span style="flex: 1; min-width: 0; font-size: 15px" class="ell">{{t.text}}</span>
+                <span style="font-size: 13px; color: {{t.metaColor}}">{{t.meta}}</span>
               </label>
             </sc-for>
           </div>
@@ -122,109 +146,156 @@ a{color:#8AB4FF}a:hover{color:#B5D0FF}
     </div>
   </section>
 
-  <section style="padding: 56px 96px 64px; border-top: 1px solid #1C1C1E; display: flex; flex-direction: column; gap: 28px">
+  <section style="padding: 32px 64px 64px; display: flex; flex-direction: column; gap: 28px">
     <div style="display: flex; align-items: center; justify-content: space-between">
-      <h2 style="margin: 0; font-size: 22px; font-weight: 500">Health</h2>
+      <div style="display: flex; gap: 16px; align-items: baseline"><h2 style="margin: 0; font-size: 22px; font-weight: 500">Health</h2><span style="font-size: 15px; color: #8E8E93">{{rangeLabel}}</span></div>
       <div role="group" aria-label="Trend range" style="display: flex; background: #1C1C1E; border-radius: 10px; padding: 3px">
         <sc-for list="{{ranges}}" as="r" hint-placeholder-count="4">
-          <button type="button" onClick="{{r.pick}}" style="height: 34px; min-width: 56px; padding: 0 14px; border: 0; border-radius: 8px; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; background: {{r.bg}}; color: {{r.fg}}">{{r.label}}</button>
+          <button type="button" onClick="{{r.pick}}" style="height: 32px; min-width: 52px; padding: 0 12px; border: 0; border-radius: 8px; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; background: {{r.bg}}; color: {{r.fg}}">{{r.label}}</button>
         </sc-for>
       </div>
     </div>
-    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(5, auto); grid-auto-flow: column; column-gap: 64px">
-      <sc-for list="{{metrics}}" as="m" hint-placeholder-count="10">
-        <div style="padding: 22px 0; border-top: 1px solid #1F1F22; display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 24px; align-items: center">
-          <div>
-            <div style="font-size: 14px; color: #A1A1A6">{{m.name}}</div>
-            <div style="font-size: 40px; font-weight: 200; letter-spacing: -0.03em; line-height: 1.1; margin-top: 4px; color: {{m.valueColor}}">{{m.value}}<span style="font-size: 15px; color: #8E8E93; letter-spacing: 0; margin-left: 4px">{{m.unit}}</span></div>
-            <div style="font-size: 13px; color: {{m.deltaColor}}; margin-top: 4px">{{m.delta}}</div>
-          </div>
-          <div>
-            <svg width="100%" height="104" viewBox="0 0 600 120" preserveAspectRatio="none" role="img" aria-label="{{m.aria}}">
-              <line x1="0" y1="{{m.avgY}}" x2="600" y2="{{m.avgY}}" stroke="#3A3A3C" stroke-width="1" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"></line>
-              <polyline points="{{m.points}}" fill="none" stroke="{{m.color}}" stroke-width="1.6" stroke-linejoin="round" vector-effect="non-scaling-stroke"></polyline>
-            </svg>
-            <div style="display: flex; justify-content: space-between; font-size: 11px; color: #8E8E93; margin-top: 4px"><span>{{startLabel}}</span><span>Today</span></div>
-          </div>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 72px">
+      <sc-for list="{{healthCols}}" as="col" hint-placeholder-count="2">
+        <div style="display: flex; flex-direction: column; gap: 48px">
+          <sc-for list="{{col}}" as="grp" hint-placeholder-count="2">
+            <div style="display: flex; flex-direction: column; gap: 20px">
+              <sc-for list="{{grp}}" as="m" hint-placeholder-count="3">
+                <div style="display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 24px; align-items: center">
+                  <div>
+                    <div style="font-size: 13px; color: #A1A1A6">{{m.name}}</div>
+                    <div style="font-size: 36px; font-weight: 300; letter-spacing: -0.02em; line-height: 1.15; margin-top: 2px">{{m.value}}<span style="font-size: 15px; font-weight: 400; color: #8E8E93; letter-spacing: 0; margin-left: 4px">{{m.unit}}</span></div>
+                    <div style="font-size: 13px; margin-top: 2px"><span style="color: {{m.deltaColor}}">{{m.delta}}</span><span style="color: #8E8E93">{{m.when}}</span></div>
+                  </div>
+                  <svg width="100%" height="88" viewBox="0 0 600 100" preserveAspectRatio="none" role="img" aria-label="{{m.aria}}">
+                    <rect x="0" y="{{m.bandY}}" width="600" height="{{m.bandH}}" fill="{{m.color}}" fill-opacity="0.13"></rect>
+                    <path d="{{m.dots}}" stroke="{{m.color}}" stroke-opacity="0.45" stroke-width="3" stroke-linecap="round" fill="none" vector-effect="non-scaling-stroke"></path>
+                    <polyline points="{{m.line}}" fill="none" stroke="{{m.color}}" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"></polyline>
+                  </svg>
+                </div>
+              </sc-for>
+            </div>
+          </sc-for>
         </div>
       </sc-for>
     </div>
   </section>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2860}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2200}}'>
 class Component extends DCLogic {
   renderVals() {
     const st = this.state || {};
     const view = st.view || 'day';
     const range = st.range || '1m';
-    const seg = (on) => ({ bg: on ? '#F5F5F7' : 'transparent', fg: on ? '#0C0C0E' : '#A1A1A6' });
+    const seg = (on) => ({ bg: on ? '#636366' : 'transparent', fg: on ? '#F5F5F7' : '#A1A1A6' });
 
-    const H = 48;
-    const blk = (s, e, title, time, detail, color, past) => ({ top: ((s - 7) * H) + 'px', height: Math.max(26, (e - s) * H) + 'px', title, time, detail, color, bg: color + '22', opacity: past ? 0.5 : 1 });
-    const rem = (h, text, time, done) => ({ top: ((h - 7) * H) + 'px', text, time, opacity: done ? 0.45 : 1, strike: done ? 'line-through' : 'none' });
-
-    const W = 36;
-    // Status: warn (overdue) orange, now red. Categories: work blue, fitness/health teal, personal purple, focus grey.
-    const blue = '#0A84FF', orange = '#FF9F0A', teal = '#40C8E0', purple = '#BF5AF2', grey = '#8E8E93';
-    // Health categories (Apple Health style), kept clear of the status hues.
+    // Palette tokens (README): status vs category hues never overlap.
+    const T1 = '#F5F5F7', T2 = '#A1A1A6', T3 = '#8E8E93';
+    const good = '#30D158', caution = '#FFD60A', bad = '#FF453A', warn = '#FF9F0A';
+    const work = '#0A84FF', fitness = '#40C8E0', personal = '#BF5AF2', focusC = '#8E8E93';
     const heart = '#FF7EB6', sleep = '#7D7AFF', activity = '#64D2FF', vitals = '#AC8E68';
-    const band = (v) => (v >= 67 ? '#30D158' : (v >= 34 ? '#FFD60A' : '#FF453A'));
-    const we = (s, e, title, color, past) => ({ top: ((s - 7) * W) + 'px', height: Math.max(18, (e - s) * W) + 'px', title, color, bg: color + '26', opacity: past ? 0.5 : 1 });
-    const wr = (h, text) => ({ top: ((h - 7) * W) + 'px', text });
-    const ad = (text, late, done) => ({ text, color: late ? orange : (done ? '#8E8E93' : '#F5F5F7') });
-    const day = (label, events, reminders, allDay, today, past) => ({ label, events, reminders, allDay, today, labelColor: today ? '#F5F5F7' : (past ? '#8E8E93' : '#A1A1A6'), weight: today ? 600 : 400, bg: today ? '#141418' : 'transparent' });
+    const band = (v) => (v >= 67 ? good : (v >= 34 ? caution : bad));
 
-    const days = { '2w': 14, '1m': 30, '3m': 90, '1y': 365 };
-    const n = days[range];
-    const step = range === '1y' ? 7 : 1;
-    const pts = Math.ceil(n / step);
-    const start = new Date(2026, 10, 3 - n + 1);
-    const startLabel = start.getDate() + ' ' + start.toLocaleString('en-GB', { month: 'short' }) + (range === '1y' ? ' ' + start.getFullYear() : '');
-    const metric = (name, unit, cur, base, amp, dec, color, seed, fmt, better) => {
-      let s = seed;
+    // Day timeline 08–22, 52 px per hour. Past items dim by colour, never opacity.
+    const H = 52, START = 8, NOW = 9.2;
+    const blk = (s, e, title, start, detail, color, next) => {
+      const past = e <= NOW, h = (e - s) * H, one = h < 46;
+      return { top: ((s - START) * H) + 'px', height: Math.max(26, h - 2) + 'px', pad: one ? '3px 10px' : '6px 10px', oneLine: one, twoLine: !one,
+        title, start, detail, color, bg: color + (past ? '14' : (next ? '40' : '26')),
+        titleColor: past ? T2 : T1, detailColor: past ? T3 : T2 };
+    };
+    const rem = (h, text, time, done) => ({ top: ((h - START) * H) + 'px', text, time, done: !!done, open: !done, color: done ? T3 : T1, strike: done ? 'line-through' : 'none' });
+
+    // Rolling week: today + 6, 07–22 at 36 px per hour.
+    const W = 36;
+    const we = (s, e, title, color) => ({ top: ((s - 7) * W) + 'px', height: Math.max(20, (e - s) * W - 2) + 'px', title, color, bg: color + '26' });
+    const wr = (h, text) => ({ top: ((h - 7) * W) + 'px', text });
+    const wd = (label, events, reminders, dated, today) => ({ label, events, reminders, dated: dated.map((t) => ({ text: t[0], color: t[1] ? warn : T1 })), today, labelColor: today ? T1 : T2, weight: today ? 600 : 400 });
+
+    // Health: 365 days of daily values per metric (sample data). Baseline = the 60 days before the last 7.
+    const N = 365;
+    const rangeDays = { '2w': 14, '1m': 30, '3m': 90, '1y': 364 }[range];
+    const fmtDate = (d) => d.getDate() + ' ' + d.toLocaleString('en-GB', { month: 'short' });
+    const today = new Date(2026, 10, 3);
+    const first = new Date(2026, 10, 3 - rangeDays + 1);
+    const rangeLabel = fmtDate(first) + (range === '1y' ? ' ' + first.getFullYear() : '') + ' – ' + fmtDate(today);
+    const mean = (a) => a.reduce((x, y) => x + y, 0) / a.length;
+    const metric = (o) => {
+      let s = o.seed;
       const rnd = () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
       const vals = [];
-      for (let i = 0; i < pts; i++) {
-        const drift = Math.sin((i / pts) * Math.PI * 2 + seed) * 0.25;
-        vals.push(base + amp * (drift + (rnd() - 0.5) * 0.7));
+      for (let i = 0; i < N; i++) {
+        const noise = (rnd() + rnd() + rnd() - 1.5) * 2;
+        vals.push(o.base + o.sd * (noise * 0.8 + Math.sin(i / 40 + o.seed) * 0.35) + (i >= N - 7 ? o.shift * o.sd : 0));
       }
-      vals[pts - 1] = cur;
-      const lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
-      const y = (v) => (112 - ((v - lo) / ((hi - lo) || 1)) * 104).toFixed(1);
-      const avg = vals.reduce((a, b) => a + b, 0) / pts;
-      const f = fmt || ((v) => v.toFixed(dec));
-      const d = cur - avg;
-      const pct = Math.round((d / avg) * 100);
-      // Green when the change is good for you, red when bad; grey when small (under 3%) or when direction has no clear meaning.
-      const deltaColor = (!better || Math.abs(pct) < 3) ? '#8E8E93' : ((pct > 0) === (better === 'up') ? '#30D158' : '#FF453A');
+      vals[N - 1] = o.cur;
+      const basePart = vals.slice(N - 67, N - 7);
+      const b = mean(basePart);
+      const sd = Math.sqrt(mean(basePart.map((v) => (v - b) * (v - b))));
+      const m7 = mean(vals.slice(N - 7));
+      const diff = m7 - b;
+      const pct = Math.round((diff / b) * 100);
+      let delta;
+      if (o.abs) { const r = Math.round(diff * 10) / 10; delta = r === 0 ? '0 ' + o.unit : (r > 0 ? '+' : '−') + Math.abs(r).toFixed(1) + ' ' + o.unit; }
+      else delta = pct === 0 ? '0%' : (pct > 0 ? '+' : '−') + Math.abs(pct) + '%';
+      const meaningful = o.better && Math.abs(diff) >= 0.5 * sd;
+      const deltaColor = !meaningful ? T3 : ((diff > 0) === (o.better === 'up') ? good : bad);
+      // Fixed y-range per metric: baseline ± 3 SD, so small drifts look small.
+      const lo = b - 3 * sd, hi = b + 3 * sd;
+      const y = (v) => (96 - ((Math.min(hi, Math.max(lo, v)) - lo) / (hi - lo)) * 92);
+      let pts = [], line = [];
+      if (range === '1y') {
+        for (let w = 0; w < 52; w++) { const seg7 = vals.slice(N - 364 + w * 7, N - 364 + w * 7 + 7); line.push(mean(seg7)); }
+      } else {
+        for (let i = N - rangeDays; i < N; i++) { pts.push(vals[i]); line.push(mean(vals.slice(i - 6, i + 1))); }
+      }
+      const xs = (i, n) => ((i / (n - 1)) * 600).toFixed(1);
+      const fmt = o.fmt || ((v) => v.toFixed(o.dec || 0));
       return {
-        name, unit, color, deltaColor, value: f(cur), valueColor: name === 'Recovery' ? band(cur) : '#F5F5F7',
-        delta: (Math.round((d / avg) * 100) >= 0 ? '+' : '−') + Math.abs(Math.round((d / avg) * 100)) + '%' + ' vs average',
-        points: vals.map((v, i) => ((i / (pts - 1)) * 600).toFixed(1) + ',' + y(v)).join(' '),
-        avgY: y(avg), aria: name + ' trend'
+        name: o.name, unit: o.abs ? o.unit : (o.showUnit === false ? '' : o.unit), color: o.color,
+        value: fmt(o.cur), delta, deltaColor, when: o.cumulative ? ' · yesterday' : '',
+        bandY: y(b + sd).toFixed(1), bandH: (y(b - sd) - y(b + sd)).toFixed(1),
+        dots: pts.map((v, i) => 'M' + xs(i, pts.length) + ',' + y(v).toFixed(1) + 'h0').join(''),
+        line: line.map((v, i) => xs(i, line.length) + ',' + y(v).toFixed(1)).join(' '),
+        aria: o.name + ' over the selected range, with your normal range shaded',
+        bandColor: o.name === 'Recovery' ? band(o.cur) : T1
       };
     };
-    const hm = (v) => Math.floor(v) + ':' + String(Math.round((v % 1) * 60)).padStart(2, '0');
+    const hm = (v) => Math.floor(v) + 'h ' + String(Math.round((v % 1) * 60)).padStart(2, '0') + 'm';
     const thou = (v) => Math.round(v).toLocaleString('en-US');
+    const M = {
+      recovery: metric({ name: 'Recovery', unit: '%', cur: 62, base: 68, sd: 11, shift: -1.1, color: heart, seed: 11, better: 'up' }),
+      hrv: metric({ name: 'HRV', unit: 'ms', cur: 54, base: 58, sd: 7, shift: -0.7, color: heart, seed: 53, better: 'up' }),
+      rhr: metric({ name: 'Resting HR', unit: 'bpm', cur: 52, base: 50, sd: 2.2, shift: 0.6, color: heart, seed: 67, better: 'down' }),
+      sleepScore: metric({ name: 'Sleep score', unit: '', cur: 78, base: 76, sd: 8, shift: 0.2, color: sleep, seed: 23, better: 'up' }),
+      asleep: metric({ name: 'Time asleep', unit: '', cur: 7.2, base: 7.0, sd: 0.6, shift: 0.1, color: sleep, seed: 37, better: 'up', fmt: hm }),
+      strain: metric({ name: 'Strain', unit: '', cur: 11.4, base: 11, sd: 3, shift: 0.3, color: activity, seed: 41, dec: 1, cumulative: true }),
+      steps: metric({ name: 'Steps', unit: '', cur: 9840, base: 8500, sd: 2400, shift: 0.5, color: activity, seed: 71, better: 'up', fmt: thou, cumulative: true }),
+      zone: metric({ name: 'Zone 2+', unit: 'min', cur: 33, base: 35, sd: 14, shift: -0.2, color: activity, seed: 83, better: 'up', cumulative: true }),
+      breath: metric({ name: 'Breathing rate', unit: '/min', cur: 14.6, base: 14.5, sd: 0.4, shift: 0.2, color: vitals, seed: 97, dec: 1 }),
+      skin: metric({ name: 'Skin temperature', unit: '°C', cur: 33.6, base: 33.4, sd: 0.3, shift: 0.4, color: vitals, seed: 101, dec: 1, abs: true })
+    };
+    const focusOf = (m, unit, colored) => ({ name: m.name, value: m.value, unit, delta: m.delta, deltaColor: m.deltaColor, valueColor: colored ? m.bandColor : T1 });
 
     return {
+      focus: [focusOf(M.recovery, '%', true), focusOf(M.sleepScore, ''), focusOf(M.hrv, 'ms'), focusOf(M.rhr, 'bpm')],
+
       isDay: view === 'day',
       isWeek: view === 'week',
-      calTitle: view === 'day' ? 'Today' : '2–8 November',
+      calTitle: view === 'day' ? 'Tue 3 Nov' : '3–9 Nov',
       daySeg: seg(view === 'day'),
       weekSeg: seg(view === 'week'),
       showDay: () => this.setState({ view: 'day' }),
       showWeek: () => this.setState({ view: 'week' }),
 
-      dayAllDay: [ { text: 'Renew lease · 3 days late', color: orange }, { text: 'Upload insurance receipt', color: '#F5F5F7' } ],
       dayBlocks: [
-        blk(8, 8.87, 'Gym, lower body', '08:00', 'Strain 5.1 · peak 158', teal, true),
-        blk(10, 10.25, 'Standup', '10:00', '', blue),
-        blk(12.5, 13.25, 'Lunch with Priya', '12:30', 'Café on Albert St · ask about Lisbon', blue),
-        blk(14, 15, 'Design review', '14:00–15:00', 'Room 4B · Ana, Jordan, Sam K', blue),
-        blk(17.5, 18.25, 'Physio', '17:30', 'Northside Clinic · shoulder', teal),
-        blk(19, 21, 'Dinner with Sam', '19:00–21:00', 'Sam’s place · bring the book', purple)
+        blk(8, 8.87, 'Gym, lower body', '08:00', 'Strain 5.1 · peak 158', fitness),
+        blk(10, 10.25, 'Standup', '10:00', 'Video call', work, true),
+        blk(12.5, 13.25, 'Lunch with Priya', '12:30', 'Café on Albert St · ask about Lisbon', work),
+        blk(14, 15, 'Design review', '14:00', 'Room 4B · Ana, Jordan, Sam K', work),
+        blk(17.5, 18.25, 'Physio', '17:30', 'Northside Clinic · shoulder', fitness),
+        blk(19, 21, 'Dinner with Sam', '19:00', 'Sam’s place · bring the book', personal)
       ],
       dayReminders: [
         rem(9, 'Take vitamin D', '09:00', true),
@@ -234,35 +305,27 @@ class Component extends DCLogic {
       ],
 
       weekDays: [
-        day('Mon 2', [we(7.5, 8.4, 'Gym', teal, true), we(11.5, 12.3, 'Dentist', blue, true), we(15, 16, 'Planning', blue, true)], [], [ad('Electricity bill', false, true)], false, true),
-        day('Tue 3', [we(8, 8.87, 'Gym', teal, true), we(10, 10.25, 'Standup', blue), we(12.5, 13.25, 'Lunch', blue), we(14, 15, 'Review', blue), we(17.5, 18.25, 'Physio', teal), we(19, 21, 'Sam', purple)], [wr(18.5, 'Call Mum'), wr(21.5, 'Charge strap')], [ad('Renew lease', true), ad('Insurance receipt')], true),
-        day('Wed 4', [we(10, 10.25, 'Standup', blue), we(13, 14.5, 'Focus block', grey), we(18, 19, 'Climbing', teal)], [wr(8, 'Water plants')], [], false),
-        day('Thu 5', [we(7.5, 8.4, 'Gym', teal), we(10, 10.25, 'Standup', blue), we(16, 17, 'Interview', blue)], [wr(12, 'Pick up parcel')], [ad('Contact lenses')], false),
-        day('Fri 6', [we(10, 10.25, 'Standup', blue), we(16, 16.5, '1:1', blue), we(19.5, 22, 'Film night', purple)], [wr(15, 'Prep 1:1 notes')], [], false),
-        day('Sat 7', [we(8, 9.5, 'Long run', teal), we(12, 14, 'Market', purple)], [], [], false),
-        day('Sun 8', [we(11, 13, 'Brunch', purple)], [wr(20, 'Plan the week')], [ad('Book flights')], false)
+        wd('Tue 3', [we(8, 8.87, 'Gym', fitness), we(10, 10.25, 'Standup', work), we(12.5, 13.25, 'Lunch with Priya', work), we(14, 15, 'Design review', work), we(17.5, 18.25, 'Physio', fitness), we(19, 21, 'Dinner with Sam', personal)], [wr(17.08, 'Leave for physio'), wr(18.5, 'Call Mum'), wr(21.5, 'Charge the strap')], [['Upload insurance receipt']], true),
+        wd('Wed 4', [we(10, 10.25, 'Standup', work), we(13, 14.5, 'Focus block', focusC), we(18, 19, 'Climbing', fitness)], [wr(8, 'Water plants')], [], false),
+        wd('Thu 5', [we(7.5, 8.4, 'Gym', fitness), we(10, 10.25, 'Standup', work), we(16, 17, 'Interview', work)], [wr(12, 'Pick up parcel')], [['Order contact lenses']], false),
+        wd('Fri 6', [we(10, 10.25, 'Standup', work), we(16, 16.5, '1:1', work), we(19.5, 22, 'Film night', personal)], [wr(15, 'Prep 1:1 notes')], [], false),
+        wd('Sat 7', [we(8, 9.5, 'Long run', fitness), we(12, 14, 'Market', personal)], [], [], false),
+        wd('Sun 8', [we(11, 13, 'Brunch with family', personal)], [wr(20, 'Plan the week')], [['Book December flights']], false),
+        wd('Mon 9', [we(7.5, 8.4, 'Gym', fitness), we(10, 10.25, 'Standup', work), we(15, 16, 'Planning', work)], [], [], false)
       ],
 
       groups: [
-        { name: 'Overdue', color: orange, tasks: [ { text: 'Renew lease', meta: 'Oct 31 · #home' } ] },
-        { name: 'Today', color: '#A1A1A6', tasks: [ { text: 'Upload insurance receipt', meta: '#admin · claim 4471' }, { text: 'Call Mum', meta: '18:30 · every Tuesday' } ] },
-        { name: 'This week', color: '#A1A1A6', tasks: [ { text: 'Order contact lenses', meta: 'Thu · #health' }, { text: 'Prep 1:1 notes', meta: 'Fri 15:00 · #work' }, { text: 'Book December flights', meta: 'Sun · #travel' } ] },
-        { name: 'Someday', color: '#8E8E93', tasks: [ { text: 'Fix bike brakes', meta: '#home' } ] }
+        { name: 'Overdue', color: warn, tasks: [ { text: 'Renew lease', meta: '3d late', metaColor: warn } ] },
+        { name: 'Today', color: T2, tasks: [ { text: 'Upload insurance receipt', meta: '', metaColor: T3 } ] },
+        { name: 'This week', color: T2, tasks: [ { text: 'Order contact lenses', meta: 'Thu', metaColor: T3 }, { text: 'Prep 1:1 notes', meta: 'Fri 15:00', metaColor: T3 }, { text: 'Book December flights', meta: 'Sun', metaColor: T3 } ] },
+        { name: 'Someday', color: T3, tasks: [ { text: 'Fix bike brakes', meta: '', metaColor: T3 } ] }
       ],
 
       ranges: [['2w', '2W'], ['1m', '1M'], ['3m', '3M'], ['1y', '1Y']].map(([k, label]) => ({ label, bg: seg(k === range).bg, fg: seg(k === range).fg, pick: () => this.setState({ range: k }) })),
-      startLabel,
-      metrics: [
-        metric('Recovery', '%', 62, 64, 34, 0, heart, 11, undefined, 'up'),
-        metric('HRV', 'ms', 54, 57, 18, 0, heart, 53, undefined, 'up'),
-        metric('Resting HR', 'bpm', 52, 50, 7, 0, heart, 67, undefined, 'down'),
-        metric('Sleep score', '', 78, 76, 24, 0, sleep, 23, undefined, 'up'),
-        metric('Time asleep', '', 7.2, 7.0, 1.8, 1, sleep, 37, hm, 'up'),
-        metric('Strain', '', 11.4, 11, 9, 1, activity, 41, undefined, null),
-        metric('Steps', '', 9840, 8500, 7000, 0, activity, 71, thou, 'up'),
-        metric('Zone 2+ minutes', 'min', 33, 35, 50, 0, activity, 83, undefined, 'up'),
-        metric('Breathing rate', '/min', 14.6, 14.5, 1.4, 1, vitals, 97, undefined, null),
-        metric('Skin temperature', '°C', 33.6, 33.4, 0.9, 1, vitals, 101, undefined, null)
+      rangeLabel,
+      healthCols: [
+        [[M.recovery, M.hrv, M.rhr], [M.sleepScore, M.asleep]],
+        [[M.strain, M.steps, M.zone], [M.breath, M.skin]]
       ]
     };
   }
