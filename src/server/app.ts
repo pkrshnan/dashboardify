@@ -14,6 +14,8 @@ import { todayRoutes } from "./routes/today";
 
 export interface AppDeps {
   vault?: Vault;
+  /** Told about every stored strap upload, e.g. to recompute health summaries. */
+  onSamples?: (stream: string, day: string) => void;
 }
 
 export function createApp(config: Config, deps: AppDeps = {}): Hono<AuthEnv> {
@@ -23,7 +25,7 @@ export function createApp(config: Config, deps: AppDeps = {}): Hono<AuthEnv> {
   api.use("*", bearerAuth(config.tokens));
   api.route("/ingest/journal", journalRoutes(vault));
   api.route("/ingest/messages", messageRoutes(vault));
-  api.route("/ingest/samples", sampleRoutes(new RawStore(config.healthRawPath)));
+  api.route("/ingest/samples", sampleRoutes(new RawStore(config.healthRawPath), deps.onSamples));
   api.route("/today", todayRoutes(vault, config));
   api.route("/tasks", taskRoutes(new TaskStore(vault, config.tasksInbox), config));
 

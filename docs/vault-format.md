@@ -28,7 +28,52 @@ sleep_h: 5.9
   Second line of the same entry.
 ```
 
-Health metrics are merged into the frontmatter. Journal entries are `- HH:MM text`, and continuation lines are indented two spaces.
+Health metrics are merged into the frontmatter, and a short Health block sits under the title (see below). Journal entries are `- HH:MM text`, and continuation lines are indented two spaces.
+
+## Health in the daily note
+
+The server computes these from the strap a couple of minutes after each upload, and hourly for today. See [health metrics](health-metrics.md) for how each number is calculated.
+
+```markdown
+---
+recovery_pct: 62
+strain: 11.4
+tst_min: 432
+rhr_bpm: 52
+rmssd_ms: 48
+resp_rate_bpm: 14.2
+temp_dev_c: 0.2
+steps: 8412
+---
+# 2026-11-02
+
+<!-- cc:health -->
+## Health
+
+- Recovery **62%**
+- Sleep 7h 12m · 23:41–07:05 · 91%
+- RHR 52 · HRV 48 ms · Breathing 14.2 · Skin +0.2 °C
+- Strain **11.4** · Zones 42 / 18 / 6 / 0 / 0 min
+- Steps 8,412
+<!-- /cc:health -->
+
+## Journal
+```
+
+- The night is the one that ended that morning. Strain, zones and steps cover the calendar day.
+- Recovery shows "calibrating" until there are 14 nights of history.
+- Strain needs `birth_date` (or `hr_max_measured`) in `profile.md` at the vault root; `sex` picks the strain constants:
+
+  ```markdown
+  ---
+  birth_date: 1996-05-01
+  sex: male
+  hr_max_measured: 192   # optional, beats the age formula
+  ---
+  ```
+
+- To backfill or recompute: `bun src/health/summarize.ts 2026-10-13 2026-11-03`. On the server: `docker compose exec dashboardify bun src/health/summarize.ts 2026-10-13 2026-11-03`.
+- The computed tables also go to `health-derived/nights/` and `health-derived/days/` (Parquet, one file per date, rebuildable).
 
 ## Health: `health/YYYY/YYYY-MM.csv`
 

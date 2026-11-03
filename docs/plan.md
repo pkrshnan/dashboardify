@@ -77,7 +77,7 @@ Done when a line dictated to Siri lands in today's note and syncs to your other 
 
 Done when the dashboard replaces opening four apps in the morning.
 
-8. **Strap data and metrics:** the raw samples endpoint that healthstrap posts to, Parquet storage in `health-raw/`, and the metrics job that computes strain, recovery, HRV, sleep, VO2max and biological age into the health CSVs and the daily note. An importer for the Whoop CSV export backfills older history.
+8. **Strap data and metrics:** the raw samples endpoint that healthstrap posts to, Parquet storage in `health-raw/`, and the metrics job that computes strain, recovery, HRV, sleep, VO2max and biological age into the health CSVs and the daily note. Done so far: sleep, resting HR, HRV, breathing rate, skin temperature, strain, zones, steps and recovery ([how they work](health-metrics.md)). Still to do: sleep stages, calories, training load, VO2max and biological age. An importer for the Whoop CSV export backfills older history.
 9. **Apple Health Shortcut:** a recipe for steps, workouts, VO2max and sleep.
 10. **Calendar source:** CalDAV and ICS reader, today's agenda block in the daily note, and events kept in memory for the API.
 11. **Today API:** one endpoint that returns everything the dashboard shows.

@@ -5,6 +5,7 @@ import {
   parseNote,
   renderNote,
   replaceBlock,
+  replaceBlockAtTop,
 } from "../../src/vault/markdown";
 
 describe("frontmatter", () => {
@@ -52,6 +53,28 @@ describe("replaceBlock", () => {
   test("appends the region when absent", () => {
     expect(replaceBlock("text\n", "agenda", "a")).toBe(
       "text\n\n<!-- cc:agenda -->\na\n<!-- /cc:agenda -->\n",
+    );
+  });
+});
+
+describe("replaceBlockAtTop", () => {
+  test("puts a new block under the title, above existing sections", () => {
+    const body = "# 2026-11-02\n\n## Journal\n\n- 08:00 Hi\n";
+    expect(replaceBlockAtTop(body, "health", "## Health\n\n- RHR 52")).toBe(
+      "# 2026-11-02\n\n<!-- cc:health -->\n## Health\n\n- RHR 52\n<!-- /cc:health -->\n\n## Journal\n\n- 08:00 Hi\n",
+    );
+  });
+
+  test("replaces an existing block in place", () => {
+    const body = "# T\n\n<!-- cc:health -->\nold\n<!-- /cc:health -->\n\n## Journal\n";
+    expect(replaceBlockAtTop(body, "health", "new")).toBe(
+      "# T\n\n<!-- cc:health -->\nnew\n<!-- /cc:health -->\n\n## Journal\n",
+    );
+  });
+
+  test("a note without a title gets the block first", () => {
+    expect(replaceBlockAtTop("text\n", "health", "x")).toBe(
+      "<!-- cc:health -->\nx\n<!-- /cc:health -->\n\ntext\n",
     );
   });
 });
