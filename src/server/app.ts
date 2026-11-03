@@ -1,6 +1,7 @@
 // The HTTP API. Each area lives in its own file under routes/; this file only wires them up.
 
 import { Hono } from "hono";
+import type { GitHistoryStatus } from "../vault/git-history";
 import { TaskStore } from "../vault/task-store";
 import { Vault } from "../vault/vault";
 import { type AuthEnv, bearerAuth } from "./auth";
@@ -13,6 +14,8 @@ import { todayRoutes } from "./routes/today";
 
 export interface AppDeps {
   vault?: Vault;
+  /** Reported by GET /api/status. */
+  historyStatus?: () => GitHistoryStatus | null;
 }
 
 export function createApp(config: Config, deps: AppDeps = {}): Hono<AuthEnv> {
@@ -24,6 +27,7 @@ export function createApp(config: Config, deps: AppDeps = {}): Hono<AuthEnv> {
   api.route("/ingest/health", healthRoutes(vault, config));
   api.route("/ingest/messages", messageRoutes(vault));
   api.route("/today", todayRoutes(vault, config));
+  api.get("/status", (c) => c.json({ gitHistory: deps.historyStatus?.() ?? null }));
   api.route("/tasks", taskRoutes(new TaskStore(vault, config.tasksInbox), config));
 
   const app = new Hono<AuthEnv>();

@@ -8,6 +8,12 @@ export interface Config {
   tasksInbox: string;
   /** device name -> bearer token */
   tokens: Map<string, string>;
+  history: {
+    /** "auto" commits when the vault is a git repo; "off" never touches git. */
+    mode: "auto" | "off";
+    commitDelayMs: number;
+    sweepIntervalMs: number;
+  };
 }
 
 export function loadConfig(env: Record<string, string | undefined> = process.env): Config {
@@ -26,6 +32,11 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     timeZone,
     tasksInbox: env.TASKS_INBOX ?? "Inbox.md",
     tokens: parseTokens(env.INGEST_TOKENS ?? ""),
+    history: {
+      mode: env.GIT_HISTORY === "off" ? "off" : "auto",
+      commitDelayMs: Number(env.GIT_COMMIT_DELAY_MS ?? 30_000),
+      sweepIntervalMs: Number(env.GIT_SWEEP_INTERVAL_MS ?? 600_000),
+    },
   };
 }
 

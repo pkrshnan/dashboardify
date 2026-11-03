@@ -32,6 +32,10 @@ Appends to `inbox/messages/YYYY-MM-DD.md`, which is marked `local-only`. If `id`
 
 Returns `{ date, path, frontmatter, body }` for that day's note. `date` defaults to today. If there is no note yet, `body` is `null`.
 
+## `GET /api/status`
+
+Returns `{ "gitHistory": { lastCommitAt, lastPushAt, lastError } }`, or `"gitHistory": null` when git history is off.
+
 ## Tasks
 
 Tasks are [Obsidian Tasks](https://publish.obsidian.md/tasks/) lines anywhere in the vault. The server appends new ones to `TASKS_INBOX` (default `Inbox.md`) and edits single lines in place. Every response includes `say`, a sentence for Siri to read aloud. A task is returned as `{ id, path, done, description, time?, priority?, recurrence?, due?, created?, completed? }`. `id` is its 🆔, or a stable reference made from its file and text when it has none.

@@ -19,6 +19,7 @@ beforeEach(async () => {
     port: 0,
     timeZone: "America/Los_Angeles",
     tasksInbox: "Inbox.md",
+    history: { mode: "off", commitDelayMs: 0, sweepIntervalMs: 0 },
     tokens: new Map([["iphone", TOKEN]]),
   };
   app = createApp(config);
