@@ -1,0 +1,9 @@
+node_modules/
+.git/
+.github/
+.env
+vault
+health-raw
+deploy/.env
+docs/
+test/

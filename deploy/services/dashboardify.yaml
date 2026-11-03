@@ -1,0 +1,21 @@
+# The command center server, built from this checkout. Reachable at 127.0.0.1:8787 on the
+# server and over Tailscale (see tailscale.yaml); other containers use http://dashboardify:8787.
+services:
+  dashboardify:
+    build: ../..
+    image: homeserver/dashboardify
+    # Same user as livesync-bridge, so both can write the vault folder.
+    user: "1993:1993"
+    environment:
+      TZ_NAME: ${TZ_NAME:-America/Los_Angeles}
+      TASKS_INBOX: ${TASKS_INBOX:-Inbox.md}
+      # Your devices' tokens, plus one for the healthstrap container.
+      INGEST_TOKENS: ${INGEST_TOKENS:?set INGEST_TOKENS in .env},healthstrap:${HEALTHSTRAP_TOKEN:?set HEALTHSTRAP_TOKEN in .env}
+    volumes:
+      - ${DATA_DIR:?set DATA_DIR in .env}/vault:/data/vault
+      - ${DATA_DIR}/health-raw:/data/health-raw
+    ports:
+      - 127.0.0.1:8787:8787
+    read_only: true
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped

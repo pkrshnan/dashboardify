@@ -1,0 +1,46 @@
+# Obsidian Self-hosted LiveSync: CouchDB is the sync server your devices talk to (over
+# Tailscale, port 8443). livesync-bridge mirrors the database to ${DATA_DIR}/vault as plain
+# files, and that folder is the vault dashboardify reads and writes. See README.md, "Vault".
+services:
+  couchdb:
+    build: ../couchdb
+    image: homeserver/couchdb
+    environment:
+      COUCHDB_USER: ${COUCHDB_USER:?set COUCHDB_USER in .env}
+      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD:?set COUCHDB_PASSWORD in .env}
+    volumes:
+      - ${DATA_DIR:?set DATA_DIR in .env}/couchdb:/opt/couchdb/data
+    ports:
+      - 127.0.0.1:5984:5984
+    healthcheck:
+      test:
+        ["CMD-SHELL", 'curl -fsS -u "$$COUCHDB_USER:$$COUCHDB_PASSWORD" http://127.0.0.1:5984/_up']
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+    restart: unless-stopped
+
+  livesync-bridge:
+    build:
+      # Pinned to a known commit; bump it on purpose.
+      context: https://github.com/vrtmrz/livesync-bridge.git#4f55e9ab71d055fb5f5f4488afe4b713e6668178
+    image: homeserver/livesync-bridge
+    # Writes config.json from the environment, then starts the bridge.
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    environment:
+      COUCHDB_USER: ${COUCHDB_USER}
+      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD}
+      LIVESYNC_DATABASE: ${LIVESYNC_DATABASE:-obsidian}
+      LIVESYNC_PASSPHRASE: ${LIVESYNC_PASSPHRASE:-}
+      LIVESYNC_OBFUSCATE_PASSPHRASE: ${LIVESYNC_OBFUSCATE_PASSPHRASE:-}
+    volumes:
+      - ../livesync-bridge/entrypoint.sh:/entrypoint.sh:ro
+      - ${DATA_DIR}/vault:/app/data/vault
+      # Where the bridge remembers what it has already synced.
+      - ${DATA_DIR}/livesync-bridge:/deno-dir/location_data
+    tmpfs:
+      - /app/dat:mode=0700,uid=1993,gid=1993
+    depends_on:
+      couchdb:
+        condition: service_healthy
+    restart: unless-stopped

@@ -1,0 +1,37 @@
+# FoundryVTT, reachable from the internet only through a Cloudflare Tunnel. It sits on its own
+# network with cloudflared, away from the private services, and publishes no port on the host.
+#
+# In the Cloudflare dashboard (Zero Trust > Networks > Tunnels), give the tunnel a public
+# hostname (FOUNDRY_HOSTNAME) that points at http://foundry:30000.
+services:
+  foundry:
+    image: felddy/foundryvtt:${FOUNDRY_MAJOR:-14}
+    hostname: foundry
+    environment:
+      # Your foundryvtt.com login, used once to download the release you're licensed for.
+      FOUNDRY_USERNAME: ${FOUNDRY_USERNAME:?set FOUNDRY_USERNAME in .env}
+      FOUNDRY_PASSWORD: ${FOUNDRY_PASSWORD:?set FOUNDRY_PASSWORD in .env}
+      FOUNDRY_ADMIN_KEY: ${FOUNDRY_ADMIN_KEY:?set FOUNDRY_ADMIN_KEY in .env}
+      FOUNDRY_HOSTNAME: ${FOUNDRY_HOSTNAME:?set FOUNDRY_HOSTNAME in .env}
+      # Cloudflare terminates HTTPS, so invite links should say https on port 443.
+      FOUNDRY_PROXY_SSL: "true"
+      FOUNDRY_PROXY_PORT: "443"
+      FOUNDRY_TELEMETRY: "false"
+      CONTAINER_CACHE: /data/container_cache
+      CONTAINER_PRESERVE_CONFIG: "true"
+    volumes:
+      - ${DATA_DIR:?set DATA_DIR in .env}/foundry:/data
+    networks: [foundry]
+    restart: unless-stopped
+
+  cloudflared:
+    image: cloudflare/cloudflared:2026.10.7
+    command: ["tunnel", "--no-autoupdate", "run"]
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?set CLOUDFLARE_TUNNEL_TOKEN in .env}
+    networks: [foundry]
+    depends_on: [foundry]
+    restart: unless-stopped
+
+networks:
+  foundry: {}

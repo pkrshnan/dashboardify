@@ -9,6 +9,7 @@ Health, calendar, tasks, journal, mail and messages flow into a vault you can op
 - [Architecture](docs/architecture.md): principles, components, sources, vault layout
 - [Plan](docs/plan.md): phases, decisions so far, open questions
 - [HTTP API](docs/api.md) and [vault format](docs/vault-format.md)
+- [Home server](deploy/README.md): one docker compose project for this server, LiveSync, healthstrap, backups, Tailscale and FoundryVTT
 
 ## Development
 

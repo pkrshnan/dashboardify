@@ -1,0 +1,28 @@
+# Nightly restic snapshots to Cloudflare R2, kept for 7 days, 4 weeks and 12 months.
+# Schedule: BACKUP_SCHEDULE (cron syntax, server's TZ). Run one now with:
+#
+#   docker compose exec backup backup.sh
+#
+# Data is mounted read-only where it can be. Restores: README.md, "Backups".
+services:
+  backup:
+    build: ../backup
+    image: homeserver/backup
+    environment:
+      TZ: ${TZ:-America/Los_Angeles}
+      BACKUP_SCHEDULE: ${BACKUP_SCHEDULE:-30 3 * * *}
+      RESTIC_REPOSITORY: ${RESTIC_REPOSITORY:?set RESTIC_REPOSITORY in .env}
+      RESTIC_PASSWORD: ${RESTIC_PASSWORD:?set RESTIC_PASSWORD in .env}
+      AWS_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:?set R2_ACCESS_KEY_ID in .env}
+      AWS_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:?set R2_SECRET_ACCESS_KEY in .env}
+      AWS_DEFAULT_REGION: auto
+      RESTIC_CACHE_DIR: /cache
+    volumes:
+      # Everything under /data is backed up. Add a line here for each new service's data.
+      - ${DATA_DIR:?set DATA_DIR in .env}/vault:/data/vault:ro
+      - ${DATA_DIR}/health-raw:/data/health-raw:ro
+      # Not read-only: sqlite3 needs the WAL's shared-memory file to copy a live database.
+      - ${DATA_DIR}/healthstrap:/data/healthstrap
+      - ${DATA_DIR}/foundry:/data/foundry:ro
+      - ${DATA_DIR}/restic-cache:/cache
+    restart: unless-stopped

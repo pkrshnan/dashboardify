@@ -1,0 +1,28 @@
+# Joins the server itself to your tailnet (host networking), then serves the private web
+# services over HTTPS on its MagicDNS name. Nothing private listens on the LAN or the internet:
+# those services bind to 127.0.0.1 only, and tailscale serve is the way in.
+#
+#   https://<TS_HOSTNAME>.<tailnet>.ts.net         -> dashboardify
+#   https://<TS_HOSTNAME>.<tailnet>.ts.net:8443    -> CouchDB (Obsidian LiveSync)
+#
+# Routes live in ../tailscale/serve.json.
+services:
+  tailscale:
+    image: tailscale/tailscale:stable
+    hostname: ${TS_HOSTNAME:-homeserver}
+    network_mode: host
+    cap_add: [NET_ADMIN, NET_RAW]
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      TS_AUTHKEY: ${TS_AUTHKEY:-}
+      TS_HOSTNAME: ${TS_HOSTNAME:-homeserver}
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_USERSPACE: "false"
+      TS_ACCEPT_DNS: "false"
+      TS_SERVE_CONFIG: /config/serve.json
+      TS_EXTRA_ARGS: ${TS_EXTRA_ARGS:-}
+    volumes:
+      - ${DATA_DIR:?set DATA_DIR in .env}/tailscale:/var/lib/tailscale
+      - ../tailscale/serve.json:/config/serve.json:ro
+    restart: unless-stopped

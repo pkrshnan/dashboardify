@@ -1,0 +1,15 @@
+# Everything that runs on the home server. Start it all with:
+#
+#   docker compose up -d --build
+#
+# Each service (or small group of services that only make sense together) has its own file in
+# services/. To add one, write services/<name>.yaml and list it below. See README.md.
+name: homeserver
+
+include:
+  - services/tailscale.yaml # private access from your devices, with HTTPS
+  - services/dashboardify.yaml # the command center server
+  - services/healthstrap.yaml # WHOOP strap sync over the host's Bluetooth
+  - services/vault-sync.yaml # CouchDB for Obsidian LiveSync, mirrored to a plain vault folder
+  - services/backup.yaml # nightly restic snapshots to Cloudflare R2
+  - services/foundry.yaml # FoundryVTT, public through a Cloudflare Tunnel

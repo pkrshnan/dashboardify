@@ -71,7 +71,7 @@ Done when a line dictated to Siri lands in today's note and syncs to your other 
 4. **Ingest server:** Hono HTTP server, a bearer token per device, plus `POST /api/ingest/journal` and `/messages`, and `GET /api/today`. Done when every endpoint has validation tests and an API reference doc.
 5. **Tasks:** `POST /api/tasks` captures into the inbox file, `GET /api/tasks` lists what's due, `GET /api/tasks/match` finds one by name, and `POST /api/tasks/{id}/complete` ticks it off, including recurring tasks. Done when tests cover capture, retries, due windows, matching and recurrence.
 6. **Backups:** nightly restic snapshots of the vault, `health-raw/` and healthstrap's SQLite to Cloudflare R2, kept for 7 days, 4 weeks and 12 months. Done when a restore into an empty folder has been tried and documented.
-7. **Deploy:** Dockerfile, a systemd unit, a Tailscale setup note, and the "Log journal" Shortcut recipe. The same compose file runs CouchDB for Self-hosted LiveSync and `livesync-bridge` into the server's vault folder. It also runs the restic backup on a systemd timer. Done when it runs on your server, the Shortcut works end to end, and a line written by the server shows up in Obsidian on your phone.
+7. **Deploy:** Dockerfile and one docker compose project for the whole server ([deploy/](../deploy/README.md)): dashboardify, Tailscale with HTTPS, CouchDB for Self-hosted LiveSync, `livesync-bridge` into the server's vault folder, healthstrap, the nightly restic backup, and FoundryVTT behind a Cloudflare Tunnel. Still to do: the "Log journal" Shortcut recipe. Done when it runs on your server, the Shortcut works end to end, and a line written by the server shows up in Obsidian on your phone.
 
 ### M2: Today
 
