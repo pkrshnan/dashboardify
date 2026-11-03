@@ -34,7 +34,7 @@ Returns `{ date, path, frontmatter, body }` for that day's note. `date` defaults
 
 ## Tasks
 
-Tasks are [Obsidian Tasks](https://publish.obsidian.md/tasks/) lines anywhere in the vault. The server appends new ones to `TASKS_INBOX` (default `Inbox.md`) and edits single lines in place. Every response includes `say`, a sentence for Siri to read aloud. A task is returned as `{ id, path, done, description, time?, priority?, recurrence?, due?, created?, completed? }`. `id` is its 🆔, or a stable reference made from its file and text when it has none.
+Tasks are [Obsidian Tasks](https://publish.obsidian.md/tasks/) lines anywhere in the vault. The server appends new ones to `TASKS_INBOX` (default `Inbox.md`) and edits single lines in place. Every response includes `message`, one plain sentence that Siri reads aloud and the dashboard can show as is. A task is returned as `{ id, path, done, description, time?, priority?, recurrence?, due?, created?, completed? }`. `id` is its 🆔, or a stable reference made from its file and text when it has none.
 
 ```
 - [ ] Call the bank ⏰ 09:00 📅 2026-11-03 ➕ 2026-11-02 🆔 k7f3a2
@@ -48,11 +48,11 @@ Tasks are [Obsidian Tasks](https://publish.obsidian.md/tasks/) lines anywhere in
 { "key": "8F2C…", "text": "Call the bank tomorrow at 9am", "source": "siri" }
 ```
 
-`key` is made by the device, and the same key always gives the same 🆔, so a retry returns `200 {"status": "already_done"}` instead of adding a second task. `due` (YYYY-MM-DD), `time` (HH:MM) and `priority` (`highest`, `high`, `medium`, `low`, `lowest`) are optional. Without `due`, the date and time are read from the text in `TZ_NAME` and removed from it, so the example above becomes `Call the bank ⏰ 09:00 📅 2026-11-03`. Returns `201 {"status": "created", ...task, "say"}`.
+`key` is made by the device, and the same key always gives the same 🆔, so a retry returns `200 {"status": "already_done"}` instead of adding a second task. `due` (YYYY-MM-DD), `time` (HH:MM) and `priority` (`highest`, `high`, `medium`, `low`, `lowest`) are optional. Without `due`, the date and time are read from the text in `TZ_NAME` and removed from it, so the example above becomes `Call the bank ⏰ 09:00 📅 2026-11-03`. Returns `201 {"status": "created", ...task, "message"}`.
 
 ### `GET /api/tasks?due=today|overdue|week|all`
 
-Open tasks, soonest first. `today` is due today, `overdue` is due before today, `week` is today through six days from now, and `all` (the default) is every open task. Returns `{ items, say }`.
+Open tasks, soonest first. `today` is due today, `overdue` is due before today, `week` is today through six days from now, and `all` (the default) is every open task. Returns `{ items, message }`.
 
 ### `GET /api/tasks/match?q=…`
 

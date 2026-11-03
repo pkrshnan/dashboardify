@@ -7,7 +7,13 @@ import { localDate } from "../../vault/time";
 import { parseWhen } from "../../vault/when";
 import type { AuthEnv } from "../auth";
 import type { Config } from "../config";
-import { type DueFilter, sayAdded, sayAlreadyAdded, sayCompleted, sayList } from "../say";
+import {
+  addedMessage,
+  alreadyAddedMessage,
+  completedMessage,
+  type DueFilter,
+  listMessage,
+} from "../task-messages";
 import {
   type Body,
   badRequest,
@@ -41,9 +47,10 @@ export function taskRoutes(store: TaskStore, config: Config): Hono<AuthEnv> {
     }
     const result = await store.add(input.value, today());
     const { task } = result.task;
-    const say = result.status === "created" ? sayAdded(task, today()) : sayAlreadyAdded(task);
+    const message =
+      result.status === "created" ? addedMessage(task, today()) : alreadyAddedMessage(task);
     return c.json(
-      { status: result.status, ...view(result.task), say },
+      { status: result.status, ...view(result.task), message },
       result.status === "created" ? 201 : 200,
     );
   });
@@ -56,7 +63,7 @@ export function taskRoutes(store: TaskStore, config: Config): Hono<AuthEnv> {
     const items = dueIn(await openTasks(store), filter as DueFilter, today());
     return c.json({
       items: items.map(view),
-      say: sayList(
+      message: listMessage(
         items.map((t) => t.task),
         filter as DueFilter,
       ),
@@ -84,14 +91,14 @@ export function taskRoutes(store: TaskStore, config: Config): Hono<AuthEnv> {
 async function complete(c: Context<AuthEnv>, store: TaskStore, today: string): Promise<Response> {
   const result = await store.complete(c.req.param("id") ?? "", today);
   if (result.status === "not_found") {
-    return c.json({ status: "not_found", say: "I couldn't find that task." }, 404);
+    return c.json({ status: "not_found", message: "I couldn't find that task." }, 404);
   }
   const next = result.status === "completed" ? result.next : undefined;
   return c.json({
     status: result.status,
     ...view(result.task),
     next: next ?? null,
-    say: sayCompleted(result.task.task, next, today),
+    message: completedMessage(result.task.task, next, today),
   });
 }
 
