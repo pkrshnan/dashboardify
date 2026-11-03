@@ -13,7 +13,7 @@ The data in both files is made up.
 1. **Focus.** Sized to its content so the calendar starts on the first screen.
    - Date and time, then one sentence. The sentence gives judgement and the next action ("Standup at 10:00. Recovery is below your usual, so keep today easy.") and does not repeat the numbers.
    - Four snapshot numbers: recovery, sleep score, HRV and resting HR. Each shows its change from baseline right next to its name.
-   - Next event (with Join) and free time. Free time means gaps of 30 minutes or more from now on.
+   - The next event, with a Join button. No free-time list: the gaps are visible on the timeline.
 2. **Calendar and tasks.** A Day/Week toggle.
    - Day: a timeline from an hour before now to 22:00, with a red line for now. Events are blocks; the next event is a little brighter. Events under about 50 minutes take one line: title, start time and detail, cut with an ellipsis. Timed tasks (`⏰ HH:MM`) are reminders, drawn as dashed pills at their time in a lane to the right of the events.
    - Week: a rolling week from today. On desktop it has seven columns, with dated tasks at the top of each column. On the phone it is a strip of tappable days, then the agenda for the chosen day. Reminders have hollow markers and events have filled ones.
