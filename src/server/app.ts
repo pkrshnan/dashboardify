@@ -6,7 +6,6 @@ import { TaskStore } from "../vault/task-store";
 import { Vault } from "../vault/vault";
 import { type AuthEnv, bearerAuth } from "./auth";
 import type { Config } from "./config";
-import { healthRoutes } from "./routes/health";
 import { journalRoutes } from "./routes/journal";
 import { messageRoutes } from "./routes/messages";
 import { sampleRoutes } from "./routes/samples";
@@ -23,7 +22,6 @@ export function createApp(config: Config, deps: AppDeps = {}): Hono<AuthEnv> {
   const api = new Hono<AuthEnv>();
   api.use("*", bearerAuth(config.tokens));
   api.route("/ingest/journal", journalRoutes(vault));
-  api.route("/ingest/health", healthRoutes(vault, config));
   api.route("/ingest/messages", messageRoutes(vault));
   api.route("/ingest/samples", sampleRoutes(new RawStore(config.healthRawPath)));
   api.route("/today", todayRoutes(vault, config));

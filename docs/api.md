@@ -12,14 +12,6 @@ All `/api` routes need `Authorization: Bearer <token>`, using a token from `INGE
 
 `at` is optional and defaults to now. Appends `- HH:MM text` to `## Journal` in that day's note. The day follows `TZ_NAME`. `text` can be up to 20,000 characters.
 
-## `POST /api/ingest/health`
-
-```json
-{ "date": "2026-11-02", "source": "strap", "metrics": { "recovery": 64, "hrv_ms": 58, "sleep_h": 7.1 } }
-```
-
-`date` defaults to today, and `source` defaults to `apple-health`. Metric names are lowercase `snake_case`. Values are numbers or numeric strings, rounded to 2 decimals. `date`, `source` and `tags` are reserved names. The metrics are merged into the daily note's frontmatter and into that day's row of `health/YYYY/YYYY-MM.csv`.
-
 ## `POST /api/ingest/messages`
 
 ```json
