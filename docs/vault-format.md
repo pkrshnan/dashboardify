@@ -6,7 +6,7 @@ Exactly what the server writes, so you can read or edit the files by hand withou
 
 - The server only touches what it owns: frontmatter keys it was sent, lines it appends to `## Journal` and `## Received`, and regions between `<!-- cc:name -->` and `<!-- /cc:name -->`. Everything else in a file is left exactly as it is.
 - Every write is atomic (temp file, then rename), and writes to the same file never overlap.
-- A write that would not change a file is skipped, so git history only records real changes.
+- A write that would not change a file is skipped, so sync and backups only see real changes.
 - Days follow the server's time zone (`TZ_NAME`), so a line logged at 23:30 lands in that day's note, even around daylight saving changes.
 
 ## Daily note: `daily/YYYY/YYYY-MM-DD.md`
