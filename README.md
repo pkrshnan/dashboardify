@@ -9,6 +9,7 @@ Health, calendar, tasks, journal, mail and messages flow into a vault you can op
 - [Architecture](docs/architecture.md): principles, components, sources, vault layout
 - [Plan](docs/plan.md): phases, decisions so far, open questions
 - [HTTP API](docs/api.md) and [vault format](docs/vault-format.md)
+- Deploy: the `Dockerfile` here is built by the home server's compose project (private repo `pkrshnan/homeserver`)
 
 ## Development
 
