@@ -18,9 +18,9 @@ a{color:#8AB4FF}a:hover{color:#B5D0FF}
 
   <section style="padding: 64px 20px 32px; display: flex; flex-direction: column; gap: 36px">
     <header style="display: flex; justify-content: space-between; align-items: baseline; font-size: 14px; color: #A1A1A6"><span>Tuesday 3 November</span><span>09:12</span></header>
-    <p style="margin: 0; font-size: 30px; line-height: 1.2; font-weight: 300; letter-spacing: -0.02em">Standup in 48 minutes. You’re <span style="color: #30D158; font-weight: 500">62% recovered</span>, and the lease is <span style="color: #FF9F0A; font-weight: 500">three days late</span>.</p>
+    <p style="margin: 0; font-size: 30px; line-height: 1.2; font-weight: 300; letter-spacing: -0.02em">Standup in 48 minutes. You’re <span style="color: #FFD60A; font-weight: 500">62% recovered</span>, and the lease is <span style="color: #FF9F0A; font-weight: 500">three days late</span>.</p>
     <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 20px">
-      <div><div style="font-size: 60px; font-weight: 200; letter-spacing: -0.04em; line-height: 1">62</div><div style="font-size: 13px; color: #A1A1A6; margin-top: 8px">Recovery</div></div>
+      <div><div style="font-size: 60px; font-weight: 200; letter-spacing: -0.04em; line-height: 1; color: #FFD60A">62</div><div style="font-size: 13px; color: #A1A1A6; margin-top: 8px">Recovery</div></div>
       <div><div style="font-size: 60px; font-weight: 200; letter-spacing: -0.04em; line-height: 1">78</div><div style="font-size: 13px; color: #A1A1A6; margin-top: 8px">Sleep</div></div>
       <div><div style="font-size: 60px; font-weight: 200; letter-spacing: -0.04em; line-height: 1">6.8</div><div style="font-size: 13px; color: #A1A1A6; margin-top: 8px">Strain</div></div>
       <div><div style="font-size: 60px; font-weight: 200; letter-spacing: -0.04em; line-height: 1">54</div><div style="font-size: 13px; color: #A1A1A6; margin-top: 8px">HRV</div></div>
@@ -125,7 +125,7 @@ a{color:#8AB4FF}a:hover{color:#B5D0FF}
       <div style="padding: 16px 0; border-top: 1px solid #1F1F22">
         <div style="display: flex; justify-content: space-between; align-items: baseline">
           <span style="font-size: 14px; color: #A1A1A6">{{m.name}}</span>
-          <span style="font-size: 28px; font-weight: 200; letter-spacing: -0.03em">{{m.value}}<span style="font-size: 13px; color: #8E8E93; letter-spacing: 0; margin-left: 3px">{{m.unit}}</span></span>
+          <span style="font-size: 28px; font-weight: 200; letter-spacing: -0.03em; color: {{m.valueColor}}">{{m.value}}<span style="font-size: 13px; color: #8E8E93; letter-spacing: 0; margin-left: 3px">{{m.unit}}</span></span>
         </div>
         <svg width="100%" height="64" viewBox="0 0 600 120" preserveAspectRatio="none" role="img" aria-label="{{m.aria}}" style="display: block; margin-top: 6px">
           <line x1="0" y1="{{m.avgY}}" x2="600" y2="{{m.avgY}}" stroke="#3A3A3C" stroke-width="1" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"></line>
@@ -144,15 +144,17 @@ class Component extends DCLogic {
     const view = st.view || 'day';
     const range = st.range || '1m';
     const seg = (on) => ({ bg: on ? '#F5F5F7' : 'transparent', fg: on ? '#0C0C0E' : '#A1A1A6' });
-    const blue = '#0A84FF', orange = '#FF9F0A', green = '#30D158', purple = '#BF5AF2', grey = '#8E8E93';
+    // Status: warn (overdue) orange, now red. Categories: work blue, fitness/health teal, personal purple, focus grey.
+    const blue = '#0A84FF', orange = '#FF9F0A', teal = '#40C8E0', purple = '#BF5AF2', grey = '#8E8E93';
+    const band = (v) => (v >= 67 ? '#30D158' : (v >= 34 ? '#FFD60A' : '#FF453A'));
 
     const H = 56;
     const blk = (s, e, title, time, detail, color, past) => ({ top: ((s - 7) * H) + 'px', height: Math.max(28, (e - s) * H) + 'px', title, time, detail, color, bg: color + '22', opacity: past ? 0.5 : 1 });
     const rem = (h, text, time, done) => ({ top: ((h - 7) * H) + 'px', text, time, opacity: done ? 0.45 : 1, strike: done ? 'line-through' : 'none' });
 
-    const ev = (time, text, color, past) => ({ time, text, color, fill: color, radius: '4px', textColor: past ? '#636366' : '#F5F5F7' });
+    const ev = (time, text, color, past) => ({ time, text, color, fill: color, radius: '4px', textColor: past ? '#8E8E93' : '#F5F5F7' });
     const rm = (time, text, late) => ({ time, text, color: late ? orange : '#A1A1A6', fill: 'transparent', radius: '4px', textColor: late ? orange : '#F5F5F7' });
-    const day = (dow, num, items, today, past) => ({ dow, num, label: dow + ' ' + num, items, count: items.length ? String(items.length) : '', labelColor: today ? '#F5F5F7' : (past ? '#636366' : '#A1A1A6'), weight: today ? 600 : 400, bg: today ? '#1C1C1E' : 'transparent', opacity: past ? 0.6 : 1 });
+    const day = (dow, num, items, today, past) => ({ dow, num, label: dow + ' ' + num, items, count: items.length ? String(items.length) : '', labelColor: today ? '#F5F5F7' : (past ? '#8E8E93' : '#A1A1A6'), weight: today ? 600 : 400, bg: today ? '#1C1C1E' : 'transparent', opacity: past ? 0.6 : 1 });
 
     const days = { '2w': 14, '1m': 30, '3m': 90, '1y': 365 };
     const n = days[range];
@@ -175,7 +177,7 @@ class Component extends DCLogic {
       const f = fmt || ((v) => v.toFixed(dec));
       const d = cur - avg;
       return {
-        name, unit, color, value: f(cur),
+        name, unit, color, value: f(cur), valueColor: name === 'Recovery' ? band(cur) : '#F5F5F7',
         delta: (Math.round((d / avg) * 100) >= 0 ? '+' : '−') + Math.abs(Math.round((d / avg) * 100)) + '%' + ' vs avg',
         points: vals.map((v, i) => ((i / (pts - 1)) * 600).toFixed(1) + ',' + y(v)).join(' '),
         avgY: y(avg), aria: name + ' trend'
@@ -195,11 +197,11 @@ class Component extends DCLogic {
 
       dayAllDay: [ { text: 'Renew lease · 3 days late', color: orange }, { text: 'Upload insurance receipt', color: '#F5F5F7' } ],
       dayBlocks: [
-        blk(8, 8.87, 'Gym, lower body', '08:00', 'Strain 5.1', orange, true),
+        blk(8, 8.87, 'Gym, lower body', '08:00', 'Strain 5.1', teal, true),
         blk(10, 10.25, 'Standup', '10:00', '', blue),
         blk(12.5, 13.25, 'Lunch with Priya', '12:30', 'Café on Albert St', blue),
         blk(14, 15, 'Design review', '14:00–15:00', 'Room 4B · Ana, Jordan, Sam K', blue),
-        blk(17.5, 18.25, 'Physio', '17:30', 'Northside Clinic', green),
+        blk(17.5, 18.25, 'Physio', '17:30', 'Northside Clinic', teal),
         blk(19, 21, 'Dinner with Sam', '19:00–21:00', 'Sam’s place · bring the book', purple)
       ],
       dayReminders: [
@@ -210,12 +212,12 @@ class Component extends DCLogic {
       ],
 
       weekDays: [
-        day('Mon', '2', [ev('07:30', 'Gym', orange, true), ev('11:30', 'Dentist', blue, true), ev('15:00', 'Planning', blue, true)], false, true),
-        day('Tue', '3', [rm('', 'Renew lease', true), rm('', 'Insurance receipt'), ev('10:00', 'Standup', blue), ev('12:30', 'Lunch with Priya', blue), ev('14:00', 'Design review', blue), ev('17:30', 'Physio', green), rm('18:30', 'Call Mum'), ev('19:00', 'Dinner with Sam', purple)], true),
-        day('Wed', '4', [rm('08:00', 'Water plants'), ev('10:00', 'Standup', blue), ev('13:00', 'Focus block', grey), ev('18:00', 'Climbing', orange)], false),
-        day('Thu', '5', [rm('', 'Order contact lenses'), ev('07:30', 'Gym', orange), ev('10:00', 'Standup', blue), rm('12:00', 'Pick up parcel'), ev('16:00', 'Interview', blue)], false),
+        day('Mon', '2', [ev('07:30', 'Gym', teal, true), ev('11:30', 'Dentist', blue, true), ev('15:00', 'Planning', blue, true)], false, true),
+        day('Tue', '3', [rm('', 'Renew lease', true), rm('', 'Insurance receipt'), ev('10:00', 'Standup', blue), ev('12:30', 'Lunch with Priya', blue), ev('14:00', 'Design review', blue), ev('17:30', 'Physio', teal), rm('18:30', 'Call Mum'), ev('19:00', 'Dinner with Sam', purple)], true),
+        day('Wed', '4', [rm('08:00', 'Water plants'), ev('10:00', 'Standup', blue), ev('13:00', 'Focus block', grey), ev('18:00', 'Climbing', teal)], false),
+        day('Thu', '5', [rm('', 'Order contact lenses'), ev('07:30', 'Gym', teal), ev('10:00', 'Standup', blue), rm('12:00', 'Pick up parcel'), ev('16:00', 'Interview', blue)], false),
         day('Fri', '6', [ev('10:00', 'Standup', blue), rm('15:00', 'Prep 1:1 notes'), ev('16:00', '1:1', blue), ev('19:30', 'Film night', purple)], false),
-        day('Sat', '7', [ev('08:00', 'Long run', orange), ev('12:00', 'Market', purple)], false),
+        day('Sat', '7', [ev('08:00', 'Long run', teal), ev('12:00', 'Market', purple)], false),
         day('Sun', '8', [rm('', 'Book December flights'), ev('11:00', 'Brunch with family', purple), rm('20:00', 'Plan the week')], false)
       ],
 
@@ -229,16 +231,16 @@ class Component extends DCLogic {
       ranges: [['2w', '2W'], ['1m', '1M'], ['3m', '3M'], ['1y', '1Y']].map(([k, label]) => ({ label, bg: seg(k === range).bg, fg: seg(k === range).fg, pick: () => this.setState({ range: k }) })),
       startLabel,
       metrics: [
-        metric('Recovery', '%', 62, 64, 34, 0, green, 11),
-        metric('Sleep score', '', 78, 76, 24, 0, '#8E8CF0', 23),
-        metric('Time asleep', '', 7.2, 7.0, 1.8, 1, '#8E8CF0', 37, hm),
-        metric('Strain', '', 11.4, 11, 9, 1, orange, 41),
+        metric('Recovery', '%', 62, 64, 34, 0, '#F5F5F7', 11),
+        metric('Sleep score', '', 78, 76, 24, 0, '#F5F5F7', 23),
+        metric('Time asleep', '', 7.2, 7.0, 1.8, 1, '#F5F5F7', 37, hm),
+        metric('Strain', '', 11.4, 11, 9, 1, '#F5F5F7', 41),
         metric('HRV', 'ms', 54, 57, 18, 0, '#F5F5F7', 53),
         metric('Resting HR', 'bpm', 52, 50, 7, 0, '#F5F5F7', 67),
-        metric('Steps', '', 9840, 8500, 7000, 0, '#64D2FF', 71, thou),
-        metric('Zone 2+ minutes', 'min', 33, 35, 50, 0, '#0A84FF', 83),
-        metric('Breathing rate', '/min', 14.6, 14.5, 1.4, 1, '#A1A1A6', 97),
-        metric('Skin temperature', '°C', 33.6, 33.4, 0.9, 1, '#A1A1A6', 101)
+        metric('Steps', '', 9840, 8500, 7000, 0, '#F5F5F7', 71, thou),
+        metric('Zone 2+ minutes', 'min', 33, 35, 50, 0, '#F5F5F7', 83),
+        metric('Breathing rate', '/min', 14.6, 14.5, 1.4, 1, '#F5F5F7', 97),
+        metric('Skin temperature', '°C', 33.6, 33.4, 0.9, 1, '#F5F5F7', 101)
       ]
     };
   }

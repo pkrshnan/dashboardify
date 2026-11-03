@@ -19,9 +19,45 @@ The data in both files is made up.
 
 ## Look
 
-- Dark: background `#0C0C0E`, text `#F5F5F7`, secondary text `#A1A1A6` and `#8E8E93`, dividers `#1C1C1E` to `#2C2C2E`.
+Dark mode only for now. Colours are Apple's dark-mode system colours.
+
+**Neutrals**
+
+| Token | Hex | Use |
+|---|---|---|
+| background | `#0C0C0E` | page |
+| text | `#F5F5F7` | primary text, trend lines |
+| text-2 | `#A1A1A6` | labels |
+| text-3 | `#8E8E93` | dimmest text allowed (about 6:1 on the background) |
+| line-1, line-2, line-3 | `#1C1C1E`, `#2C2C2E`, `#3A3A3C` | dividers, controls, average lines |
+| border-dashed | `#636366` | reminder outlines only, never text |
+
+**Status.** These colours carry meaning and are never used for categories.
+
+| Token | Hex | Use |
+|---|---|---|
+| good | `#30D158` | recovery 67 to 100 |
+| caution | `#FFD60A` | recovery 34 to 66 |
+| bad | `#FF453A` | recovery 0 to 33 |
+| warn | `#FF9F0A` | overdue tasks |
+| now | `#FF453A` | the current-time line (same as Apple Calendar) |
+
+Recovery is the only metric coloured by band. Its number is always shown next to the colour, so the colour is never the only cue.
+
+**Categories.** For calendar events. None of these hues are status colours.
+
+| Token | Hex | Use |
+|---|---|---|
+| work | `#0A84FF` | work events |
+| fitness | `#40C8E0` | gym, runs, physio |
+| personal | `#BF5AF2` | social and personal events |
+| focus | `#8E8E93` | focus blocks |
+
+Reminders are drawn with a dashed outline and no fill, so they read differently from events without needing a colour.
+
+**Type and layout**
+
 - System font (SF Pro on Apple), thin weights (200 to 300) for the large numbers, tabular figures throughout.
-- Accent colours are used only for meaning: green for recovery, orange for overdue and strain, Apple blue for events, purple for sleep and personal events, red for now.
 - No cards or boxes on the main sections. Hairline dividers and spacing do the grouping. No explanatory labels.
 
 ## Files
