@@ -10,6 +10,7 @@ export interface NightSignals {
   restingHr: number | null;
   breathingRate: number | null;
   skinTemp: number | null;
+  sleepScore: number | null;
 }
 
 /** Recovery needs two weeks of nights before "normal" means anything. */
@@ -19,9 +20,10 @@ export const BASELINE_NIGHTS = 60;
 const TEMP_BASELINE_NIGHTS = 30;
 const MIN_TEMP_NIGHTS = 7;
 
-/** Weights: HRV dominates, as Whoop describes. Sleep performance joins once sleep need exists. */
+/** Weights: HRV dominates, as Whoop describes. */
 const W_HRV = 0.5;
 const W_RHR = 0.25;
+const W_SLEEP = 0.15;
 const W_BREATHING = 0.1;
 /** Breathing counts only past +1 SD; temperature only past +0.3 °C, 0.5 per °C beyond that. */
 const BREATHING_FREE_Z = 1;
@@ -68,6 +70,7 @@ interface Baselines {
   hrv: Baseline;
   rhr: Baseline;
   breathing: Baseline | null;
+  sleep: Baseline | null;
 }
 
 function baselines(history: NightSignals[]): Baselines | null {
@@ -87,7 +90,11 @@ function baselines(history: NightSignals[]): Baselines | null {
     recent.map((n) => n.breathingRate),
     MIN_BASELINE_NIGHTS,
   );
-  return { hrv, rhr, breathing };
+  const sleep = baseline(
+    recent.map((n) => n.sleepScore),
+    MIN_BASELINE_NIGHTS,
+  );
+  return { hrv, rhr, breathing, sleep };
 }
 
 /** The combined score c: positive is better than your normal, negative worse. */
@@ -98,9 +105,10 @@ function combined(night: NightSignals, base: Baselines, tempDev: number | null):
     return null;
   }
   const zBreathing = zScore(night.breathingRate, base.breathing) ?? 0;
+  const zSleep = zScore(night.sleepScore, base.sleep) ?? 0;
   const breathingPenalty = W_BREATHING * Math.max(0, zBreathing - BREATHING_FREE_Z);
   const tempPenalty = TEMP_PENALTY_PER_C * Math.max(0, (tempDev ?? 0) - TEMP_FREE_C);
-  return W_HRV * zHrv - W_RHR * zRhr - breathingPenalty - tempPenalty;
+  return W_HRV * zHrv - W_RHR * zRhr + W_SLEEP * zSleep - breathingPenalty - tempPenalty;
 }
 
 export interface Recovery {

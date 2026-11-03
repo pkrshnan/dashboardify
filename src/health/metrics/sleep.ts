@@ -31,7 +31,7 @@ export function armAngle(sample: Accel): number {
 }
 
 /** Mean angle per 5-second step, then the absolute change between consecutive steps. */
-export function angleChanges(samples: Accel[]): AngleChange[] {
+export function rawAngleChanges(samples: Accel[]): AngleChange[] {
   const means = [...bucket(samples, STEP_MS).entries()]
     .sort((a, b) => a[0] - b[0])
     .map(([key, group]) => ({ ts: key * STEP_MS, angle: mean(group.map(armAngle)) ?? 0 }));
@@ -43,7 +43,12 @@ export function angleChanges(samples: Accel[]): AngleChange[] {
       changes.push({ ts: cur.ts, change: Math.abs(cur.angle - prev.angle) });
     }
   }
-  return smooth(changes);
+  return changes;
+}
+
+/** rawAngleChanges, smoothed with a 5-minute rolling median. */
+export function angleChanges(samples: Accel[]): AngleChange[] {
+  return smooth(rawAngleChanges(samples));
 }
 
 /** Centred rolling median, so one twitch doesn't count as waking up. */
@@ -99,28 +104,11 @@ export function longestBlock(spans: Span[]): Span | null {
   );
 }
 
-export interface SleepWindow extends Span {
-  /** Minutes still inside the window: our estimate of time asleep. */
-  asleepMin: number;
-  /** asleep ÷ window length. */
-  efficiency: number;
-}
-
-/** The main sleep window in a stretch of accelerometer data (e.g. 6 pm to 2 pm next day). */
-export function sleepWindow(samples: Accel[]): SleepWindow | null {
+/**
+ * The main sleep period in a stretch of accelerometer data (e.g. 6 pm to 2 pm next day): from
+ * lying still to getting up. Whether you were asleep inside it is scored by sleep-epochs.ts.
+ */
+export function sleepWindow(samples: Accel[]): Span | null {
   const changes = angleChanges(samples);
-  const spans = stillSpans(changes, stillThreshold(changes));
-  const block = longestBlock(spans);
-  if (!block) {
-    return null;
-  }
-  const asleepMs = spans
-    .map((s) => Math.min(s.end, block.end) - Math.max(s.start, block.start))
-    .filter((ms) => ms > 0)
-    .reduce((sum, ms) => sum + ms, 0);
-  return {
-    ...block,
-    asleepMin: asleepMs / 60_000,
-    efficiency: asleepMs / (block.end - block.start),
-  };
+  return longestBlock(stillSpans(changes, stillThreshold(changes)));
 }

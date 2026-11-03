@@ -20,6 +20,8 @@ export function frontmatter(s: DaySummary): Record<string, number> {
   const fields: Fields = {
     recovery_pct: round(s.recovery?.pct, 0),
     strain: round(s.day.strain, 1),
+    sleep_score: round(s.night?.sleep.score, 0),
+    sleep_performance_pct: round(s.night?.sleep.sufficiency, 0),
     tst_min: round(s.night?.asleepMin, 0),
     rhr_bpm: round(s.night?.restingHr, 0),
     rmssd_ms: round(s.night?.rmssdMs, 0),
@@ -62,8 +64,9 @@ function recoveryLine(s: DaySummary, needed: number): string {
 }
 
 function sleepLine(night: NightMetrics, clock: (ts: number) => string): string {
-  const efficiency = Math.round(night.efficiency * 100);
-  return `- Sleep ${duration(night.asleepMin)} · ${clock(night.onset)}–${clock(night.wake)} · ${efficiency}%`;
+  const score = Math.round(night.sleep.score);
+  const slept = `${duration(night.asleepMin)} of ${duration(night.sleep.needMin)}`;
+  return `- Sleep **${score}** · ${slept} · ${clock(night.onset)}–${clock(night.wake)}`;
 }
 
 function vitalsLine(night: NightMetrics, tempDevC: number | null): string {

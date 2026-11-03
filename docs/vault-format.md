@@ -38,6 +38,8 @@ The server computes these from the strap a couple of minutes after each upload, 
 ---
 recovery_pct: 62
 strain: 11.4
+sleep_score: 84
+sleep_performance_pct: 90
 tst_min: 432
 rhr_bpm: 52
 rmssd_ms: 48
@@ -51,7 +53,7 @@ steps: 8412
 ## Health
 
 - Recovery **62%**
-- Sleep 7h 12m · 23:41–07:05 · 91%
+- Sleep **84** · 7h 12m of 8h 00m · 23:41–07:05
 - RHR 52 · HRV 48 ms · Breathing 14.2 · Skin +0.2 °C
 - Strain **11.4** · Zones 42 / 18 / 6 / 0 / 0 min
 - Steps 8,412
@@ -69,6 +71,7 @@ steps: 8412
   birth_date: 1996-05-01
   sex: male
   hr_max_measured: 192   # optional, beats the age formula
+  sleep_need_h: 8        # optional, default 8
   ---
   ```
 

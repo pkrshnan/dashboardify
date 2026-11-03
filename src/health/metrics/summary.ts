@@ -5,7 +5,9 @@ import { breathingRate } from "./breathing";
 import { minuteHr, predictedMaxHr, restingHr, zoneMinutes } from "./heart-rate";
 import { cleanRr, goodWindows, nightHrv } from "./hrv";
 import { sleepSkinTemp } from "./skin-temp";
-import { sleepWindow } from "./sleep";
+import { rawAngleChanges, sleepWindow } from "./sleep";
+import { scoreEpochs, sleepTimes } from "./sleep-epochs";
+import { type PastNight, type SleepScore, sleepScore } from "./sleep-score";
 import { stepsTaken } from "./steps";
 import { type Sex, strain, trimp } from "./strain";
 import type { Accel, HeartRate, RrInterval, SkinTemp, StepCounter } from "./types";
@@ -15,14 +17,27 @@ export interface NightInput {
   heartRate: HeartRate[];
   rr: RrInterval[];
   skinTemp: SkinTemp[];
+  /** Earlier nights, oldest first, for sleep need and timing consistency. */
+  past: PastNight[];
+  /** Your base sleep need in minutes. */
+  needMin: number;
+  /** A time as local minutes after noon (see SleepTiming). */
+  minutesAfterNoon: (ts: number) => number;
 }
 
 export interface NightMetrics {
+  /** Lay down: the start of the still window. */
+  bed: number;
+  /** Fell asleep: the first 10 minutes of unbroken sleep (bed if that never happened). */
   onset: number;
   wake: number;
   inBedMin: number;
   asleepMin: number;
+  latencyMin: number;
+  wakeAfterOnsetMin: number;
+  awakenings: number;
   efficiency: number;
+  sleep: SleepScore;
   restingHr: number | null;
   rmssdMs: number | null;
   lnRmssd: number | null;
@@ -37,14 +52,28 @@ export function nightMetrics(input: NightInput): NightMetrics | null {
   if (!sleep) {
     return null;
   }
+  const times = sleepTimes(
+    sleep,
+    scoreEpochs(sleep, rawAngleChanges(input.accel), input.heartRate),
+  );
+  const onset = times.onset ?? sleep.start;
+  const timing = {
+    onsetMin: input.minutesAfterNoon(onset),
+    wakeMin: input.minutesAfterNoon(sleep.end),
+  };
   const beats = cleanRr(input.rr);
   const hrv = nightHrv(beats, sleep);
   return {
-    onset: sleep.start,
+    bed: sleep.start,
+    onset,
     wake: sleep.end,
     inBedMin: (sleep.end - sleep.start) / 60_000,
-    asleepMin: sleep.asleepMin,
-    efficiency: sleep.efficiency,
+    asleepMin: times.asleepMin,
+    latencyMin: times.latencyMin,
+    wakeAfterOnsetMin: times.wakeAfterOnsetMin,
+    awakenings: times.awakenings,
+    efficiency: times.efficiency,
+    sleep: sleepScore({ ...timing, ...times }, input.past, input.needMin),
     restingHr: restingHr(minuteHr(input.heartRate, sleep)),
     rmssdMs: hrv?.rmssdMs ?? null,
     lnRmssd: hrv?.lnRmssd ?? null,

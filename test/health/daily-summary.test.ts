@@ -91,7 +91,7 @@ describe("DailySummary", () => {
     expect(note?.frontmatter.strain).toBeGreaterThan(0);
     expect(note?.frontmatter.recovery_pct).toBeUndefined();
     expect(note?.body).toContain("<!-- cc:health -->\n## Health\n\n- Recovery calibrating, 0/14");
-    expect(note?.body).toContain("- Sleep 8h 00m · 23:00–07:00");
+    expect(note?.body).toContain("- Sleep **100** · 8h 00m of 8h 00m · 23:00–07:00");
     // The block sits above the journal, so journal lines never land inside it.
     expect(note?.body.indexOf("## Health")).toBeLessThan(note?.body.indexOf("## Journal") ?? 0);
 

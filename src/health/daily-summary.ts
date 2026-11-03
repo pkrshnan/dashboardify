@@ -14,6 +14,7 @@ import {
   recovery,
   tempDeviation,
 } from "./metrics/recovery";
+import { DEFAULT_NEED_MIN, type PastNight } from "./metrics/sleep-score";
 import { median } from "./metrics/stats";
 import { dayMetrics, type NightMetrics, nightMetrics } from "./metrics/summary";
 import type { Accel, HeartRate, RrInterval, SkinTemp, StepCounter } from "./metrics/types";
@@ -44,14 +45,16 @@ export class DailySummary {
   }
 
   async compute(date: string): Promise<DaySummary> {
-    const night = await this.night(date);
-    const history = await this.history(date);
+    const profileFields = await this.vault.readProfile();
+    const rows = await this.history(date);
+    const history = rows.map(fromNightRow);
+    const night = await this.night(date, rows, needMinutes(profileFields));
     const signals = night ? toSignals(night) : null;
     const day = dayMetrics({
       heartRate: await this.load(date, "heart_rate", 0, 24, toHeartRate),
       steps: await this.load(date, "steps", 0, 24, toSteps),
       restingHr: night?.restingHr ?? median(recentRestingHrs(history)),
-      profile: parseProfile(await this.vault.readProfile(), date),
+      profile: parseProfile(profileFields, date),
     });
     return {
       night,
@@ -62,23 +65,31 @@ export class DailySummary {
     };
   }
 
-  private async night(date: string): Promise<NightMetrics | null> {
+  private async night(
+    date: string,
+    history: DerivedRow[],
+    needMin: number,
+  ): Promise<NightMetrics | null> {
+    const minutesAfterNoon = (ts: number) => afterNoon(ts, this.timeZone);
     return nightMetrics({
       accel: await this.load(date, "accel", -6, 14, toAccel),
       heartRate: await this.load(date, "heart_rate", -6, 14, toHeartRate),
       rr: await this.load(date, "rr_interval", -6, 14, toRr),
       skinTemp: await this.load(date, "temperature", -6, 14, toSkinTemp),
+      past: history.map((row) => toPastNight(row, minutesAfterNoon)).filter((n) => n !== null),
+      needMin,
+      minutesAfterNoon,
     });
   }
 
-  /** Earlier nights' signals, oldest first, from the stored nights table. */
-  private async history(date: string): Promise<NightSignals[]> {
+  /** Earlier nights from the stored nights table, oldest first. */
+  private async history(date: string): Promise<DerivedRow[]> {
     const day = Temporal.PlainDate.from(date);
-    const rows: NightSignals[] = [];
+    const rows: DerivedRow[] = [];
     for (let back = BASELINE_NIGHTS; back >= 1; back--) {
       const row = await this.derived.read("nights", day.subtract({ days: back }).toString());
       if (row) {
-        rows.push(fromNightRow(row));
+        rows.push(row);
       }
     }
     return rows;
@@ -125,7 +136,28 @@ function toSignals(night: NightMetrics): NightSignals {
     restingHr: night.restingHr,
     breathingRate: night.breathingRate,
     skinTemp: night.skinTemp,
+    sleepScore: night.sleep.score,
   };
+}
+
+/** Base sleep need from profile.md (sleep_need_h), or the default. */
+function needMinutes(profile: Record<string, unknown> | null): number {
+  const hours = profile?.sleep_need_h;
+  return typeof hours === "number" && hours > 0 ? hours * 60 : DEFAULT_NEED_MIN;
+}
+
+/** Local clock time as minutes after noon, so a night's times never wrap at midnight. */
+function afterNoon(ts: number, timeZone: string): number {
+  const time = Temporal.Instant.fromEpochMilliseconds(ts).toZonedDateTimeISO(timeZone);
+  return (time.hour * 60 + time.minute + 720) % 1440;
+}
+
+function toPastNight(row: DerivedRow, minutesAfterNoon: (ts: number) => number): PastNight | null {
+  const { onset_ts: onset, wake_ts: wake, tst_min: asleep } = row;
+  if (typeof onset !== "number" || typeof wake !== "number" || typeof asleep !== "number") {
+    return null;
+  }
+  return { onsetMin: minutesAfterNoon(onset), wakeMin: minutesAfterNoon(wake), asleepMin: asleep };
 }
 
 function recentRestingHrs(history: NightSignals[]): number[] {
@@ -137,11 +169,19 @@ function recentRestingHrs(history: NightSignals[]): number[] {
 
 function nightRow(night: NightMetrics): DerivedRow {
   return {
+    bed_ts: night.bed,
     onset_ts: night.onset,
     wake_ts: night.wake,
     time_in_bed_min: night.inBedMin,
     tst_min: night.asleepMin,
+    latency_min: night.latencyMin,
+    waso_min: night.wakeAfterOnsetMin,
+    awakenings: night.awakenings,
     efficiency_pct: night.efficiency * 100,
+    sleep_score: night.sleep.score,
+    sleep_need_min: night.sleep.needMin,
+    sleep_performance_pct: night.sleep.sufficiency,
+    sleep_consistency: night.sleep.consistency,
     rhr_bpm: night.restingHr,
     rmssd_ms: night.rmssdMs,
     ln_rmssd: night.lnRmssd,
@@ -158,6 +198,7 @@ function fromNightRow(row: DerivedRow): NightSignals {
     restingHr: num("rhr_bpm"),
     breathingRate: num("resp_rate_bpm"),
     skinTemp: num("skin_temp_c"),
+    sleepScore: num("sleep_score"),
   };
 }
 

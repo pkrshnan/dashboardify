@@ -93,7 +93,6 @@ describe("sleep window", () => {
     const window = sleepWindow(accelDay(T0, T0 + 20 * HOUR, sleep));
     expect(Math.abs((window?.start ?? 0) - sleep.start)).toBeLessThan(10 * 60_000);
     expect(Math.abs((window?.end ?? 0) - sleep.end)).toBeLessThan(10 * 60_000);
-    expect(window?.efficiency).toBeGreaterThan(0.95);
   });
 
   test("no data, no window", () => {
@@ -155,6 +154,7 @@ describe("skin temperature", () => {
 describe("recovery", () => {
   const rand = random(11);
   const history = Array.from({ length: 30 }, () => ({
+    sleepScore: null,
     lnRmssd: 3.8 + (rand() - 0.5) * 0.4,
     restingHr: 52 + (rand() - 0.5) * 5,
     breathingRate: 14 + (rand() - 0.5),
@@ -162,24 +162,48 @@ describe("recovery", () => {
   }));
 
   test("needs two weeks of nights", () => {
-    const night = { lnRmssd: 3.8, restingHr: 52, breathingRate: 14, skinTemp: 34.3 };
+    const night = {
+      lnRmssd: 3.8,
+      restingHr: 52,
+      breathingRate: 14,
+      skinTemp: 34.3,
+      sleepScore: null,
+    };
     expect(recovery(night, history.slice(0, 10))).toBeNull();
   });
 
   test("an ordinary night lands near 50%", () => {
-    const night = { lnRmssd: 3.8, restingHr: 52, breathingRate: 14, skinTemp: 34.3 };
+    const night = {
+      lnRmssd: 3.8,
+      restingHr: 52,
+      breathingRate: 14,
+      skinTemp: 34.3,
+      sleepScore: null,
+    };
     const result = recovery(night, history);
     expect(result?.pct).toBeGreaterThan(35);
     expect(result?.pct).toBeLessThan(65);
   });
 
   test("low HRV and a raised resting HR is red", () => {
-    const night = { lnRmssd: 3.6, restingHr: 56, breathingRate: 14, skinTemp: 34.3 };
+    const night = {
+      lnRmssd: 3.6,
+      restingHr: 56,
+      breathingRate: 14,
+      skinTemp: 34.3,
+      sleepScore: null,
+    };
     expect(recovery(night, history)?.pct).toBeLessThan(34);
   });
 
   test("a fever-like temperature pulls a good night down", () => {
-    const good = { lnRmssd: 3.95, restingHr: 50, breathingRate: 14, skinTemp: 34.3 };
+    const good = {
+      lnRmssd: 3.95,
+      restingHr: 50,
+      breathingRate: 14,
+      skinTemp: 34.3,
+      sleepScore: null,
+    };
     const hot = { ...good, skinTemp: 35.3 };
     expect(recovery(hot, history)?.pct ?? 100).toBeLessThan(recovery(good, history)?.pct ?? 0);
   });
@@ -195,12 +219,17 @@ describe("summaries", () => {
       ),
       rr: breathingBeats(sleep.start, sleep.end - sleep.start, { base: 1150 }),
       skinTemp: [{ ts: sleep.start + HOUR, celsius: 34.5 }],
+      past: [],
+      needMin: 480,
+      minutesAfterNoon: (ts) => Math.round((ts - T0) / 60_000) + 360,
     });
     expect(night?.inBedMin).toBeGreaterThan(460);
     expect(night?.restingHr).toBeCloseTo(52, 0);
     expect(night?.rmssdMs).toBeGreaterThan(20);
     expect(night?.breathingRate).toBeCloseTo(15, 0);
     expect(night?.skinTemp).toBe(34.5);
+    expect(night?.asleepMin).toBeCloseTo(480, -1);
+    expect(night?.sleep.score).toBeGreaterThan(99);
   });
 
   test("a day without a profile has no strain", () => {
