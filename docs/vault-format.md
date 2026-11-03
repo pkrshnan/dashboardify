@@ -37,7 +37,7 @@ One row per day. Columns are `date`, then the metric names sorted, then `source`
 ```csv
 date,hrv_ms,recovery,steps,source
 2026-11-01,,,8412,apple-health
-2026-11-02,58.24,70,,whoop
+2026-11-02,58.24,70,,strap
 ```
 
 ## Messages: `inbox/messages/YYYY-MM-DD.md`

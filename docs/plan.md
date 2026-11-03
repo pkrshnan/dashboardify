@@ -29,7 +29,7 @@ This is the build plan for dashboardify. [architecture.md](architecture.md) desc
 | Calendar | Read from CalDAV and ICS. Not mirrored into Markdown files. |
 | Reminders | One-way mirror from Apple Reminders, matched by ID. A write only happens when something changed. |
 | Mail | Read by the server over IMAP |
-| Health | Whoop API plus an Apple Health Shortcut (Whoop still to be confirmed) |
+| Health | Raw data read straight off the Whoop 5.0 strap by healthstrap, not the Whoop API. We compute strain, recovery, HRV, sleep, VO2max and biological age ourselves. Apple Health adds steps and workouts. A Whoop CSV export can backfill history. |
 | Design | Apple-native: system font, grouped cards, system colors for meaning, quiet sidebar |
 | CI | GitHub Actions: lint, typecheck and tests on every PR. This is free for public repos. |
 
@@ -39,7 +39,7 @@ This is the build plan for dashboardify. [architecture.md](architecture.md) desc
 .github/workflows/ci.yml   lint, typecheck, test on every PR and on main
 src/vault/                 Markdown parsing and editing, safe file writes, git history
 src/server/                HTTP server: config, auth, routes
-src/sources/               Whoop, CalDAV, IMAP pollers
+src/sources/               CalDAV, IMAP pollers
 src/index/                 SQLite index (FTS5 + vectors + metric tables)
 src/ask/                   ask agent: tools, model providers, privacy rules
 web/                       Today dashboard (PWA)
@@ -77,8 +77,8 @@ Done when a line dictated to Siri lands in today's note and syncs to your other 
 
 Done when the dashboard replaces opening four apps in the morning.
 
-8. **Whoop source:** OAuth setup, then a daily pull of recovery, sleep, strain and HRV into health CSVs and the daily note.
-9. **Apple Health Shortcut:** a recipe for steps, workouts and weight.
+8. **Strap data and metrics:** the raw samples endpoint that healthstrap posts to, Parquet storage in `health-raw/`, and the metrics job that computes strain, recovery, HRV, sleep, VO2max and biological age into the health CSVs and the daily note. An importer for the Whoop CSV export backfills older history.
+9. **Apple Health Shortcut:** a recipe for steps, workouts, VO2max and sleep.
 10. **Calendar source:** CalDAV and ICS reader, today's agenda block in the daily note, and events kept in memory for the API.
 11. **Today API:** one endpoint that returns everything the dashboard shows.
 12. **Web Today screen:** the approved design on desktop and phone, installable as a PWA, with light and dark modes.
@@ -111,7 +111,7 @@ Done when the Anthropic key can be removed and everything still works.
 
 - **Unit tests** for pure logic, such as Markdown editing, validation and privacy routing.
 - **Integration tests** that run the HTTP server against a temporary vault directory, and for git sync a temporary repo.
-- **No network in tests.** Whoop, CalDAV, IMAP and model calls go through interfaces that tests replace with fakes.
+- **No network in tests.** CalDAV, IMAP and model calls go through interfaces that tests replace with fakes.
 - CI runs everything on Ubuntu with Bun pinned to an exact version.
 
 ## Security
@@ -124,6 +124,5 @@ Done when the Anthropic key can be removed and everything still works.
 
 ## Open questions
 
-- [ ] Confirm the health source is Whoop.
 - [ ] Which mail accounts should be connected (iCloud, Gmail, work)?
 - [ ] Which local model fits your server's RAM and GPU?
