@@ -15,13 +15,14 @@ dashboardify is a personal command center. It pulls health, calendar, reminders,
 ```mermaid
 flowchart TD
   subgraph Sources
-    W[Whoop API]
+    W[healthstrap: raw streams off the Whoop strap]
     C[CalDAV / ICS]
     M[IMAP mail]
     S[iOS Shortcuts: Health, Reminders, Messages, Journal]
   end
   W & C & M & S --> I[Ingest server]
-  I --> V[(Markdown vault, git)]
+  I --> V[(Markdown vault)]
+  V <--> L[LiveSync bridge + CouchDB] <--> O[Obsidian on your devices]
   V --> X[(Index: SQLite FTS + vectors)]
   X --> A[Ask agent]
   A --> P[Model provider: Claude or local]
@@ -33,8 +34,8 @@ flowchart TD
 
 | Component | Responsibility |
 | --- | --- |
-| Ingest server | Receives pushes from Shortcuts, polls Whoop, CalDAV and IMAP, and writes into the vault. Only edits regions it owns, so hand-written text is never touched. |
-| Vault | Daily notes, reminders mirror, health CSVs, message and mail digests, saved answers. Synced to other devices with git: the server pulls before writing and commits after. |
+| Ingest server | Receives pushes from Shortcuts and healthstrap, polls CalDAV and IMAP, and writes into the vault. Only edits regions it owns, so hand-written text is never touched. |
+| Vault | Daily notes, reminders mirror, health CSVs, message and mail digests, saved answers. Synced to your devices with Obsidian Self-hosted LiveSync. `livesync-bridge` keeps the server's plain-file vault and CouchDB in step. Backed up nightly with restic to Cloudflare R2. |
 | Index | Full-text and vector search plus typed tables parsed from frontmatter and CSVs, so "average HRV on short-sleep nights" is a query, not a guess. |
 | Ask agent | Answers a question by searching the index with a fixed set of read-only tools, then writes a cited answer to the vault. |
 | Web app | The dashboard (Today view) on desktop and phone. |
@@ -44,8 +45,10 @@ flowchart TD
 
 | Source | How it arrives | Notes |
 | --- | --- | --- |
-| Whoop | Official Whoop API (OAuth), polled by the server | Recovery, sleep, strain, HRV |
-| Apple Health | Daily Shortcut automation posts metrics | Steps, workouts, weight. Shortcuts can only read Health while the phone is unlocked. |
+| Whoop strap | [healthstrap](https://github.com/pkrshnan/healthstrap) reads the 5.0 strap over Bluetooth, without the Whoop app or API, and posts raw per-day streams to `/api/ingest/samples/{stream}` | Heart rate, RR intervals, skin temperature, accelerometer, PPG bursts, wear and sleep state. Stored as Parquet in `health-raw/`, outside the vault. |
+| Health metrics | Computed on the server from the raw streams | Strain, recovery, HRV, sleep, VO2max and biological age, using our own documented algorithms. Results are rebuildable tables, and daily values go into the daily note. |
+| Whoop export | Optional one-off import of the Whoop app's CSV export | Backfills history before the strap was read directly, seeds baselines and checks our numbers against Whoop's on overlapping days. Kept separate from our own values. |
+| Apple Health | Daily Shortcut automation posts metrics | Steps, workouts with routes, VO2max and sleep. Shortcuts can only read Health while the phone is unlocked. |
 | Calendar | Server reads CalDAV (iCloud app password) and ICS feeds | Not written to Markdown files. Events live in the index, and each daily note gets a short agenda block. |
 | Reminders | Shortcut posts open reminders | One-way mirror into the vault; you keep using Apple Reminders to tick things off. |
 | Journal | Written in the daily note, or dictated through Siri | Local-only. |
