@@ -131,7 +131,7 @@ a{color:#8AB4FF}a:hover{color:#B5D0FF}
         </sc-for>
       </div>
     </div>
-    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 64px">
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(5, auto); grid-auto-flow: column; column-gap: 64px">
       <sc-for list="{{metrics}}" as="m" hint-placeholder-count="10">
         <div style="padding: 22px 0; border-top: 1px solid #1F1F22; display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 24px; align-items: center">
           <div>
@@ -167,6 +167,8 @@ class Component extends DCLogic {
     const W = 36;
     // Status: warn (overdue) orange, now red. Categories: work blue, fitness/health teal, personal purple, focus grey.
     const blue = '#0A84FF', orange = '#FF9F0A', teal = '#40C8E0', purple = '#BF5AF2', grey = '#8E8E93';
+    // Health categories (Apple Health style), kept clear of the status hues.
+    const heart = '#FF7EB6', sleep = '#7D7AFF', activity = '#64D2FF', vitals = '#AC8E68';
     const band = (v) => (v >= 67 ? '#30D158' : (v >= 34 ? '#FFD60A' : '#FF453A'));
     const we = (s, e, title, color, past) => ({ top: ((s - 7) * W) + 'px', height: Math.max(18, (e - s) * W) + 'px', title, color, bg: color + '26', opacity: past ? 0.5 : 1 });
     const wr = (h, text) => ({ top: ((h - 7) * W) + 'px', text });
@@ -248,16 +250,16 @@ class Component extends DCLogic {
       ranges: [['2w', '2W'], ['1m', '1M'], ['3m', '3M'], ['1y', '1Y']].map(([k, label]) => ({ label, bg: seg(k === range).bg, fg: seg(k === range).fg, pick: () => this.setState({ range: k }) })),
       startLabel,
       metrics: [
-        metric('Recovery', '%', 62, 64, 34, 0, '#F5F5F7', 11),
-        metric('Sleep score', '', 78, 76, 24, 0, '#F5F5F7', 23),
-        metric('Time asleep', '', 7.2, 7.0, 1.8, 1, '#F5F5F7', 37, hm),
-        metric('Strain', '', 11.4, 11, 9, 1, '#F5F5F7', 41),
-        metric('HRV', 'ms', 54, 57, 18, 0, '#F5F5F7', 53),
-        metric('Resting HR', 'bpm', 52, 50, 7, 0, '#F5F5F7', 67),
-        metric('Steps', '', 9840, 8500, 7000, 0, '#F5F5F7', 71, thou),
-        metric('Zone 2+ minutes', 'min', 33, 35, 50, 0, '#F5F5F7', 83),
-        metric('Breathing rate', '/min', 14.6, 14.5, 1.4, 1, '#F5F5F7', 97),
-        metric('Skin temperature', '°C', 33.6, 33.4, 0.9, 1, '#F5F5F7', 101)
+        metric('Recovery', '%', 62, 64, 34, 0, heart, 11),
+        metric('HRV', 'ms', 54, 57, 18, 0, heart, 53),
+        metric('Resting HR', 'bpm', 52, 50, 7, 0, heart, 67),
+        metric('Sleep score', '', 78, 76, 24, 0, sleep, 23),
+        metric('Time asleep', '', 7.2, 7.0, 1.8, 1, sleep, 37, hm),
+        metric('Strain', '', 11.4, 11, 9, 1, activity, 41),
+        metric('Steps', '', 9840, 8500, 7000, 0, activity, 71, thou),
+        metric('Zone 2+ minutes', 'min', 33, 35, 50, 0, activity, 83),
+        metric('Breathing rate', '/min', 14.6, 14.5, 1.4, 1, vitals, 97),
+        metric('Skin temperature', '°C', 33.6, 33.4, 0.9, 1, vitals, 101)
       ]
     };
   }
