@@ -21,6 +21,17 @@ bun run format  # auto-fix formatting and import order
 cp .env.example .env && set -a && . ./.env && set +a && bun run dev
 ```
 
+### Your vault
+
+Your notes never go in this repo. Link your real vault into the checkout as `vault`, which is git-ignored:
+
+```sh
+ln -s ~/path/to/your/vault vault   # macOS or Linux
+git check-ignore vault             # prints "vault", so git will never pick it up
+```
+
+`.env.example` already sets `VAULT_PATH=./vault`. The code that reads and writes notes lives in `src/vault/`, and that folder is part of the repo. Tests use temporary folders, so they never touch your real vault.
+
 See [docs/style.md](docs/style.md) for the code style.
 
 CI runs on every pull request through GitHub Actions (`.github/workflows/ci.yml`).
