@@ -8,6 +8,16 @@ All rounds live on the design canvas: https://claude.ai/artifact/UfZhR2WaR4YVkha
 
 The data in both files is made up.
 
+| Desktop, Day | Desktop, Week |
+|---|---|
+| ![Desktop, Day view](images/desktop-day.png) | ![Desktop, Week view](images/desktop-week.png) |
+
+| Phone, Day | Phone, Week |
+|---|---|
+| ![Phone, Day view](images/phone-day.png) | ![Phone, Week view](images/phone-week.png) |
+
+The screenshots are rendered from the `.dc.html` files with sample data.
+
 ## Layout, top to bottom
 
 1. **Focus.** Sized to its content so the calendar starts on the first screen.

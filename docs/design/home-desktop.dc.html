@@ -19,7 +19,7 @@ input.ring.sm{width:15px;height:15px}
 .ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 </helmet>
-<div style="width: 1440px; min-height: 2200px; box-sizing: border-box; background: #0C0C0E; color: #F5F5F7; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', Inter, system-ui, sans-serif; font-variant-numeric: tabular-nums">
+<div style="width: 1440px; min-height: 1900px; box-sizing: border-box; background: #0C0C0E; color: #F5F5F7; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', Inter, system-ui, sans-serif; font-variant-numeric: tabular-nums">
 
   <section style="padding: 40px 64px 40px; display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 64px; border-bottom: 1px solid #2C2C2E">
     <div style="display: flex; flex-direction: column; gap: 28px">
@@ -108,7 +108,7 @@ input.ring.sm{width:15px;height:15px}
                       <div class="ell" style="position: absolute; left: 2px; right: 2px; top: {{e.top}}; height: {{e.height}}; box-sizing: border-box; background: {{e.bg}}; border-left: 2px solid {{e.color}}; border-radius: 4px; padding: 3px 6px; font-size: 11px; line-height: 14px">{{e.title}}</div>
                     </sc-for>
                     <sc-for list="{{d.reminders}}" as="r" hint-placeholder-count="1">
-                      <div class="ell" style="position: absolute; left: 30%; right: 2px; top: {{r.top}}; transform: translateY(-50%); height: 20px; box-sizing: border-box; display: flex; align-items: center; gap: 4px; padding: 0 6px; border-radius: 10px; border: 1px dashed #636366; background: #0C0C0E; font-size: 11px"><span style="width: 8px; height: 8px; border-radius: 50%; border: 1px solid #8E8E93; flex: none; box-sizing: border-box"></span><span class="ell">{{r.text}}</span></div>
+                      <div class="ell" style="position: absolute; left: 10%; right: 2px; top: {{r.top}}; transform: translateY(-50%); height: 20px; box-sizing: border-box; display: flex; align-items: center; gap: 4px; padding: 0 6px; border-radius: 10px; border: 1px dashed #636366; background: #0C0C0E; font-size: 11px"><span style="width: 8px; height: 8px; border-radius: 50%; border: 1px solid #8E8E93; flex: none; box-sizing: border-box"></span><span class="ell">{{r.text}}</span></div>
                     </sc-for>
                     <sc-if value="{{d.today}}" hint-placeholder-val="{{false}}"><div style="position: absolute; left: 0; right: 0; top: 79px; height: 2px; background: #FF453A"></div></sc-if>
                   </div>
@@ -176,7 +176,7 @@ input.ring.sm{width:15px;height:15px}
   </section>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2200}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1900}}'>
 class Component extends DCLogic {
   renderVals() {
     const st = this.state || {};

@@ -19,7 +19,7 @@ input.ring.sm{width:18px;height:18px}
 .ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 </helmet>
-<div style="width: 390px; min-height: 3500px; box-sizing: border-box; background: #0C0C0E; color: #F5F5F7; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', Inter, system-ui, sans-serif; font-variant-numeric: tabular-nums">
+<div style="width: 390px; min-height: 3140px; box-sizing: border-box; background: #0C0C0E; color: #F5F5F7; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', Inter, system-ui, sans-serif; font-variant-numeric: tabular-nums">
 
   <section style="padding: 56px 20px 28px; display: flex; flex-direction: column; gap: 24px; border-bottom: 1px solid #2C2C2E">
     <header style="display: flex; gap: 12px; align-items: baseline; font-size: 15px; color: #A1A1A6"><span>Tuesday 3 November</span><span>09:12</span></header>
@@ -56,13 +56,13 @@ input.ring.sm{width:18px;height:18px}
         </div>
         <div style="position: absolute; inset: 0; background-image: repeating-linear-gradient(to bottom, #2C2C2E 0, #2C2C2E 1px, transparent 1px, transparent 56px)"></div>
         <sc-for list="{{dayBlocks}}" as="b" hint-placeholder-count="6">
-          <div style="position: absolute; left: 0; width: 62%; top: {{b.top}}; height: {{b.height}}; box-sizing: border-box; background: {{b.bg}}; border-left: 3px solid {{b.color}}; border-radius: 6px; padding: {{b.pad}}; overflow: hidden">
+          <div style="position: absolute; left: 0; width: 52%; top: {{b.top}}; height: {{b.height}}; box-sizing: border-box; background: {{b.bg}}; border-left: 3px solid {{b.color}}; border-radius: 6px; padding: {{b.pad}}; overflow: hidden">
             <div class="ell" style="font-size: 13px; line-height: 18px; font-weight: 600; color: {{b.titleColor}}">{{b.title}}</div>
             <sc-if value="{{b.twoLine}}" hint-placeholder-val="{{false}}"><div class="ell" style="font-size: 12px; line-height: 16px; color: {{b.detailColor}}">{{b.start}} · {{b.detail}}</div></sc-if>
           </div>
         </sc-for>
         <sc-for list="{{dayReminders}}" as="r" hint-placeholder-count="4">
-          <label style="position: absolute; left: 64%; right: 0; top: {{r.top}}; transform: translateY(-50%); height: 44px; box-sizing: border-box; display: flex; align-items: center; gap: 6px; padding: 0 8px; border: 1px dashed #636366; border-radius: 12px; background: #0C0C0E">
+          <label style="position: absolute; left: 54%; right: 0; top: {{r.top}}; transform: translateY(-50%); height: 44px; box-sizing: border-box; display: flex; align-items: center; gap: 6px; padding: 0 8px; border: 1px dashed #636366; border-radius: 12px; background: #0C0C0E">
             <sc-if value="{{r.done}}" hint-placeholder-val="{{false}}"><input type="checkbox" class="ring sm" checked="{{true}}" readOnly="{{true}}" aria-label="Done"></sc-if>
             <sc-if value="{{r.open}}" hint-placeholder-val="{{true}}"><input type="checkbox" class="ring sm"></sc-if>
             <span style="min-width: 0; display: flex; flex-direction: column"><span class="ell" style="font-size: 13px; line-height: 16px; color: {{r.color}}; text-decoration: {{r.strike}}">{{r.text}}</span><span style="font-size: 11px; line-height: 14px; color: #8E8E93">{{r.time}}</span></span>
@@ -144,7 +144,7 @@ input.ring.sm{width:18px;height:18px}
   </section>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":3500}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":3140}}'>
 class Component extends DCLogic {
   renderVals() {
     const st = this.state || {};
