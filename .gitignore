@@ -1,3 +1,6 @@
 node_modules/
 .env
 *.tmp
+
+# Your notes. `vault` is a symlink to your real vault and must never be committed.
+/vault

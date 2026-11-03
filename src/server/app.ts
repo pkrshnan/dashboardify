@@ -1,12 +1,14 @@
 // The HTTP API. Each area lives in its own file under routes/; this file only wires them up.
 
 import { Hono } from "hono";
+import { TaskStore } from "../vault/task-store";
 import { Vault } from "../vault/vault";
 import { type AuthEnv, bearerAuth } from "./auth";
 import type { Config } from "./config";
 import { healthRoutes } from "./routes/health";
 import { journalRoutes } from "./routes/journal";
 import { messageRoutes } from "./routes/messages";
+import { taskRoutes } from "./routes/tasks";
 import { todayRoutes } from "./routes/today";
 
 export interface AppDeps {
@@ -22,6 +24,7 @@ export function createApp(config: Config, deps: AppDeps = {}): Hono<AuthEnv> {
   api.route("/ingest/health", healthRoutes(vault, config));
   api.route("/ingest/messages", messageRoutes(vault));
   api.route("/today", todayRoutes(vault, config));
+  api.route("/tasks", taskRoutes(new TaskStore(vault, config.tasksInbox), config));
 
   const app = new Hono<AuthEnv>();
   app.get("/healthz", (c) => c.json({ ok: true }));

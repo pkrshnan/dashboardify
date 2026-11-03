@@ -31,3 +31,34 @@ Appends to `inbox/messages/YYYY-MM-DD.md`, which is marked `local-only`. If `id`
 ## `GET /api/today?date=YYYY-MM-DD`
 
 Returns `{ date, path, frontmatter, body }` for that day's note. `date` defaults to today. If there is no note yet, `body` is `null`.
+
+## Tasks
+
+Tasks are [Obsidian Tasks](https://publish.obsidian.md/tasks/) lines anywhere in the vault. The server appends new ones to `TASKS_INBOX` (default `Inbox.md`) and edits single lines in place. Every response includes `message`, one plain sentence that Siri reads aloud and the dashboard can show as is. A task is returned as `{ id, path, done, description, time?, priority?, recurrence?, due?, created?, completed? }`. `id` is its 🆔, or a stable reference made from its file and text when it has none.
+
+```
+- [ ] Call the bank ⏰ 09:00 📅 2026-11-03 ➕ 2026-11-02 🆔 k7f3a2
+```
+
+`⏰ HH:MM` is our addition for a due time. It always sits right after the description, so Tasks still reads every other field.
+
+### `POST /api/tasks`
+
+```json
+{ "key": "8F2C…", "text": "Call the bank tomorrow at 9am", "source": "siri" }
+```
+
+`key` is made by the device, and the same key always gives the same 🆔, so a retry returns `200 {"status": "already_done"}` instead of adding a second task. `due` (YYYY-MM-DD), `time` (HH:MM) and `priority` (`highest`, `high`, `medium`, `low`, `lowest`) are optional. Without `due`, the date and time are read from the text in `TZ_NAME` and removed from it, so the example above becomes `Call the bank ⏰ 09:00 📅 2026-11-03`. Returns `201 {"status": "created", ...task, "message"}`.
+
+### `GET /api/tasks?due=today|overdue|week|all`
+
+Open tasks, soonest first. `today` is due today, `overdue` is due before today, `week` is today through six days from now, and `all` (the default) is every open task. Returns `{ items, message }`.
+
+### `GET /api/tasks/match?q=…`
+
+Up to five open tasks whose text is closest to `q`, best first, each with a `score` from 0 (exact) to 1. Siri uses it to turn "mark the bank one done" into an id.
+
+### `POST /api/tasks/{id}/complete`
+
+Ticks the task off and adds `✅` with today's date. A recurring task (`🔁 every week`, `every 2 days`, `every weekday`, and so on) gets its next occurrence inserted above it, as Tasks does. Completing a done task returns `{"status": "already_done"}`, and an unknown id returns `404`.
+

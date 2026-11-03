@@ -2,7 +2,7 @@
 
 A personal command center whose only source of truth is a folder of Markdown files.
 
-Health, calendar, reminders, journal, mail and messages flow into a vault you can open in Obsidian or any editor. You can ask questions about all of it, mostly by voice through Siri. The search index and dashboard are rebuilt from the vault, so deleting the app never loses data.
+Health, calendar, tasks, journal, mail and messages flow into a vault you can open in Obsidian or any editor. You can ask questions about all of it, mostly by voice through Siri. The search index and dashboard are rebuilt from the vault, so deleting the app never loses data.
 
 **Status:** building milestone 1 (capture). See the [plan](docs/plan.md).
 
@@ -20,6 +20,17 @@ bun run check   # lint + typecheck + tests, the same as CI
 bun run format  # auto-fix formatting and import order
 cp .env.example .env && set -a && . ./.env && set +a && bun run dev
 ```
+
+### Your vault
+
+Your notes never go in this repo. Link your real vault into the checkout as `vault`, which is git-ignored:
+
+```sh
+ln -s ~/path/to/your/vault vault   # macOS or Linux
+git check-ignore vault             # prints "vault", so git will never pick it up
+```
+
+`.env.example` already sets `VAULT_PATH=./vault`. The code that reads and writes notes lives in `src/vault/`, and that folder is part of the repo. Tests use temporary folders, so they never touch your real vault.
 
 See [docs/style.md](docs/style.md) for the code style.
 
