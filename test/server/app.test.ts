@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createApp } from "../../src/server/app";
@@ -68,35 +68,6 @@ describe("POST /api/ingest/journal", () => {
   });
 });
 
-describe("POST /api/ingest/health", () => {
-  test("rounds numbers and accepts numeric strings", async () => {
-    const res = await post("/ingest/health", {
-      date: "2026-11-02",
-      source: "whoop",
-      metrics: { hrv_ms: "58.237" },
-    });
-    expect(res.status).toBe(201);
-    expect(await file("health/2026/2026-11.csv")).toContain("2026-11-02,58.24,whoop");
-  });
-
-  test("rejects unsafe names, reserved keys, non-numbers and bad dates", async () => {
-    const cases: unknown[] = [
-      { date: "2026-11-02", metrics: { "../x": 1 } },
-      { date: "2026-11-02", metrics: { tags: 1 } },
-      { date: "2026-11-02", metrics: { steps: "lots" } },
-      { date: "2026-11-02", metrics: { steps: "" } },
-      { date: "2026-11-02", metrics: { steps: null } },
-      { date: "2026-02-30", metrics: { steps: 1 } },
-      { date: "2026-11-02", source: "a,b", metrics: { steps: 1 } },
-      { date: "2026-11-02", metrics: {} },
-      { date: "2026-11-02", metrics: [1] },
-    ];
-    for (const body of cases) {
-      expect((await post("/ingest/health", body)).status).toBe(400);
-    }
-  });
-});
-
 describe("POST /api/ingest/messages", () => {
   test("appends and reports duplicates", async () => {
     const msg = {
@@ -124,7 +95,8 @@ describe("POST /api/ingest/messages", () => {
 
 describe("GET /api/today", () => {
   test("returns the daily note, or an empty shell", async () => {
-    await post("/ingest/health", { date: "2026-11-02", metrics: { sleep_h: 7.1 } });
+    await mkdir(join(dir, "daily/2026"), { recursive: true });
+    await writeFile(join(dir, "daily/2026/2026-11-02.md"), "---\nsleep_h: 7.1\n---\n");
     const auth = { headers: { authorization: `Bearer ${TOKEN}` } };
     const found = (await (await app.request("/api/today?date=2026-11-02", auth)).json()) as {
       frontmatter: Record<string, unknown>;
