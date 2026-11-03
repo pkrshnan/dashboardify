@@ -6,6 +6,8 @@ export interface Config {
   timeZone: string;
   /** Folder for raw health samples (Parquet), outside the vault. */
   healthRawPath: string;
+  /** Folder for computed health tables (Parquet), rebuildable from healthRawPath. */
+  healthDerivedPath: string;
   /** Vault-relative file that new tasks are appended to. */
   tasksInbox: string;
   /** device name -> bearer token */
@@ -27,6 +29,9 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     port: Number(env.PORT ?? 8787),
     timeZone,
     healthRawPath: resolve(env.HEALTH_RAW_PATH ?? join(dirname(resolve(vault)), "health-raw")),
+    healthDerivedPath: resolve(
+      env.HEALTH_DERIVED_PATH ?? join(dirname(resolve(vault)), "health-derived"),
+    ),
     tasksInbox: env.TASKS_INBOX ?? "Inbox.md",
     tokens: parseTokens(env.INGEST_TOKENS ?? ""),
   };

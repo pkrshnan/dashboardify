@@ -5,7 +5,15 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { Mutex } from "async-mutex";
 import { upsertCsvRow } from "./csv";
-import { appendToSection, editNote, mergeFrontmatter, type Note, parseNote } from "./markdown";
+import {
+  appendToSection,
+  editNote,
+  type Frontmatter,
+  mergeFrontmatter,
+  type Note,
+  parseNote,
+  replaceBlockAtTop,
+} from "./markdown";
 import { localDate, localTime } from "./time";
 
 export type HealthMetrics = Record<string, number>;
@@ -138,6 +146,20 @@ export class Vault {
     const csv = this.healthCsvPath(date);
     await this.update(csv, (text) => upsertCsvRow(text, date, metrics, source));
     return { paths: [this.dailyPath(date), csv] };
+  }
+
+  /** Replace the daily note's `<!-- cc:name -->` region, placing it under the title if new. */
+  async setDailyBlock(date: string, name: string, content: string): Promise<boolean> {
+    return this.updateDaily(date, (note) => ({
+      ...note,
+      body: replaceBlockAtTop(note.body, name, content),
+    }));
+  }
+
+  /** profile.md's frontmatter (birth date, sex, height, …), or null without a profile. */
+  async readProfile(): Promise<Frontmatter | null> {
+    const text = await this.read("profile.md");
+    return text === null ? null : parseNote(text).frontmatter;
   }
 
   // ---- messages ----------------------------------------------------------

@@ -9,7 +9,8 @@ COPY src ./src
 ENV NODE_ENV=production \
     PORT=8787 \
     VAULT_PATH=/data/vault \
-    HEALTH_RAW_PATH=/data/health-raw
+    HEALTH_RAW_PATH=/data/health-raw \
+    HEALTH_DERIVED_PATH=/data/health-derived
 EXPOSE 8787
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
   CMD ["bun", "-e", "fetch('http://127.0.0.1:8787/healthz').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]

@@ -14,9 +14,12 @@ const MAX_CSV_BYTES = 512 * 1024 * 1024;
 
 /**
  * POST /ingest/samples/:stream?day=YYYY-MM-DD: merge a CSV of raw samples (gzipped or not)
- * into that stream's file for the UTC day.
+ * into that stream's file for the UTC day. `onStored` hears about each stored upload.
  */
-export function sampleRoutes(store: RawStore): Hono<AuthEnv> {
+export function sampleRoutes(
+  store: RawStore,
+  onStored: (stream: string, day: string) => void = () => undefined,
+): Hono<AuthEnv> {
   const routes = new Hono<AuthEnv>();
 
   routes.post("/:stream", bodyLimit({ maxSize: MAX_UPLOAD_BYTES }), async (c) => {
@@ -37,7 +40,11 @@ export function sampleRoutes(store: RawStore): Hono<AuthEnv> {
       return badRequest(c, upload.error);
     }
     const result = await store.store(stream, day, upload.value);
-    return result.ok ? c.json(result.value) : badRequest(c, result.error);
+    if (!result.ok) {
+      return badRequest(c, result.error);
+    }
+    onStored(stream, day);
+    return c.json(result.value);
   });
 
   return routes;

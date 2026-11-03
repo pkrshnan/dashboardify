@@ -61,6 +61,26 @@ export class RawStore {
     }));
   }
 
+  /**
+   * Rows of a stream with from <= ts < to, as objects keyed by column name, oldest first.
+   * Reads every UTC day file the range touches; a missing stream or day is just no rows.
+   */
+  async readRange(stream: string, from: number, to: number): Promise<Row[]> {
+    const columns = await this.readColumns(stream);
+    if (!columns) {
+      return [];
+    }
+    const rows: Row[] = [];
+    for (const day of utcDays(from, to)) {
+      for (const sample of await this.readDay(this.dayPath(stream, day), columns)) {
+        if (sample.ts >= from && sample.ts < to) {
+          rows.push(toRow(columns, sample));
+        }
+      }
+    }
+    return rows;
+  }
+
   async readColumns(stream: string): Promise<Column[] | null> {
     const bytes = await this.read(join(stream, "columns.json"));
     return bytes ? (JSON.parse(new TextDecoder().decode(bytes)) as Column[]) : null;
@@ -94,6 +114,28 @@ export class RawStore {
     }
     return lock;
   }
+}
+
+/** A stored sample as `{ ts, column: value, … }`. */
+export type Row = { ts: number } & Record<string, Cell>;
+
+function toRow(columns: Column[], sample: Sample): Row {
+  const row: Row = { ts: sample.ts };
+  for (const [i, column] of columns.entries()) {
+    row[column.name] = sample.values[i] ?? null;
+  }
+  return row;
+}
+
+const DAY_MS = 86_400_000;
+
+/** The UTC dates (YYYY-MM-DD) that [from, to) touches. */
+export function utcDays(from: number, to: number): string[] {
+  const days: string[] = [];
+  for (let t = Math.floor(from / DAY_MS) * DAY_MS; t < to; t += DAY_MS) {
+    days.push(new Date(t).toISOString().slice(0, 10));
+  }
+  return days;
 }
 
 /** ts is INT64 epoch ms; number columns are DOUBLE, text columns STRING. */

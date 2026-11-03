@@ -7,3 +7,6 @@ node_modules/
 
 # Raw health samples (Parquet). Big, private, and backed up with restic instead.
 /health-raw
+
+# Computed health tables, rebuilt from health-raw.
+/health-derived

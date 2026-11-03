@@ -70,6 +70,28 @@ export function replaceBlock(body: string, name: string, content: string): strin
   return `${body}${blankLineBefore(body)}${block}\n`;
 }
 
+/**
+ * Like replaceBlock, but a new region goes right under the note's `# title`, above the sections
+ * people append to (a region at the end would sit inside the last section, e.g. `## Journal`).
+ */
+export function replaceBlockAtTop(body: string, name: string, content: string): string {
+  if (body.includes(`<!-- cc:${name} -->`)) {
+    return replaceBlock(body, name, content);
+  }
+  const block = `<!-- cc:${name} -->\n${content.trimEnd()}\n<!-- /cc:${name} -->\n`;
+  const lines = body.split("\n");
+  const title = lines.findIndex((line) => /^# /.test(line));
+  if (title === -1) {
+    return `${block}\n${body}`;
+  }
+  const head = lines.slice(0, title + 1).join("\n");
+  const rest = lines
+    .slice(title + 1)
+    .join("\n")
+    .replace(/^\n+/, "");
+  return `${head}\n\n${block}${rest === "" ? "" : `\n${rest}`}`;
+}
+
 /** What to add to the end of `body` so the next thing starts after exactly one blank line. */
 function blankLineBefore(body: string): string {
   if (body === "" || body.endsWith("\n\n")) {
