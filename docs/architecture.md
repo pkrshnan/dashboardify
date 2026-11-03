@@ -35,7 +35,7 @@ flowchart TD
 | Component | Responsibility |
 | --- | --- |
 | Ingest server | Receives pushes from Shortcuts and healthstrap, polls CalDAV and IMAP, and writes into the vault. Only edits regions it owns, so hand-written text is never touched. |
-| Vault | Daily notes, tasks, health CSVs, message and mail digests, saved answers. Synced to your devices with Obsidian Self-hosted LiveSync. `livesync-bridge` keeps the server's plain-file vault and CouchDB in step. The server also commits its writes to a local git repo for history. |
+| Vault | Daily notes, tasks, health CSVs, message and mail digests, saved answers. Synced to your devices with Obsidian Self-hosted LiveSync. `livesync-bridge` keeps the server's plain-file vault and CouchDB in step. Backed up nightly with restic to Cloudflare R2. |
 | Index | Full-text and vector search plus typed tables parsed from frontmatter and CSVs, so "average HRV on short-sleep nights" is a query, not a guess. |
 | Ask agent | Answers a question by searching the index with a fixed set of read-only tools, then writes a cited answer to the vault. |
 | Web app | The dashboard (Today view) on desktop and phone. |

@@ -23,7 +23,7 @@ This is the build plan for dashboardify. [architecture.md](architecture.md) desc
 | Hosting | One process on your always-on Linux server, reached from the phone over Tailscale |
 | Language | TypeScript on Bun, for both the server and the web app |
 | Storage | Markdown vault as the source of truth. SQLite only for the derived index, which can be rebuilt. |
-| Vault sync | Obsidian Self-hosted LiveSync, with CouchDB on the Arch server, so Obsidian mobile works for quick capture. `livesync-bridge` mirrors the CouchDB database to a plain folder on the server, and that folder is the vault the command center reads and writes. Git only keeps local history and backups on the server. |
+| Vault sync | Obsidian Self-hosted LiveSync, with CouchDB on the Arch server, so Obsidian mobile works for quick capture. `livesync-bridge` mirrors the CouchDB database to a plain folder on the server, and that folder is the vault the command center reads and writes. There is no git in the vault. Backups are restic snapshots, and recent edits can be recovered from LiveSync's revision history and Obsidian's File recovery. |
 | Primary interface | Siri Shortcuts calling the server's HTTP API, with the web app for browsing |
 | Privacy | Journal and messages are `local-only` and only ever reach a model running on the server |
 | Calendar | Read from CalDAV and ICS. Not mirrored into Markdown files. |
@@ -37,7 +37,7 @@ This is the build plan for dashboardify. [architecture.md](architecture.md) desc
 
 ```
 .github/workflows/ci.yml   lint, typecheck, test on every PR and on main
-src/vault/                 Markdown parsing and editing, safe file writes, git history
+src/vault/                 Markdown parsing and editing, safe file writes
 src/server/                HTTP server: config, auth, routes
 src/sources/               CalDAV, IMAP pollers
 src/index/                 SQLite index (FTS5 + vectors + metric tables)
@@ -70,8 +70,8 @@ Done when a line dictated to Siri lands in today's note and syncs to your other 
 3. **Vault library:** read and edit Markdown with frontmatter, append to a section, replace machine-owned `<!-- cc:name -->` blocks, atomic writes, one writer per file at a time, and time-zone-correct dates. Done when it's fully unit tested, including DST edges and concurrent writes.
 4. **Ingest server:** Hono HTTP server, a bearer token per device, plus `POST /api/ingest/journal`, `/health` and `/messages`, and `GET /api/today`. Done when every endpoint has validation tests and an API reference doc.
 5. **Tasks:** `POST /api/tasks` captures into the inbox file, `GET /api/tasks` lists what's due, `GET /api/tasks/match` finds one by name, and `POST /api/tasks/{id}/complete` ticks it off, including recurring tasks. Done when tests cover capture, retries, due windows, matching and recurrence.
-6. **Vault git history:** commit the server's writes in short batches, so every change has history and can be undone. Pushing is optional and goes only to a backup remote. Devices sync through LiveSync, not git, so the pull and rebase path only matters if a backup remote ever gets edited elsewhere. Done when tests against a temporary git repo cover batching and the no-remote case.
-7. **Deploy:** Dockerfile, a systemd unit, a Tailscale setup note, and the "Log journal" Shortcut recipe. The same compose file runs CouchDB for Self-hosted LiveSync and `livesync-bridge` into the server's vault folder. It also sets up restic backups of the vault, the git history, `health-raw/` and healthstrap's SQLite to Cloudflare R2. Done when it runs on your server, the Shortcut works end to end, and a line written by the server shows up in Obsidian on your phone.
+6. **Backups:** nightly restic snapshots of the vault, `health-raw/` and healthstrap's SQLite to Cloudflare R2, kept for 7 days, 4 weeks and 12 months. Done when a restore into an empty folder has been tried and documented.
+7. **Deploy:** Dockerfile, a systemd unit, a Tailscale setup note, and the "Log journal" Shortcut recipe. The same compose file runs CouchDB for Self-hosted LiveSync and `livesync-bridge` into the server's vault folder. It also runs the restic backup on a systemd timer. Done when it runs on your server, the Shortcut works end to end, and a line written by the server shows up in Obsidian on your phone.
 
 ### M2: Today
 
@@ -110,7 +110,7 @@ Done when the Anthropic key can be removed and everything still works.
 ## Testing
 
 - **Unit tests** for pure logic, such as Markdown editing, validation and privacy routing.
-- **Integration tests** that run the HTTP server against a temporary vault directory, and for git sync a temporary repo.
+- **Integration tests** that run the HTTP server against a temporary vault directory.
 - **No network in tests.** CalDAV, IMAP and model calls go through interfaces that tests replace with fakes.
 - CI runs everything on Ubuntu with Bun pinned to an exact version.
 
