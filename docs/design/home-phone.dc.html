@@ -131,7 +131,7 @@ a{color:#8AB4FF}a:hover{color:#B5D0FF}
           <line x1="0" y1="{{m.avgY}}" x2="600" y2="{{m.avgY}}" stroke="#3A3A3C" stroke-width="1" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"></line>
           <polyline points="{{m.points}}" fill="none" stroke="{{m.color}}" stroke-width="1.6" stroke-linejoin="round" vector-effect="non-scaling-stroke"></polyline>
         </svg>
-        <div style="display: flex; justify-content: space-between; font-size: 11px; color: #8E8E93; margin-top: 4px"><span>{{startLabel}}</span><span>{{m.delta}}</span></div>
+        <div style="display: flex; justify-content: space-between; font-size: 11px; color: #8E8E93; margin-top: 4px"><span>{{startLabel}}</span><span style="color: {{m.deltaColor}}">{{m.delta}}</span></div>
       </div>
     </sc-for>
   </section>
@@ -164,7 +164,7 @@ class Component extends DCLogic {
     const pts = Math.ceil(n / step);
     const start = new Date(2026, 10, 3 - n + 1);
     const startLabel = start.getDate() + ' ' + start.toLocaleString('en-GB', { month: 'short' }) + (range === '1y' ? ' ' + start.getFullYear() : '');
-    const metric = (name, unit, cur, base, amp, dec, color, seed, fmt) => {
+    const metric = (name, unit, cur, base, amp, dec, color, seed, fmt, better) => {
       let s = seed;
       const rnd = () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
       const vals = [];
@@ -178,8 +178,11 @@ class Component extends DCLogic {
       const avg = vals.reduce((a, b) => a + b, 0) / pts;
       const f = fmt || ((v) => v.toFixed(dec));
       const d = cur - avg;
+      const pct = Math.round((d / avg) * 100);
+      // Green when the change is good for you, red when bad; grey when small (under 3%) or when direction has no clear meaning.
+      const deltaColor = (!better || Math.abs(pct) < 3) ? '#8E8E93' : ((pct > 0) === (better === 'up') ? '#30D158' : '#FF453A');
       return {
-        name, unit, color, value: f(cur), valueColor: name === 'Recovery' ? band(cur) : '#F5F5F7',
+        name, unit, color, deltaColor, value: f(cur), valueColor: name === 'Recovery' ? band(cur) : '#F5F5F7',
         delta: (Math.round((d / avg) * 100) >= 0 ? '+' : '−') + Math.abs(Math.round((d / avg) * 100)) + '%' + ' vs avg',
         points: vals.map((v, i) => ((i / (pts - 1)) * 600).toFixed(1) + ',' + y(v)).join(' '),
         avgY: y(avg), aria: name + ' trend'
@@ -233,16 +236,16 @@ class Component extends DCLogic {
       ranges: [['2w', '2W'], ['1m', '1M'], ['3m', '3M'], ['1y', '1Y']].map(([k, label]) => ({ label, bg: seg(k === range).bg, fg: seg(k === range).fg, pick: () => this.setState({ range: k }) })),
       startLabel,
       metrics: [
-        metric('Recovery', '%', 62, 64, 34, 0, heart, 11),
-        metric('HRV', 'ms', 54, 57, 18, 0, heart, 53),
-        metric('Resting HR', 'bpm', 52, 50, 7, 0, heart, 67),
-        metric('Sleep score', '', 78, 76, 24, 0, sleep, 23),
-        metric('Time asleep', '', 7.2, 7.0, 1.8, 1, sleep, 37, hm),
-        metric('Strain', '', 11.4, 11, 9, 1, activity, 41),
-        metric('Steps', '', 9840, 8500, 7000, 0, activity, 71, thou),
-        metric('Zone 2+ minutes', 'min', 33, 35, 50, 0, activity, 83),
-        metric('Breathing rate', '/min', 14.6, 14.5, 1.4, 1, vitals, 97),
-        metric('Skin temperature', '°C', 33.6, 33.4, 0.9, 1, vitals, 101)
+        metric('Recovery', '%', 62, 64, 34, 0, heart, 11, undefined, 'up'),
+        metric('HRV', 'ms', 54, 57, 18, 0, heart, 53, undefined, 'up'),
+        metric('Resting HR', 'bpm', 52, 50, 7, 0, heart, 67, undefined, 'down'),
+        metric('Sleep score', '', 78, 76, 24, 0, sleep, 23, undefined, 'up'),
+        metric('Time asleep', '', 7.2, 7.0, 1.8, 1, sleep, 37, hm, 'up'),
+        metric('Strain', '', 11.4, 11, 9, 1, activity, 41, undefined, null),
+        metric('Steps', '', 9840, 8500, 7000, 0, activity, 71, thou, 'up'),
+        metric('Zone 2+ minutes', 'min', 33, 35, 50, 0, activity, 83, undefined, 'up'),
+        metric('Breathing rate', '/min', 14.6, 14.5, 1.4, 1, vitals, 97, undefined, null),
+        metric('Skin temperature', '°C', 33.6, 33.4, 0.9, 1, vitals, 101, undefined, null)
       ]
     };
   }

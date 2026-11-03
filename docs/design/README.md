@@ -64,6 +64,8 @@ Reminders are drawn with a dashed outline and no fill, so they read differently 
 | activity | `#64D2FF` | strain, steps, zone 2+ minutes |
 | vitals | `#AC8E68` | breathing rate, skin temperature |
 
+The percentage change is green when it is good for you and red when it is bad: up is good for recovery, HRV, sleep score, time asleep, steps and zone 2+ minutes, and down is good for resting HR. It stays grey when the change is under 3%, and always for strain, breathing rate and skin temperature, where neither direction is simply better.
+
 The metrics are listed group by group. On desktop the grid fills down each column first, so heart and sleep sit on the left and activity and vitals on the right.
 
 **Type and layout**
