@@ -4,3 +4,6 @@ node_modules/
 
 # Your notes. `vault` is a symlink to your real vault and must never be committed.
 /vault
+
+# Raw health samples (Parquet). Big, private, and backed up with restic instead.
+/health-raw

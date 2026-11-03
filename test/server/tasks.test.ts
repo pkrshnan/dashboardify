@@ -18,6 +18,7 @@ beforeEach(async () => {
     vaultPath: dir,
     port: 0,
     timeZone: "America/Los_Angeles",
+    healthRawPath: join(dir, "..", "raw-unused"),
     tasksInbox: "Inbox.md",
     tokens: new Map([["iphone", TOKEN]]),
   };

@@ -15,6 +15,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.6.4",
     "@types/bun": "1.4.4",
+    "@types/papaparse": "5.3.16",
     "typescript": "6.0.3"
   },
   "dependencies": {
@@ -23,6 +24,9 @@
     "fuse.js": "7.5.0",
     "gray-matter": "4.0.3",
     "hono": "4.13.16",
+    "hyparquet": "1.32.0",
+    "hyparquet-writer": "0.18.0",
+    "papaparse": "5.5.3",
     "yaml": "2.9.1"
   }
 }
