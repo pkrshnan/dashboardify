@@ -4,6 +4,5 @@ node_modules/
 .env
 vault
 health-raw
-deploy/.env
 docs/
 test/

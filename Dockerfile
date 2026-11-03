@@ -1,4 +1,4 @@
-# dashboardify server. Built by deploy/compose.yaml; see deploy/README.md.
+# dashboardify server. Built by the home server's docker compose project (pkrshnan/homeserver).
 ARG BUN_VERSION=1.4.4
 FROM oven/bun:${BUN_VERSION}-slim
 WORKDIR /app
