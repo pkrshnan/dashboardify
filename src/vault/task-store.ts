@@ -68,7 +68,9 @@ export class TaskStore {
    * it, as Tasks does. Completing an already-done task changes nothing.
    */
   async complete(ref: string, today: string): Promise<CompleteResult> {
-    const target = (await this.list()).find((t) => t.ref === ref);
+    // Without a 🆔, a done task and its next occurrence share a ref, so prefer the open one.
+    const matches = (await this.list()).filter((t) => t.ref === ref);
+    const target = matches.find((t) => !t.task.done) ?? matches[0];
     if (!target) {
       return { status: "not_found" };
     }
@@ -104,7 +106,7 @@ function completeIn(
   today: string,
 ): { text: string | null; result: CompleteResult } {
   const lines = text.split("\n");
-  const index = lines.findIndex((line) => refOf(path, line) === ref);
+  const index = lines.findIndex((line) => refOf(path, line) === ref && !parseTaskLine(line)?.done);
   const line = lines[index] ?? "";
   const task = parseTaskLine(line);
   if (!task || task.done) {

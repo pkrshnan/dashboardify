@@ -4,7 +4,7 @@ This is the build plan for dashboardify. [architecture.md](architecture.md) desc
 
 ## Goals
 
-- One place for health, schedule, reminders, journal, mail and messages, readable on desktop and phone.
+- One place for health, schedule, tasks, journal, mail and messages, readable on desktop and phone.
 - Ask questions about all of it, mainly by voice through Siri, and get cited answers.
 - Every piece of data lives in plain files you own: a Markdown vault, synced to your devices with Obsidian Self-hosted LiveSync.
 - Claude handles general questions today. Everything can switch to local models, and the journal and messages never leave the server.
@@ -13,7 +13,7 @@ This is the build plan for dashboardify. [architecture.md](architecture.md) desc
 
 - Multiple users or sharing.
 - A native iOS or macOS app. The web app installs as a PWA, and Siri covers voice.
-- Two-way sync with Apple apps. Reminders and Calendar stay the place you edit those things.
+- Two-way sync with Apple apps. Calendar stays the place you edit events, and tasks live in the vault.
 - Writing back to mail or messages, for example sending replies.
 
 ## Decisions
@@ -27,7 +27,7 @@ This is the build plan for dashboardify. [architecture.md](architecture.md) desc
 | Primary interface | Siri Shortcuts calling the server's HTTP API, with the web app for browsing |
 | Privacy | Journal and messages are `local-only` and only ever reach a model running on the server |
 | Calendar | Read from CalDAV and ICS. Not mirrored into Markdown files. |
-| Reminders | One-way mirror from Apple Reminders, matched by ID. A write only happens when something changed. |
+| Tasks | Obsidian Tasks lines in the vault are the only task list. Siri adds, reads and completes them through the server. Apple Reminders isn't used. |
 | Mail | Read by the server over IMAP |
 | Health | Raw data read straight off the Whoop 5.0 strap by healthstrap, not the Whoop API. We compute strain, recovery, HRV, sleep, VO2max and biological age ourselves. Apple Health adds steps and workouts. A Whoop CSV export can backfill history. |
 | Design | Apple-native: system font, grouped cards, system colors for meaning, quiet sidebar |
@@ -69,7 +69,7 @@ Done when a line dictated to Siri lands in today's note and syncs to your other 
 2. **Project setup and CI:** Bun project, TypeScript strict mode, the Biome linter and formatter, the `bun test` runner, and a GitHub Actions workflow. Done when CI runs green on an empty project.
 3. **Vault library:** read and edit Markdown with frontmatter, append to a section, replace machine-owned `<!-- cc:name -->` blocks, atomic writes, one writer per file at a time, and time-zone-correct dates. Done when it's fully unit tested, including DST edges and concurrent writes.
 4. **Ingest server:** Hono HTTP server, a bearer token per device, plus `POST /api/ingest/journal`, `/health` and `/messages`, and `GET /api/today`. Done when every endpoint has validation tests and an API reference doc.
-5. **Reminders sync:** match by ID and write only when something changed, so sync traffic and history stay quiet. Done when tests cover adds, edits, completions, deletions and the unchanged case.
+5. **Tasks:** `POST /api/tasks` captures into the inbox file, `GET /api/tasks` lists what's due, `GET /api/tasks/match` finds one by name, and `POST /api/tasks/{id}/complete` ticks it off, including recurring tasks. Done when tests cover capture, retries, due windows, matching and recurrence.
 6. **Vault git history:** commit the server's writes in short batches, so every change has history and can be undone. Pushing is optional and goes only to a backup remote. Devices sync through LiveSync, not git, so the pull and rebase path only matters if a backup remote ever gets edited elsewhere. Done when tests against a temporary git repo cover batching and the no-remote case.
 7. **Deploy:** Dockerfile, a systemd unit, a Tailscale setup note, and the "Log journal" Shortcut recipe. The same compose file runs CouchDB for Self-hosted LiveSync and `livesync-bridge` into the server's vault folder. It also sets up restic backups of the vault, the git history, `health-raw/` and healthstrap's SQLite to Cloudflare R2. Done when it runs on your server, the Shortcut works end to end, and a line written by the server shows up in Obsidian on your phone.
 

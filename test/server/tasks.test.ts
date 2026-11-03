@@ -155,3 +155,22 @@ describe("POST /api/tasks/:id/complete", () => {
     expect((await post("/tasks/nope/complete")).status).toBe(404);
   });
 });
+
+describe("recurring tasks without an id", () => {
+  test("the next occurrence can be completed too", async () => {
+    await put("Home.md", "- [ ] Water plants 🔁 every day 📅 2026-11-02\n");
+    const [first] = (await get("/tasks")).items as Json[];
+    await post(`/tasks/${first?.id}/complete`);
+    const [second] = (await get("/tasks")).items as Json[];
+    expect(second?.due).toBe("2026-11-03");
+    await post(`/tasks/${second?.id}/complete`);
+    expect(await file("Home.md")).toBe(
+      [
+        "- [ ] Water plants 🔁 every day 📅 2026-11-04",
+        "- [x] Water plants 🔁 every day 📅 2026-11-03 ✅ 2026-11-02",
+        "- [x] Water plants 🔁 every day 📅 2026-11-02 ✅ 2026-11-02",
+        "",
+      ].join("\n"),
+    );
+  });
+});

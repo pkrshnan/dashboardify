@@ -1,12 +1,12 @@
 # Architecture
 
-dashboardify is a personal command center. It pulls health, calendar, reminders, journal, mail and messages into one place, and lets you ask questions about all of it, mainly by voice through Siri.
+dashboardify is a personal command center. It pulls health, calendar, tasks, journal, mail and messages into one place, and lets you ask questions about all of it, mainly by voice through Siri.
 
 ## Principles
 
 - **Files are the source of truth.** Everything lives in a Markdown vault (Obsidian-compatible), with YAML frontmatter for structured fields and CSV for time series. Nothing depends on a database you can't open in a text editor.
 - **Derived data is disposable.** The search index and embeddings live in one SQLite file inside the vault (`.cc/`, git-ignored) and can be rebuilt from the files at any time.
-- **No platform lock-in.** The server runs on Linux. Apple-only data (Health, Reminders, Messages) comes in through iOS Shortcuts posting JSON, so Apple is a source, not a dependency.
+- **No platform lock-in.** The server runs on Linux. Apple-only data (Health, Messages) comes in through iOS Shortcuts posting JSON, so Apple is a source, not a dependency.
 - **Swappable models.** Every model call goes through one provider interface: Anthropic (Claude) or any OpenAI-compatible endpoint (Ollama, llama.cpp, vLLM).
 - **Private sources stay local.** Journal and messages are tagged `privacy: local-only` and are only ever processed by a model running on the server.
 
@@ -18,7 +18,7 @@ flowchart TD
     W[healthstrap: raw streams off the Whoop strap]
     C[CalDAV / ICS]
     M[IMAP mail]
-    S[iOS Shortcuts: Health, Reminders, Messages, Journal]
+    S[iOS Shortcuts: Health, Tasks, Messages, Journal]
   end
   W & C & M & S --> I[Ingest server]
   I --> V[(Markdown vault)]
@@ -35,7 +35,7 @@ flowchart TD
 | Component | Responsibility |
 | --- | --- |
 | Ingest server | Receives pushes from Shortcuts and healthstrap, polls CalDAV and IMAP, and writes into the vault. Only edits regions it owns, so hand-written text is never touched. |
-| Vault | Daily notes, reminders mirror, health CSVs, message and mail digests, saved answers. Synced to your devices with Obsidian Self-hosted LiveSync. `livesync-bridge` keeps the server's plain-file vault and CouchDB in step. The server also commits its writes to a local git repo for history. |
+| Vault | Daily notes, tasks, health CSVs, message and mail digests, saved answers. Synced to your devices with Obsidian Self-hosted LiveSync. `livesync-bridge` keeps the server's plain-file vault and CouchDB in step. The server also commits its writes to a local git repo for history. |
 | Index | Full-text and vector search plus typed tables parsed from frontmatter and CSVs, so "average HRV on short-sleep nights" is a query, not a guess. |
 | Ask agent | Answers a question by searching the index with a fixed set of read-only tools, then writes a cited answer to the vault. |
 | Web app | The dashboard (Today view) on desktop and phone. |
@@ -50,7 +50,7 @@ flowchart TD
 | Whoop export | Optional one-off import of the Whoop app's CSV export | Backfills history before the strap was read directly, seeds baselines and checks our numbers against Whoop's on overlapping days. Kept separate from our own values. |
 | Apple Health | Daily Shortcut automation posts metrics | Steps, workouts with routes, VO2max and sleep. Shortcuts can only read Health while the phone is unlocked. |
 | Calendar | Server reads CalDAV (iCloud app password) and ICS feeds | Not written to Markdown files. Events live in the index, and each daily note gets a short agenda block. |
-| Reminders | Shortcut posts open reminders | One-way mirror into the vault; you keep using Apple Reminders to tick things off. |
+| Tasks | Siri Shortcuts call `/api/tasks`; you can also write tasks anywhere in Obsidian | Obsidian Tasks format. New tasks go to the inbox file (`TASKS_INBOX`, default `Inbox.md`). |
 | Journal | Written in the daily note, or dictated through Siri | Local-only. |
 | Mail | Server reads IMAP directly | Only messages that need you get a note. |
 | Messages | Shortcut automation on "message received", filtered on the phone | iMessage has no server-side access. Local-only. |
@@ -60,7 +60,7 @@ flowchart TD
 ```
 vault/
   daily/2026/2026-11-02.md        journal, health frontmatter, agenda block
-  tasks/reminders.md              reminders mirror
+  Inbox.md                        new tasks (any note can hold tasks)
   health/2026/2026-11.csv         one row per day
   inbox/mail/…                    one note per important email
   inbox/messages/2026-11-02.md    daily digest, local-only

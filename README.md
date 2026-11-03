@@ -2,7 +2,7 @@
 
 A personal command center whose only source of truth is a folder of Markdown files.
 
-Health, calendar, reminders, journal, mail and messages flow into a vault you can open in Obsidian or any editor. You can ask questions about all of it, mostly by voice through Siri. The search index and dashboard are rebuilt from the vault, so deleting the app never loses data.
+Health, calendar, tasks, journal, mail and messages flow into a vault you can open in Obsidian or any editor. You can ask questions about all of it, mostly by voice through Siri. The search index and dashboard are rebuilt from the vault, so deleting the app never loses data.
 
 **Status:** building milestone 1 (capture). See the [plan](docs/plan.md).
 
