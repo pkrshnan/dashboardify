@@ -40,6 +40,7 @@ const readDay = async (stream: string) => {
   const bytes = await readFile(join(dir, "health-raw", stream, "2026/11/2026-11-02.parquet"));
   return parquetReadObjects({ file: new Uint8Array(bytes).buffer });
 };
+const error = async (res: Response) => ((await res.json()) as { error: string }).error;
 
 describe("POST /api/ingest/samples/:stream", () => {
   test("stores a gzipped day as Parquet", async () => {
@@ -59,13 +60,12 @@ describe("POST /api/ingest/samples/:stream", () => {
     expect((await readDay("heart_rate")).map((r) => r.bpm)).toEqual([58, 60, 61]);
   });
 
-  test("keeps text and empty cells", async () => {
+  test("keeps text and empty cells, and accepts plain CSV", async () => {
     await upload("battery", `ts,pct,state\n${T0},,charging\n`, { gzip: false });
     expect(await readDay("battery")).toEqual([{ ts: BigInt(T0), pct: null, state: "charging" }]);
   });
 
   test("rejects bad requests with a reason", async () => {
-    const error = async (res: Response) => ((await res.json()) as { error: string }).error;
     expect(await error(await upload("Heart-Rate", "ts\n"))).toContain("stream");
     expect(await error(await upload("hr", "ts\n", { day: "2026-13-01" }))).toContain("day");
     expect(await error(await upload("hr", `ts,bpm\n${T0 + 86_400_000},60\n`))).toBe(
