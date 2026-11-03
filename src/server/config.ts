@@ -4,6 +4,8 @@ export interface Config {
   vaultPath: string;
   port: number;
   timeZone: string;
+  /** Vault-relative file that new tasks are appended to. */
+  tasksInbox: string;
   /** device name -> bearer token */
   tokens: Map<string, string>;
 }
@@ -22,6 +24,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     vaultPath: resolve(vault),
     port: Number(env.PORT ?? 8787),
     timeZone,
+    tasksInbox: env.TASKS_INBOX ?? "Inbox.md",
     tokens: parseTokens(env.INGEST_TOKENS ?? ""),
   };
 }

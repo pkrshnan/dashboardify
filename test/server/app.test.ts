@@ -15,6 +15,7 @@ beforeEach(async () => {
     vaultPath: dir,
     port: 0,
     timeZone: "America/Los_Angeles",
+    tasksInbox: "Inbox.md",
     tokens: new Map([
       ["iphone", TOKEN],
       ["mac", "another-token-abcdefgh"],
