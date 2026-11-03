@@ -18,6 +18,7 @@ import { DEFAULT_NEED_MIN, type PastNight } from "./metrics/sleep-score";
 import { median } from "./metrics/stats";
 import { dayMetrics, type NightMetrics, nightMetrics } from "./metrics/summary";
 import type { Accel, HeartRate, RrInterval, SkinTemp, StepCounter } from "./metrics/types";
+import { ParamsStore } from "./params";
 import { parseProfile } from "./profile";
 import type { RawStore, Row } from "./raw-store";
 import { type DaySummary, frontmatter, healthBlock } from "./render";
@@ -26,13 +27,17 @@ import { type DaySummary, frontmatter, healthBlock } from "./render";
 export const ALGO_VERSION = "1";
 
 export class DailySummary {
+  private readonly params: ParamsStore;
+
   constructor(
     private readonly raw: RawStore,
     private readonly derived: DerivedStore,
     private readonly vault: Vault,
     private readonly timeZone: string,
     private readonly now: () => number = Date.now,
-  ) {}
+  ) {
+    this.params = new ParamsStore(derived.root);
+  }
 
   /** Compute and write `date`. Resolves to the summary, or null when there was no data. */
   async run(date: string): Promise<DaySummary | null> {
@@ -45,6 +50,7 @@ export class DailySummary {
   }
 
   async compute(date: string): Promise<DaySummary> {
+    const params = await this.params.load();
     const profileFields = await this.vault.readProfile();
     const rows = await this.history(date);
     const history = rows.map(fromNightRow);
@@ -59,7 +65,8 @@ export class DailySummary {
     return {
       night,
       day,
-      recovery: signals ? recovery(signals, history) : null,
+      recovery: signals ? recovery(signals, history, params.recovery) : null,
+      paramsVersion: params.version,
       baselineNights: history.filter((n) => n.lnRmssd !== null).length,
       tempDevC: tempDeviation(signals?.skinTemp ?? null, history),
     };
@@ -114,6 +121,7 @@ export class DailySummary {
     const stamp = {
       date,
       algo_version: ALGO_VERSION,
+      params_version: summary.paramsVersion,
       computed_at: new Date(this.now()).toISOString(),
     };
     if (summary.night) {
@@ -191,7 +199,7 @@ function nightRow(night: NightMetrics): DerivedRow {
   };
 }
 
-function fromNightRow(row: DerivedRow): NightSignals {
+export function fromNightRow(row: DerivedRow): NightSignals {
   const num = (key: string) => (typeof row[key] === "number" ? (row[key] as number) : null);
   return {
     lnRmssd: num("ln_rmssd"),

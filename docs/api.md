@@ -42,6 +42,14 @@ Returns `200 { rows, added, replaced }`: rows now stored for the day, new timest
 
 Returns `{ date, path, frontmatter, body }` for that day's note. `date` defaults to today. If there is no note yet, `body` is `null`.
 
+## `POST /api/health/checkin`
+
+```json
+{ "feel": 4, "rpe": 7, "tags": ["alcohol", "travel"], "date": "2026-11-03" }
+```
+
+How you feel this morning (`feel`, 1–5), how hard today's workout felt (`rpe`, 0–10) and tags. Each is optional but at least one is needed; numbers may be sent as text and tags as a comma-separated string. `date` defaults to today. Writes `feel`, `effort_rpe` and `health_tags` (merged with any already there) to the daily note's frontmatter and returns `201` with a `message` for Siri to read back. See [the feedback loop](health-feedback.md).
+
 ## Tasks
 
 Tasks are [Obsidian Tasks](https://publish.obsidian.md/tasks/) lines anywhere in the vault. The server appends new ones to `TASKS_INBOX` (default `Inbox.md`) and edits single lines in place. Every response includes `message`, one plain sentence that Siri reads aloud and the dashboard can show as is. A task is returned as `{ id, path, done, description, time?, priority?, recurrence?, due?, created?, completed? }`. `id` is its 🆔, or a stable reference made from its file and text when it has none.

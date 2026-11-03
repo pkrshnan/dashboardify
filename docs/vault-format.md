@@ -76,6 +76,7 @@ steps: 8412
   ```
 
 - To backfill or recompute: `bun src/health/summarize.ts 2026-10-13 2026-11-03`. On the server: `docker compose exec dashboardify bun src/health/summarize.ts 2026-10-13 2026-11-03`.
+- `feel`, `effort_rpe` and `health_tags` come from the morning check-in, not the strap. See [the feedback loop](health-feedback.md).
 - The computed tables also go to `health-derived/nights/` and `health-derived/days/` (Parquet, one file per date, rebuildable).
 
 ## Health: `health/YYYY/YYYY-MM.csv`
