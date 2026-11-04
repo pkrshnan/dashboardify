@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Command center phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&amp;display=swap">
+<style>
+:root{color-scheme:dark}
+body{margin:0;background:#0C0C0E}
+a{color:#8AB4FF}a:hover{color:#B5D0FF}
+input.ring{appearance:none;-webkit-appearance:none;width:22px;height:22px;margin:0;border:1.5px solid #636366;border-radius:50%;flex:none;cursor:pointer;background:transparent}
+input.ring:checked{background:#8E8E93;border-color:#8E8E93;box-shadow:inset 0 0 0 4px #0C0C0E}
+input.ring.sm{width:18px;height:18px}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+</style>
+</helmet>
+<div style="width: 390px; min-height: 3140px; box-sizing: border-box; background: #0C0C0E; color: #F5F5F7; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', Inter, system-ui, sans-serif; font-variant-numeric: tabular-nums">
+
+  <section style="padding: 56px 20px 28px; display: flex; flex-direction: column; gap: 24px; border-bottom: 1px solid #2C2C2E">
+    <header style="display: flex; gap: 12px; align-items: baseline; font-size: 15px; color: #A1A1A6"><span>Tuesday 3 November</span><span>09:12</span></header>
+    <p style="margin: 0; font-size: 24px; line-height: 1.3; font-weight: 300; letter-spacing: -0.01em">Standup at 10:00. Recovery is below your usual, so keep today easy. The lease is 3 days late.</p>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 20px">
+      <sc-for list="{{focus}}" as="f" hint-placeholder-count="4">
+        <div>
+          <div style="font-size: 48px; font-weight: 200; letter-spacing: -0.03em; line-height: 1; color: {{f.valueColor}}">{{f.value}}<span style="font-size: 15px; font-weight: 400; letter-spacing: 0; color: #8E8E93; margin-left: 3px">{{f.unit}}</span></div>
+          <div style="display: flex; gap: 8px; align-items: baseline; margin-top: 8px; font-size: 13px"><span style="color: #A1A1A6">{{f.name}}</span><span style="color: {{f.deltaColor}}">{{f.delta}}</span></div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 16px; border-top: 1px solid #2C2C2E; padding-top: 20px">
+      <div style="display: flex; align-items: center; gap: 12px">
+        <div style="flex: 1; min-width: 0"><div style="font-size: 13px; color: #8E8E93">Next</div><div style="font-size: 17px; font-weight: 500; margin-top: 2px">Standup</div><div style="font-size: 13px; color: #A1A1A6">10:00 · in 48 min · Video call</div></div>
+        <a href="#" style="height: 44px; padding: 0 20px; border-radius: 22px; background: #1C1C1E; border: 1px solid #3A3A3C; color: #F5F5F7; font-size: 15px; font-weight: 500; text-decoration: none; display: flex; align-items: center">Join</a>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding: 24px 20px 12px; border-bottom: 1px solid #2C2C2E; display: flex; flex-direction: column; gap: 16px">
+    <div style="display: flex; align-items: center; justify-content: space-between">
+      <h2 style="margin: 0; font-size: 20px; font-weight: 500">{{calTitle}}</h2>
+      <div role="group" aria-label="Calendar range" style="display: flex; background: #1C1C1E; border-radius: 10px; padding: 3px">
+        <button type="button" onClick="{{showDay}}" aria-pressed="{{isDay}}" style="height: 38px; padding: 0 16px; border: 0; border-radius: 8px; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; background: {{daySeg.bg}}; color: {{daySeg.fg}}">Day</button>
+        <button type="button" onClick="{{showWeek}}" aria-pressed="{{isWeek}}" style="height: 38px; padding: 0 16px; border: 0; border-radius: 8px; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; background: {{weekSeg.bg}}; color: {{weekSeg.fg}}">Week</button>
+      </div>
+    </div>
+
+    <sc-if value="{{isDay}}" hint-placeholder-val="{{true}}">
+      <div style="position: relative; height: 784px; margin: 8px 0 12px 28px">
+        <div style="position: absolute; left: -28px; top: -8px; display: flex; flex-direction: column; font-size: 11px; color: #8E8E93">
+          <span style="height: 56px">08</span><span style="height: 56px">09</span><span style="height: 56px">10</span><span style="height: 56px">11</span><span style="height: 56px">12</span><span style="height: 56px">13</span><span style="height: 56px">14</span><span style="height: 56px">15</span><span style="height: 56px">16</span><span style="height: 56px">17</span><span style="height: 56px">18</span><span style="height: 56px">19</span><span style="height: 56px">20</span><span style="height: 56px">21</span><span style="height: 56px">22</span>
+        </div>
+        <div style="position: absolute; inset: 0; background-image: repeating-linear-gradient(to bottom, #2C2C2E 0, #2C2C2E 1px, transparent 1px, transparent 56px)"></div>
+        <sc-for list="{{dayBlocks}}" as="b" hint-placeholder-count="6">
+          <div style="position: absolute; left: 0; width: 52%; top: {{b.top}}; height: {{b.height}}; box-sizing: border-box; background: {{b.bg}}; border-left: 3px solid {{b.color}}; border-radius: 6px; padding: {{b.pad}}; overflow: hidden">
+            <div class="ell" style="font-size: 13px; line-height: 18px; font-weight: 600; color: {{b.titleColor}}">{{b.title}}</div>
+            <sc-if value="{{b.twoLine}}" hint-placeholder-val="{{false}}"><div class="ell" style="font-size: 12px; line-height: 16px; color: {{b.detailColor}}">{{b.start}} · {{b.detail}}</div></sc-if>
+          </div>
+        </sc-for>
+        <sc-for list="{{dayReminders}}" as="r" hint-placeholder-count="4">
+          <label style="position: absolute; left: 54%; right: 0; top: {{r.top}}; transform: translateY(-50%); height: 44px; box-sizing: border-box; display: flex; align-items: center; gap: 6px; padding: 0 8px; border: 1px dashed #636366; border-radius: 12px; background: #0C0C0E">
+            <sc-if value="{{r.done}}" hint-placeholder-val="{{false}}"><input type="checkbox" class="ring sm" checked="{{true}}" readOnly="{{true}}" aria-label="Done"></sc-if>
+            <sc-if value="{{r.open}}" hint-placeholder-val="{{true}}"><input type="checkbox" class="ring sm"></sc-if>
+            <span style="min-width: 0; display: flex; flex-direction: column"><span class="ell" style="font-size: 13px; line-height: 16px; color: {{r.color}}; text-decoration: {{r.strike}}">{{r.text}}</span><span style="font-size: 11px; line-height: 14px; color: #8E8E93">{{r.time}}</span></span>
+          </label>
+        </sc-for>
+        <div style="position: absolute; left: -6px; right: 0; top: 67px; height: 2px; background: #FF453A"></div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{isWeek}}" hint-placeholder-val="{{false}}">
+      <div style="display: flex; gap: 4px">
+        <sc-for list="{{weekDays}}" as="d" hint-placeholder-count="7">
+          <button type="button" onClick="{{d.pick}}" aria-pressed="{{d.selected}}" style="flex: 1; min-width: 0; height: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 0; border-radius: 10px; background: {{d.bg}}; color: {{d.fg}}; font: inherit; cursor: pointer">
+            <span style="font-size: 11px">{{d.dow}}</span>
+            <span style="font-size: 17px; font-weight: {{d.weight}}">{{d.num}}</span>
+            <span style="width: 4px; height: 4px; border-radius: 2px; background: {{d.dot}}"></span>
+          </button>
+        </sc-for>
+      </div>
+      <div style="display: flex; flex-direction: column; padding-bottom: 12px">
+        <sc-for list="{{selItems}}" as="it" hint-placeholder-count="5">
+          <div style="display: flex; align-items: center; gap: 12px; min-height: 44px; border-bottom: 1px solid #2C2C2E; font-size: 15px">
+            <span style="width: 44px; font-size: 13px; color: #8E8E93; flex: none">{{it.time}}</span>
+            <span style="width: 10px; height: 10px; border-radius: 50%; background: {{it.fill}}; border: 1.5px solid {{it.color}}; flex: none; box-sizing: border-box"></span>
+            <span class="ell" style="color: {{it.textColor}}">{{it.text}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+  </section>
+
+  <section style="padding: 24px 20px; border-bottom: 1px solid #2C2C2E; display: flex; flex-direction: column; gap: 18px">
+    <h2 style="margin: 0; font-size: 20px; font-weight: 500">Tasks</h2>
+    <label style="display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 14px; border-radius: 12px; background: #1C1C1E; color: #8E8E93; font-size: 15px">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+      <input type="text" aria-label="Add a task or reminder" placeholder="Call dentist Fri 10:00" style="flex: 1; border: 0; background: transparent; color: #F5F5F7; font: inherit; outline: none">
+    </label>
+    <sc-for list="{{groups}}" as="g" hint-placeholder-count="4">
+      <div>
+        <h3 style="margin: 0; font-size: 13px; font-weight: 500; color: {{g.color}}">{{g.name}}</h3>
+        <sc-for list="{{g.tasks}}" as="t" hint-placeholder-count="2">
+          <label style="display: flex; gap: 12px; align-items: center; min-height: 48px; border-bottom: 1px solid #2C2C2E">
+            <input type="checkbox" class="ring">
+            <span class="ell" style="flex: 1; min-width: 0; font-size: 17px">{{t.text}}</span>
+            <span style="font-size: 13px; color: {{t.metaColor}}">{{t.meta}}</span>
+          </label>
+        </sc-for>
+      </div>
+    </sc-for>
+  </section>
+
+  <section style="padding: 24px 20px 48px; display: flex; flex-direction: column; gap: 20px">
+    <div style="display: flex; align-items: center; justify-content: space-between">
+      <div><h2 style="margin: 0; font-size: 20px; font-weight: 500">Health</h2><div style="font-size: 13px; color: #8E8E93; margin-top: 2px">{{rangeLabel}}</div></div>
+      <div role="group" aria-label="Trend range" style="display: flex; background: #1C1C1E; border-radius: 10px; padding: 3px">
+        <sc-for list="{{ranges}}" as="r" hint-placeholder-count="4">
+          <button type="button" onClick="{{r.pick}}" style="height: 38px; min-width: 44px; padding: 0 8px; border: 0; border-radius: 8px; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; background: {{r.bg}}; color: {{r.fg}}">{{r.label}}</button>
+        </sc-for>
+      </div>
+    </div>
+    <sc-for list="{{healthGroups}}" as="grp" hint-placeholder-count="4">
+      <div style="display: flex; flex-direction: column; gap: 18px; padding-bottom: 20px">
+        <sc-for list="{{grp}}" as="m" hint-placeholder-count="3">
+          <div>
+            <div style="display: flex; align-items: baseline; gap: 8px">
+              <span style="flex: 1; font-size: 15px; color: #A1A1A6">{{m.name}}</span>
+              <span style="font-size: 13px"><span style="color: {{m.deltaColor}}">{{m.delta}}</span><span style="color: #8E8E93">{{m.when}}</span></span>
+              <span style="font-size: 24px; font-weight: 300; letter-spacing: -0.02em; min-width: 76px; text-align: right">{{m.value}}<span style="font-size: 13px; font-weight: 400; color: #8E8E93; letter-spacing: 0; margin-left: 2px">{{m.unit}}</span></span>
+            </div>
+            <svg width="100%" height="44" viewBox="0 0 600 100" preserveAspectRatio="none" role="img" aria-label="{{m.aria}}" style="display: block; margin-top: 6px">
+              <rect x="0" y="{{m.bandY}}" width="600" height="{{m.bandH}}" fill="{{m.color}}" fill-opacity="0.13"></rect>
+              <path d="{{m.dots}}" stroke="{{m.color}}" stroke-opacity="0.45" stroke-width="2.5" stroke-linecap="round" fill="none" vector-effect="non-scaling-stroke"></path>
+              <polyline points="{{m.line}}" fill="none" stroke="{{m.color}}" stroke-width="1.8" stroke-linejoin="round" vector-effect="non-scaling-stroke"></polyline>
+            </svg>
+          </div>
+        </sc-for>
+      </div>
+    </sc-for>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":3140}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const view = st.view || 'day';
+    const range = st.range || '1m';
+    const sel = st.sel || 0;
+    const seg = (on) => ({ bg: on ? '#636366' : 'transparent', fg: on ? '#F5F5F7' : '#A1A1A6' });
+
+    const T1 = '#F5F5F7', T2 = '#A1A1A6', T3 = '#8E8E93';
+    const good = '#30D158', caution = '#FFD60A', bad = '#FF453A', warn = '#FF9F0A';
+    const work = '#0A84FF', fitness = '#40C8E0', personal = '#BF5AF2', focusC = '#8E8E93';
+    const heart = '#FF7EB6', sleep = '#7D7AFF', activity = '#64D2FF', vitals = '#AC8E68';
+    const band = (v) => (v >= 67 ? good : (v >= 34 ? caution : bad));
+
+    const H = 56, START = 8, NOW = 9.2;
+    const blk = (s, e, title, start, detail, color, next) => {
+      const past = e <= NOW, h = (e - s) * H, one = h < 44;
+      return { top: ((s - START) * H) + 'px', height: Math.max(26, h - 2) + 'px', pad: one ? '3px 8px' : '5px 8px', twoLine: !one,
+        title: one ? title + ' ' + start : title, start, detail, color, bg: color + (past ? '14' : (next ? '40' : '26')),
+        titleColor: past ? T2 : T1, detailColor: past ? T3 : T2 };
+    };
+    const rem = (h, text, time, done) => ({ top: ((h - START) * H) + 'px', text, time, done: !!done, open: !done, color: done ? T3 : T1, strike: done ? 'line-through' : 'none' });
+
+    const ev = (time, text, color) => ({ time, text, color, fill: color, textColor: T1 });
+    const rm = (time, text) => ({ time, text, color: T3, fill: 'transparent', textColor: T1 });
+    const days = [
+      ['Tue', '3', [ev('08:00', 'Gym, lower body', fitness), ev('10:00', 'Standup', work), ev('12:30', 'Lunch with Priya', work), ev('14:00', 'Design review', work), rm('17:05', 'Leave for physio'), ev('17:30', 'Physio', fitness), rm('18:30', 'Call Mum'), ev('19:00', 'Dinner with Sam', personal), rm('21:30', 'Charge the strap')]],
+      ['Wed', '4', [rm('08:00', 'Water plants'), ev('10:00', 'Standup', work), ev('13:00', 'Focus block', focusC), ev('18:00', 'Climbing', fitness)]],
+      ['Thu', '5', [rm('', 'Order contact lenses'), ev('07:30', 'Gym', fitness), ev('10:00', 'Standup', work), rm('12:00', 'Pick up parcel'), ev('16:00', 'Interview', work)]],
+      ['Fri', '6', [ev('10:00', 'Standup', work), rm('15:00', 'Prep 1:1 notes'), ev('16:00', '1:1', work), ev('19:30', 'Film night', personal)]],
+      ['Sat', '7', [ev('08:00', 'Long run', fitness), ev('12:00', 'Market', personal)]],
+      ['Sun', '8', [rm('', 'Book December flights'), ev('11:00', 'Brunch with family', personal), rm('20:00', 'Plan the week')]],
+      ['Mon', '9', [ev('07:30', 'Gym', fitness), ev('10:00', 'Standup', work), ev('15:00', 'Planning', work)]]
+    ];
+
+    // Health: 365 days of daily values per metric (sample data). Baseline = the 60 days before the last 7.
+    const N = 365;
+    const rangeDays = { '2w': 14, '1m': 30, '3m': 90, '1y': 364 }[range];
+    const fmtDate = (d) => d.getDate() + ' ' + d.toLocaleString('en-GB', { month: 'short' });
+    const today = new Date(2026, 10, 3);
+    const first = new Date(2026, 10, 3 - rangeDays + 1);
+    const rangeLabel = fmtDate(first) + (range === '1y' ? ' ' + first.getFullYear() : '') + ' – ' + fmtDate(today);
+    const mean = (a) => a.reduce((x, y) => x + y, 0) / a.length;
+    const metric = (o) => {
+      let s = o.seed;
+      const rnd = () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+      const vals = [];
+      for (let i = 0; i < N; i++) {
+        const noise = (rnd() + rnd() + rnd() - 1.5) * 2;
+        vals.push(o.base + o.sd * (noise * 0.8 + Math.sin(i / 40 + o.seed) * 0.35) + (i >= N - 7 ? o.shift * o.sd : 0));
+      }
+      vals[N - 1] = o.cur;
+      const basePart = vals.slice(N - 67, N - 7);
+      const b = mean(basePart);
+      const sd = Math.sqrt(mean(basePart.map((v) => (v - b) * (v - b))));
+      const m7 = mean(vals.slice(N - 7));
+      const diff = m7 - b;
+      const pct = Math.round((diff / b) * 100);
+      let delta;
+      if (o.abs) { const r = Math.round(diff * 10) / 10; delta = r === 0 ? '0 ' + o.unit : (r > 0 ? '+' : '−') + Math.abs(r).toFixed(1) + ' ' + o.unit; }
+      else delta = pct === 0 ? '0%' : (pct > 0 ? '+' : '−') + Math.abs(pct) + '%';
+      const meaningful = o.better && Math.abs(diff) >= 0.5 * sd;
+      const deltaColor = !meaningful ? T3 : ((diff > 0) === (o.better === 'up') ? good : bad);
+      // Fixed y-range per metric: baseline ± 3 SD, so small drifts look small.
+      const lo = b - 3 * sd, hi = b + 3 * sd;
+      const y = (v) => (96 - ((Math.min(hi, Math.max(lo, v)) - lo) / (hi - lo)) * 92);
+      let pts = [], line = [];
+      if (range === '1y') {
+        for (let w = 0; w < 52; w++) { const seg7 = vals.slice(N - 364 + w * 7, N - 364 + w * 7 + 7); line.push(mean(seg7)); }
+      } else {
+        for (let i = N - rangeDays; i < N; i++) { pts.push(vals[i]); line.push(mean(vals.slice(i - 6, i + 1))); }
+      }
+      const xs = (i, n) => ((i / (n - 1)) * 600).toFixed(1);
+      const fmt = o.fmt || ((v) => v.toFixed(o.dec || 0));
+      return {
+        name: o.name, unit: o.abs ? o.unit : (o.showUnit === false ? '' : o.unit), color: o.color,
+        value: fmt(o.cur), delta, deltaColor, when: o.cumulative ? ' · yesterday' : '',
+        bandY: y(b + sd).toFixed(1), bandH: (y(b - sd) - y(b + sd)).toFixed(1),
+        dots: pts.map((v, i) => 'M' + xs(i, pts.length) + ',' + y(v).toFixed(1) + 'h0').join(''),
+        line: line.map((v, i) => xs(i, line.length) + ',' + y(v).toFixed(1)).join(' '),
+        aria: o.name + ' over the selected range, with your normal range shaded',
+        bandColor: o.name === 'Recovery' ? band(o.cur) : T1
+      };
+    };
+    const hm = (v) => Math.floor(v) + 'h ' + String(Math.round((v % 1) * 60)).padStart(2, '0') + 'm';
+    const thou = (v) => Math.round(v).toLocaleString('en-US');
+    const M = {
+      recovery: metric({ name: 'Recovery', unit: '%', cur: 62, base: 68, sd: 11, shift: -1.1, color: heart, seed: 11, better: 'up' }),
+      hrv: metric({ name: 'HRV', unit: 'ms', cur: 54, base: 58, sd: 7, shift: -0.7, color: heart, seed: 53, better: 'up' }),
+      rhr: metric({ name: 'Resting HR', unit: 'bpm', cur: 52, base: 50, sd: 2.2, shift: 0.6, color: heart, seed: 67, better: 'down' }),
+      sleepScore: metric({ name: 'Sleep score', unit: '', cur: 78, base: 76, sd: 8, shift: 0.2, color: sleep, seed: 23, better: 'up' }),
+      asleep: metric({ name: 'Time asleep', unit: '', cur: 7.2, base: 7.0, sd: 0.6, shift: 0.1, color: sleep, seed: 37, better: 'up', fmt: hm }),
+      strain: metric({ name: 'Strain', unit: '', cur: 11.4, base: 11, sd: 3, shift: 0.3, color: activity, seed: 41, dec: 1, cumulative: true }),
+      steps: metric({ name: 'Steps', unit: '', cur: 9840, base: 8500, sd: 2400, shift: 0.5, color: activity, seed: 71, better: 'up', fmt: thou, cumulative: true }),
+      zone: metric({ name: 'Zone 2+', unit: 'min', cur: 33, base: 35, sd: 14, shift: -0.2, color: activity, seed: 83, better: 'up', cumulative: true }),
+      breath: metric({ name: 'Breathing rate', unit: '/min', cur: 14.6, base: 14.5, sd: 0.4, shift: 0.2, color: vitals, seed: 97, dec: 1 }),
+      skin: metric({ name: 'Skin temperature', unit: '°C', cur: 33.6, base: 33.4, sd: 0.3, shift: 0.4, color: vitals, seed: 101, dec: 1, abs: true })
+    };
+    const focusOf = (m, unit, colored) => ({ name: m.name, value: m.value, unit, delta: m.delta, deltaColor: m.deltaColor, valueColor: colored ? m.bandColor : T1 });
+
+    return {
+      focus: [focusOf(M.recovery, '%', true), focusOf(M.sleepScore, ''), focusOf(M.hrv, 'ms'), focusOf(M.rhr, 'bpm')],
+
+      isDay: view === 'day',
+      isWeek: view === 'week',
+      calTitle: view === 'day' ? 'Tue 3 Nov' : days[sel][0] + ' ' + days[sel][1] + ' Nov',
+      daySeg: seg(view === 'day'),
+      weekSeg: seg(view === 'week'),
+      showDay: () => this.setState({ view: 'day' }),
+      showWeek: () => this.setState({ view: 'week' }),
+
+      dayBlocks: [
+        blk(8, 8.87, 'Gym', '08:00', 'Strain 5.1', fitness),
+        blk(10, 10.25, 'Standup', '10:00', 'Video call', work, true),
+        blk(12.5, 13.25, 'Lunch with Priya', '12:30', 'Café on Albert St', work),
+        blk(14, 15, 'Design review', '14:00', 'Room 4B', work),
+        blk(17.5, 18.25, 'Physio', '17:30', 'Northside Clinic', fitness),
+        blk(19, 21, 'Dinner with Sam', '19:00', 'Sam’s place · bring the book', personal)
+      ],
+      dayReminders: [
+        rem(9, 'Vitamin D', '09:00', true),
+        rem(17.08, 'Leave for physio', '17:05'),
+        rem(18.5, 'Call Mum', '18:30'),
+        rem(21.5, 'Charge the strap', '21:30')
+      ],
+
+      weekDays: days.map((d, i) => ({ dow: d[0], num: d[1], selected: i === sel, bg: i === sel ? '#636366' : 'transparent', fg: i === sel ? T1 : (i === 0 ? T1 : T2), weight: i === 0 ? 600 : 400, dot: d[2].length ? (i === sel ? T1 : T3) : 'transparent', pick: () => this.setState({ sel: i }) })),
+      selItems: days[sel][2],
+
+      groups: [
+        { name: 'Overdue', color: warn, tasks: [ { text: 'Renew lease', meta: '3d late', metaColor: warn } ] },
+        { name: 'Today', color: T2, tasks: [ { text: 'Upload insurance receipt', meta: '', metaColor: T3 } ] },
+        { name: 'This week', color: T2, tasks: [ { text: 'Order contact lenses', meta: 'Thu', metaColor: T3 }, { text: 'Prep 1:1 notes', meta: 'Fri 15:00', metaColor: T3 }, { text: 'Book December flights', meta: 'Sun', metaColor: T3 } ] },
+        { name: 'Someday', color: T3, tasks: [ { text: 'Fix bike brakes', meta: '', metaColor: T3 } ] }
+      ],
+
+      ranges: [['2w', '2W'], ['1m', '1M'], ['3m', '3M'], ['1y', '1Y']].map(([k, label]) => ({ label, bg: seg(k === range).bg, fg: seg(k === range).fg, pick: () => this.setState({ range: k }) })),
+      rangeLabel,
+      healthGroups: [[M.recovery, M.hrv, M.rhr], [M.sleepScore, M.asleep], [M.strain, M.steps, M.zone], [M.breath, M.skin]]
+    };
+  }
+}
+</script>
+</body>
+</html>
