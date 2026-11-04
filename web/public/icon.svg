@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>Command center</title>
+  <rect width="512" height="512" fill="#0C0C0E"/>
+  <circle cx="256" cy="256" r="150" fill="none" stroke="#2C2C2E" stroke-width="36"/>
+  <path d="M256 106a150 150 0 0 1 142 102" fill="none" stroke="#FF7EB6" stroke-width="36" stroke-linecap="round"/>
+  <path d="M398 208a150 150 0 0 1-40 158" fill="none" stroke="#7D7AFF" stroke-width="36" stroke-linecap="round"/>
+  <path d="M358 366a150 150 0 0 1-102 40" fill="none" stroke="#64D2FF" stroke-width="36" stroke-linecap="round"/>
+</svg>

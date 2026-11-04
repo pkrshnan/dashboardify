@@ -42,6 +42,22 @@ Returns `200 { rows, added, replaced }`: rows now stored for the day, new timest
 
 Returns `{ date, path, frontmatter, body }` for that day's note. `date` defaults to today. If there is no note yet, `body` is `null`.
 
+## `GET /api/home`
+
+Everything the home screen shows, worked out on the server so the web app only lays it out. The shape is `HomeView` in [`src/home/types.ts`](../src/home/types.ts):
+
+- `sentence`: one plain sentence with the next event, a judgement on recovery, and at most one overdue task.
+- `next`: the event on now or next today, with `inMin` and a `url` for the Join button, or `null`.
+- `days`: seven days from today. Each has `events`, `reminders` (tasks with a `⏰` time) and `dated` (untimed tasks due that day).
+- `tasks`: open tasks in `Overdue`, `Today`, `This week`, `Later` and `Someday`. Today's timed tasks are left out, because they are on the timeline.
+- `health`: ten metrics with the value, the change against baseline (`delta` and `tone`), the baseline mean and SD, and a year of daily values for the charts. The rules are in [design/README.md](design/README.md#health-numbers).
+
+Calendar events are empty until the CalDAV and ICS reader lands (plan step 10).
+
+## Web app
+
+`GET /` serves the home screen (`web/`), which is public: it asks once for a device token and keeps it in the browser. The icons the manifest points to (`/icon.svg`, `/icon-512.png`, `/apple-touch-icon.png`) are public too.
+
 ## Tasks
 
 Tasks are [Obsidian Tasks](https://publish.obsidian.md/tasks/) lines anywhere in the vault. The server appends new ones to `TASKS_INBOX` (default `Inbox.md`) and edits single lines in place. Every response includes `message`, one plain sentence that Siri reads aloud and the dashboard can show as is. A task is returned as `{ id, path, done, description, time?, priority?, recurrence?, due?, created?, completed? }`. `id` is its 🆔, or a stable reference made from its file and text when it has none.

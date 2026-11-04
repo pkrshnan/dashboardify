@@ -6,6 +6,7 @@ COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile --production
 COPY tsconfig.json ./
 COPY src ./src
+COPY web ./web
 ENV NODE_ENV=production \
     PORT=8787 \
     VAULT_PATH=/data/vault \
