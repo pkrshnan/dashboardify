@@ -1,78 +1,74 @@
 # dashboardify
 
-A personal command center whose only source of truth is a folder of Markdown files.
+A personal dashboard for tasks, journal entries, and health data, built around a Markdown vault
+that you can also open in Obsidian or any text editor.
 
-Health, calendar, tasks, journal, mail and messages flow into a vault you can open in Obsidian or any editor. You can ask questions about all of it, mostly by voice through Siri. The search index and dashboard are rebuilt from the vault, so deleting the app never loses data.
+## Getting started
 
-**Status:** building milestone 1 (capture). See the [plan](docs/plan.md).
-
-- [Architecture](docs/architecture.md): principles, components, sources, vault layout
-- [Plan](docs/plan.md): phases, decisions so far, open questions
-- [HTTP API](docs/api.md) and [vault format](docs/vault-format.md)
-- Deploy: the `Dockerfile` here is built by the home server's compose project (private repo `pkrshnan/homeserver`)
-
-## Development
-
-Requires [Bun](https://bun.sh) (version pinned in `package.json`).
+Install [Bun](https://bun.sh) using the version pinned in `package.json`, then clone the repository
+and install its dependencies:
 
 ```sh
+git clone https://github.com/pkrshnan/dashboardify.git
+cd dashboardify
 bun install
-bun run check   # lint + typecheck + tests, the same as CI
-bun run format  # auto-fix formatting and import order
-bun run demo    # the web app with made-up data, on http://localhost:8788
-cp .env.example .env && set -a && . ./.env && set +a && bun run dev
 ```
 
-### Your vault
-
-Your notes never go in this repo. Link your real vault into the checkout as `vault`, which is git-ignored:
+### Try the demo
 
 ```sh
-ln -s ~/path/to/your/vault vault   # macOS or Linux
-git check-ignore vault             # prints "vault", so git will never pick it up
+bun run demo
 ```
 
-`.env.example` already sets `VAULT_PATH=./vault`. The code that reads and writes notes lives in `src/vault/`, and that folder is part of the repo. Tests use temporary folders, so they never touch your real vault.
+Open [localhost:8788](http://localhost:8788) and sign in with the token printed in the terminal.
+The demo uses temporary notes, sample health data, and calendar events, so you can explore the
+home screen without connecting a vault or a health strap.
 
-### The web app
+### Use your own vault
 
-The home screen lives in `web/` (Preact, bundled by Bun) and is served at `/` by the same server. Through Tailscale it signs you in with your tailnet login (`TAILSCALE_PROXY` and `TAILNET_USERS`); elsewhere it asks for one of the `INGEST_TOKENS` tokens. `bun run demo` serves it with made-up health data, tasks and calendar events and prints the token to use; `DEMO_TIME=09:12 bun run demo` pins the clock for screenshots.
+Stop the demo, then link your vault into the checkout and copy the example configuration:
 
-See [docs/style.md](docs/style.md) for the code style.
+```sh
+ln -s /absolute/path/to/your/vault vault
+cp .env.example .env
+```
 
-CI runs on every pull request through GitHub Actions (`.github/workflows/ci.yml`).
+Edit `.env` to set your time zone and replace `INGEST_TOKENS` with a device name and a random
+token, such as `mac:<token>`. Generate a token with `openssl rand -hex 24`. The default
+`VAULT_PATH=./vault` uses the symlink above; you can instead set an absolute vault path.
 
-### Version 1 API
+Load the configuration and start the server:
 
-The services in `proto/dashboardify/v1` are implemented at their annotated `/v1/...`
-REST paths and as Connect unary RPCs at `/dashboardify.v1.<Service>/<Method>`.
-Both transports share the same authenticated handlers and vault/Parquet stores.
-REST bodies and responses use protobuf JSON: dates are `{year, month, day}`, times
-are `{hours, minutes}`, enums use their symbolic names, and int64 values are strings.
-Voice methods are RPC-only, as specified by the protos.
+```sh
+set -a
+. ./.env
+set +a
+bun run dev
+```
 
-Task and check-in PATCH requests accept `updateMask` (comma-separated camelCase
-fields; snake_case query names and mask paths also work). An omitted mask changes
-only supplied writable fields. A masked unset field clears it; `tags` replaces the
-whole list. Supply the returned `etag` to reject intervening edits. List endpoints
-return `nextPageToken`; pass it back with the same filters and ordering.
-Task filters accept comparisons on `state` and `due_date` joined by `AND`;
-message filters accept comparisons on `sender` and `receive_time`.
+Open [localhost:8787](http://localhost:8787) and enter your device token. Your vault and `.env`
+are git-ignored. See [development notes](docs/development.md) for checks, demo options, and hosting.
 
-The home UI uses `/v1/home`, the new completion action, and VoiceService.AddTask
-for natural-language capture. Healthstrap uploads protobuf JSON to
-`/v1/streams/<stream>:mergeSamples`. Deploy this server before updating healthstrap.
-The previous `/api/...` routes remain available for older clients.
+## How it works
 
-Run `bun run proto:generate` after changing protos. Generated TypeScript, including
-Google API and date/time descriptors, is checked in under `src/gen`.
+The server exposes authenticated v1 REST and Connect APIs, with shared protobuf validation.
+The home UI uses these APIs, and the updated healthstrap client uploads through the v1 stream
+API.
 
-### TypeScript formatting and tests
+The server reads and writes your notes through a vault layer. Tasks stay in Obsidian Tasks format
+wherever you keep them; newly captured tasks go into `Inbox.md` by default. Journal entries and
+check-ins go into daily notes. You can edit those files directly as well as through the app.
 
-See [STYLE.md](STYLE.md) for spacing,
-readability, and the source-mirrored test layout. `bun run format` applies the shared formatting
-and safe lint fixes; `bun run format:check` checks formatting without changes.
+For health data, [healthstrap](https://github.com/pkrshnan/healthstrap) sends raw sensor samples
+to the server. Samples are stored as Parquet outside the vault in `health-raw/`. The server
+computes health summaries into `health-derived/` and writes daily results into the vault.
+Derived health tables can be rebuilt from the raw samples.
 
-API constraints are declared alongside the AIP annotations using `buf.validate` options.
-The shared Protovalidate runtime enforces those constraints for both REST and Connect requests.
-Services handle storage-dependent checks such as etags and cross-field sample consistency.
+The home screen is a Preact app served by the same process. The server combines tasks, health
+history, and calendar events into a home view, and the UI renders it. The demo supplies a sample
+calendar; the regular server starts without a calendar source. Sign-in uses device tokens or,
+when configured behind Tailscale Serve, an allowed tailnet login.
+
+See the [HTTP API](docs/api.md), [vault format](docs/vault-format.md), and
+[health calculations](docs/health-metrics.md) for details. The [architecture](docs/architecture.md)
+and [plan](docs/plan.md) describe the broader design and work still to come.
