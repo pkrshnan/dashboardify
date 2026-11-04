@@ -98,3 +98,32 @@ Up to five open tasks whose text is closest to `q`, best first, each with a `sco
 
 Ticks the task off and adds `✅` with today's date. A recurring task (`🔁 every week`, `every 2 days`, `every weekday`, and so on) gets its next occurrence inserted above it, as Tasks does. Completing a done task returns `{"status": "already_done"}`, and an unknown id returns `404`.
 
+
+## Version 1 API
+
+The services in `proto/dashboardify/v1` are implemented at their annotated `/v1/...`
+REST paths and as Connect unary RPCs at `/dashboardify.v1.<Service>/<Method>`.
+Both transports share the same authenticated handlers and vault/Parquet stores.
+REST bodies and responses use protobuf JSON: dates are `{year, month, day}`, times
+are `{hours, minutes}`, enums use their symbolic names, and int64 values are strings.
+Voice methods are RPC-only, as specified by the protos.
+
+Task and check-in PATCH requests accept `updateMask` (comma-separated camelCase
+fields; snake_case query names and mask paths also work). An omitted mask changes
+only supplied writable fields. A masked unset field clears it; `tags` replaces the
+whole list. Supply the returned `etag` to reject intervening edits. List endpoints
+return `nextPageToken`; pass it back with the same filters and ordering.
+Task filters accept comparisons on `state` and `due_date` joined by `AND`;
+message filters accept comparisons on `sender` and `receive_time`.
+
+The home UI uses `/v1/home`, the new completion action, and VoiceService.AddTask
+for natural-language capture. Healthstrap uploads protobuf JSON to
+`/v1/streams/<stream>:mergeSamples`. Deploy this server before updating healthstrap.
+The previous `/api/...` routes remain available for older clients.
+
+Run `bun run proto:generate` after changing protos. Generated TypeScript, including
+Google API and date/time descriptors, is checked in under `src/gen`.
+
+API constraints are declared alongside the AIP annotations using `buf.validate` options.
+The shared Protovalidate runtime enforces those constraints for REST and Connect requests.
+Services handle storage-dependent checks such as etags and cross-field sample consistency.

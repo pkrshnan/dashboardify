@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package dashboardify.v1;
 
+import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
@@ -40,7 +41,14 @@ message JournalEntry {
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
 
   // What you said. At most 20,000 characters.
-  string text = 2 [(google.api.field_behavior) = REQUIRED];
+  string text = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string = {
+      min_len: 1
+      max_len: 20000
+      pattern: "(?s).*\\S.*"
+    }
+  ];
 
   // When it happened. Defaults to now.
   google.protobuf.Timestamp entry_time = 3 [(google.api.field_behavior) = OPTIONAL];
@@ -51,11 +59,15 @@ message CreateJournalEntryRequest {
   // The day, `days/{day}`.
   string parent = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "dashboardify.app/Day"
+    (google.api.resource_reference).type = "dashboardify.app/Day",
+    (buf.validate.field).string.min_len = 1
   ];
 
   // The entry to add.
-  JournalEntry journal_entry = 2 [(google.api.field_behavior) = REQUIRED];
+  JournalEntry journal_entry = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
 
   // Made by the client, so retries are safe.
   string request_id = 3 [(google.api.field_behavior) = OPTIONAL];
@@ -66,11 +78,15 @@ message ListJournalEntriesRequest {
   // The day, `days/{day}`.
   string parent = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "dashboardify.app/Day"
+    (google.api.resource_reference).type = "dashboardify.app/Day",
+    (buf.validate.field).string.min_len = 1
   ];
 
   // Most entries to return. Defaults to 50.
-  int32 page_size = 2 [(google.api.field_behavior) = OPTIONAL];
+  int32 page_size = 2 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32.gte = 0
+  ];
 
   // next_page_token from the previous call.
   string page_token = 3 [(google.api.field_behavior) = OPTIONAL];

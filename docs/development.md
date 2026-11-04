@@ -21,7 +21,8 @@ health history, and calendar events. To pin the clock for screenshots:
 DEMO_TIME=09:12 bun run demo
 ```
 
-See the [code style guide](style.md) for conventions. GitHub Actions runs checks on every pull
+See the [code style guide](style.md) and [formatting and test layout guide](../STYLE.md)
+for conventions. `bun run format:check` checks formatting without changing files. GitHub Actions runs checks on every pull
 request using `.github/workflows/ci.yml`.
 
 ## Configuration and hosting

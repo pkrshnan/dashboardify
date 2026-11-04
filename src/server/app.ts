@@ -16,6 +16,8 @@ import { messageRoutes } from "./routes/messages";
 import { sampleRoutes } from "./routes/samples";
 import { taskRoutes } from "./routes/tasks";
 import { todayRoutes } from "./routes/today";
+import { v1Services } from "./routes/v1";
+import { v1Transport } from "./routes/v1-transport";
 import { webRoutes } from "./routes/web";
 
 export interface AppDeps {
@@ -50,7 +52,14 @@ export function createApp(config: Config, deps: AppDeps = {}): Hono<AuthEnv> {
   const app = new Hono<AuthEnv>();
   app.get("/healthz", (c) => c.json({ ok: true }));
   app.route("/api", api);
+  const v1 = v1Transport(
+    v1Services(vault, tasks, new RawStore(config.healthRawPath), home, deps.now, deps.onSamples),
+  );
+  const modern = new Hono<AuthEnv>();
+  modern.use("*", bearerAuth(config.tokens, config.tailnet ?? null));
+  modern.route("/", v1);
   app.route("/", webRoutes());
+  app.route("/", modern);
   app.notFound((c) => c.json({ error: "not found" }, 404));
   app.onError((err, c) => {
     console.error(err);
