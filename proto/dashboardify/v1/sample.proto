@@ -1,0 +1,152 @@
+syntax = "proto3";
+
+package dashboardify.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/type/date.proto";
+
+// Stores raw sensor samples as Parquet, one file per stream per UTC day.
+service SampleService {
+  // Gets a stream and its columns.
+  rpc GetStream(GetStreamRequest) returns (Stream) {
+    option (google.api.http) = {get: "/v1/{name=streams/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  // Lists every stream.
+  rpc ListStreams(ListStreamsRequest) returns (ListStreamsResponse) {
+    option (google.api.http) = {get: "/v1/streams"};
+  }
+
+  // Merges one UTC day of rows into a stream by timestamp. The newer row wins.
+  rpc MergeSamples(MergeSamplesRequest) returns (MergeSamplesResponse) {
+    option (google.api.http) = {
+      post: "/v1/{stream=streams/*}:mergeSamples"
+      body: "*"
+    };
+  }
+}
+
+// One kind of sensor data, such as heart rate.
+message Stream {
+  option (google.api.resource) = {
+    type: "dashboardify.app/Stream"
+    pattern: "streams/{stream}"
+    singular: "stream"
+    plural: "streams"
+  };
+
+  // `streams/{stream}`, such as `streams/heart_rate`.
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+
+  // Fixed by the first upload.
+  repeated ColumnSchema columns = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// A stream column's name and type.
+message ColumnSchema {
+  // What a column holds.
+  enum Type {
+    // Not set.
+    TYPE_UNSPECIFIED = 0;
+    // Stored as DOUBLE.
+    TYPE_NUMBER = 1;
+    // Stored as STRING.
+    TYPE_TEXT = 2;
+  }
+
+  // Lower-case a-z, 0-9 and _.
+  string name = 1;
+
+  // Number or text.
+  Type type = 2;
+}
+
+// Request for GetStream.
+message GetStreamRequest {
+  // The stream to get.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/Stream"
+  ];
+}
+
+// Request for ListStreams.
+message ListStreamsRequest {
+  // Most streams to return. Defaults to 50.
+  int32 page_size = 1 [(google.api.field_behavior) = OPTIONAL];
+
+  // next_page_token from the previous call.
+  string page_token = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for ListStreams.
+message ListStreamsResponse {
+  // The page of streams.
+  repeated Stream streams = 1;
+
+  // Token for the next page, empty on the last one.
+  string next_page_token = 2;
+}
+
+// Request for MergeSamples. Rows are sent as columns.
+message MergeSamplesRequest {
+  // The stream, created on its first upload.
+  string stream = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/Stream"
+  ];
+
+  // UTC day that every timestamp falls in.
+  google.type.Date day = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // UTC epoch milliseconds, one per row.
+  repeated int64 timestamps = 3 [(google.api.field_behavior) = REQUIRED];
+
+  // One entry per column, each with one value per row.
+  repeated Column columns = 4 [(google.api.field_behavior) = REQUIRED];
+}
+
+// One column of a MergeSamples upload.
+message Column {
+  // Column name.
+  string name = 1;
+
+  // One value per row.
+  oneof values {
+    // For a number column.
+    DoubleValues numbers = 2;
+    // For a text column.
+    StringValues texts = 3;
+  }
+
+  // Rows with no value in this column.
+  repeated uint32 missing_rows = 4;
+}
+
+// Number column values.
+message DoubleValues {
+  // One per row.
+  repeated double values = 1;
+}
+
+// Text column values.
+message StringValues {
+  // One per row.
+  repeated string values = 1;
+}
+
+// Response for MergeSamples.
+message MergeSamplesResponse {
+  // Rows now stored for the day.
+  int64 rows = 1;
+
+  // New timestamps.
+  int64 added = 2;
+
+  // Timestamps that were overwritten.
+  int64 replaced = 3;
+}

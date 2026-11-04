@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+package dashboardify.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/timestamp.proto";
+
+// Stores messages the phone has already marked important. Local-only.
+service MessageService {
+  // Stores a message. A repeated message_id gives ALREADY_EXISTS.
+  rpc CreateMessage(CreateMessageRequest) returns (Message) {
+    option (google.api.http) = {
+      post: "/v1/messages"
+      body: "message"
+    };
+    option (google.api.method_signature) = "message,message_id";
+  }
+
+  // Lists messages, newest first.
+  rpc ListMessages(ListMessagesRequest) returns (ListMessagesResponse) {
+    option (google.api.http) = {get: "/v1/messages"};
+  }
+}
+
+// One incoming message.
+message Message {
+  option (google.api.resource) = {
+    type: "dashboardify.app/Message"
+    pattern: "messages/{message}"
+    singular: "message"
+    plural: "messages"
+  };
+
+  // `messages/{message}`.
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+
+  // Who sent it.
+  string sender = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // The message text.
+  string text = 3 [(google.api.field_behavior) = REQUIRED];
+
+  // When the phone got it.
+  google.protobuf.Timestamp receive_time = 4 [(google.api.field_behavior) = REQUIRED];
+}
+
+// Request for CreateMessage.
+message CreateMessageRequest {
+  // The message to store.
+  Message message = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // Stable id from the phone. The server makes one when it is empty.
+  string message_id = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request for ListMessages.
+message ListMessagesRequest {
+  // Most messages to return. Defaults to 50.
+  int32 page_size = 1 [(google.api.field_behavior) = OPTIONAL];
+
+  // next_page_token from the previous call.
+  string page_token = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // AIP-160 filter on sender and receive_time.
+  string filter = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for ListMessages.
+message ListMessagesResponse {
+  // The page of messages.
+  repeated Message messages = 1;
+
+  // Token for the next page, empty on the last one.
+  string next_page_token = 2;
+}

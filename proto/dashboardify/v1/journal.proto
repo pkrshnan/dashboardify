@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+package dashboardify.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/timestamp.proto";
+
+// Writes and reads the journal in each daily note.
+service JournalService {
+  // Appends an entry under the day's `## Journal` heading.
+  rpc CreateJournalEntry(CreateJournalEntryRequest) returns (JournalEntry) {
+    option (google.api.http) = {
+      post: "/v1/{parent=days/*}/journalEntries"
+      body: "journal_entry"
+    };
+    option (google.api.method_signature) = "parent,journal_entry";
+  }
+
+  // Lists a day's entries, oldest first.
+  rpc ListJournalEntries(ListJournalEntriesRequest) returns (ListJournalEntriesResponse) {
+    option (google.api.http) = {get: "/v1/{parent=days/*}/journalEntries"};
+    option (google.api.method_signature) = "parent";
+  }
+}
+
+// One `- HH:MM text` line in a daily note.
+message JournalEntry {
+  option (google.api.resource) = {
+    type: "dashboardify.app/JournalEntry"
+    pattern: "days/{day}/journalEntries/{journal_entry}"
+    singular: "journalEntry"
+    plural: "journalEntries"
+  };
+
+  // `days/{day}/journalEntries/{journal_entry}`, such as
+  // `days/2026-11-04/journalEntries/1830-1`.
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+
+  // What you said. At most 20,000 characters.
+  string text = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // When it happened. Defaults to now.
+  google.protobuf.Timestamp entry_time = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request for CreateJournalEntry.
+message CreateJournalEntryRequest {
+  // The day, `days/{day}`.
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/Day"
+  ];
+
+  // The entry to add.
+  JournalEntry journal_entry = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // Made by the client, so retries are safe.
+  string request_id = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request for ListJournalEntries.
+message ListJournalEntriesRequest {
+  // The day, `days/{day}`.
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/Day"
+  ];
+
+  // Most entries to return. Defaults to 50.
+  int32 page_size = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // next_page_token from the previous call.
+  string page_token = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for ListJournalEntries.
+message ListJournalEntriesResponse {
+  // The page of entries.
+  repeated JournalEntry journal_entries = 1;
+
+  // Token for the next page, empty on the last one.
+  string next_page_token = 2;
+}

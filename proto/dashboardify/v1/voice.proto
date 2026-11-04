@@ -1,0 +1,100 @@
+syntax = "proto3";
+
+package dashboardify.v1;
+
+// Siri Shortcuts only. Takes loose spoken input, calls the other services and
+// returns one sentence to speak. Not AIP resource methods, on purpose.
+service VoiceService {
+  // "Add task": reads the date and time out of the text.
+  rpc AddTask(AddTaskRequest) returns (AddTaskResponse);
+
+  // "Log": appends to today's journal.
+  rpc Log(LogRequest) returns (LogResponse);
+
+  // "Check in": records feel, effort and tags, merging tags.
+  rpc CheckIn(CheckInRequest) returns (CheckInResponse);
+
+  // "What's due": reads out open tasks.
+  rpc ListDue(ListDueRequest) returns (ListDueResponse);
+
+  // "Mark done": completes the closest matching task.
+  rpc CompleteByText(CompleteByTextRequest) returns (CompleteByTextResponse);
+}
+
+// Request for AddTask.
+message AddTaskRequest {
+  // Such as "call the bank tomorrow at 9am".
+  string text = 1;
+
+  // Made by the Shortcut, so retries are safe.
+  string request_id = 2;
+}
+
+// Response for AddTask.
+message AddTaskResponse {
+  // Sentence to speak.
+  string message = 1;
+
+  // The task, `tasks/{task}`.
+  string task = 2;
+}
+
+// Request for Log.
+message LogRequest {
+  // What you said.
+  string text = 1;
+}
+
+// Response for Log.
+message LogResponse {
+  // Sentence to speak.
+  string message = 1;
+
+  // The entry, `days/{day}/journalEntries/{journal_entry}`.
+  string journal_entry = 2;
+}
+
+// Request for CheckIn. Fields are text, as Shortcuts send them.
+message CheckInRequest {
+  // 1 to 5.
+  string feel = 1;
+
+  // 0 to 10.
+  string rpe = 2;
+
+  // Comma-separated.
+  string tags = 3;
+}
+
+// Response for CheckIn.
+message CheckInResponse {
+  // Sentence to speak.
+  string message = 1;
+}
+
+// Request for ListDue.
+message ListDueRequest {
+  // today, overdue or week.
+  string window = 1;
+}
+
+// Response for ListDue.
+message ListDueResponse {
+  // Sentence to speak.
+  string message = 1;
+}
+
+// Request for CompleteByText.
+message CompleteByTextRequest {
+  // Such as "the bank one".
+  string text = 1;
+}
+
+// Response for CompleteByText.
+message CompleteByTextResponse {
+  // Sentence to speak.
+  string message = 1;
+
+  // The task completed, `tasks/{task}`.
+  string task = 2;
+}

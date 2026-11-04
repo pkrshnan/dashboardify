@@ -1,0 +1,108 @@
+syntax = "proto3";
+
+package dashboardify.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/struct.proto";
+
+// Reads daily notes and writes the morning check-in.
+service DayService {
+  // Gets a daily note.
+  rpc GetDay(GetDayRequest) returns (Day) {
+    option (google.api.http) = {get: "/v1/{name=days/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  // Gets a day's check-in.
+  rpc GetCheckin(GetCheckinRequest) returns (Checkin) {
+    option (google.api.http) = {get: "/v1/{name=days/*/checkin}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  // Changes a day's check-in.
+  rpc UpdateCheckin(UpdateCheckinRequest) returns (Checkin) {
+    option (google.api.http) = {
+      patch: "/v1/{checkin.name=days/*/checkin}"
+      body: "checkin"
+    };
+    option (google.api.method_signature) = "checkin,update_mask";
+  }
+}
+
+// A daily note.
+message Day {
+  option (google.api.resource) = {
+    type: "dashboardify.app/Day"
+    pattern: "days/{day}"
+    singular: "day"
+    plural: "days"
+  };
+
+  // `days/{day}`, where `{day}` is YYYY-MM-DD in the server's time zone.
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+
+  // Vault path of the note.
+  string path = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The note's YAML frontmatter.
+  google.protobuf.Struct frontmatter = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The note's Markdown. Unset when there is no note yet.
+  optional string body = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// How the day started, kept in the daily note's frontmatter.
+message Checkin {
+  option (google.api.resource) = {
+    type: "dashboardify.app/Checkin"
+    pattern: "days/{day}/checkin"
+    singular: "checkin"
+    plural: "checkins"
+  };
+
+  // `days/{day}/checkin`.
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+
+  // How you feel, 1 to 5.
+  optional int32 feel = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // How hard the day's workout felt, 0 to 10.
+  optional int32 rpe = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Lower-case tags, such as "alcohol".
+  repeated string tags = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // Hash of the frontmatter as read.
+  string etag = 5 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request for GetDay.
+message GetDayRequest {
+  // The day to get.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/Day"
+  ];
+}
+
+// Request for GetCheckin.
+message GetCheckinRequest {
+  // The check-in to get.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/Checkin"
+  ];
+}
+
+// Request for UpdateCheckin.
+message UpdateCheckinRequest {
+  // The check-in, with name set.
+  Checkin checkin = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // Fields to change. A mask of "tags" replaces the whole list.
+  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = OPTIONAL];
+}

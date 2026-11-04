@@ -1,0 +1,228 @@
+syntax = "proto3";
+
+package dashboardify.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/timestamp.proto";
+import "google/type/date.proto";
+import "google/type/timeofday.proto";
+
+// Serves the home screen, worked out on the server.
+service HomeService {
+  // Gets the home screen as of now.
+  rpc GetHome(GetHomeRequest) returns (Home) {
+    option (google.api.http) = {get: "/v1/{name=home}"};
+    option (google.api.method_signature) = "name";
+  }
+}
+
+// Everything the home screen shows. A computed view, never written.
+message Home {
+  option (google.api.resource) = {
+    type: "dashboardify.app/Home"
+    pattern: "home"
+    singular: "home"
+    plural: "homes"
+  };
+
+  // Always `home`.
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+
+  // IANA time zone the view was built in.
+  string time_zone = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Today in that time zone.
+  google.type.Date date = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When the view was built.
+  google.protobuf.Timestamp generate_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // One plain sentence: judgement and next action.
+  string sentence = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The event on now or next today.
+  NextEvent next_event = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Seven days from today.
+  repeated DayAgenda days = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Overdue, Today, This week, Later, Someday.
+  repeated TaskGroup task_groups = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Ten health metrics with trends.
+  repeated MetricTrend metrics = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// How a change reads against baseline.
+enum Tone {
+  // Not set.
+  TONE_UNSPECIFIED = 0;
+  // Better than baseline.
+  TONE_GOOD = 1;
+  // Worse than baseline.
+  TONE_BAD = 2;
+  // Within normal range.
+  TONE_NEUTRAL = 3;
+}
+
+// A calendar event.
+message AgendaEvent {
+  // Event title.
+  string title = 1;
+
+  // Local start time.
+  google.type.TimeOfDay start_time = 2;
+
+  // Local end time.
+  google.type.TimeOfDay end_time = 3;
+
+  // Minutes after local midnight.
+  int32 start_minute = 4;
+
+  // Minutes after local midnight. Can pass 1440.
+  int32 end_minute = 5;
+
+  // Location or notes.
+  string detail = 6;
+
+  // work, fitness, personal or focus.
+  string category = 7;
+
+  // Join link, if any.
+  string url = 8;
+}
+
+// The event on now or next.
+message NextEvent {
+  // Event title.
+  string title = 1;
+
+  // Local start time.
+  google.type.TimeOfDay start_time = 2;
+
+  // Location or notes.
+  string detail = 3;
+
+  // Minutes until it starts. 0 or less while it is on.
+  int32 minutes_until = 4;
+
+  // Join link, if any.
+  string url = 5;
+}
+
+// A timed task, drawn on the timeline.
+message Reminder {
+  // The task, `tasks/{task}`.
+  string task = 1 [(google.api.resource_reference).type = "dashboardify.app/Task"];
+
+  // Task text.
+  string text = 2;
+
+  // Local due time.
+  google.type.TimeOfDay time = 3;
+
+  // Minutes after local midnight.
+  int32 minute = 4;
+
+  // Whether it is ticked off.
+  bool done = 5;
+}
+
+// One day of the Day and Week views.
+message DayAgenda {
+  // The day.
+  google.type.Date date = 1;
+
+  // Calendar events.
+  repeated AgendaEvent events = 2;
+
+  // Timed tasks.
+  repeated Reminder reminders = 3;
+
+  // Text of untimed tasks due that day.
+  repeated string dated_tasks = 4;
+}
+
+// A task in the task list.
+message TaskItem {
+  // The task, `tasks/{task}`.
+  string task = 1 [(google.api.resource_reference).type = "dashboardify.app/Task"];
+
+  // Task text.
+  string text = 2;
+
+  // Short due label, such as "3d late" or "Fri 15:00".
+  string meta = 3;
+}
+
+// A heading in the task list.
+message TaskGroup {
+  // Overdue, Today, This week, Later or Someday.
+  string display_name = 1;
+
+  // Tasks under it.
+  repeated TaskItem tasks = 2;
+}
+
+// Mean and SD of the 60 days before the last 7.
+message Baseline {
+  // Mean.
+  double mean = 1;
+
+  // Standard deviation.
+  double sd = 2;
+}
+
+// One health metric and its trend.
+message MetricTrend {
+  // Stable key, such as "recovery".
+  string key = 1;
+
+  // Shown name.
+  string display_name = 2;
+
+  // Unit, such as "ms".
+  string unit = 3;
+
+  // heart, sleep, activity or vitals.
+  string group = 4;
+
+  // Formatted value, such as "7h 12m". Unset when there is none.
+  optional string value = 5;
+
+  // Raw value, for the recovery colour band.
+  optional double raw_value = 6;
+
+  // Change against baseline, such as "-11%".
+  optional string delta = 7;
+
+  // Good, bad or neutral.
+  Tone tone = 8;
+
+  // True for cumulative metrics, which show yesterday.
+  bool yesterday = 9;
+
+  // Unset without enough history.
+  Baseline baseline = 10;
+
+  // Daily values, oldest first, ending at last_date.
+  repeated double daily_values = 11;
+
+  // Indexes into daily_values with no data.
+  repeated uint32 missing_days = 12;
+
+  // Date of the last daily value.
+  google.type.Date last_date = 13;
+}
+
+// Request for GetHome.
+message GetHomeRequest {
+  // Always `home`.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/Home"
+  ];
+}
