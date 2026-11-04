@@ -3,6 +3,7 @@
 
 import type { Recovery } from "./metrics/recovery";
 import type { DayMetrics, NightMetrics } from "./metrics/summary";
+import { type HealthSync, lag, shortDuration } from "./sync";
 
 export interface DaySummary {
   night: NightMetrics | null;
@@ -46,16 +47,33 @@ function round(value: number | null | undefined, digits: number): number | null 
   return Math.round(value * factor) / factor;
 }
 
-/** The Health block for the daily note. `clock` formats an epoch-ms time as local HH:MM. */
-export function healthBlock(s: DaySummary, needed: number, clock: (ts: number) => string): string {
-  const lines = [
-    recoveryLine(s, needed),
-    s.night ? sleepLine(s.night, clock) : null,
-    s.night ? vitalsLine(s.night, s.tempDevC) : null,
-    strainLine(s.day),
-    s.day.steps > 0 ? `- Steps ${s.day.steps.toLocaleString("en-US")}` : null,
-  ];
-  return ["## Health", "", ...lines.filter((l): l is string => l !== null)].join("\n");
+/**
+ * The Health block for the daily note. `clock` formats an epoch-ms time as local HH:MM. `synced`
+ * is the last line, today only; without a summary the block is just that line.
+ */
+export function healthBlock(
+  s: DaySummary | null,
+  needed: number,
+  clock: (ts: number) => string,
+  synced: string | null = null,
+): string {
+  const lines = s
+    ? [
+        recoveryLine(s, needed),
+        s.night ? sleepLine(s.night, clock) : null,
+        s.night ? vitalsLine(s.night, s.tempDevC) : null,
+        strainLine(s.day),
+        s.day.steps > 0 ? `- Steps ${s.day.steps.toLocaleString("en-US")}` : null,
+      ]
+    : [];
+  return ["## Health", "", ...[...lines, synced].filter((l): l is string => l !== null)].join("\n");
+}
+
+/** "- Synced 14:02", plus how far behind once the data lags. `when` formats the sample time. */
+export function syncLine(sync: HealthSync, now: number, when: (ts: number) => string): string {
+  const behind = lag(sync.latestSampleTs, now);
+  const line = `- Synced ${when(sync.latestSampleTs)}`;
+  return behind === null ? line : `${line} · **${shortDuration(behind)} behind**`;
 }
 
 function recoveryLine(s: DaySummary, needed: number): string {

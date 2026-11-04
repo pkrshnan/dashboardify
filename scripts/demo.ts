@@ -33,6 +33,12 @@ await writeHealth(new DerivedStore(config.healthDerivedPath));
 // DEMO_TIME=09:12 pins the server's clock to that time today, for screenshots.
 const pinned = process.env.DEMO_TIME?.split(":").map(Number);
 const now = pinned ? () => new Date(at(0, (pinned[0] ?? 0) + (pinned[1] ?? 0) / 60)) : undefined;
+// DEMO_SYNC_MIN=300 makes the strap data that many minutes old (default 12), to see it lag.
+const syncAt = (now?.() ?? new Date()).getTime() - Number(process.env.DEMO_SYNC_MIN ?? 12) * 60_000;
+await Bun.write(
+  join(config.healthRawPath, "sync.json"),
+  JSON.stringify({ latestSampleTs: syncAt, uploadTs: syncAt + 60_000 }),
+);
 const app = createApp(config, { calendar: fakeCalendar(), now });
 Bun.serve({ port: config.port, routes: { "/": homepage }, fetch: app.fetch, development: true });
 console.log(`demo on http://localhost:${config.port}, token ${TOKEN}`);

@@ -32,10 +32,12 @@ export interface AppDeps {
 export function createApp(config: Config, deps: AppDeps = {}): Hono<AuthEnv> {
   const vault = deps.vault ?? new Vault(config.vaultPath, config.timeZone);
   const tasks = new TaskStore(vault, config.tasksInbox);
+  const raw = new RawStore(config.healthRawPath);
   const home = {
     tasks,
     health: new HealthHistory(new DerivedStore(config.healthDerivedPath)),
     calendar: deps.calendar ?? noCalendar,
+    sync: () => raw.readSync(),
     timeZone: config.timeZone,
   };
 
@@ -43,7 +45,7 @@ export function createApp(config: Config, deps: AppDeps = {}): Hono<AuthEnv> {
   api.use("*", bearerAuth(config.tokens, config.tailnet ?? null));
   api.route("/ingest/journal", journalRoutes(vault));
   api.route("/ingest/messages", messageRoutes(vault));
-  api.route("/ingest/samples", sampleRoutes(new RawStore(config.healthRawPath), deps.onSamples));
+  api.route("/ingest/samples", sampleRoutes(raw, deps.onSamples));
   api.route("/today", todayRoutes(vault, config));
   api.route("/health", healthRoutes(vault, config));
   api.route("/tasks", taskRoutes(tasks, config));
@@ -52,9 +54,7 @@ export function createApp(config: Config, deps: AppDeps = {}): Hono<AuthEnv> {
   const app = new Hono<AuthEnv>();
   app.get("/healthz", (c) => c.json({ ok: true }));
   app.route("/api", api);
-  const v1 = v1Transport(
-    v1Services(vault, tasks, new RawStore(config.healthRawPath), home, deps.now, deps.onSamples),
-  );
+  const v1 = v1Transport(v1Services(vault, tasks, raw, home, deps.now, deps.onSamples));
   const modern = new Hono<AuthEnv>();
   modern.use("*", bearerAuth(config.tokens, config.tailnet ?? null));
   modern.route("/", v1);

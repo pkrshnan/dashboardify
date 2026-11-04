@@ -18,6 +18,15 @@ export interface HomeView {
   days: DayAgenda[];
   tasks: TaskGroup[];
   health: MetricTrend[];
+  /** When strap data last arrived, or null before the first upload. */
+  healthSync: HealthSyncView | null;
+}
+
+export interface HealthSyncView {
+  /** ISO time of the newest stored sample. */
+  latestSample: string;
+  /** ISO time the last upload landed. */
+  upload: string;
 }
 
 export interface AgendaEvent {

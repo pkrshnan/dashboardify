@@ -57,6 +57,7 @@ steps: 8412
 - RHR 52 · HRV 48 ms · Breathing 14.2 · Skin +0.2 °C
 - Strain **11.4** · Zones 42 / 18 / 6 / 0 / 0 min
 - Steps 8,412
+- Synced 07:58
 <!-- /cc:health -->
 
 ## Journal
@@ -64,6 +65,9 @@ steps: 8412
 
 - The night is the one that ended that morning. Strain, zones and steps cover the calendar day.
 - Recovery shows "calibrating" until there are 14 nights of history.
+- Synced is the newest strap sample, on today's note only, refreshed hourly. Once it is over two
+  hours old it reads `- Synced 1 Nov 21:40 · **14h behind**`, and today gets the block even before
+  any of its own data arrives.
 - Strain needs `birth_date` (or `hr_max_measured`) in `profile.md` at the vault root; `sex` picks the strain constants:
 
   ```markdown

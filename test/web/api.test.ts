@@ -5,17 +5,33 @@ import { useApi } from "../server/api/helpers";
 describe("home UI API adapter", () => {
   const api = useApi();
 
-  test("home UI adapter preserves the presentation model", async () => {
+  async function compare() {
     const original = globalThis.fetch;
     globalThis.fetch = ((url: string, init?: RequestInit) =>
       api.app.request(url, init)) as typeof fetch;
     try {
-      const modern = await fetchHome("secret");
-      const legacy = await api.call("/api/home");
-
-      expect(modern).toEqual(legacy.body);
+      return { modern: await fetchHome("secret"), legacy: (await api.call("/api/home")).body };
     } finally {
       globalThis.fetch = original;
     }
+  }
+
+  test("home UI adapter keeps the health sync times", async () => {
+    await api.call("/v1/streams/heart_rate:mergeSamples", "POST", {
+      day: { year: 2026, month: 11, day: 3 },
+      timestamps: ["1793664000000"],
+      columns: [{ name: "bpm", numbers: { values: [60] } }],
+    });
+
+    const { modern, legacy } = await compare();
+
+    expect(modern.healthSync?.latestSample).toBe("2026-11-03T00:00:00.000Z");
+    expect(modern).toEqual(legacy);
+  });
+
+  test("home UI adapter preserves the presentation model", async () => {
+    const { modern, legacy } = await compare();
+
+    expect(modern).toEqual(legacy);
   });
 });

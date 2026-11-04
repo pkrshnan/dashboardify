@@ -2,9 +2,12 @@
 // group. The range switch changes only the charts, never the numbers.
 
 import { useState } from "preact/hooks";
-import type { HealthGroup, MetricTrend } from "../../src/home/types";
+import { lag, shortDuration } from "../../src/health/sync";
+import type { HealthGroup, HealthSyncView, MetricTrend } from "../../src/home/types";
 import { chartShape, type Range, rangeLabel, WIDTH } from "../lib/chart";
-import { HEALTH, toneColor } from "../lib/colors";
+import { nowIn } from "../lib/clock";
+import { HEALTH, STATUS, toneColor } from "../lib/colors";
+import { dayMonth } from "../lib/format";
 import { Segmented } from "./segmented";
 
 const RANGES: { value: Range; label: string }[] = [
@@ -23,10 +26,14 @@ const COLUMNS: HealthGroup[][] = [
 export function Health({
   metrics,
   date,
+  sync,
+  timeZone,
   isPhone,
 }: {
   metrics: MetricTrend[];
   date: string;
+  sync: HealthSyncView | null;
+  timeZone: string;
   isPhone: boolean;
 }) {
   const [range, setRange] = useState<Range>("1m");
@@ -44,7 +51,10 @@ export function Health({
       <div class="section-head">
         <div class="health-title">
           <h2>Health</h2>
-          <div class="range-label">{rangeLabel(date, range)}</div>
+          <div class="range-label">
+            {rangeLabel(date, range)}
+            {sync && <Synced sync={sync} timeZone={timeZone} />}
+          </div>
         </div>
         <Segmented label="Trend range" segments={RANGES} value={range} onChange={setRange} />
       </div>
@@ -56,6 +66,24 @@ export function Health({
         ))}
       </div>
     </section>
+  );
+}
+
+/** "Synced 14:02" while data is fresh; "Synced 5h ago" in orange once it lags. */
+function Synced({ sync, timeZone }: { sync: HealthSyncView; timeZone: string }) {
+  const latest = new Date(sync.latestSample);
+  const behind = lag(latest.getTime(), Date.now());
+  const at = nowIn(timeZone, latest);
+  const when = at.date === nowIn(timeZone).date ? at.time : `${dayMonth(at.date)} ${at.time}`;
+  const uploaded = nowIn(timeZone, new Date(sync.upload));
+  return (
+    <span
+      class="synced"
+      title={`Uploaded ${uploaded.date} ${uploaded.time}`}
+      style={behind === null ? undefined : { color: STATUS.warn }}
+    >
+      {behind === null ? `Synced ${when}` : `Synced ${shortDuration(behind)} ago`}
+    </span>
   );
 }
 

@@ -28,7 +28,7 @@ The screenshots are rendered from the `.dc.html` files with sample data.
    - Day: a timeline from an hour before now to 22:00, with a red line for now. Events are blocks; the next event is a little brighter. Events under about 50 minutes take one line: title, start time and detail, cut with an ellipsis. Timed tasks (`⏰ HH:MM`) are reminders, drawn as dashed pills at their time in a lane to the right of the events.
    - Week: a rolling week from today. On desktop it has seven columns, with dated tasks at the top of each column. On the phone it is a strip of tappable days, then the agenda for the chosen day. Reminders have hollow markers and events have filled ones.
    - Task list with a quick-add box, grouped into Overdue, Today, This week and Someday. It is a side column on desktop and its own section on the phone.
-3. **Health trends.** A 2W/1M/3M/1Y range switch, with the date range shown once next to the heading.
+3. **Health trends.** A 2W/1M/3M/1Y range switch, with the date range shown once next to the heading, then "Synced 14:02" (the newest strap sample). Past two hours it reads "Synced 5h ago" in orange; on the phone it takes its own line.
 
 ## One home per item
 

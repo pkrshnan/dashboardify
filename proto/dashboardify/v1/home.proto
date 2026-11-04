@@ -55,6 +55,18 @@ message Home {
 
   // Ten health metrics with trends.
   repeated MetricTrend metrics = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When strap data last arrived. Unset before the first upload.
+  HealthSync health_sync = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// When strap data last reached the server.
+message HealthSync {
+  // The newest stored sample.
+  google.protobuf.Timestamp latest_sample_time = 1;
+
+  // When the last upload landed.
+  google.protobuf.Timestamp upload_time = 2;
 }
 
 // How a change reads against baseline.

@@ -129,6 +129,49 @@ describe("DailySummary", () => {
   });
 });
 
+describe("DailySummary synced line", () => {
+  const Noon = Date.parse("2026-11-02T12:00:00-08:00");
+
+  async function runToday(sampleAt: number): Promise<string> {
+    const store = new RawStore(join(dir, "health-raw"), () => Noon);
+    const day = new Date(sampleAt).toISOString().slice(0, 10);
+    await store.store("heart_rate", day, {
+      header: ["ts", "bpm"],
+      samples: [{ ts: sampleAt, values: [60] }],
+    });
+    await new DailySummary(store, derived, vault, TZ, () => Noon).run(DATE);
+    return (await vault.readDaily(DATE))?.body ?? "";
+  }
+
+  test("today's block says when data last arrived", async () => {
+    const body = await runToday(Noon - 30 * 60_000);
+
+    expect(body).toContain("- Synced 11:30\n");
+  });
+
+  test("flags how far behind once the data lags", async () => {
+    const body = await runToday(Noon - 150 * 60_000);
+
+    expect(body).toContain("- Synced 09:30 · **2h behind**");
+  });
+
+  test("today still gets the line when no data has arrived for it", async () => {
+    const body = await runToday(Noon - 24 * HOUR);
+
+    expect(body).toContain(
+      "<!-- cc:health -->\n## Health\n\n- Synced 1 Nov 12:00 · **24h behind**",
+    );
+  });
+
+  test("past days have no synced line", async () => {
+    await putNight();
+
+    await summary.run(DATE);
+
+    expect((await vault.readDaily(DATE))?.body).not.toContain("Synced");
+  });
+});
+
 describe("SummaryScheduler", () => {
   test("recomputes the local dates a UTC day can affect, oldest first", async () => {
     const ran: string[] = [];
