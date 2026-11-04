@@ -4,7 +4,15 @@
 import { render } from "preact";
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 import type { HomeView } from "../src/home/types";
-import { addTask, completeTask, fetchHome, savedToken, saveToken, Unauthorized } from "./api";
+import {
+  addTask,
+  completeTask,
+  fetchHome,
+  savedToken,
+  saveToken,
+  type Token,
+  Unauthorized,
+} from "./api";
 import { Calendar } from "./components/calendar";
 import { Focus } from "./components/focus";
 import { Health } from "./components/health";
@@ -16,30 +24,31 @@ const REFRESH_MS = 5 * 60_000;
 const TICK_MS = 15_000;
 const PHONE_QUERY = "(max-width: 899px)";
 
+/** Straight to the home screen; the sign-in screen only when the server wants a token. */
 function App() {
-  const [token, setToken] = useState(savedToken);
-  const [failed, setFailed] = useState(false);
-  if (!token) {
+  const [token, setToken] = useState<Token>(savedToken);
+  const [signIn, setSignIn] = useState<"no" | "ask" | "failed">("no");
+  if (signIn !== "no") {
     return (
       <SignIn
-        failed={failed}
+        failed={signIn === "failed"}
         onToken={(t) => {
           saveToken(t);
-          setFailed(false);
           setToken(t);
+          setSignIn("no");
         }}
       />
     );
   }
-  const signOut = () => {
+  const unauthorized = () => {
     saveToken(null);
-    setFailed(true);
+    setSignIn(token ? "failed" : "ask");
     setToken(null);
   };
-  return <Home token={token} onUnauthorized={signOut} />;
+  return <Home token={token} onUnauthorized={unauthorized} />;
 }
 
-function Home({ token, onUnauthorized }: { token: string; onUnauthorized: () => void }) {
+function Home({ token, onUnauthorized }: { token: Token; onUnauthorized: () => void }) {
   const { view, error, load } = useHome(token, onUnauthorized);
   const [done, setDone] = useState(new Set<string>());
   const now = useNow(view?.timeZone);
@@ -82,7 +91,7 @@ function Home({ token, onUnauthorized }: { token: string; onUnauthorized: () => 
 }
 
 /** The home view, refreshed on a timer, when the tab comes back, and when the day changes. */
-function useHome(token: string, onUnauthorized: () => void) {
+function useHome(token: Token, onUnauthorized: () => void) {
   const [view, setView] = useState<HomeView | null>(null);
   const [error, setError] = useState(false);
   // A ref, so a new callback on each render doesn't restart the refresh timer.

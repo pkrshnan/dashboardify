@@ -2,6 +2,8 @@
 
 All `/api` routes need `Authorization: Bearer <token>`, using a token from `INGEST_TOKENS`. Bodies are JSON. A write returns `201` with the vault path it touched. Bad input returns `400 {"error": "..."}`, and a missing or wrong token returns `401`.
 
+Requests that come through Tailscale Serve can skip the token. Tailscale Serve adds a `Tailscale-User-Login` header naming the tailnet user, and when `TAILSCALE_PROXY` and `TAILNET_USERS` are set, the server accepts a listed login in place of a token. It trusts that header only on connections from `TAILSCALE_PROXY`, the address Tailscale Serve's requests arrive from (`gateway` means the container's default gateway, which is where a port published on the host appears to connect from). Other containers on the Docker network connect from their own addresses, so they still need a token.
+
 `GET /healthz` is public and returns `{"ok": true}`.
 
 ## `POST /api/ingest/journal`
@@ -56,7 +58,7 @@ Calendar events are empty until the CalDAV and ICS reader lands (plan step 10).
 
 ## Web app
 
-`GET /` serves the home screen (`web/`), which is public: it asks once for a device token and keeps it in the browser. The icons the manifest points to (`/icon.svg`, `/icon-512.png`, `/apple-touch-icon.png`) are public too.
+`GET /` serves the home screen (`web/`). Opened through Tailscale it needs nothing more. Anywhere else the API answers `401`, and the page asks for a device token and keeps it in the browser. The icons the manifest points to (`/icon.svg`, `/icon-512.png`, `/apple-touch-icon.png`) are public too.
 
 ## `POST /api/health/checkin`
 

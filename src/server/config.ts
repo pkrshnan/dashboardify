@@ -1,4 +1,5 @@
 import { dirname, join, resolve } from "node:path";
+import { parseTailnet, type TailnetAuth } from "./tailnet";
 
 export interface Config {
   vaultPath: string;
@@ -12,6 +13,8 @@ export interface Config {
   tasksInbox: string;
   /** device name -> bearer token */
   tokens: Map<string, string>;
+  /** Sign-in through Tailscale Serve, or null for tokens only. */
+  tailnet?: TailnetAuth | null;
 }
 
 export function loadConfig(env: Record<string, string | undefined> = process.env): Config {
@@ -34,6 +37,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     ),
     tasksInbox: env.TASKS_INBOX ?? "Inbox.md",
     tokens: parseTokens(env.INGEST_TOKENS ?? ""),
+    tailnet: parseTailnet(env.TAILSCALE_PROXY, env.TAILNET_USERS),
   };
 }
 

@@ -38,7 +38,7 @@ export function createApp(config: Config, deps: AppDeps = {}): Hono<AuthEnv> {
   };
 
   const api = new Hono<AuthEnv>();
-  api.use("*", bearerAuth(config.tokens));
+  api.use("*", bearerAuth(config.tokens, config.tailnet ?? null));
   api.route("/ingest/journal", journalRoutes(vault));
   api.route("/ingest/messages", messageRoutes(vault));
   api.route("/ingest/samples", sampleRoutes(new RawStore(config.healthRawPath), deps.onSamples));

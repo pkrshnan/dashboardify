@@ -1,19 +1,27 @@
 import { timingSafeEqual } from "node:crypto";
-import type { MiddlewareHandler } from "hono";
+import type { Context, MiddlewareHandler } from "hono";
+import { getConnInfo } from "hono/bun";
+import { LOGIN_HEADER, type TailnetAuth, tailnetUser } from "./tailnet";
 
 /** Hono context type for authenticated routes: the matched device name is available. */
 // biome-ignore lint/style/useNamingConvention: `Variables` is the key Hono expects.
 export type AuthEnv = { Variables: { device: string } };
 
 /**
- * Accept `Authorization: Bearer <token>` for any configured device, and set the device name
- * on the context.
+ * Accept `Authorization: Bearer <token>` for any configured device, or a tailnet user signed in
+ * through Tailscale Serve (see tailnet.ts), and set the device name on the context.
  */
-export function bearerAuth(tokens: Map<string, string>): MiddlewareHandler<AuthEnv> {
+export function bearerAuth(
+  tokens: Map<string, string>,
+  tailnet: TailnetAuth | null = null,
+): MiddlewareHandler<AuthEnv> {
   const known = [...tokens].map(([device, token]) => ({ device, token: Buffer.from(token) }));
 
   return async (c, next) => {
-    const device = matchDevice(known, bearerToken(c.req.header("authorization")));
+    const login = tailnetUser(tailnet, peerAddress(c), c.req.header(LOGIN_HEADER));
+    const device =
+      matchDevice(known, bearerToken(c.req.header("authorization"))) ??
+      (login ? `tailnet:${login}` : undefined);
     if (!device) {
       return c.json({ error: "unauthorized" }, 401);
     }
@@ -40,4 +48,13 @@ function matchDevice(
     }
   }
   return match;
+}
+
+/** The connecting address, or undefined when the server doesn't say (as in tests without one). */
+function peerAddress(c: Context): string | undefined {
+  try {
+    return getConnInfo(c).remote.address;
+  } catch {
+    return undefined;
+  }
 }

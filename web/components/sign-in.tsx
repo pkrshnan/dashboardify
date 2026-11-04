@@ -1,4 +1,5 @@
-// Asks once for a device token (one of INGEST_TOKENS) and keeps it in this browser.
+// Shown only when the server wants a token: when the page is not opened through Tailscale, as in
+// local development or the demo.
 
 import { useState } from "preact/hooks";
 
@@ -15,7 +16,7 @@ export function SignIn({ onToken, failed }: { onToken: (token: string) => void; 
       }}
     >
       <h2>Command center</h2>
-      <p>Paste this device's token from INGEST_TOKENS on the server.</p>
+      <p>Open this through Tailscale, or paste a device token from INGEST_TOKENS.</p>
       {failed && <p class="error">That token didn't work.</p>}
       <label class="quick-add">
         <input

@@ -1,5 +1,6 @@
-// Talks to the server's /api. Every call needs a device token (see docs/api.md); the browser
-// keeps its token in localStorage, set once on the sign-in screen.
+// Talks to the server's /api. Opened through Tailscale, the server knows who you are and no
+// token is needed. Anywhere else (local development, the demo) the server answers 401, and the
+// sign-in screen asks for a device token, which is kept in localStorage.
 
 import type { HomeView } from "../src/home/types";
 
@@ -27,15 +28,14 @@ export function saveToken(token: string | null): void {
   }
 }
 
-async function call<T>(token: string, path: string, init: RequestInit = {}): Promise<T> {
-  const response = await fetch(`/api${path}`, {
-    ...init,
-    headers: {
-      authorization: `Bearer ${token}`,
-      "content-type": "application/json",
-      ...init.headers,
-    },
-  });
+export type Token = string | null;
+
+async function call<T>(token: Token, path: string, init: RequestInit = {}): Promise<T> {
+  const headers: Record<string, string> = { "content-type": "application/json" };
+  if (token) {
+    headers.authorization = `Bearer ${token}`;
+  }
+  const response = await fetch(`/api${path}`, { ...init, headers });
   if (response.status === 401) {
     throw new Unauthorized("unauthorized");
   }
@@ -45,16 +45,16 @@ async function call<T>(token: string, path: string, init: RequestInit = {}): Pro
   return (await response.json()) as T;
 }
 
-export function fetchHome(token: string): Promise<HomeView> {
+export function fetchHome(token: Token): Promise<HomeView> {
   return call<HomeView>(token, "/home");
 }
 
-export function completeTask(token: string, id: string): Promise<unknown> {
+export function completeTask(token: Token, id: string): Promise<unknown> {
   return call(token, `/tasks/${encodeURIComponent(id)}/complete`, { method: "POST" });
 }
 
 /** Add a task from typed text; the server reads dates and times out of it ("Fri 10:00"). */
-export function addTask(token: string, text: string): Promise<{ message: string }> {
+export function addTask(token: Token, text: string): Promise<{ message: string }> {
   return call(token, "/tasks", {
     method: "POST",
     body: JSON.stringify({ key: randomKey(), text }),

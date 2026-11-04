@@ -36,7 +36,7 @@ git check-ignore vault             # prints "vault", so git will never pick it u
 
 ### The web app
 
-The home screen lives in `web/` (Preact, bundled by Bun) and is served at `/` by the same server. On first open it asks for one of the `INGEST_TOKENS` tokens. `bun run demo` serves it with made-up health data, tasks and calendar events and prints the token to use; `DEMO_TIME=09:12 bun run demo` pins the clock for screenshots.
+The home screen lives in `web/` (Preact, bundled by Bun) and is served at `/` by the same server. Through Tailscale it signs you in with your tailnet login (`TAILSCALE_PROXY` and `TAILNET_USERS`); elsewhere it asks for one of the `INGEST_TOKENS` tokens. `bun run demo` serves it with made-up health data, tasks and calendar events and prints the token to use; `DEMO_TIME=09:12 bun run demo` pins the clock for screenshots.
 
 See [docs/style.md](docs/style.md) for the code style.
 
