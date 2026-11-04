@@ -53,7 +53,7 @@ are git-ignored. See [development notes](docs/development.md) for checks, demo o
 
 The server exposes authenticated v1 REST and Connect APIs, with shared protobuf validation.
 The home UI uses these APIs, and the updated healthstrap client uploads through the v1 stream
-API. Older `/api/...` endpoints remain available for existing clients.
+API.
 
 The server reads and writes your notes through a vault layer. Tasks stay in Obsidian Tasks format
 wherever you keep them; newly captured tasks go into `Inbox.md` by default. Journal entries and

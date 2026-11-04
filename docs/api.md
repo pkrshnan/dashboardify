@@ -3,7 +3,6 @@
 Use the v1 API for new integrations. It is available as REST under `/v1` and as Connect unary
 RPCs at `/dashboardify.v1.<Service>/<Method>`. Both call the same services and use the same stores.
 The [protobuf definitions](../proto/dashboardify/v1/) describe the resources and RPC messages.
-The older `/api/...` endpoints remain available; see the [legacy reference](api-legacy.md).
 
 ## Authentication
 
@@ -98,7 +97,7 @@ makes retries return the original entry.
 The optional `messageId` query parameter supplies a stable phone-generated ID. A duplicate
 returns `409`.
 
-`GET /v1/messages` lists messages newest first, including legacy Markdown history. It supports
+`GET /v1/messages` lists messages newest first, including messages stored in Markdown notes. It supports
 pagination and comparison filters on `sender` and `receive_time`, joined with `AND`.
 
 ## Sample streams
@@ -134,8 +133,8 @@ endpoint; deploy a server that supports it before updating the client.
 ## Home
 
 `GET /v1/home` returns the computed home resource: the current sentence, next event, seven days
-of agenda items, task groups, and health metric trends. Unlike the legacy `HomeView`, it uses
-protobuf date/time objects and fields such as `nextEvent`, `taskGroups`, and `metrics`.
+of agenda items, task groups, and health metric trends. It uses protobuf date/time objects
+and fields such as `nextEvent`, `taskGroups`, and `metrics`.
 
 Metric series use `dailyValues` plus `missingDays` indexes to represent missing data.
 The regular server has no calendar source by default; the demo supplies sample events.
