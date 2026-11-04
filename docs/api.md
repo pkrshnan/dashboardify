@@ -1,129 +1,174 @@
-# HTTP API
+# API
 
-All `/api` routes need `Authorization: Bearer <token>`, using a token from `INGEST_TOKENS`. Bodies are JSON. A write returns `201` with the vault path it touched. Bad input returns `400 {"error": "..."}`, and a missing or wrong token returns `401`.
+Use the v1 API for new integrations. It is available as REST under `/v1` and as Connect unary
+RPCs at `/dashboardify.v1.<Service>/<Method>`. Both call the same services and use the same stores.
+The [protobuf definitions](../proto/dashboardify/v1/) describe the resources and RPC messages.
+The older `/api/...` endpoints remain available; see the [legacy reference](api-legacy.md).
 
-Requests that come through Tailscale Serve can skip the token. Tailscale Serve adds a `Tailscale-User-Login` header naming the tailnet user, and when `TAILSCALE_PROXY` and `TAILNET_USERS` are set, the server accepts a listed login in place of a token. It trusts that header only on connections from `TAILSCALE_PROXY`, the address Tailscale Serve's requests arrive from (`gateway` means the container's default gateway, which is where a port published on the host appears to connect from). Other containers on the Docker network connect from their own addresses, so they still need a token.
+## Authentication
 
-`GET /healthz` is public and returns `{"ok": true}`.
+Send `Authorization: Bearer <token>` using a device token from `INGEST_TOKENS`.
+Missing or invalid credentials return `401`.
 
-## `POST /api/ingest/journal`
+Behind Tailscale Serve, an allowed tailnet login can replace the token when `TAILSCALE_PROXY`
+and `TAILNET_USERS` are configured. The server trusts the `Tailscale-User-Login` header only
+from the configured proxy address. See [configuration](../.env.example).
 
-```json
-{ "text": "Long walk. Felt good.", "at": "2026-11-02T18:30:00-08:00" }
-```
+`GET /healthz` is public and returns `{"ok": true}`. The web app and its public assets do not
+require a token to load; its API requests still require authentication.
 
-`at` is optional and defaults to now. Appends `- HH:MM text` to `## Journal` in that day's note. The day follows `TZ_NAME`. `text` can be up to 20,000 characters.
+## Request and response format
 
-## `POST /api/ingest/messages`
+REST uses protobuf JSON. Dates are `{ "year": 2026, "month": 11, "day": 3 }`, local times are
+`{ "hours": 9, "minutes": 30 }`, timestamps are RFC 3339 strings, enums use names such as
+`STATE_OPEN`, and int64 values are decimal strings. Default-valued fields may be omitted.
 
-```json
-{ "id": "optional-stable-id", "sender": "Sam", "text": "Moved dinner to 19:00", "received_at": "2026-11-02T20:05:00Z" }
-```
+REST writes put the resource itself in the body, rather than its RPC request envelope. Other
+request fields, such as `requestId`, `messageId`, and `updateMask`, go in query parameters.
+The stream merge action takes its request fields directly in the body.
 
-Appends to `inbox/messages/YYYY-MM-DD.md`, which is marked `local-only`. If `id` matches a message already stored, the request returns `{"duplicate": true}` and writes nothing.
-
-## `POST /api/ingest/samples/{stream}?day=YYYY-MM-DD`
-
-Raw sensor samples from healthstrap or another device, one stream and one UTC day per request. The body is CSV with a header line, and `Content-Encoding: gzip` is optional but expected.
-
-```
-ts,bpm
-1793577600000,58
-1793577601000,59
-```
-
-- `{stream}` is any name made of a-z, 0-9 and `_`, up to 40 characters, such as `heart_rate` or `sleep_state`.
-- `ts` comes first and is UTC epoch milliseconds inside `day`. Other columns are lowercase names. A cell can be a number, text, or empty for "no value".
-- The first upload fixes a stream's columns, and a column's type (number or text) is fixed by the first value seen in it. A later upload with other columns, or text in a number column, gets a `400`.
-- Rows are merged into the day by `ts`, and on a repeated `ts` the newer upload wins, so the phone and the server can each send the part of the day they saw.
-- A row outside the day, or one that doesn't parse, rejects the whole upload with `400 {"error": "line N: ..."}`.
-
-Returns `200 { rows, added, replaced }`: rows now stored for the day, new timestamps, and timestamps that were overwritten. Files are written to `HEALTH_RAW_PATH/<stream>/YYYY/MM/YYYY-MM-DD.parquet`, with `ts` as INT64, numbers as DOUBLE and text as STRING. The stream's columns are kept in `HEALTH_RAW_PATH/<stream>/columns.json`.
-
-## `GET /api/today?date=YYYY-MM-DD`
-
-Returns `{ date, path, frontmatter, body }` for that day's note. `date` defaults to today. If there is no note yet, `body` is `null`.
-
-## `GET /api/home`
-
-Everything the home screen shows, worked out on the server so the web app only lays it out. The shape is `HomeView` in [`src/home/types.ts`](../src/home/types.ts):
-
-- `sentence`: one plain sentence with the next event, a judgement on recovery, and at most one overdue task.
-- `next`: the event on now or next today, with `inMin` and a `url` for the Join button, or `null`.
-- `days`: seven days from today. Each has `events`, `reminders` (tasks with a `⏰` time) and `dated` (untimed tasks due that day).
-- `tasks`: open tasks in `Overdue`, `Today`, `This week`, `Later` and `Someday`. Today's timed tasks are left out, because they are on the timeline.
-- `health`: ten metrics with the value, the change against baseline (`delta` and `tone`), the baseline mean and SD, and a year of daily values for the charts. The rules are in [design/README.md](design/README.md#health-numbers).
-
-Calendar events are empty until the CalDAV and ICS reader lands (plan step 10).
-
-## Web app
-
-`GET /` serves the home screen (`web/`). Opened through Tailscale it needs nothing more. Anywhere else the API answers `401`, and the page asks for a device token and keeps it in the browser. The icons the manifest points to (`/icon.svg`, `/icon-512.png`, `/apple-touch-icon.png`) are public too.
-
-## `POST /api/health/checkin`
-
-```json
-{ "feel": 4, "rpe": 7, "tags": ["alcohol", "travel"], "date": "2026-11-03" }
-```
-
-How you feel this morning (`feel`, 1–5), how hard today's workout felt (`rpe`, 0–10) and tags. Each is optional but at least one is needed; numbers may be sent as text and tags as a comma-separated string. `date` defaults to today. Writes `feel`, `effort_rpe` and `health_tags` (merged with any already there) to the daily note's frontmatter and returns `201` with a `message` for Siri to read back. See [the feedback loop](health-feedback.md).
+Successful v1 REST methods return `200`, including creation and deletion. Schema validation is
+shared through Protovalidate. Invalid input returns `400`, missing resources return `404`, and
+stale etags or duplicate message IDs return `409`. Service errors have a `code` and `message`;
+authentication failures use the authentication middleware's `error` field.
 
 ## Tasks
 
-Tasks are [Obsidian Tasks](https://publish.obsidian.md/tasks/) lines anywhere in the vault. The server appends new ones to `TASKS_INBOX` (default `Inbox.md`) and edits single lines in place. Every response includes `message`, one plain sentence that Siri reads aloud and the dashboard can show as is. A task is returned as `{ id, path, done, description, time?, priority?, recurrence?, due?, created?, completed? }`. `id` is its 🆔, or a stable reference made from its file and text when it has none.
+| Method | Path | Operation |
+| --- | --- | --- |
+| GET | `/v1/tasks/{id}` | Read a task |
+| GET | `/v1/tasks` | List tasks |
+| POST | `/v1/tasks` | Create a task in the inbox |
+| PATCH | `/v1/tasks/{id}` | Edit selected fields |
+| DELETE | `/v1/tasks/{id}` | Remove the task line |
+| POST | `/v1/tasks/{id}:complete` | Complete a task and create its next occurrence if recurring |
+| POST | `/v1/tasks/{id}:reopen` | Reopen a completed task |
+| GET | `/v1/tasks:search?query=bank` | Find matching open tasks |
 
+A task's resource name is `tasks/{id}`. The description excludes Obsidian task markers.
+Writable fields are `description`, `dueDate`, `dueTime`, `priority`, and `recurrence`.
+State changes use the complete and reopen actions.
+
+For example, with `SERVER` and `TOKEN` set for your installation:
+
+```sh
+curl "$SERVER/v1/tasks?requestId=capture-001" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"description":"Call the bank","dueDate":{"year":2026,"month":11,"day":3}}'
 ```
-- [ ] Call the bank ⏰ 09:00 📅 2026-11-03 ➕ 2026-11-02 🆔 k7f3a2
+
+Reusing a `requestId` returns the original task. This resource method expects structured fields;
+use VoiceService.AddTask for natural-language input such as "call the bank tomorrow at 9am".
+
+Lists accept `pageSize`, `pageToken`, `filter`, and `orderBy`. Default ordering is
+`due_date, due_time, description`; ordering fields may use `asc` or `desc`. Supported filters
+are comparisons on `state` and `due_date` joined with `AND`, for example:
+
+```text
+state = STATE_OPEN AND due_date < "2026-11-04"
 ```
 
-`⏰ HH:MM` is our addition for a due time. It always sits right after the description, so Tasks still reads every other field.
+## Days and check-ins
 
-### `POST /api/tasks`
+| Method | Path | Operation |
+| --- | --- | --- |
+| GET | `/v1/days/{YYYY-MM-DD}` | Read a daily note |
+| GET | `/v1/days/{YYYY-MM-DD}/checkin` | Read its check-in |
+| PATCH | `/v1/days/{YYYY-MM-DD}/checkin` | Update the check-in |
+
+Dates follow the server's `TZ_NAME`. Check-ins contain optional `feel` (1–5), `rpe` (0–10),
+`tags`, and an `etag`. A PATCH of `tags` replaces the list; VoiceService.CheckIn merges tags.
+A day response includes its vault path and frontmatter, with `body` unset when the note is absent.
+
+## Journal entries
+
+`POST /v1/days/{YYYY-MM-DD}/journalEntries` appends an entry under the day's Journal heading.
+The body contains `text` and an optional `entryTime`. Text may be multiline, up to 20,000
+characters. The timestamp must fall in the parent day in the server's time zone; if omitted,
+the server uses its current local time on that day. An optional `requestId` query parameter
+makes retries return the original entry.
+
+`GET /v1/days/{YYYY-MM-DD}/journalEntries` lists entries oldest first, using `pageSize` and
+`pageToken` for pagination.
+
+## Messages
+
+`POST /v1/messages` stores a message with required `sender`, `text`, and `receiveTime` fields.
+The optional `messageId` query parameter supplies a stable phone-generated ID. A duplicate
+returns `409`.
+
+`GET /v1/messages` lists messages newest first, including legacy Markdown history. It supports
+pagination and comparison filters on `sender` and `receive_time`, joined with `AND`.
+
+## Sample streams
+
+| Method | Path | Operation |
+| --- | --- | --- |
+| GET | `/v1/streams` | List stored streams and their columns |
+| GET | `/v1/streams/{stream}` | Read a stream's column schema |
+| POST | `/v1/streams/{stream}:mergeSamples` | Merge a batch for one UTC day |
+
+The merge body contains a UTC `day`, `timestamps` in epoch milliseconds, and typed `columns`:
 
 ```json
-{ "key": "8F2C…", "text": "Call the bank tomorrow at 9am", "source": "siri" }
+{
+  "day": { "year": 2026, "month": 11, "day": 3 },
+  "timestamps": ["1793664000000", "1793664001000"],
+  "columns": [
+    { "name": "bpm", "numbers": { "values": [60, 0] }, "missingRows": [1] }
+  ]
+}
 ```
 
-`key` is made by the device, and the same key always gives the same 🆔, so a retry returns `200 {"status": "already_done"}` instead of adding a second task. `due` (YYYY-MM-DD), `time` (HH:MM) and `priority` (`highest`, `high`, `medium`, `low`, `lowest`) are optional. Without `due`, the date and time are read from the text in `TZ_NAME` and removed from it, so the example above becomes `Call the bank ⏰ 09:00 📅 2026-11-03`. Returns `201 {"status": "created", ...task, "message"}`.
+Each column has either `numbers` or `texts`, with one value per timestamp. `missingRows`
+contains zero-based indexes whose placeholder values should be stored as missing. Timestamps
+must fall in the stated UTC day. The first upload establishes the stream's schema; subsequent
+uploads must match it.
 
-### `GET /api/tasks?due=today|overdue|week|all`
+Rows merge by timestamp, with the newer row winning. The response reports `rows`, `added`, and
+`replaced` as int64 values. Retrying a batch is safe. Raw data lives under `HEALTH_RAW_PATH` as
+Parquet, with a `columns.json` schema for each stream. The updated healthstrap client uses this
+endpoint; deploy a server that supports it before updating the client.
 
-Open tasks, soonest first. `today` is due today, `overdue` is due before today, `week` is today through six days from now, and `all` (the default) is every open task. Returns `{ items, message }`.
+## Home
 
-### `GET /api/tasks/match?q=…`
+`GET /v1/home` returns the computed home resource: the current sentence, next event, seven days
+of agenda items, task groups, and health metric trends. Unlike the legacy `HomeView`, it uses
+protobuf date/time objects and fields such as `nextEvent`, `taskGroups`, and `metrics`.
 
-Up to five open tasks whose text is closest to `q`, best first, each with a `score` from 0 (exact) to 1. Siri uses it to turn "mark the bank one done" into an id.
+Metric series use `dailyValues` plus `missingDays` indexes to represent missing data.
+The regular server has no calendar source by default; the demo supplies sample events.
 
-### `POST /api/tasks/{id}/complete`
+## Updates, concurrency, and pagination
 
-Ticks the task off and adds `✅` with today's date. A recurring task (`🔁 every week`, `every 2 days`, `every weekday`, and so on) gets its next occurrence inserted above it, as Tasks does. Completing a done task returns `{"status": "already_done"}`, and an unknown id returns `404`.
+Task and check-in PATCH requests accept an `updateMask` query parameter containing comma-separated
+camelCase fields. Snake_case query names and mask paths are also accepted. An omitted mask changes
+only supplied writable fields. A masked unset optional field clears it; a task's required
+description cannot be cleared. A mask of `tags` replaces the entire tag list.
 
+Send the resource's returned `etag` to reject intervening edits. For PATCH it goes in the body;
+for DELETE it goes in the query; for complete/reopen it goes in the action body.
 
-## Version 1 API
+List methods default to 50 items and cap pages at 500. Pass the returned `nextPageToken` back as
+`pageToken` with the same filters and ordering to continue. Omitted or empty `nextPageToken` means
+there are no more pages.
 
-The services in `proto/dashboardify/v1` are implemented at their annotated `/v1/...`
-REST paths and as Connect unary RPCs at `/dashboardify.v1.<Service>/<Method>`.
-Both transports share the same authenticated handlers and vault/Parquet stores.
-REST bodies and responses use protobuf JSON: dates are `{year, month, day}`, times
-are `{hours, minutes}`, enums use their symbolic names, and int64 values are strings.
-Voice methods are RPC-only, as specified by the protos.
+## Voice RPCs
 
-Task and check-in PATCH requests accept `updateMask` (comma-separated camelCase
-fields; snake_case query names and mask paths also work). An omitted mask changes
-only supplied writable fields. A masked unset field clears it; `tags` replaces the
-whole list. Supply the returned `etag` to reject intervening edits. List endpoints
-return `nextPageToken`; pass it back with the same filters and ordering.
-Task filters accept comparisons on `state` and `due_date` joined by `AND`;
-message filters accept comparisons on `sender` and `receive_time`.
+Voice methods are RPC-only. Send a JSON request to the paths below with the same authentication:
 
-The home UI uses `/v1/home`, the new completion action, and VoiceService.AddTask
-for natural-language capture. Healthstrap uploads protobuf JSON to
-`/v1/streams/<stream>:mergeSamples`. Deploy this server before updating healthstrap.
-The previous `/api/...` routes remain available for older clients.
+| Path | Input | Behavior |
+| --- | --- | --- |
+| `/dashboardify.v1.VoiceService/AddTask` | `text`, optional `requestId` | Parse a spoken date/time and capture a task |
+| `/dashboardify.v1.VoiceService/Log` | `text` | Append to today's journal |
+| `/dashboardify.v1.VoiceService/CheckIn` | Optional string `feel`, `rpe`, `tags` | Record scores and merge comma-separated tags |
+| `/dashboardify.v1.VoiceService/ListDue` | `window`: `today`, `overdue`, or `week` | Summarize open tasks |
+| `/dashboardify.v1.VoiceService/CompleteByText` | `text` | Complete the closest matching open task |
 
-Run `bun run proto:generate` after changing protos. Generated TypeScript, including
-Google API and date/time descriptors, is checked in under `src/gen`.
+Responses include a `message` for Siri to speak, plus a resource name where applicable.
+Other protobuf services are also available through their Connect service/method paths.
+Connect supports unary JSON and binary protobuf; gRPC and gRPC-web are not enabled.
 
-API constraints are declared alongside the AIP annotations using `buf.validate` options.
-The shared Protovalidate runtime enforces those constraints for REST and Connect requests.
-Services handle storage-dependent checks such as etags and cross-field sample consistency.
+After editing schemas, run `bun run proto:generate`. Generated TypeScript is checked in under
+`src/gen`; validation descriptors are imported from the Protovalidate package.
