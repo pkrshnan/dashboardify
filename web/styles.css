@@ -1,0 +1,864 @@
+/* Home screen styles. Values come from docs/design/README.md; the phone layout is below 900 px. */
+
+:root {
+  color-scheme: dark;
+  --bg: #0c0c0e;
+  --text: #f5f5f7;
+  --text-2: #a1a1a6;
+  --text-3: #8e8e93;
+  --fill: #1c1c1e;
+  --line-2: #2c2c2e;
+  --line-3: #3a3a3c;
+  --control: #636366;
+  --warn: #ff9f0a;
+  --now: #ff453a;
+  --gutter: 64px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family:
+    -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 500;
+}
+
+.ell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.muted {
+  color: var(--text-3);
+}
+
+.home {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.section {
+  padding: 32px var(--gutter) 48px;
+  border-bottom: 1px solid var(--line-2);
+}
+
+.section:last-child {
+  border-bottom: 0;
+  padding-bottom: 64px;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+/* ---- Focus ---- */
+
+.focus {
+  padding: 40px var(--gutter);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 64px;
+  border-bottom: 1px solid var(--line-2);
+}
+
+.focus-main {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.focus-date {
+  display: flex;
+  gap: 16px;
+  font-size: 15px;
+  color: var(--text-2);
+}
+
+.sentence {
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.25;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  max-width: 820px;
+}
+
+.numbers {
+  display: flex;
+  gap: 64px;
+}
+
+.number-value {
+  font-size: 64px;
+  font-weight: 200;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.unit {
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--text-3);
+  margin-left: 4px;
+}
+
+.number-name {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  margin-top: 10px;
+  font-size: 15px;
+  color: var(--text-2);
+}
+
+.next {
+  padding-top: 44px;
+}
+
+.next-label {
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.next-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 6px;
+}
+
+.next-title {
+  font-size: 22px;
+  font-weight: 500;
+}
+
+.next-detail {
+  font-size: 15px;
+  color: var(--text-2);
+  margin-top: 2px;
+}
+
+.pill-button {
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 22px;
+  background: var(--fill);
+  border: 1px solid var(--line-3);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  flex: none;
+}
+
+/* ---- Segmented control ---- */
+
+.segmented {
+  display: flex;
+  margin: 0;
+  border: 0;
+  min-width: 0;
+  background: var(--fill);
+  border-radius: 10px;
+  padding: 3px;
+}
+
+.segmented button {
+  height: 32px;
+  min-width: 52px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-2);
+}
+
+.segmented button[aria-pressed="true"] {
+  background: var(--control);
+  color: var(--text);
+}
+
+/* ---- Checkbox rings ---- */
+
+.ring {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border: 1.5px solid var(--control);
+  border-radius: 50%;
+  flex: none;
+  cursor: pointer;
+  background: transparent;
+}
+
+.ring:checked {
+  background: var(--text-3);
+  border-color: var(--text-3);
+  box-shadow: inset 0 0 0 3px var(--bg);
+  cursor: default;
+}
+
+.ring.sm {
+  width: 15px;
+  height: 15px;
+}
+
+.hollow {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1px solid var(--text-3);
+  flex: none;
+}
+
+/* ---- Calendar ---- */
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 56px;
+  align-items: start;
+}
+
+.timeline {
+  position: relative;
+  margin-left: 48px;
+}
+
+.hour-label {
+  position: absolute;
+  left: -48px;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+.hour-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--line-2);
+}
+
+.reminder-guide {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px dashed var(--line-3);
+}
+
+.event {
+  position: absolute;
+  border-radius: 6px;
+  padding: 6px 10px;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.event.one-line {
+  padding: 3px 10px;
+}
+
+.event-title {
+  font-weight: 600;
+}
+
+.reminder {
+  position: absolute;
+  left: 64%;
+  right: 0;
+  transform: translateY(-50%);
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px dashed var(--control);
+  border-radius: 16px;
+  background: var(--bg);
+  font-size: 13px;
+}
+
+.reminder.done .reminder-text {
+  color: var(--text-3);
+  text-decoration: line-through;
+}
+
+.reminder-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.now-line {
+  position: absolute;
+  left: -6px;
+  right: 0;
+  height: 2px;
+  background: var(--now);
+}
+
+.empty-day {
+  position: absolute;
+  left: 0;
+  width: 62%;
+  top: 50%;
+  font-size: 15px;
+  color: var(--text-3);
+}
+
+/* Week, desktop */
+
+.week {
+  display: flex;
+  gap: 8px;
+}
+
+.week-hours {
+  width: 28px;
+  flex: none;
+  position: relative;
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+.week-cols {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.week-col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.week-day {
+  height: 28px;
+  padding: 0 4px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.week-day.today {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.week-dated {
+  height: 50px;
+  padding: 0 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+}
+
+.week-dated div {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  font-size: 11px;
+}
+
+.week-body {
+  margin-top: 6px;
+  position: relative;
+}
+
+.week-event {
+  position: absolute;
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 11px;
+  line-height: 14px;
+}
+
+.week-reminder {
+  position: absolute;
+  left: 10%;
+  right: 2px;
+  transform: translateY(-50%);
+  height: 20px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 6px;
+  border-radius: 10px;
+  border: 1px dashed var(--control);
+  background: var(--bg);
+  font-size: 11px;
+}
+
+.week-reminder .hollow {
+  width: 8px;
+  height: 8px;
+}
+
+/* Week, phone */
+
+.day-strip {
+  display: flex;
+  gap: 4px;
+}
+
+.day-strip button {
+  flex: 1;
+  min-width: 0;
+  height: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+.day-strip button[aria-pressed="true"] {
+  background: var(--control);
+  color: var(--text);
+}
+
+.day-strip .dow {
+  font-size: 11px;
+}
+
+.day-strip .num {
+  font-size: 17px;
+}
+
+.day-strip .dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 2px;
+}
+
+.agenda {
+  display: flex;
+  flex-direction: column;
+  margin-top: 16px;
+}
+
+.agenda-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  border-bottom: 1px solid var(--line-2);
+  font-size: 15px;
+}
+
+.agenda-time {
+  width: 44px;
+  font-size: 13px;
+  color: var(--text-3);
+  flex: none;
+}
+
+.agenda-marker {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid;
+  flex: none;
+}
+
+/* ---- Tasks ---- */
+
+.tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.quick-add {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: var(--fill);
+  color: var(--text-3);
+  font-size: 15px;
+}
+
+.quick-add input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  outline: none;
+}
+
+.quick-add-note {
+  font-size: 13px;
+  color: var(--text-3);
+  margin-top: -16px;
+}
+
+.task-group h3 {
+  margin: 0 0 2px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+.task-group.overdue h3,
+.task-meta.late {
+  color: var(--warn);
+}
+
+.task-group.someday h3 {
+  color: var(--text-3);
+}
+
+.task-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-height: 44px;
+  border-bottom: 1px solid var(--line-2);
+  cursor: pointer;
+}
+
+.task-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+}
+
+.task-row.done .task-text {
+  color: var(--text-3);
+  text-decoration: line-through;
+}
+
+.task-meta {
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+/* ---- Health ---- */
+
+.health-title {
+  display: flex;
+  gap: 16px;
+  align-items: baseline;
+}
+
+.range-label {
+  font-size: 15px;
+  color: var(--text-3);
+}
+
+.health-cols {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 72px;
+  margin-top: 28px;
+}
+
+.health-col {
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+
+.health-group {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.metric {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  gap: 24px;
+  align-items: center;
+}
+
+.metric-name {
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.metric-value {
+  font-size: 36px;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin-top: 2px;
+}
+
+.metric-value .unit {
+  font-size: 15px;
+}
+
+.metric-delta {
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.metric svg {
+  display: block;
+  width: 100%;
+  height: 88px;
+}
+
+/* ---- Sign-in ---- */
+
+.sign-in {
+  max-width: 420px;
+  margin: 18vh auto 0;
+  padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sign-in p {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.sign-in .error {
+  color: var(--now);
+}
+
+/* ---- Phone ---- */
+
+@media (max-width: 899px) {
+  :root {
+    --gutter: 20px;
+  }
+
+  h2 {
+    font-size: 20px;
+  }
+
+  .focus {
+    padding: calc(56px + env(safe-area-inset-top)) var(--gutter) 28px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+
+  .focus-main {
+    gap: 24px;
+  }
+
+  .focus-date {
+    gap: 12px;
+  }
+
+  .sentence {
+    font-size: 24px;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+  }
+
+  .numbers {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 20px;
+  }
+
+  .number-value {
+    font-size: 48px;
+    letter-spacing: -0.03em;
+  }
+
+  .number-value .unit {
+    font-size: 15px;
+    margin-left: 3px;
+  }
+
+  .number-name {
+    font-size: 13px;
+    margin-top: 8px;
+  }
+
+  .next {
+    padding-top: 20px;
+    border-top: 1px solid var(--line-2);
+  }
+
+  .next-title {
+    font-size: 17px;
+  }
+
+  .next-detail {
+    font-size: 13px;
+  }
+
+  .next-row {
+    gap: 12px;
+  }
+
+  .section {
+    padding: 24px var(--gutter);
+  }
+
+  .section-head {
+    margin-bottom: 16px;
+  }
+
+  .segmented button {
+    height: 38px;
+    min-width: 44px;
+    padding: 0 12px;
+  }
+
+  .calendar-grid {
+    display: block;
+  }
+
+  .timeline {
+    margin: 8px 0 12px 28px;
+  }
+
+  .hour-label {
+    left: -28px;
+  }
+
+  .reminder {
+    left: 54%;
+    height: 44px;
+    gap: 6px;
+    padding: 0 8px;
+    border-radius: 12px;
+  }
+
+  .reminder-body {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .reminder-body .reminder-time {
+    font-size: 11px;
+    line-height: 14px;
+    color: var(--text-3);
+  }
+
+  .ring {
+    width: 22px;
+    height: 22px;
+    box-shadow: none;
+  }
+
+  .ring:checked {
+    box-shadow: inset 0 0 0 4px var(--bg);
+  }
+
+  .ring.sm {
+    width: 18px;
+    height: 18px;
+  }
+
+  .task-row {
+    min-height: 48px;
+  }
+
+  .task-text {
+    font-size: 17px;
+  }
+
+  .tasks {
+    gap: 18px;
+  }
+
+  .health-cols {
+    display: block;
+    margin-top: 20px;
+  }
+
+  .health-group {
+    gap: 18px;
+    padding-bottom: 20px;
+  }
+
+  .metric {
+    display: block;
+  }
+
+  .metric-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .metric-row .metric-name {
+    flex: 1;
+    font-size: 15px;
+  }
+
+  .metric-row .metric-value {
+    font-size: 24px;
+    min-width: 76px;
+    text-align: right;
+    margin: 0;
+  }
+
+  .metric-row .metric-value .unit {
+    font-size: 13px;
+    margin-left: 2px;
+  }
+
+  .metric svg {
+    height: 44px;
+    margin-top: 6px;
+  }
+
+  .health-title {
+    display: block;
+  }
+
+  .range-label {
+    font-size: 13px;
+    margin-top: 2px;
+  }
+}

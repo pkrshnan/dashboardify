@@ -1,39 +1,56 @@
 // The HTTP API. Each area lives in its own file under routes/; this file only wires them up.
 
 import { Hono } from "hono";
+import { DerivedStore } from "../health/derived-store";
 import { RawStore } from "../health/raw-store";
+import { type CalendarSource, noCalendar } from "../home/calendar";
+import { HealthHistory } from "../home/health-history";
 import { TaskStore } from "../vault/task-store";
 import { Vault } from "../vault/vault";
 import { type AuthEnv, bearerAuth } from "./auth";
 import type { Config } from "./config";
 import { healthRoutes } from "./routes/health";
+import { homeRoutes } from "./routes/home";
 import { journalRoutes } from "./routes/journal";
 import { messageRoutes } from "./routes/messages";
 import { sampleRoutes } from "./routes/samples";
 import { taskRoutes } from "./routes/tasks";
 import { todayRoutes } from "./routes/today";
+import { webRoutes } from "./routes/web";
 
 export interface AppDeps {
   vault?: Vault;
   /** Told about every stored strap upload, e.g. to recompute health summaries. */
   onSamples?: (stream: string, day: string) => void;
+  calendar?: CalendarSource;
+  /** The clock for the home screen; tests pin it. */
+  now?: () => Date;
 }
 
 export function createApp(config: Config, deps: AppDeps = {}): Hono<AuthEnv> {
   const vault = deps.vault ?? new Vault(config.vaultPath, config.timeZone);
+  const tasks = new TaskStore(vault, config.tasksInbox);
+  const home = {
+    tasks,
+    health: new HealthHistory(new DerivedStore(config.healthDerivedPath)),
+    calendar: deps.calendar ?? noCalendar,
+    timeZone: config.timeZone,
+  };
 
   const api = new Hono<AuthEnv>();
-  api.use("*", bearerAuth(config.tokens));
+  api.use("*", bearerAuth(config.tokens, config.tailnet ?? null));
   api.route("/ingest/journal", journalRoutes(vault));
   api.route("/ingest/messages", messageRoutes(vault));
   api.route("/ingest/samples", sampleRoutes(new RawStore(config.healthRawPath), deps.onSamples));
   api.route("/today", todayRoutes(vault, config));
   api.route("/health", healthRoutes(vault, config));
-  api.route("/tasks", taskRoutes(new TaskStore(vault, config.tasksInbox), config));
+  api.route("/tasks", taskRoutes(tasks, config));
+  api.route("/home", homeRoutes(home, deps.now));
 
   const app = new Hono<AuthEnv>();
   app.get("/healthz", (c) => c.json({ ok: true }));
   app.route("/api", api);
+  app.route("/", webRoutes());
   app.notFound((c) => c.json({ error: "not found" }, 404));
   app.onError((err, c) => {
     console.error(err);

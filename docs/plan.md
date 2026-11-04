@@ -39,6 +39,7 @@ This is the build plan for dashboardify. [architecture.md](architecture.md) desc
 .github/workflows/ci.yml   lint, typecheck, test on every PR and on main
 src/vault/                 Markdown parsing and editing, safe file writes
 src/server/                HTTP server: config, auth, routes
+src/home/                  the home screen's data: trends, agenda, the day's sentence
 src/sources/               CalDAV, IMAP pollers
 src/index/                 SQLite index (FTS5 + vectors + metric tables)
 src/ask/                   ask agent: tools, model providers, privacy rules
@@ -80,8 +81,8 @@ Done when the dashboard replaces opening four apps in the morning.
 8. **Strap data and metrics:** the raw samples endpoint that healthstrap posts to, Parquet storage in `health-raw/`, and the metrics job that computes strain, recovery, HRV, sleep, VO2max and biological age into the health CSVs and the daily note. Done so far: sleep, resting HR, HRV, breathing rate, skin temperature, strain, zones, steps and recovery ([how they work](health-metrics.md)). Still to do: sleep stages, calories, training load, VO2max and biological age. An importer for the Whoop CSV export backfills older history.
 9. **Apple Health Shortcut:** a recipe for steps, workouts, VO2max and sleep.
 10. **Calendar source:** CalDAV and ICS reader, today's agenda block in the daily note, and events kept in memory for the API.
-11. **Today API:** one endpoint that returns everything the dashboard shows.
-12. **Web Today screen:** the approved design on desktop and phone, installable as a PWA, with light and dark modes.
+11. **Today API:** one endpoint that returns everything the dashboard shows. Done as `GET /api/home`; calendar events arrive with step 10.
+12. **Web Today screen:** the approved design on desktop and phone, installable as a PWA. Done in `web/`, dark mode only for now ([design](design/README.md)).
 
 ### M3: Ask
 

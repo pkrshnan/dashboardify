@@ -1,3 +1,4 @@
+import homepage from "../web/index.html";
 import { DailySummary } from "./health/daily-summary";
 import { DerivedStore } from "./health/derived-store";
 import { RawStore } from "./health/raw-store";
@@ -35,7 +36,13 @@ if (import.meta.main) {
     vault,
     onSamples: (_stream, day) => scheduler.touchUtcDay(day),
   });
-  Bun.serve({ port: config.port, fetch: app.fetch });
+  Bun.serve({
+    port: config.port,
+    // The web app: Bun bundles web/app.tsx and styles.css when the page is first requested.
+    routes: { "/": homepage },
+    fetch: app.fetch,
+    development: process.env.NODE_ENV !== "production",
+  });
   console.log(
     `dashboardify listening on :${config.port}, vault ${config.vaultPath}, tz ${config.timeZone}`,
   );

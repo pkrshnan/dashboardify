@@ -2,6 +2,8 @@
 
 All `/api` routes need `Authorization: Bearer <token>`, using a token from `INGEST_TOKENS`. Bodies are JSON. A write returns `201` with the vault path it touched. Bad input returns `400 {"error": "..."}`, and a missing or wrong token returns `401`.
 
+Requests that come through Tailscale Serve can skip the token. Tailscale Serve adds a `Tailscale-User-Login` header naming the tailnet user, and when `TAILSCALE_PROXY` and `TAILNET_USERS` are set, the server accepts a listed login in place of a token. It trusts that header only on connections from `TAILSCALE_PROXY`, the address Tailscale Serve's requests arrive from (`gateway` means the container's default gateway, which is where a port published on the host appears to connect from). Other containers on the Docker network connect from their own addresses, so they still need a token.
+
 `GET /healthz` is public and returns `{"ok": true}`.
 
 ## `POST /api/ingest/journal`
@@ -41,6 +43,22 @@ Returns `200 { rows, added, replaced }`: rows now stored for the day, new timest
 ## `GET /api/today?date=YYYY-MM-DD`
 
 Returns `{ date, path, frontmatter, body }` for that day's note. `date` defaults to today. If there is no note yet, `body` is `null`.
+
+## `GET /api/home`
+
+Everything the home screen shows, worked out on the server so the web app only lays it out. The shape is `HomeView` in [`src/home/types.ts`](../src/home/types.ts):
+
+- `sentence`: one plain sentence with the next event, a judgement on recovery, and at most one overdue task.
+- `next`: the event on now or next today, with `inMin` and a `url` for the Join button, or `null`.
+- `days`: seven days from today. Each has `events`, `reminders` (tasks with a `⏰` time) and `dated` (untimed tasks due that day).
+- `tasks`: open tasks in `Overdue`, `Today`, `This week`, `Later` and `Someday`. Today's timed tasks are left out, because they are on the timeline.
+- `health`: ten metrics with the value, the change against baseline (`delta` and `tone`), the baseline mean and SD, and a year of daily values for the charts. The rules are in [design/README.md](design/README.md#health-numbers).
+
+Calendar events are empty until the CalDAV and ICS reader lands (plan step 10).
+
+## Web app
+
+`GET /` serves the home screen (`web/`). Opened through Tailscale it needs nothing more. Anywhere else the API answers `401`, and the page asks for a device token and keeps it in the browser. The icons the manifest points to (`/icon.svg`, `/icon-512.png`, `/apple-touch-icon.png`) are public too.
 
 ## `POST /api/health/checkin`
 

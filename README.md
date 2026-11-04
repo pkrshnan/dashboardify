@@ -19,6 +19,7 @@ Requires [Bun](https://bun.sh) (version pinned in `package.json`).
 bun install
 bun run check   # lint + typecheck + tests, the same as CI
 bun run format  # auto-fix formatting and import order
+bun run demo    # the web app with made-up data, on http://localhost:8788
 cp .env.example .env && set -a && . ./.env && set +a && bun run dev
 ```
 
@@ -32,6 +33,10 @@ git check-ignore vault             # prints "vault", so git will never pick it u
 ```
 
 `.env.example` already sets `VAULT_PATH=./vault`. The code that reads and writes notes lives in `src/vault/`, and that folder is part of the repo. Tests use temporary folders, so they never touch your real vault.
+
+### The web app
+
+The home screen lives in `web/` (Preact, bundled by Bun) and is served at `/` by the same server. Through Tailscale it signs you in with your tailnet login (`TAILSCALE_PROXY` and `TAILNET_USERS`); elsewhere it asks for one of the `INGEST_TOKENS` tokens. `bun run demo` serves it with made-up health data, tasks and calendar events and prints the token to use; `DEMO_TIME=09:12 bun run demo` pins the clock for screenshots.
 
 See [docs/style.md](docs/style.md) for the code style.
 
