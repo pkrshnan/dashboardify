@@ -85,7 +85,13 @@ function Home({ token, onUnauthorized }: { token: Token; onUnauthorized: () => v
           {tasks}
         </section>
       )}
-      <Health metrics={view.health} date={view.date} isPhone={isPhone} />
+      <Health
+        metrics={view.health}
+        date={view.date}
+        sync={view.healthSync}
+        timeZone={view.timeZone}
+        isPhone={isPhone}
+      />
     </main>
   );
 }

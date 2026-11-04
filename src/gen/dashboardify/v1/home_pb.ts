@@ -21,7 +21,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file dashboardify/v1/home.proto.
  */
 export const file_dashboardify_v1_home: GenFile = /*@__PURE__*/
-  fileDesc("ChpkYXNoYm9hcmRpZnkvdjEvaG9tZS5wcm90bxIPZGFzaGJvYXJkaWZ5LnYxIqwDCgRIb21lEhIKBG5hbWUYASABKAlCBOJBAQgSFwoJdGltZV96b25lGAIgASgJQgTiQQEDEiUKBGRhdGUYAyABKAsyES5nb29nbGUudHlwZS5EYXRlQgTiQQEDEjcKDWdlbmVyYXRlX3RpbWUYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgTiQQEDEhYKCHNlbnRlbmNlGAUgASgJQgTiQQEDEjQKCm5leHRfZXZlbnQYBiABKAsyGi5kYXNoYm9hcmRpZnkudjEuTmV4dEV2ZW50QgTiQQEDEi4KBGRheXMYByADKAsyGi5kYXNoYm9hcmRpZnkudjEuRGF5QWdlbmRhQgTiQQEDEjUKC3Rhc2tfZ3JvdXBzGAggAygLMhouZGFzaGJvYXJkaWZ5LnYxLlRhc2tHcm91cEIE4kEBAxIzCgdtZXRyaWNzGAkgAygLMhwuZGFzaGJvYXJkaWZ5LnYxLk1ldHJpY1RyZW5kQgTiQQEDOi3qQSoKFWRhc2hib2FyZGlmeS5hcHAvSG9tZRIEaG9tZSoFaG9tZXMyBGhvbWUiywEKC0FnZW5kYUV2ZW50Eg0KBXRpdGxlGAEgASgJEioKCnN0YXJ0X3RpbWUYAiABKAsyFi5nb29nbGUudHlwZS5UaW1lT2ZEYXkSKAoIZW5kX3RpbWUYAyABKAsyFi5nb29nbGUudHlwZS5UaW1lT2ZEYXkSFAoMc3RhcnRfbWludXRlGAQgASgFEhIKCmVuZF9taW51dGUYBSABKAUSDgoGZGV0YWlsGAYgASgJEhAKCGNhdGVnb3J5GAcgASgJEgsKA3VybBgIIAEoCSJ6CglOZXh0RXZlbnQSDQoFdGl0bGUYASABKAkSKgoKc3RhcnRfdGltZRgCIAEoCzIWLmdvb2dsZS50eXBlLlRpbWVPZkRheRIOCgZkZXRhaWwYAyABKAkSFQoNbWludXRlc191bnRpbBgEIAEoBRILCgN1cmwYBSABKAkihgEKCFJlbWluZGVyEigKBHRhc2sYASABKAlCGvpBFwoVZGFzaGJvYXJkaWZ5LmFwcC9UYXNrEgwKBHRleHQYAiABKAkSJAoEdGltZRgDIAEoCzIWLmdvb2dsZS50eXBlLlRpbWVPZkRheRIOCgZtaW51dGUYBCABKAUSDAoEZG9uZRgFIAEoCCKdAQoJRGF5QWdlbmRhEh8KBGRhdGUYASABKAsyES5nb29nbGUudHlwZS5EYXRlEiwKBmV2ZW50cxgCIAMoCzIcLmRhc2hib2FyZGlmeS52MS5BZ2VuZGFFdmVudBIsCglyZW1pbmRlcnMYAyADKAsyGS5kYXNoYm9hcmRpZnkudjEuUmVtaW5kZXISEwoLZGF0ZWRfdGFza3MYBCADKAkiUAoIVGFza0l0ZW0SKAoEdGFzaxgBIAEoCUIa+kEXChVkYXNoYm9hcmRpZnkuYXBwL1Rhc2sSDAoEdGV4dBgCIAEoCRIMCgRtZXRhGAMgASgJIksKCVRhc2tHcm91cBIUCgxkaXNwbGF5X25hbWUYASABKAkSKAoFdGFza3MYAiADKAsyGS5kYXNoYm9hcmRpZnkudjEuVGFza0l0ZW0iJAoIQmFzZWxpbmUSDAoEbWVhbhgBIAEoARIKCgJzZBgCIAEoASLmAgoLTWV0cmljVHJlbmQSCwoDa2V5GAEgASgJEhQKDGRpc3BsYXlfbmFtZRgCIAEoCRIMCgR1bml0GAMgASgJEg0KBWdyb3VwGAQgASgJEhIKBXZhbHVlGAUgASgJSACIAQESFgoJcmF3X3ZhbHVlGAYgASgBSAGIAQESEgoFZGVsdGEYByABKAlIAogBARIjCgR0b25lGAggASgOMhUuZGFzaGJvYXJkaWZ5LnYxLlRvbmUSEQoJeWVzdGVyZGF5GAkgASgIEisKCGJhc2VsaW5lGAogASgLMhkuZGFzaGJvYXJkaWZ5LnYxLkJhc2VsaW5lEhQKDGRhaWx5X3ZhbHVlcxgLIAMoARIUCgxtaXNzaW5nX2RheXMYDCADKA0SJAoJbGFzdF9kYXRlGA0gASgLMhEuZ29vZ2xlLnR5cGUuRGF0ZUIICgZfdmFsdWVCDAoKX3Jhd192YWx1ZUIICgZfZGVsdGEiRQoOR2V0SG9tZVJlcXVlc3QSMwoEbmFtZRgBIAEoCUIl4kEBAvpBFwoVZGFzaGJvYXJkaWZ5LmFwcC9Ib21lukgEcgIQASpLCgRUb25lEhQKEFRPTkVfVU5TUEVDSUZJRUQQABINCglUT05FX0dPT0QQARIMCghUT05FX0JBRBACEhAKDFRPTkVfTkVVVFJBTBADMnAKC0hvbWVTZXJ2aWNlEmEKB0dldEhvbWUSHy5kYXNoYm9hcmRpZnkudjEuR2V0SG9tZVJlcXVlc3QaFS5kYXNoYm9hcmRpZnkudjEuSG9tZSIe2kEEbmFtZYLT5JMCERIPL3YxL3tuYW1lPWhvbWV9YgZwcm90bzM", [file_buf_validate_validate, file_google_api_annotations, file_google_api_client, file_google_api_field_behavior, file_google_api_resource, file_google_protobuf_timestamp, file_google_type_date, file_google_type_timeofday]);
+  fileDesc("ChpkYXNoYm9hcmRpZnkvdjEvaG9tZS5wcm90bxIPZGFzaGJvYXJkaWZ5LnYxIuQDCgRIb21lEhIKBG5hbWUYASABKAlCBOJBAQgSFwoJdGltZV96b25lGAIgASgJQgTiQQEDEiUKBGRhdGUYAyABKAsyES5nb29nbGUudHlwZS5EYXRlQgTiQQEDEjcKDWdlbmVyYXRlX3RpbWUYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgTiQQEDEhYKCHNlbnRlbmNlGAUgASgJQgTiQQEDEjQKCm5leHRfZXZlbnQYBiABKAsyGi5kYXNoYm9hcmRpZnkudjEuTmV4dEV2ZW50QgTiQQEDEi4KBGRheXMYByADKAsyGi5kYXNoYm9hcmRpZnkudjEuRGF5QWdlbmRhQgTiQQEDEjUKC3Rhc2tfZ3JvdXBzGAggAygLMhouZGFzaGJvYXJkaWZ5LnYxLlRhc2tHcm91cEIE4kEBAxIzCgdtZXRyaWNzGAkgAygLMhwuZGFzaGJvYXJkaWZ5LnYxLk1ldHJpY1RyZW5kQgTiQQEDEjYKC2hlYWx0aF9zeW5jGAogASgLMhsuZGFzaGJvYXJkaWZ5LnYxLkhlYWx0aFN5bmNCBOJBAQM6LepBKgoVZGFzaGJvYXJkaWZ5LmFwcC9Ib21lEgRob21lKgVob21lczIEaG9tZSJ1CgpIZWFsdGhTeW5jEjYKEmxhdGVzdF9zYW1wbGVfdGltZRgBIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLwoLdXBsb2FkX3RpbWUYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIssBCgtBZ2VuZGFFdmVudBINCgV0aXRsZRgBIAEoCRIqCgpzdGFydF90aW1lGAIgASgLMhYuZ29vZ2xlLnR5cGUuVGltZU9mRGF5EigKCGVuZF90aW1lGAMgASgLMhYuZ29vZ2xlLnR5cGUuVGltZU9mRGF5EhQKDHN0YXJ0X21pbnV0ZRgEIAEoBRISCgplbmRfbWludXRlGAUgASgFEg4KBmRldGFpbBgGIAEoCRIQCghjYXRlZ29yeRgHIAEoCRILCgN1cmwYCCABKAkiegoJTmV4dEV2ZW50Eg0KBXRpdGxlGAEgASgJEioKCnN0YXJ0X3RpbWUYAiABKAsyFi5nb29nbGUudHlwZS5UaW1lT2ZEYXkSDgoGZGV0YWlsGAMgASgJEhUKDW1pbnV0ZXNfdW50aWwYBCABKAUSCwoDdXJsGAUgASgJIoYBCghSZW1pbmRlchIoCgR0YXNrGAEgASgJQhr6QRcKFWRhc2hib2FyZGlmeS5hcHAvVGFzaxIMCgR0ZXh0GAIgASgJEiQKBHRpbWUYAyABKAsyFi5nb29nbGUudHlwZS5UaW1lT2ZEYXkSDgoGbWludXRlGAQgASgFEgwKBGRvbmUYBSABKAginQEKCURheUFnZW5kYRIfCgRkYXRlGAEgASgLMhEuZ29vZ2xlLnR5cGUuRGF0ZRIsCgZldmVudHMYAiADKAsyHC5kYXNoYm9hcmRpZnkudjEuQWdlbmRhRXZlbnQSLAoJcmVtaW5kZXJzGAMgAygLMhkuZGFzaGJvYXJkaWZ5LnYxLlJlbWluZGVyEhMKC2RhdGVkX3Rhc2tzGAQgAygJIlAKCFRhc2tJdGVtEigKBHRhc2sYASABKAlCGvpBFwoVZGFzaGJvYXJkaWZ5LmFwcC9UYXNrEgwKBHRleHQYAiABKAkSDAoEbWV0YRgDIAEoCSJLCglUYXNrR3JvdXASFAoMZGlzcGxheV9uYW1lGAEgASgJEigKBXRhc2tzGAIgAygLMhkuZGFzaGJvYXJkaWZ5LnYxLlRhc2tJdGVtIiQKCEJhc2VsaW5lEgwKBG1lYW4YASABKAESCgoCc2QYAiABKAEi5gIKC01ldHJpY1RyZW5kEgsKA2tleRgBIAEoCRIUCgxkaXNwbGF5X25hbWUYAiABKAkSDAoEdW5pdBgDIAEoCRINCgVncm91cBgEIAEoCRISCgV2YWx1ZRgFIAEoCUgAiAEBEhYKCXJhd192YWx1ZRgGIAEoAUgBiAEBEhIKBWRlbHRhGAcgASgJSAKIAQESIwoEdG9uZRgIIAEoDjIVLmRhc2hib2FyZGlmeS52MS5Ub25lEhEKCXllc3RlcmRheRgJIAEoCBIrCghiYXNlbGluZRgKIAEoCzIZLmRhc2hib2FyZGlmeS52MS5CYXNlbGluZRIUCgxkYWlseV92YWx1ZXMYCyADKAESFAoMbWlzc2luZ19kYXlzGAwgAygNEiQKCWxhc3RfZGF0ZRgNIAEoCzIRLmdvb2dsZS50eXBlLkRhdGVCCAoGX3ZhbHVlQgwKCl9yYXdfdmFsdWVCCAoGX2RlbHRhIkUKDkdldEhvbWVSZXF1ZXN0EjMKBG5hbWUYASABKAlCJeJBAQL6QRcKFWRhc2hib2FyZGlmeS5hcHAvSG9tZbpIBHICEAEqSwoEVG9uZRIUChBUT05FX1VOU1BFQ0lGSUVEEAASDQoJVE9ORV9HT09EEAESDAoIVE9ORV9CQUQQAhIQCgxUT05FX05FVVRSQUwQAzJwCgtIb21lU2VydmljZRJhCgdHZXRIb21lEh8uZGFzaGJvYXJkaWZ5LnYxLkdldEhvbWVSZXF1ZXN0GhUuZGFzaGJvYXJkaWZ5LnYxLkhvbWUiHtpBBG5hbWWC0+STAhESDy92MS97bmFtZT1ob21lfWIGcHJvdG8z", [file_buf_validate_validate, file_google_api_annotations, file_google_api_client, file_google_api_field_behavior, file_google_api_resource, file_google_protobuf_timestamp, file_google_type_date, file_google_type_timeofday]);
 
 /**
  * Everything the home screen shows. A computed view, never written.
@@ -91,6 +91,13 @@ export type Home = Message<"dashboardify.v1.Home"> & {
    * @generated from field: repeated dashboardify.v1.MetricTrend metrics = 9;
    */
   metrics: MetricTrend[];
+
+  /**
+   * When strap data last arrived. Unset before the first upload.
+   *
+   * @generated from field: dashboardify.v1.HealthSync health_sync = 10;
+   */
+  healthSync?: HealthSync | undefined;
 };
 
 /**
@@ -99,6 +106,34 @@ export type Home = Message<"dashboardify.v1.Home"> & {
  */
 export const HomeSchema: GenMessage<Home> = /*@__PURE__*/
   messageDesc(file_dashboardify_v1_home, 0);
+
+/**
+ * When strap data last reached the server.
+ *
+ * @generated from message dashboardify.v1.HealthSync
+ */
+export type HealthSync = Message<"dashboardify.v1.HealthSync"> & {
+  /**
+   * The newest stored sample.
+   *
+   * @generated from field: google.protobuf.Timestamp latest_sample_time = 1;
+   */
+  latestSampleTime?: Timestamp | undefined;
+
+  /**
+   * When the last upload landed.
+   *
+   * @generated from field: google.protobuf.Timestamp upload_time = 2;
+   */
+  uploadTime?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message dashboardify.v1.HealthSync.
+ * Use `create(HealthSyncSchema)` to create a new message.
+ */
+export const HealthSyncSchema: GenMessage<HealthSync> = /*@__PURE__*/
+  messageDesc(file_dashboardify_v1_home, 1);
 
 /**
  * A calendar event.
@@ -168,7 +203,7 @@ export type AgendaEvent = Message<"dashboardify.v1.AgendaEvent"> & {
  * Use `create(AgendaEventSchema)` to create a new message.
  */
 export const AgendaEventSchema: GenMessage<AgendaEvent> = /*@__PURE__*/
-  messageDesc(file_dashboardify_v1_home, 1);
+  messageDesc(file_dashboardify_v1_home, 2);
 
 /**
  * The event on now or next.
@@ -217,7 +252,7 @@ export type NextEvent = Message<"dashboardify.v1.NextEvent"> & {
  * Use `create(NextEventSchema)` to create a new message.
  */
 export const NextEventSchema: GenMessage<NextEvent> = /*@__PURE__*/
-  messageDesc(file_dashboardify_v1_home, 2);
+  messageDesc(file_dashboardify_v1_home, 3);
 
 /**
  * A timed task, drawn on the timeline.
@@ -266,7 +301,7 @@ export type Reminder = Message<"dashboardify.v1.Reminder"> & {
  * Use `create(ReminderSchema)` to create a new message.
  */
 export const ReminderSchema: GenMessage<Reminder> = /*@__PURE__*/
-  messageDesc(file_dashboardify_v1_home, 3);
+  messageDesc(file_dashboardify_v1_home, 4);
 
 /**
  * One day of the Day and Week views.
@@ -308,7 +343,7 @@ export type DayAgenda = Message<"dashboardify.v1.DayAgenda"> & {
  * Use `create(DayAgendaSchema)` to create a new message.
  */
 export const DayAgendaSchema: GenMessage<DayAgenda> = /*@__PURE__*/
-  messageDesc(file_dashboardify_v1_home, 4);
+  messageDesc(file_dashboardify_v1_home, 5);
 
 /**
  * A task in the task list.
@@ -343,7 +378,7 @@ export type TaskItem = Message<"dashboardify.v1.TaskItem"> & {
  * Use `create(TaskItemSchema)` to create a new message.
  */
 export const TaskItemSchema: GenMessage<TaskItem> = /*@__PURE__*/
-  messageDesc(file_dashboardify_v1_home, 5);
+  messageDesc(file_dashboardify_v1_home, 6);
 
 /**
  * A heading in the task list.
@@ -371,7 +406,7 @@ export type TaskGroup = Message<"dashboardify.v1.TaskGroup"> & {
  * Use `create(TaskGroupSchema)` to create a new message.
  */
 export const TaskGroupSchema: GenMessage<TaskGroup> = /*@__PURE__*/
-  messageDesc(file_dashboardify_v1_home, 6);
+  messageDesc(file_dashboardify_v1_home, 7);
 
 /**
  * Mean and SD of the 60 days before the last 7.
@@ -399,7 +434,7 @@ export type Baseline = Message<"dashboardify.v1.Baseline"> & {
  * Use `create(BaselineSchema)` to create a new message.
  */
 export const BaselineSchema: GenMessage<Baseline> = /*@__PURE__*/
-  messageDesc(file_dashboardify_v1_home, 7);
+  messageDesc(file_dashboardify_v1_home, 8);
 
 /**
  * One health metric and its trend.
@@ -504,7 +539,7 @@ export type MetricTrend = Message<"dashboardify.v1.MetricTrend"> & {
  * Use `create(MetricTrendSchema)` to create a new message.
  */
 export const MetricTrendSchema: GenMessage<MetricTrend> = /*@__PURE__*/
-  messageDesc(file_dashboardify_v1_home, 8);
+  messageDesc(file_dashboardify_v1_home, 9);
 
 /**
  * Request for GetHome.
@@ -525,7 +560,7 @@ export type GetHomeRequest = Message<"dashboardify.v1.GetHomeRequest"> & {
  * Use `create(GetHomeRequestSchema)` to create a new message.
  */
 export const GetHomeRequestSchema: GenMessage<GetHomeRequest> = /*@__PURE__*/
-  messageDesc(file_dashboardify_v1_home, 9);
+  messageDesc(file_dashboardify_v1_home, 10);
 
 /**
  * How a change reads against baseline.

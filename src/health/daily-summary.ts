@@ -4,7 +4,7 @@
 // A date's summary covers the night that ended that morning (searched from 6 pm the evening
 // before to 2 pm) and the activity of the calendar day itself, midnight to midnight.
 
-import { localTime } from "../vault/time";
+import { localDate, localTime } from "../vault/time";
 import type { Vault } from "../vault/vault";
 import type { DerivedRow, DerivedStore } from "./derived-store";
 import {
@@ -21,7 +21,7 @@ import type { Accel, HeartRate, RrInterval, SkinTemp, StepCounter } from "./metr
 import { ParamsStore } from "./params";
 import { parseProfile } from "./profile";
 import type { RawStore, Row } from "./raw-store";
-import { type DaySummary, frontmatter, healthBlock } from "./render";
+import { type DaySummary, frontmatter, healthBlock, syncLine } from "./render";
 
 /** Bump when a calculation changes, so old rows can be told apart and rebuilt. */
 export const ALGO_VERSION = "1";
@@ -39,13 +39,20 @@ export class DailySummary {
     this.params = new ParamsStore(derived.root);
   }
 
-  /** Compute and write `date`. Resolves to the summary, or null when there was no data. */
+  /**
+   * Compute and write `date`. Resolves to the summary, or null when there was no data; today's
+   * note still gets a Health block then, saying when data last arrived.
+   */
   async run(date: string): Promise<DaySummary | null> {
     const summary = await this.compute(date);
+    const synced = await this.synced(date);
     if (!summary.night && summary.day.wornMin === 0) {
+      if (synced) {
+        await this.vault.setDailyBlock(date, "health", healthBlock(null, 0, this.clock, synced));
+      }
       return null;
     }
-    await this.save(date, summary);
+    await this.save(date, summary, synced);
     return summary;
   }
 
@@ -117,7 +124,24 @@ export class DailySummary {
     return rows.map(convert).filter((v): v is T => v !== null);
   }
 
-  private async save(date: string, summary: DaySummary): Promise<void> {
+  /** The Synced line for today's note; null on other days and before the first upload. */
+  private async synced(date: string): Promise<string | null> {
+    const now = this.now();
+    const sync =
+      date === localDate(new Date(now), this.timeZone) ? await this.raw.readSync() : null;
+    if (!sync) {
+      return null;
+    }
+    const when = (ts: number) =>
+      localDate(new Date(ts), this.timeZone) === date
+        ? this.clock(ts)
+        : `${shortDayMonth(ts, this.timeZone)} ${this.clock(ts)}`;
+    return syncLine(sync, now, when);
+  }
+
+  private readonly clock = (ts: number) => localTime(new Date(ts), this.timeZone);
+
+  private async save(date: string, summary: DaySummary, synced: string | null): Promise<void> {
     const stamp = {
       date,
       algo_version: ALGO_VERSION,
@@ -129,13 +153,17 @@ export class DailySummary {
     }
     await this.derived.write("days", date, { ...stamp, ...dayRow(summary) });
     await this.vault.recordHealth(date, frontmatter(summary), "strap");
-    const clock = (ts: number) => localTime(new Date(ts), this.timeZone);
     await this.vault.setDailyBlock(
       date,
       "health",
-      healthBlock(summary, MIN_BASELINE_NIGHTS, clock),
+      healthBlock(summary, MIN_BASELINE_NIGHTS, this.clock, synced),
     );
   }
+}
+
+/** "3 Nov" in `timeZone`. */
+function shortDayMonth(ts: number, timeZone: string): string {
+  return new Intl.DateTimeFormat("en-GB", { timeZone, day: "numeric", month: "short" }).format(ts);
 }
 
 function toSignals(night: NightMetrics): NightSignals {

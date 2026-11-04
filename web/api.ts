@@ -57,7 +57,7 @@ export async function fetchHome(token: Token): Promise<HomeView> {
   return {
     timeZone: v.timeZone,
     date: date(v.date),
-    generatedAt: new Date(Number(v.generateTime?.seconds ?? 0n) * 1000).toISOString(),
+    generatedAt: isoTime(v.generateTime),
     sentence: v.sentence,
     next: v.nextEvent
       ? {
@@ -107,7 +107,19 @@ export async function fetchHome(token: Token): Promise<HomeView> {
       values: m.dailyValues.map((v, i) => (m.missingDays.includes(i) ? null : v)),
       lastDate: date(m.lastDate),
     })),
+    healthSync: v.healthSync
+      ? {
+          latestSample: isoTime(v.healthSync.latestSampleTime),
+          upload: isoTime(v.healthSync.uploadTime),
+        }
+      : null,
   };
+}
+
+function isoTime(t: { seconds: bigint; nanos: number } | undefined): string {
+  return new Date(
+    Number(t?.seconds ?? 0n) * 1000 + Math.floor((t?.nanos ?? 0) / 1e6),
+  ).toISOString();
 }
 
 export function completeTask(token: Token, id: string): Promise<unknown> {

@@ -1,6 +1,7 @@
 // Raw sample storage: health-raw/<stream>/YYYY/MM/YYYY-MM-DD.parquet, one file per stream per
 // UTC day, plus health-raw/<stream>/columns.json. Kept outside the vault: it is too big for
-// Markdown tools and git, and it is backed up separately.
+// Markdown tools and git, and it is backed up separately. health-raw/sync.json says when data
+// last arrived (see sync.ts).
 
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -16,6 +17,12 @@ import {
   type Sample,
   type Upload,
 } from "./samples";
+import { type HealthSync, nextSync } from "./sync";
+
+const SYNC_FILE = "sync.json";
+
+/** Shared by every RawStore, since the app opens more than one on the same directory. */
+const syncLock = new Mutex();
 
 export interface StoreResult {
   rows: number;
@@ -27,7 +34,10 @@ export class RawStore {
   // One lock per stream: columns.json and the day file change together.
   private readonly locks = new Map<string, Mutex>();
 
-  constructor(readonly root: string) {}
+  constructor(
+    readonly root: string,
+    private readonly now: () => number = Date.now,
+  ) {}
 
   dayPath(stream: string, day: string): string {
     return join(stream, day.slice(0, 4), day.slice(5, 7), `${day}.parquet`);
@@ -61,6 +71,7 @@ export class RawStore {
       const merged = mergeSamples(await this.readDay(path, columns.value), upload.samples);
       await this.write(path, toParquet(columns.value, merged.samples));
       await this.write(join(stream, "columns.json"), `${JSON.stringify(columns.value, null, 2)}\n`);
+      await this.recordSync(upload.samples.map((s) => s.ts));
       return ok({ rows: merged.samples.length, added: merged.added, replaced: merged.replaced });
     });
   }
@@ -96,6 +107,19 @@ export class RawStore {
       }
     }
     return rows;
+  }
+
+  /** When strap data last arrived, or null before the first upload. */
+  async readSync(): Promise<HealthSync | null> {
+    const bytes = await this.read(SYNC_FILE);
+    return bytes ? (JSON.parse(new TextDecoder().decode(bytes)) as HealthSync) : null;
+  }
+
+  private recordSync(timestamps: number[]): Promise<void> {
+    return syncLock.runExclusive(async () => {
+      const sync = nextSync(await this.readSync(), timestamps, this.now());
+      await this.write(SYNC_FILE, `${JSON.stringify(sync)}\n`);
+    });
   }
 
   async readColumns(stream: string): Promise<Column[] | null> {

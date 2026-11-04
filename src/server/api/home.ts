@@ -33,6 +33,12 @@ export class HomeService {
       days: view.days.map(dayResource),
       taskGroups: view.tasks.map(taskGroupResource),
       metrics: view.health.map(metricResource),
+      healthSync: view.healthSync
+        ? {
+            latestSampleTime: view.healthSync.latestSample,
+            uploadTime: view.healthSync.upload,
+          }
+        : undefined,
     };
   };
 }
