@@ -2,8 +2,7 @@
 
 Biome is the repository's formatter, linter, and import organizer. Its checked-in configuration
 is authoritative: two-space indentation, double quotes, semicolons, and a 100-column line width.
-Use the recommended Biome editor extension; `.vscode/settings.json` enables formatting and safe
-fixes on save. Run `bun run format` before committing and `bun run check` to verify changes.
+Run `bun run format` before committing and `bun run check` to verify changes.
 CI runs the same checks. Generated protobuf code is excluded; regenerate it instead of editing it.
 
 ## Spacing and readable code

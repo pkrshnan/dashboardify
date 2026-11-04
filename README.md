@@ -69,7 +69,7 @@ Google API and date/time descriptors, is checked in under `src/gen`.
 
 ### TypeScript formatting and tests
 
-Use the recommended Biome extension for format-on-save. See [STYLE.md](STYLE.md) for spacing,
+See [STYLE.md](STYLE.md) for spacing,
 readability, and the source-mirrored test layout. `bun run format` applies the shared formatting
 and safe lint fixes; `bun run format:check` checks formatting without changes.
 
