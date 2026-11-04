@@ -1,0 +1,264 @@
+syntax = "proto3";
+
+package dashboardify.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/type/date.proto";
+import "google/type/timeofday.proto";
+
+// Reads and writes Obsidian Tasks lines anywhere in the vault.
+service TaskService {
+  // Gets one task.
+  rpc GetTask(GetTaskRequest) returns (Task) {
+    option (google.api.http) = {get: "/v1/{name=tasks/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  // Lists tasks, soonest due first.
+  rpc ListTasks(ListTasksRequest) returns (ListTasksResponse) {
+    option (google.api.http) = {get: "/v1/tasks"};
+  }
+
+  // Appends a task to the inbox note.
+  rpc CreateTask(CreateTaskRequest) returns (Task) {
+    option (google.api.http) = {
+      post: "/v1/tasks"
+      body: "task"
+    };
+    option (google.api.method_signature) = "task";
+  }
+
+  // Edits a task's line in place.
+  rpc UpdateTask(UpdateTaskRequest) returns (Task) {
+    option (google.api.http) = {
+      patch: "/v1/{task.name=tasks/*}"
+      body: "task"
+    };
+    option (google.api.method_signature) = "task,update_mask";
+  }
+
+  // Removes a task's line from its note.
+  rpc DeleteTask(DeleteTaskRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=tasks/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  // Ticks a task off. A recurring task gets its next occurrence.
+  rpc CompleteTask(CompleteTaskRequest) returns (CompleteTaskResponse) {
+    option (google.api.http) = {
+      post: "/v1/{name=tasks/*}:complete"
+      body: "*"
+    };
+  }
+
+  // Unticks a task.
+  rpc ReopenTask(ReopenTaskRequest) returns (Task) {
+    option (google.api.http) = {
+      post: "/v1/{name=tasks/*}:reopen"
+      body: "*"
+    };
+  }
+
+  // Finds open tasks whose text is closest to a query.
+  rpc SearchTasks(SearchTasksRequest) returns (SearchTasksResponse) {
+    option (google.api.http) = {get: "/v1/tasks:search"};
+  }
+}
+
+// One Obsidian Tasks line, such as
+// `- [ ] Call the bank ⏰ 09:00 📅 2026-11-03 🆔 k7f3a2`.
+message Task {
+  option (google.api.resource) = {
+    type: "dashboardify.app/Task"
+    pattern: "tasks/{task}"
+    singular: "task"
+    plural: "tasks"
+  };
+
+  // Whether the task is ticked off.
+  enum State {
+    // Not set.
+    STATE_UNSPECIFIED = 0;
+    // Not done yet.
+    STATE_OPEN = 1;
+    // Ticked off.
+    STATE_DONE = 2;
+  }
+
+  // Task priority.
+  enum Priority {
+    // No priority marker.
+    PRIORITY_UNSPECIFIED = 0;
+    // Written as ⏬ in Obsidian Tasks.
+    PRIORITY_LOWEST = 1;
+    // Written as 🔽 in Obsidian Tasks.
+    PRIORITY_LOW = 2;
+    // Written as 🔼 in Obsidian Tasks.
+    PRIORITY_MEDIUM = 3;
+    // Written as ⏫ in Obsidian Tasks.
+    PRIORITY_HIGH = 4;
+    // Written as 🔺 in Obsidian Tasks.
+    PRIORITY_HIGHEST = 5;
+  }
+
+  // `tasks/{task}`, where `{task}` is the task id, written as 🆔 in Obsidian
+  // Tasks.
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+
+  // The task text, without its markers.
+  string description = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // Open or done. Changed only by CompleteTask and ReopenTask.
+  State state = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Due date. Written as 📅 in Obsidian Tasks.
+  google.type.Date due_date = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // Due time. Written as ⏰, our addition to Obsidian Tasks.
+  google.type.TimeOfDay due_time = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // Priority marker.
+  Priority priority = 6 [(google.api.field_behavior) = OPTIONAL];
+
+  // Recurrence rule, such as "every week". Written as 🔁 in Obsidian Tasks.
+  string recurrence = 7 [(google.api.field_behavior) = OPTIONAL];
+
+  // Date the task was created. Written as ➕ in Obsidian Tasks.
+  google.type.Date create_date = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Date the task was completed. Written as ✅ in Obsidian Tasks.
+  google.type.Date complete_date = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Vault path of the note holding the line.
+  string path = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Hash of the line as read. Writes with a stale etag are rejected.
+  string etag = 11 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request for GetTask.
+message GetTaskRequest {
+  // The task to get.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/Task"
+  ];
+}
+
+// Request for ListTasks.
+message ListTasksRequest {
+  // Most tasks to return. Defaults to 50, at most 500.
+  int32 page_size = 1 [(google.api.field_behavior) = OPTIONAL];
+
+  // next_page_token from the previous call.
+  string page_token = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // AIP-160 filter on state and due_date, such as
+  // `state = STATE_OPEN AND due_date < "2026-11-04"`.
+  string filter = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Defaults to "due_date, due_time, description".
+  string order_by = 4 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for ListTasks.
+message ListTasksResponse {
+  // The page of tasks.
+  repeated Task tasks = 1;
+
+  // Token for the next page, empty on the last one.
+  string next_page_token = 2;
+}
+
+// Request for CreateTask.
+message CreateTaskRequest {
+  // The task to add.
+  Task task = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // Made by the client. The same id always gives the same task, so retries
+  // are safe.
+  string request_id = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request for UpdateTask.
+message UpdateTaskRequest {
+  // The task, with name set.
+  Task task = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // Fields to change. Unset means every field that is set in `task`.
+  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request for DeleteTask.
+message DeleteTaskRequest {
+  // The task to delete.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/Task"
+  ];
+
+  // Delete only if the line is unchanged.
+  string etag = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request for CompleteTask.
+message CompleteTaskRequest {
+  // The task to tick off.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/Task"
+  ];
+
+  // Complete only if the line is unchanged.
+  string etag = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for CompleteTask.
+message CompleteTaskResponse {
+  // The ticked-off task.
+  Task task = 1;
+
+  // The next occurrence, for a recurring task.
+  Task next_task = 2;
+}
+
+// Request for ReopenTask.
+message ReopenTaskRequest {
+  // The task to untick.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/Task"
+  ];
+
+  // Reopen only if the line is unchanged.
+  string etag = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request for SearchTasks.
+message SearchTasksRequest {
+  // Free text, such as "the bank one".
+  string query = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // Most matches to return. Defaults to 5.
+  int32 page_size = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for SearchTasks.
+message SearchTasksResponse {
+  // Best match first.
+  repeated TaskMatch matches = 1;
+}
+
+// One search result.
+message TaskMatch {
+  // The open task.
+  Task task = 1;
+
+  // From 0 (exact) to 1.
+  float score = 2;
+}

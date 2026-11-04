@@ -18,6 +18,7 @@
       },
       "devDependencies": {
         "@biomejs/biome": "2.6.4",
+        "@bufbuild/buf": "1.47.2",
         "@types/bun": "1.4.4",
         "@types/papaparse": "5.3.16",
         "typescript": "6.0.3",
@@ -46,6 +47,22 @@
     "@biomejs/cli-win32-arm64": ["@biomejs/cli-win32-arm64@2.6.4", "", { "os": "win32", "cpu": "arm64" }, "sha512-eCsqt8Ma3eVap+oyJCDnJZH60SIU464B66n3y38EUTJdM1T/HfZol1FJC9vb+sHToX0ix8XzqPcwJnOzyAJz0g=="],
 
     "@biomejs/cli-win32-x64": ["@biomejs/cli-win32-x64@2.6.4", "", { "os": "win32", "cpu": "x64" }, "sha512-pYsMy5AThiHFOZAsngg8qN4PurM6nInKBhVX7sbj3eNpRQqo1Hb0MgCwPL7VqVMrmcEEMj9Ks3qbkallR65e8g=="],
+
+    "@bufbuild/buf": ["@bufbuild/buf@1.47.2", "", { "optionalDependencies": { "@bufbuild/buf-darwin-arm64": "1.47.2", "@bufbuild/buf-darwin-x64": "1.47.2", "@bufbuild/buf-linux-aarch64": "1.47.2", "@bufbuild/buf-linux-armv7": "1.47.2", "@bufbuild/buf-linux-x64": "1.47.2", "@bufbuild/buf-win32-arm64": "1.47.2", "@bufbuild/buf-win32-x64": "1.47.2" }, "hasInstallScript": true, "bin": { "buf": "bin/buf", "protoc-gen-buf-lint": "bin/protoc-gen-buf-lint", "protoc-gen-buf-breaking": "bin/protoc-gen-buf-breaking" } }, "sha512-glY5kCAoO4+a7HvDb+BLOdoHSdCk4mdXdkp53H8JFz7maOnkxCiHHXgRX+taFyEu25N8ybn7NjZFrZSdRwq2sA=="],
+
+    "@bufbuild/buf-darwin-arm64": ["@bufbuild/buf-darwin-arm64@1.47.2", "", { "os": "darwin", "cpu": "arm64" }, "sha512-74WerFn06y+azgVfsnzhfbI5wla/OLPDnIvaNJBWHaqya/3bfascJkDylW2GVNHmwG1K/cscpmcc/RJPaO7ntQ=="],
+
+    "@bufbuild/buf-darwin-x64": ["@bufbuild/buf-darwin-x64@1.47.2", "", { "os": "darwin", "cpu": "x64" }, "sha512-adAiOacOQe8Ym/YXPCEiq9mrPeKRmDtF2TgqPWTcDy6mF7TqR7hMJINkEEuMd1EeACmXnzMOnXlm9ICtvdYgPg=="],
+
+    "@bufbuild/buf-linux-aarch64": ["@bufbuild/buf-linux-aarch64@1.47.2", "", { "os": "linux", "cpu": "arm64" }, "sha512-52vY+Owffr5diw2PyfQJqH+Fld6zW6NhNZak4zojvc2MjZKubWM0TfNyM9jXz2YrwyB+cyxkabE60nBI80m37w=="],
+
+    "@bufbuild/buf-linux-armv7": ["@bufbuild/buf-linux-armv7@1.47.2", "", { "os": "linux", "cpu": "arm" }, "sha512-g9KtpObDeHZ/VG/0b5ZCieOao7L/WYZ0fPqFSs4N07D3APgEDhJG6vLyUcDgJMDgyLcgkNjNz0+XdYQb/tXyQw=="],
+
+    "@bufbuild/buf-linux-x64": ["@bufbuild/buf-linux-x64@1.47.2", "", { "os": "linux", "cpu": "x64" }, "sha512-MODCK2BzD1Mgoyr+5Sp8xA8qMNdytj8hYheyhA5NnCGTkQf8sfqAjpBSAAmKk6Zar8HOlVXML6tzE/ioDFFGwQ=="],
+
+    "@bufbuild/buf-win32-arm64": ["@bufbuild/buf-win32-arm64@1.47.2", "", { "os": "win32", "cpu": "arm64" }, "sha512-563YKYWJl3LrCY3G3+zuhb8HwOs6DzWslwGPFkKV2hwHyWyvd1DR1JjiLvw9zX64IKNctQ0HempSqc3kcboaqQ=="],
+
+    "@bufbuild/buf-win32-x64": ["@bufbuild/buf-win32-x64@1.47.2", "", { "os": "win32", "cpu": "x64" }, "sha512-Sqcdv7La2xBDh3bTdEYb2f4UTMMqCcYe/D0RELhvQ5wDn6I35V3/2YT1OF5fRuf0BZLCo0OdO37S9L47uHSz2g=="],
 
     "@types/bun": ["@types/bun@1.4.4", "", { "dependencies": { "bun-types": "1.4.4" } }, "sha512-9wkRDXUXK124pEnAutE6n/l18j+i9GC5IAHK8TmX/2nlySETmky0OU6yL5U8pW1AoKh++AN9auDCr647BfurjQ=="],
 
