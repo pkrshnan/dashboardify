@@ -3,6 +3,10 @@
 A personal dashboard for tasks, journal entries, and health data, built around a Markdown vault
 that you can also open in Obsidian or any text editor.
 
+<img width="984" height="1026" alt="image" src="https://github.com/user-attachments/assets/97903bb0-9f37-4c31-962f-296498aceb8f" />
+
+<img width="962" height="676" alt="image" src="https://github.com/user-attachments/assets/fe2a4a18-50d3-449b-ab17-bec97560716e" />
+
 ## Getting started
 
 Install [Bun](https://bun.sh) using the version pinned in `package.json`, then clone the repository
