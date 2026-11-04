@@ -173,3 +173,19 @@ test("home UI adapter preserves the presentation model", async () => {
     globalThis.fetch = original;
   }
 });
+
+test("legacy message history never appears in the task collection", async () => {
+  await call("/api/ingest/messages", "POST", {
+    id: "legacy",
+    sender: "Alice",
+    text: "A message",
+    received_at: "2026-11-03T12:00:00Z",
+  });
+  await call("/v1/tasks", "POST", { description: "A task" });
+  const tasks = await call("/v1/tasks");
+  expect(tasks.body.tasks).toHaveLength(1);
+  expect(tasks.body.tasks[0].description).toBe("A task");
+  const messages = await call("/v1/messages");
+  expect(messages.body.messages).toHaveLength(1);
+  expect(messages.body.messages[0].text).toBe("A message");
+});

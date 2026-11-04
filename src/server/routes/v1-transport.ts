@@ -1,59 +1,27 @@
 import {
   type DescMethod,
   type DescMethodUnary,
-  type DescService,
   fromJson,
   type JsonValue,
   type Message,
   toJson,
 } from "@bufbuild/protobuf";
 import { Code, ConnectError, createConnectRouter } from "@connectrpc/connect";
-import { type Context, Hono } from "hono";
+import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { defined } from "../../defined";
-import { DayService } from "../../gen/dashboardify/v1/day_pb";
-import { HomeService } from "../../gen/dashboardify/v1/home_pb";
-import { JournalService } from "../../gen/dashboardify/v1/journal_pb";
-import { MessageService } from "../../gen/dashboardify/v1/message_pb";
-import { SampleService } from "../../gen/dashboardify/v1/sample_pb";
-import { TaskService } from "../../gen/dashboardify/v1/task_pb";
-import { VoiceService } from "../../gen/dashboardify/v1/voice_pb";
-import type { AuthEnv } from "../auth";
-import { ApiError, type Json } from "./v1";
+import { ApiError } from "../api/errors";
+import { registerRest } from "../api/rest";
+import { restBindings } from "../api/rest-bindings";
 
-const bindings: Record<string, [string, string, string?, string?]> = {
-  getTask: ["get", "/tasks/:id", "name", "tasks/"],
-  listTasks: ["get", "/tasks"],
-  createTask: ["post", "/tasks", "task"],
-  updateTask: ["patch", "/tasks/:id", "task", "tasks/"],
-  deleteTask: ["delete", "/tasks/:id", "name", "tasks/"],
-  completeTask: ["post", "/tasks/:id{[a-zA-Z0-9_-]+:complete}", "name", "tasks/"],
-  reopenTask: ["post", "/tasks/:id{[a-zA-Z0-9_-]+:reopen}", "name", "tasks/"],
-  searchTasks: ["get", "/tasks:search"],
-  getDay: ["get", "/days/:day", "name", "days/"],
-  getCheckin: ["get", "/days/:day/checkin", "name", "days/"],
-  updateCheckin: ["patch", "/days/:day/checkin", "checkin", "days/"],
-  createJournalEntry: ["post", "/days/:day/journalEntries", "journalEntry", "days/"],
-  listJournalEntries: ["get", "/days/:day/journalEntries", "parent", "days/"],
-  createMessage: ["post", "/messages", "message"],
-  listMessages: ["get", "/messages"],
-  getStream: ["get", "/streams/:id", "name", "streams/"],
-  listStreams: ["get", "/streams"],
-  mergeSamples: ["post", "/streams/:id{[a-zA-Z0-9_-]+:mergeSamples}", "stream", "streams/"],
-  getHome: ["get", "/home", "name", "home"],
-};
+import type { AuthEnv } from "../auth";
+import type { ServiceRegistration } from "./v1";
+
+type Json = Record<string, unknown>;
+
 type Execute = (input: Json) => Promise<Message>;
-type Handlers = Record<string, (q: Json) => Promise<Json>>;
-type Binding = [string, string, string?, string?];
-const services: DescService[] = [
-  TaskService,
-  DayService,
-  JournalService,
-  MessageService,
-  SampleService,
-  HomeService,
-  VoiceService,
-];
+type Handler = (input: unknown) => Promise<unknown>;
+
 function errorStatus(error: Error) {
   if (error instanceof ApiError) {
     return error.status;
@@ -72,7 +40,7 @@ function connectFailure(error: unknown) {
     ] ?? Code.Internal;
   return new ConnectError(status === 500 ? "internal error" : failure.message, code);
 }
-function executor(method: DescMethod, handlers: Handlers): Execute {
+function executor(method: DescMethod, handler: Handler): Execute {
   return async (input) => {
     let parsed: Message;
     try {
@@ -83,67 +51,12 @@ function executor(method: DescMethod, handlers: Handlers): Execute {
     const normalized: Json = { ...input, ...(toJson(method.input, parsed) as Json) };
     for (const key of ["task", "checkin"]) {
       if (input[key]) {
-        normalized[key] = { ...input[key], ...normalized[key] };
+        normalized[key] = { ...(input[key] as Json), ...(normalized[key] as Json) };
       }
     }
-    const result = await defined(handlers[method.localName])(normalized);
+    const result = await handler(normalized);
     return fromJson(method.output, JSON.parse(JSON.stringify(result)));
   };
-}
-async function restBody(c: Context<AuthEnv>, verb: string): Promise<Json> {
-  if (!["post", "patch"].includes(verb)) {
-    return {};
-  }
-  const body: unknown = await c.req.json().catch(() => null);
-  if (!body || typeof body !== "object" || Array.isArray(body)) {
-    throw new ApiError(400, "JSON object required");
-  }
-  return body as Json;
-}
-function bindResource(c: Context<AuthEnv>, q: Json, body: Json, binding: Binding) {
-  const [, path, field, prefix] = binding;
-  if (!prefix) {
-    return;
-  }
-  let value = prefix;
-  if (prefix !== "home") {
-    value += c.req.param("id")?.split(":")[0] ?? c.req.param("day");
-  }
-  if (path.endsWith("checkin")) {
-    value += "/checkin";
-  }
-  if (field === "task" || field === "checkin") {
-    if (body.name && body.name !== value) {
-      throw new ApiError(400, "resource name does not match path");
-    }
-    q[field].name = value;
-    return;
-  }
-  q[field === "journalEntry" ? "parent" : defined(field)] = value;
-}
-function registerRest(
-  routes: Hono<AuthEnv>,
-  method: DescMethod,
-  execute: Execute,
-  binding: Binding,
-) {
-  const [verb, path, field] = binding;
-  routes.on(verb.toUpperCase(), `/v1${path}`, async (c) => {
-    const body = await restBody(c, verb);
-    const q: Json = Object.fromEntries(
-      Object.entries(c.req.query()).map(([k, v]) => [
-        k.replace(/_([a-z])/g, (_, s: string) => s.toUpperCase()),
-        v,
-      ]),
-    );
-    if (field && ["task", "checkin", "message", "journalEntry"].includes(field)) {
-      q[field] = body;
-    } else {
-      Object.assign(q, body);
-    }
-    bindResource(c, q, body, binding);
-    return Response.json(toJson(method.output, await execute(q)));
-  });
 }
 function responseStream(source: AsyncIterable<Uint8Array> | undefined) {
   const iterator = source?.[Symbol.asyncIterator]();
@@ -161,7 +74,7 @@ function responseStream(source: AsyncIterable<Uint8Array> | undefined) {
     },
   });
 }
-export function v1Transport(handlers: Handlers) {
+export function v1Transport(registrations: ServiceRegistration[]) {
   const routes = new Hono<AuthEnv>();
   const connect = createConnectRouter({
     grpc: false,
@@ -184,11 +97,11 @@ export function v1Transport(handlers: Handlers) {
       status as 400,
     );
   });
-  for (const service of services) {
-    for (const method of [...service.methods].sort(
-      (a, b) => Number(b.name === "SearchTasks") - Number(a.name === "SearchTasks"),
-    )) {
-      const execute = executor(method, handlers);
+  for (const { schema: service, implementation } of registrations) {
+    for (const method of service.methods) {
+      // The generated descriptor validates the wire input before calling a typed service method.
+      const handler = (implementation as Record<string, Handler>)[method.localName];
+      const execute = executor(method, defined(handler));
       connect.rpc(method as DescMethodUnary, async (request) => {
         try {
           return await execute(toJson(method.input, request) as Json);
@@ -196,7 +109,7 @@ export function v1Transport(handlers: Handlers) {
           throw connectFailure(error);
         }
       });
-      const binding = bindings[method.localName];
+      const binding = restBindings[method.localName];
       if (binding) {
         registerRest(routes, method, execute, binding);
       }
