@@ -1,1 +1,0 @@
-The few files from [googleapis](https://github.com/googleapis/googleapis) that `proto/` imports, copied at commit `b67fb7a71212f4a4b6073636e7bd2027dadb92e1` under its Apache 2.0 licence (`LICENSE`). Update by copying the same paths again.

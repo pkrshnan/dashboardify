@@ -23,6 +23,7 @@ jobs:
           bun-version-file: package.json
       - run: bun install --frozen-lockfile
       - run: bun run lint
+      - run: bunx buf dep update && cat buf.lock  # TEMP: resolve buf.lock
       - run: bun run proto:lint
       - run: bun run typecheck
       - run: bun test

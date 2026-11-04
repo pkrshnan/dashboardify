@@ -13,8 +13,5 @@ modules:
     breaking:
       use:
         - FILE
-  # Vendored so builds need no Buf Schema Registry access. Not linted.
-  - path: third_party/googleapis
-    lint:
-      ignore:
-        - third_party/googleapis
+deps:
+  - buf.build/googleapis/googleapis
