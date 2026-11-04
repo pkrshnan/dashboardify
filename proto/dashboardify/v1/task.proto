@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package dashboardify.v1;
 
+import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
@@ -108,10 +109,21 @@ message Task {
 
   // `tasks/{task}`, where `{task}` is the task id, written as 🆔 in Obsidian
   // Tasks.
-  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string name = 1 [
+    (google.api.field_behavior) = IDENTIFIER,
+    (buf.validate.field).string.pattern = "^$|^tasks/[^/]+$"
+  ];
 
-  // The task text, without its markers.
-  string description = 2 [(google.api.field_behavior) = REQUIRED];
+  // The task text, without its markers. Presence distinguishes omission on PATCH
+  // from explicitly clearing the description.
+  optional string description = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string = {
+      min_len: 1
+      max_len: 20000
+      pattern: "(?s).*\\S.*"
+    }
+  ];
 
   // Open or done. Changed only by CompleteTask and ReopenTask.
   State state = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -146,14 +158,18 @@ message GetTaskRequest {
   // The task to get.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "dashboardify.app/Task"
+    (google.api.resource_reference).type = "dashboardify.app/Task",
+    (buf.validate.field).string.min_len = 1
   ];
 }
 
 // Request for ListTasks.
 message ListTasksRequest {
   // Most tasks to return. Defaults to 50, at most 500.
-  int32 page_size = 1 [(google.api.field_behavior) = OPTIONAL];
+  int32 page_size = 1 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32.gte = 0
+  ];
 
   // next_page_token from the previous call.
   string page_token = 2 [(google.api.field_behavior) = OPTIONAL];
@@ -177,8 +193,17 @@ message ListTasksResponse {
 
 // Request for CreateTask.
 message CreateTaskRequest {
+  option (buf.validate.message).cel = {
+    id: "task.description.required"
+    message: "task.description is required"
+    expression: "has(this.task.description)"
+  };
+
   // The task to add.
-  Task task = 1 [(google.api.field_behavior) = REQUIRED];
+  Task task = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
 
   // Made by the client. The same id always gives the same task, so retries
   // are safe.
@@ -187,8 +212,23 @@ message CreateTaskRequest {
 
 // Request for UpdateTask.
 message UpdateTaskRequest {
+  option (buf.validate.message).cel = {
+    id: "task.description.masked"
+    message: "task.description cannot be cleared"
+    expression: "!this.update_mask.paths.exists(p, p == \"description\" || p == \"*\") || has(this.task.description)"
+  };
+
+  option (buf.validate.message).cel = {
+    id: "task.name.required"
+    message: "task.name is required"
+    expression: "this.task.name != \"\""
+  };
+
   // The task, with name set.
-  Task task = 1 [(google.api.field_behavior) = REQUIRED];
+  Task task = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
 
   // Fields to change. Unset means every field that is set in `task`.
   google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = OPTIONAL];
@@ -199,7 +239,8 @@ message DeleteTaskRequest {
   // The task to delete.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "dashboardify.app/Task"
+    (google.api.resource_reference).type = "dashboardify.app/Task",
+    (buf.validate.field).string.min_len = 1
   ];
 
   // Delete only if the line is unchanged.
@@ -211,7 +252,8 @@ message CompleteTaskRequest {
   // The task to tick off.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "dashboardify.app/Task"
+    (google.api.resource_reference).type = "dashboardify.app/Task",
+    (buf.validate.field).string.min_len = 1
   ];
 
   // Complete only if the line is unchanged.
@@ -232,7 +274,8 @@ message ReopenTaskRequest {
   // The task to untick.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "dashboardify.app/Task"
+    (google.api.resource_reference).type = "dashboardify.app/Task",
+    (buf.validate.field).string.min_len = 1
   ];
 
   // Reopen only if the line is unchanged.
@@ -242,10 +285,16 @@ message ReopenTaskRequest {
 // Request for SearchTasks.
 message SearchTasksRequest {
   // Free text, such as "the bank one".
-  string query = 1 [(google.api.field_behavior) = REQUIRED];
+  string query = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.min_len = 1
+  ];
 
   // Most matches to return. Defaults to 5.
-  int32 page_size = 2 [(google.api.field_behavior) = OPTIONAL];
+  int32 page_size = 2 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32.gte = 0
+  ];
 }
 
 // Response for SearchTasks.

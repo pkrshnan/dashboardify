@@ -6,11 +6,12 @@ import type { Priority, Task } from "../../vault/tasks";
 import { localDate } from "../../vault/time";
 import type { Vault } from "../../vault/vault";
 import { fromDateParts, fromTimeParts, toDateParts, toTimeParts } from "./date-time";
-import { ApiError, invalidArgument, requireText } from "./errors";
+import { ApiError, invalidArgument } from "./errors";
 import { filterItems } from "./filter";
 import { paginate } from "./pagination";
 import type { ApiRequests, TaskInput } from "./requests";
 import { requestedFields } from "./update-mask";
+
 /** Reads and edits Obsidian task lines through TaskStore. */
 export class TasksService {
   constructor(
@@ -77,11 +78,11 @@ export class TasksService {
   };
 
   createTask = async (request: ApiRequests["createTask"]) => {
-    const task = request.task ?? {};
+    const task = request.task;
     const result = await this.tasks.add(
       {
         key: request.requestId || randomUUID(),
-        description: requireText(task.description).trim(),
+        description: task.description.trim(),
         due: task.dueDate ? fromDateParts(task.dueDate) : undefined,
         time: task.dueTime ? fromTimeParts(task.dueTime) : undefined,
         priority: parsePriority(task.priority),
@@ -94,7 +95,7 @@ export class TasksService {
 
   updateTask = async (request: ApiRequests["updateTask"]) => {
     const task = request.task;
-    await this.findTask(task?.name ?? "");
+    await this.findTask(task.name);
     const fields = requestedFields(request, task, [
       "description",
       "dueDate",
@@ -103,7 +104,7 @@ export class TasksService {
       "recurrence",
     ]);
     const changes = parseTaskChanges(task, fields);
-    const result = await this.tasks.edit((task.name ?? "").slice(6), task.etag, (current) => ({
+    const result = await this.tasks.edit(task.name.slice(6), task.etag, (current) => ({
       ...current,
       ...changes,
     }));
@@ -156,7 +157,7 @@ export class TasksService {
     return {
       matches: await Promise.all(
         fuse
-          .search(requireText(request.query), {
+          .search(request.query, {
             limit: Math.min(Number(request.pageSize || 5), 500),
           })
           .map(async (match) => ({
@@ -193,6 +194,7 @@ function compareTasks(left: TaskView, right: TaskView, orders: string[][]) {
   }
   return left.name.localeCompare(right.name);
 }
+
 type TaskView = Awaited<ReturnType<TasksService["getTask"]>>;
 
 function parsePriority(value: string | undefined): Priority | undefined {
@@ -209,7 +211,7 @@ function parsePriority(value: string | undefined): Priority | undefined {
 function parseTaskChanges(task: TaskInput, fields: string[]): Partial<Task> {
   const changes: Partial<Task> = {};
   if (fields.includes("description")) {
-    changes.description = requireText(task.description);
+    changes.description = task.description;
   }
   if (fields.includes("dueDate")) {
     changes.due = task.dueDate ? fromDateParts(task.dueDate) : undefined;

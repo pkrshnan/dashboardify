@@ -5,6 +5,7 @@ export interface RestBinding {
   bodyField?: string;
   resource?: { field: string; prefix: string; suffix?: string };
 }
+
 export const restBindings: Record<string, RestBinding> = {
   getTask: { method: "GET", path: "/tasks/:id", resource: { field: "name", prefix: "tasks/" } },
   listTasks: { method: "GET", path: "/tasks" },

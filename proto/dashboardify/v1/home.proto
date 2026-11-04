@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package dashboardify.v1;
 
+import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
@@ -223,6 +224,7 @@ message GetHomeRequest {
   // Always `home`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "dashboardify.app/Home"
+    (google.api.resource_reference).type = "dashboardify.app/Home",
+    (buf.validate.field).string.min_len = 1
   ];
 }

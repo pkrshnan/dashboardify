@@ -1,15 +1,20 @@
+import { create } from "@bufbuild/protobuf";
+import { UpdateCheckinRequestSchema } from "../../gen/dashboardify/v1/day_pb";
+import { CreateJournalEntryRequestSchema } from "../../gen/dashboardify/v1/journal_pb";
+import { CreateTaskRequestSchema } from "../../gen/dashboardify/v1/task_pb";
 import type { TaskStore } from "../../vault/task-store";
 import { localDate } from "../../vault/time";
 import { parseWhen } from "../../vault/when";
 import { addedMessage, completedMessage, type DueFilter, listMessage } from "../task-messages";
 import { toDateParts, toTimeParts } from "./date-time";
 import type { DaysService } from "./days";
-import { ApiError, invalidArgument, requireText } from "./errors";
+import { ApiError, invalidArgument } from "./errors";
 import type { JournalService } from "./journal";
+import { validateMessage } from "./protobuf-validation";
 import type { ApiRequests, CheckinInput } from "./requests";
 import type { TasksService } from "./tasks";
 
-/** Siri's loose requireText inputs are translated into the resource services here. */
+/** Siri's loose text inputs are translated into the resource services here. */
 export class VoiceService {
   constructor(
     private readonly tasks: TasksService,
@@ -25,30 +30,37 @@ export class VoiceService {
   }
 
   addTask = async (request: ApiRequests["addTask"]) => {
-    const spoken = parseWhen(requireText(request.text), this.now(), this.timeZone);
-    const task = await this.tasks.createTask({
+    const spoken = parseWhen(request.text, this.now(), this.timeZone);
+    const taskRequest = {
       requestId: request.requestId,
       task: {
         description: spoken.description,
         dueDate: spoken.due ? toDateParts(spoken.due) : undefined,
         dueTime: spoken.time ? toTimeParts(spoken.time) : undefined,
       },
-    });
+    };
+    validateMessage(CreateTaskRequestSchema, create(CreateTaskRequestSchema, taskRequest));
+    const task = await this.tasks.createTask(taskRequest);
     const stored = await this.tasks.findTask(task.name);
     return { task: task.name, message: addedMessage(stored.task, this.today()) };
   };
 
   log = async (request: ApiRequests["log"]) => {
-    const entry = await this.journal.createJournalEntry({
+    const entryRequest = {
       parent: `days/${this.today()}`,
       journalEntry: { text: request.text },
-    });
+    };
+    validateMessage(
+      CreateJournalEntryRequestSchema,
+      create(CreateJournalEntryRequestSchema, entryRequest),
+    );
+    const entry = await this.journal.createJournalEntry(entryRequest);
     return { message: "Logged.", journalEntry: entry.name };
   };
 
   checkIn = async (request: ApiRequests["checkIn"]) => {
     const current = await this.days.getCheckin({ name: `days/${this.today()}/checkin` });
-    const checkin: CheckinInput = { name: current.name };
+    const checkin: CheckinInput & { name: string } = { name: current.name };
     if (request.feel) {
       checkin.feel = Number(request.feel);
     }
@@ -62,6 +74,17 @@ export class VoiceService {
         .filter(Boolean);
       checkin.tags = [...new Set([...current.tags, ...spokenTags])];
     }
+    validateMessage(
+      UpdateCheckinRequestSchema,
+      create(UpdateCheckinRequestSchema, {
+        checkin: {
+          name: checkin.name,
+          feel: checkin.feel ?? undefined,
+          rpe: checkin.rpe ?? undefined,
+          tags: checkin.tags,
+        },
+      }),
+    );
     await this.days.updateCheckin({ checkin });
     return { message: "Check-in recorded." };
   };

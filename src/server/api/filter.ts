@@ -1,5 +1,6 @@
 import { defined } from "../../defined";
 import { invalidArgument } from "./errors";
+
 export function filterItems<T extends object>(
   input: T[],
   expression: string | undefined,

@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package dashboardify.v1;
 
+import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
@@ -38,28 +39,54 @@ message Message {
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
 
   // Who sent it.
-  string sender = 2 [(google.api.field_behavior) = REQUIRED];
+  string sender = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string = {
+      min_len: 1
+      max_len: 20000
+      pattern: "(?s).*\\S.*"
+    }
+  ];
 
   // The message text.
-  string text = 3 [(google.api.field_behavior) = REQUIRED];
+  string text = 3 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string = {
+      min_len: 1
+      max_len: 20000
+      pattern: "(?s).*\\S.*"
+    }
+  ];
 
   // When the phone got it.
-  google.protobuf.Timestamp receive_time = 4 [(google.api.field_behavior) = REQUIRED];
+  google.protobuf.Timestamp receive_time = 4 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
 }
 
 // Request for CreateMessage.
 message CreateMessageRequest {
   // The message to store.
-  Message message = 1 [(google.api.field_behavior) = REQUIRED];
+  Message message = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
 
   // Stable id from the phone. The server makes one when it is empty.
-  string message_id = 2 [(google.api.field_behavior) = OPTIONAL];
+  string message_id = 2 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9_-]{0,200}$"
+  ];
 }
 
 // Request for ListMessages.
 message ListMessagesRequest {
   // Most messages to return. Defaults to 50.
-  int32 page_size = 1 [(google.api.field_behavior) = OPTIONAL];
+  int32 page_size = 1 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32.gte = 0
+  ];
 
   // next_page_token from the previous call.
   string page_token = 2 [(google.api.field_behavior) = OPTIONAL];

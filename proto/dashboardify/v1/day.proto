@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package dashboardify.v1;
 
+import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
@@ -65,16 +66,34 @@ message Checkin {
   };
 
   // `days/{day}/checkin`.
-  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string name = 1 [
+    (google.api.field_behavior) = IDENTIFIER,
+    (buf.validate.field).string.pattern = "^days/[0-9]{4}-[0-9]{2}-[0-9]{2}/checkin$"
+  ];
 
   // How you feel, 1 to 5.
-  optional int32 feel = 2 [(google.api.field_behavior) = OPTIONAL];
+  optional int32 feel = 2 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 1
+      lte: 5
+    }
+  ];
 
   // How hard the day's workout felt, 0 to 10.
-  optional int32 rpe = 3 [(google.api.field_behavior) = OPTIONAL];
+  optional int32 rpe = 3 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 10
+    }
+  ];
 
   // Lower-case tags, such as "alcohol".
-  repeated string tags = 4 [(google.api.field_behavior) = OPTIONAL];
+  repeated string tags = 4 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).repeated.items.string.pattern = "^[a-z0-9_-]+$"
+  ];
 
   // Hash of the frontmatter as read.
   string etag = 5 [(google.api.field_behavior) = OPTIONAL];
@@ -85,7 +104,8 @@ message GetDayRequest {
   // The day to get.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "dashboardify.app/Day"
+    (google.api.resource_reference).type = "dashboardify.app/Day",
+    (buf.validate.field).string.min_len = 1
   ];
 }
 
@@ -94,14 +114,18 @@ message GetCheckinRequest {
   // The check-in to get.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "dashboardify.app/Checkin"
+    (google.api.resource_reference).type = "dashboardify.app/Checkin",
+    (buf.validate.field).string.min_len = 1
   ];
 }
 
 // Request for UpdateCheckin.
 message UpdateCheckinRequest {
   // The check-in, with name set.
-  Checkin checkin = 1 [(google.api.field_behavior) = REQUIRED];
+  Checkin checkin = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
 
   // Fields to change. A mask of "tags" replaces the whole list.
   google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = OPTIONAL];

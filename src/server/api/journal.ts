@@ -3,9 +3,10 @@ import { appendToSection, editNote } from "../../vault/markdown";
 import { shortHash } from "../../vault/task-store";
 import { isIsoDate, localDate, localTime } from "../../vault/time";
 import type { Vault } from "../../vault/vault";
-import { invalidArgument, requireText } from "./errors";
+import { invalidArgument } from "./errors";
 import { paginate } from "./pagination";
 import type { ApiRequests } from "./requests";
+
 /** Appends and reads timestamped entries under the daily Journal heading. */
 export class JournalService {
   constructor(
@@ -50,9 +51,9 @@ export class JournalService {
 
   createJournalEntry = async (request: ApiRequests["createJournalEntry"]) => {
     const day = this.dayOf(request.parent);
-    const input = request.journalEntry ?? {};
+    const input = request.journalEntry;
     const at = journalTimestamp(input.entryTime, day, this.now(), this.vault.timeZone);
-    const value = requireText(input.text);
+    const value = input.text;
     const marker = request.requestId ? ` <!-- request:${shortHash(request.requestId)} -->` : "";
     const path = this.vault.dailyPath(day);
     const time = localTime(at, this.vault.timeZone);

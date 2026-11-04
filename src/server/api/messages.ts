@@ -4,28 +4,23 @@ import { join } from "node:path";
 import { defined } from "../../defined";
 import type { Vault } from "../../vault/vault";
 import { legacyMessages } from "../routes/v1-messages";
-import { ApiError, invalidArgument, requireText } from "./errors";
+import { ApiError } from "./errors";
 import { filterItems } from "./filter";
 import { paginate } from "./pagination";
 import type { ApiRequests } from "./requests";
+
 /** Stores local message resources and includes legacy Markdown history. */
 export class MessagesService {
   constructor(private readonly vault: Vault) {}
 
   createMessage = async (request: ApiRequests["createMessage"]) => {
-    const message = request.message ?? {};
+    const message = request.message;
     const receiveTime = new Date(message.receiveTime);
-    if (Number.isNaN(receiveTime.getTime())) {
-      invalidArgument("receive_time is required");
-    }
     const id = request.messageId || randomUUID();
-    if (!/^[A-Za-z0-9_-]{1,200}$/.test(id)) {
-      invalidArgument("invalid message id");
-    }
     const value = {
       name: `messages/${id}`,
-      sender: requireText(message.sender),
-      text: requireText(message.text),
+      sender: message.sender,
+      text: message.text,
       receiveTime: receiveTime.toISOString(),
     };
     let exists = false;

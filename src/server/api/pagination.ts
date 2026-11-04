@@ -1,5 +1,6 @@
 import { invalidArgument } from "./errors";
 import type { PageRequest } from "./requests";
+
 export function paginate<T>(items: T[], request: PageRequest) {
   const size = Number(request.pageSize || 50);
   if (!Number.isInteger(size) || size < 1) {

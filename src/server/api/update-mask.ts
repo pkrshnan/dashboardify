@@ -1,4 +1,5 @@
 import { invalidArgument } from "./errors";
+
 export function requestedFields(
   request: {
     updateMask?: string;

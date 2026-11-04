@@ -4,12 +4,14 @@ export interface DateParts {
   month?: number;
   day?: number;
 }
+
 export interface TimeParts {
   hours?: number;
   minutes?: number;
   seconds?: number;
   nanos?: number;
 }
+
 export interface TaskInput {
   name?: string;
   description?: string;
@@ -19,6 +21,7 @@ export interface TaskInput {
   recurrence?: string;
   etag?: string;
 }
+
 export interface CheckinInput {
   name?: string;
   feel?: number | null;
@@ -26,40 +29,46 @@ export interface CheckinInput {
   tags?: string[];
   etag?: string;
 }
+
 export interface PageRequest {
   pageSize?: number;
   pageToken?: string;
 }
+
 export interface NamedRequest {
   name: string;
 }
+
 export interface TaskAction extends NamedRequest {
   etag?: string;
 }
+
 export interface ColumnInput {
   name: string;
   numbers?: { values?: number[] };
   texts?: { values?: string[] };
   missingRows?: number[];
 }
+
 export interface SampleUpload {
   stream: string;
   day: DateParts;
   timestamps: string[];
   columns: ColumnInput[];
 }
+
 export interface ApiRequests {
   getTask: NamedRequest;
   listTasks: PageRequest & { filter?: string; orderBy?: string };
-  createTask: { task: TaskInput; requestId?: string };
-  updateTask: { task: TaskInput; updateMask?: string };
+  createTask: { task: TaskInput & { description: string }; requestId?: string };
+  updateTask: { task: TaskInput & { name: string }; updateMask?: string };
   deleteTask: TaskAction;
   completeTask: TaskAction;
   reopenTask: TaskAction;
   searchTasks: { query: string; pageSize?: number };
   getDay: NamedRequest;
   getCheckin: NamedRequest;
-  updateCheckin: { checkin: CheckinInput; updateMask?: string };
+  updateCheckin: { checkin: CheckinInput & { name: string }; updateMask?: string };
   listJournalEntries: PageRequest & { parent: string };
   createJournalEntry: {
     parent: string;

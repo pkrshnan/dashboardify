@@ -6,6 +6,7 @@ export function toDateParts(value: string) {
   const date = Temporal.PlainDate.from(value);
   return { year: date.year, month: date.month, day: date.day };
 }
+
 export function fromDateParts(date: DateParts): string {
   const value = `${date.year}-${String(date.month).padStart(2, "0")}-${String(date.day).padStart(2, "0")}`;
   if (!isIsoDate(value)) {
@@ -13,10 +14,12 @@ export function fromDateParts(date: DateParts): string {
   }
   return value;
 }
+
 export function toTimeParts(value: string) {
   const [hours, minutes] = value.split(":").map(Number);
   return { hours, minutes };
 }
+
 export function fromTimeParts(time: TimeParts): string {
   const hours = time.hours ?? 0;
   const minutes = time.minutes ?? 0;

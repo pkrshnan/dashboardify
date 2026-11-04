@@ -2,4 +2,6 @@ version: v2
 plugins:
   - local: protoc-gen-es
     out: src/gen
-    opt: target=ts
+    opt:
+      - target=ts
+      - map_imports=buf/validate/:@bufbuild/protovalidate/gen

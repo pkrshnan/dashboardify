@@ -11,6 +11,7 @@ import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { defined } from "../../defined";
 import { ApiError } from "../api/errors";
+import { validateMessage } from "../api/protobuf-validation";
 import { registerRest } from "../api/rest";
 import { restBindings } from "../api/rest-bindings";
 
@@ -20,6 +21,7 @@ import type { ServiceRegistration } from "./v1";
 type Json = Record<string, unknown>;
 
 type Execute = (input: Json) => Promise<Message>;
+
 type Handler = (input: unknown) => Promise<unknown>;
 
 function errorStatus(error: Error) {
@@ -28,6 +30,7 @@ function errorStatus(error: Error) {
   }
   return ({ NOT_FOUND: 404, ABORTED: 409 } as Record<string, number>)[error.message] ?? 500;
 }
+
 function connectFailure(error: unknown) {
   const failure = error instanceof Error ? error : new Error(String(error));
   const status = errorStatus(failure);
@@ -40,6 +43,7 @@ function connectFailure(error: unknown) {
     ] ?? Code.Internal;
   return new ConnectError(status === 500 ? "internal error" : failure.message, code);
 }
+
 function executor(method: DescMethod, handler: Handler): Execute {
   return async (input) => {
     let parsed: Message;
@@ -54,10 +58,12 @@ function executor(method: DescMethod, handler: Handler): Execute {
         normalized[key] = { ...(input[key] as Json), ...(normalized[key] as Json) };
       }
     }
+    validateMessage(method.input, parsed);
     const result = await handler(normalized);
     return fromJson(method.output, JSON.parse(JSON.stringify(result)));
   };
 }
+
 function responseStream(source: AsyncIterable<Uint8Array> | undefined) {
   const iterator = source?.[Symbol.asyncIterator]();
   return new ReadableStream<Uint8Array>({
@@ -74,6 +80,7 @@ function responseStream(source: AsyncIterable<Uint8Array> | undefined) {
     },
   });
 }
+
 export function v1Transport(registrations: ServiceRegistration[]) {
   const routes = new Hono<AuthEnv>();
   const connect = createConnectRouter({

@@ -7,6 +7,7 @@ import type { Vault } from "../../vault/vault";
 import { ApiError, invalidArgument } from "./errors";
 import type { ApiRequests, CheckinInput } from "./requests";
 import { requestedFields } from "./update-mask";
+
 /** Reads daily notes and updates check-in frontmatter under the vault lock. */
 export class DaysService {
   constructor(private readonly vault: Vault) {}
@@ -46,8 +47,8 @@ export class DaysService {
   getCheckin = async (request: ApiRequests["getCheckin"]) => this.checkin(this.dayOf(request.name));
 
   updateCheckin = async (request: ApiRequests["updateCheckin"]) => {
-    const checkin = request.checkin ?? {};
-    const day = this.dayOf(checkin.name ?? "");
+    const checkin = request.checkin;
+    const day = this.dayOf(checkin.name);
     const fields = requestedFields(request, checkin, ["feel", "rpe", "tags"]);
     await this.vault.update(this.vault.dailyPath(day), (source) =>
       editNote(
@@ -77,29 +78,10 @@ function applyCheckinField(frontmatter: Frontmatter, checkin: CheckinInput, fiel
     ({ rpe: "effort_rpe", tags: "health_tags" } as Record<string, string>)[field] ?? field;
   const value = checkin[field as keyof CheckinInput];
   if (field === "tags") {
-    frontmatter[key] = checkinTags(value);
-    return;
-  }
-  if (value == null) {
+    frontmatter[key] = checkin.tags ?? [];
+  } else if (value == null) {
     delete frontmatter[key];
-    return;
+  } else {
+    frontmatter[key] = value;
   }
-  const [min, max] = field === "feel" ? [1, 5] : [0, 10];
-  if (!Number.isInteger(value) || Number(value) < defined(min) || Number(value) > defined(max)) {
-    invalidArgument("invalid check-in score");
-  }
-  frontmatter[key] = value;
-}
-
-function checkinTags(value: unknown): string[] {
-  if (value == null) {
-    return [];
-  }
-  if (
-    !Array.isArray(value) ||
-    value.some((tag) => typeof tag !== "string" || !/^[a-z0-9_-]+$/.test(tag))
-  ) {
-    invalidArgument("invalid tags");
-  }
-  return value as string[];
 }

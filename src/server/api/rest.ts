@@ -5,6 +5,7 @@ import { ApiError } from "./errors";
 import type { RestBinding } from "./rest-bindings";
 
 type WireObject = Record<string, unknown>;
+
 type Execute = (input: WireObject) => Promise<Message>;
 
 /** Translate the HTTP annotation's path, query and body into an RPC request. */
@@ -29,6 +30,7 @@ export function registerRest(
     return Response.json(toJson(method.output, response));
   });
 }
+
 async function readBody(context: Context<AuthEnv>, method: string): Promise<WireObject> {
   if (!["POST", "PATCH"].includes(method)) {
     return {};

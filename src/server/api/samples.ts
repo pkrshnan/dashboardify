@@ -5,6 +5,7 @@ import { fromDateParts } from "./date-time";
 import { ApiError, invalidArgument } from "./errors";
 import { paginate } from "./pagination";
 import type { ApiRequests, ColumnInput, SampleUpload } from "./requests";
+
 /** Validates columnar uploads before merging samples into Parquet. */
 export class SamplesService {
   constructor(
@@ -56,10 +57,10 @@ export class SamplesService {
   };
 
   mergeSamples = async (request: ApiRequests["mergeSamples"]) => {
-    if (!/^streams\/[a-z0-9_]{1,40}$/.test(request.stream ?? "")) {
+    if (!/^streams\/[a-z0-9_]{1,40}$/.test(request.stream)) {
       invalidArgument("invalid stream");
     }
-    const day = fromDateParts(request.day ?? {});
+    const day = fromDateParts(request.day);
     const timestamps = uploadTimestamps(request, day);
     validateColumns(request.columns, timestamps.length);
     const upload: Upload = {
@@ -108,17 +109,11 @@ function validateColumns(columns: ColumnInput[], rowCount: number) {
 }
 
 function validateColumn(column: ColumnInput, rowCount: number) {
-  if (!/^[a-z][a-z0-9_]{0,39}$/.test(column.name) || column.name === "ts") {
+  if (column.name === "ts") {
     invalidArgument("invalid column name");
   }
-  if (Boolean(column.numbers) === Boolean(column.texts)) {
-    invalidArgument("exactly one values type required");
-  }
   const values = column.numbers?.values ?? column.texts?.values ?? [];
-  if (
-    values.length !== rowCount ||
-    values.some((stored: unknown) => !validCell(stored, Boolean(column.numbers)))
-  ) {
+  if (values.length !== rowCount) {
     invalidArgument("invalid column values");
   }
   if (
@@ -130,25 +125,8 @@ function validateColumn(column: ColumnInput, rowCount: number) {
   }
 }
 
-function validCell(value: unknown, numeric: boolean) {
-  if (numeric) {
-    return typeof value === "number" && Number.isFinite(value);
-  }
-  return typeof value === "string";
-}
-
 function uploadTimestamps(request: SampleUpload, day: string): number[] {
   const start = Date.parse(day);
-  if (
-    !(
-      Array.isArray(request.timestamps) &&
-      request.timestamps.length > 0 &&
-      Array.isArray(request.columns) &&
-      request.columns.length > 0
-    )
-  ) {
-    invalidArgument("timestamps and columns required");
-  }
   const timestamps = request.timestamps.map(Number);
   if (
     timestamps.some(

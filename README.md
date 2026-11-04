@@ -66,3 +66,13 @@ The previous `/api/...` routes remain available for older clients.
 
 Run `bun run proto:generate` after changing protos. Generated TypeScript, including
 Google API and date/time descriptors, is checked in under `src/gen`.
+
+### TypeScript formatting and tests
+
+Use the recommended Biome extension for format-on-save. See [STYLE.md](STYLE.md) for spacing,
+readability, and the source-mirrored test layout. `bun run format` applies the shared formatting
+and safe lint fixes; `bun run format:check` checks formatting without changes.
+
+API constraints are declared alongside the AIP annotations using `buf.validate` options.
+The shared Protovalidate runtime enforces those constraints for both REST and Connect requests.
+Services handle storage-dependent checks such as etags and cross-field sample consistency.
