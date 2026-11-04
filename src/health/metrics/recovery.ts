@@ -2,6 +2,7 @@
 // Every input is a z-score against your last 60 nights, so it compares you only with yourself.
 // See docs/health-metrics.md.
 
+import { DEFAULT_PARAMS, type RecoveryWeights } from "../params";
 import { mean, normalCdf, sd } from "./stats";
 
 /** The overnight values recovery is built from. Any of them can be missing. */
@@ -20,11 +21,6 @@ export const BASELINE_NIGHTS = 60;
 const TEMP_BASELINE_NIGHTS = 30;
 const MIN_TEMP_NIGHTS = 7;
 
-/** Weights: HRV dominates, as Whoop describes. */
-const W_HRV = 0.5;
-const W_RHR = 0.25;
-const W_SLEEP = 0.15;
-const W_BREATHING = 0.1;
 /** Breathing counts only past +1 SD; temperature only past +0.3 °C, 0.5 per °C beyond that. */
 const BREATHING_FREE_Z = 1;
 const TEMP_FREE_C = 0.3;
@@ -66,14 +62,15 @@ export function tempDeviation(tonight: number | null, history: NightSignals[]): 
   return tonight - m;
 }
 
-interface Baselines {
+export interface Baselines {
   hrv: Baseline;
   rhr: Baseline;
   breathing: Baseline | null;
   sleep: Baseline | null;
 }
 
-function baselines(history: NightSignals[]): Baselines | null {
+/** Your normal for each signal over the 60 nights in `history`, or null before 14 nights. */
+export function baselines(history: NightSignals[]): Baselines | null {
   const recent = history.slice(-BASELINE_NIGHTS);
   const hrv = baseline(
     recent.map((n) => n.lnRmssd),
@@ -97,18 +94,46 @@ function baselines(history: NightSignals[]): Baselines | null {
   return { hrv, rhr, breathing, sleep };
 }
 
-/** The combined score c: positive is better than your normal, negative worse. */
-function combined(night: NightSignals, base: Baselines, tempDev: number | null): number | null {
+/**
+ * Each signal's contribution before weighting, signed so that positive is good: z-scores for HRV
+ * and sleep, the negative z-score for resting HR, and a penalty for breathing past +1 SD. The
+ * feedback loop fits the weights against these same terms.
+ */
+export type RecoveryTerms = RecoveryWeights;
+
+export function recoveryTerms(night: NightSignals, base: Baselines): RecoveryTerms | null {
   const zHrv = zScore(night.lnRmssd, base.hrv);
   const zRhr = zScore(night.restingHr, base.rhr);
   if (zHrv === null || zRhr === null) {
     return null;
   }
   const zBreathing = zScore(night.breathingRate, base.breathing) ?? 0;
-  const zSleep = zScore(night.sleepScore, base.sleep) ?? 0;
-  const breathingPenalty = W_BREATHING * Math.max(0, zBreathing - BREATHING_FREE_Z);
+  return {
+    hrv: zHrv,
+    rhr: -zRhr,
+    sleep: zScore(night.sleepScore, base.sleep) ?? 0,
+    breathing: -Math.max(0, zBreathing - BREATHING_FREE_Z),
+  };
+}
+
+/** The combined score c: positive is better than your normal, negative worse. */
+function combined(
+  night: NightSignals,
+  base: Baselines,
+  weights: RecoveryWeights,
+  tempDev: number | null,
+): number | null {
+  const t = recoveryTerms(night, base);
+  if (!t) {
+    return null;
+  }
   const tempPenalty = TEMP_PENALTY_PER_C * Math.max(0, (tempDev ?? 0) - TEMP_FREE_C);
-  return W_HRV * zHrv - W_RHR * zRhr + W_SLEEP * zSleep - breathingPenalty - tempPenalty;
+  const weighted =
+    weights.hrv * t.hrv +
+    weights.rhr * t.rhr +
+    weights.sleep * t.sleep +
+    weights.breathing * t.breathing;
+  return weighted - tempPenalty;
 }
 
 export interface Recovery {
@@ -122,18 +147,22 @@ export interface Recovery {
  * Recovery = 100 × Φ(c / σc), where σc is how much c usually varies for you. An ordinary night
  * lands near 50%. `history` is earlier nights, oldest first, not including tonight.
  */
-export function recovery(night: NightSignals, history: NightSignals[]): Recovery | null {
+export function recovery(
+  night: NightSignals,
+  history: NightSignals[],
+  weights: RecoveryWeights = DEFAULT_PARAMS.recovery,
+): Recovery | null {
   const base = baselines(history);
   if (!base) {
     return null;
   }
-  const c = combined(night, base, tempDeviation(night.skinTemp, history));
+  const c = combined(night, base, weights, tempDeviation(night.skinTemp, history));
   if (c === null) {
     return null;
   }
   const past = history
     .slice(-BASELINE_NIGHTS)
-    .map((n) => combined(n, base, null))
+    .map((n) => combined(n, base, weights, null))
     .filter((v): v is number => v !== null);
   const spread = Math.max(MIN_SPREAD, sd(past) ?? 1);
   return { pct: 100 * normalCdf(c / spread), score: c };

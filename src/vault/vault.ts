@@ -18,6 +18,16 @@ import { localDate, localTime } from "./time";
 
 export type HealthMetrics = Record<string, number>;
 
+/** A check-in's answers. Each is optional; only the ones given are written. */
+export interface Checkin {
+  /** How you feel this morning, 1 (awful) to 5 (great). */
+  feel?: number;
+  /** How hard a workout felt, 0 (rest) to 10 (maximal). */
+  rpe?: number;
+  /** What might explain the night: alcohol, sick, stressed, … */
+  tags?: string[];
+}
+
 export interface IncomingMessage {
   id?: string;
   sender: string;
@@ -146,6 +156,24 @@ export class Vault {
     const csv = this.healthCsvPath(date);
     await this.update(csv, (text) => upsertCsvRow(text, date, metrics, source));
     return { paths: [this.dailyPath(date), csv] };
+  }
+
+  /**
+   * Store a morning check-in (how you feel, workout effort, tags) in the daily note's
+   * frontmatter. Tags are added to any already there; other fields replace earlier answers.
+   */
+  async recordCheckin(date: string, checkin: Checkin): Promise<{ path: string }> {
+    await this.updateDaily(date, (note) => {
+      const earlier = note.frontmatter.health_tags;
+      const kept = Array.isArray(earlier) ? earlier.filter((t) => typeof t === "string") : [];
+      const tags = checkin.tags ? [...new Set([...kept, ...checkin.tags])] : undefined;
+      return mergeFrontmatter(note, {
+        feel: checkin.feel,
+        effort_rpe: checkin.rpe,
+        health_tags: tags,
+      });
+    });
+    return { path: this.dailyPath(date) };
   }
 
   /** Replace the daily note's `<!-- cc:name -->` region, placing it under the title if new. */

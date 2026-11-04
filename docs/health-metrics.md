@@ -187,7 +187,8 @@ steady.
 3. `Recovery = 100 × Φ(c / σc)`, where Φ is the normal curve's cumulative share and σc is how
    much c varies across your recent nights. An ordinary night lands near 50%.
 
-Bands: red under 34, yellow 34–66, green 67 and up. The weights are a starting guess.
+Bands: red under 34, yellow 34–66, green 67 and up. The weights are a starting guess, kept in a
+versioned params file and tuned against your morning check-ins: see [the feedback loop](health-feedback.md).
 
 Should sleep count toward recovery at all? Whoop, Oura and Garmin include it. HRV4Training keeps
 recovery to physiology only, because a short night already shows up in HRV and resting HR. We

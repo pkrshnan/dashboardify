@@ -11,6 +11,8 @@ export interface DaySummary {
   /** Nights of history so far, for "calibrating" until there are enough. */
   baselineNights: number;
   tempDevC: number | null;
+  /** Which params file version scored this day (see params.ts). */
+  paramsVersion: string;
 }
 
 type Fields = Record<string, number | null | undefined>;
