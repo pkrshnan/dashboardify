@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package dashboardify.v1;
 
+import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
@@ -70,14 +71,18 @@ message GetStreamRequest {
   // The stream to get.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "dashboardify.app/Stream"
+    (google.api.resource_reference).type = "dashboardify.app/Stream",
+    (buf.validate.field).string.min_len = 1
   ];
 }
 
 // Request for ListStreams.
 message ListStreamsRequest {
   // Most streams to return. Defaults to 50.
-  int32 page_size = 1 [(google.api.field_behavior) = OPTIONAL];
+  int32 page_size = 1 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32.gte = 0
+  ];
 
   // next_page_token from the previous call.
   string page_token = 2 [(google.api.field_behavior) = OPTIONAL];
@@ -97,26 +102,37 @@ message MergeSamplesRequest {
   // The stream, created on its first upload.
   string stream = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "dashboardify.app/Stream"
+    (google.api.resource_reference).type = "dashboardify.app/Stream",
+    (buf.validate.field).string.min_len = 1
   ];
 
   // UTC day that every timestamp falls in.
-  google.type.Date day = 2 [(google.api.field_behavior) = REQUIRED];
+  google.type.Date day = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
 
   // UTC epoch milliseconds, one per row.
-  repeated int64 timestamps = 3 [(google.api.field_behavior) = REQUIRED];
+  repeated int64 timestamps = 3 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).repeated.min_items = 1
+  ];
 
   // One entry per column, each with one value per row.
-  repeated Column columns = 4 [(google.api.field_behavior) = REQUIRED];
+  repeated Column columns = 4 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).repeated.min_items = 1
+  ];
 }
 
 // One column of a MergeSamples upload.
 message Column {
   // Column name.
-  string name = 1;
+  string name = 1 [(buf.validate.field).string.pattern = "^[a-z][a-z0-9_]{0,39}$"];
 
   // One value per row.
   oneof values {
+    option (buf.validate.oneof).required = true;
     // For a number column.
     DoubleValues numbers = 2;
     // For a text column.
@@ -130,7 +146,7 @@ message Column {
 // Number column values.
 message DoubleValues {
   // One per row.
-  repeated double values = 1;
+  repeated double values = 1 [(buf.validate.field).repeated.items.double.finite = true];
 }
 
 // Text column values.

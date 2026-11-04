@@ -34,9 +34,26 @@ export class RawStore {
   }
 
   /** Merge an upload into the stream's file for `day`. */
-  store(stream: string, day: string, upload: Upload): Promise<Parsed<StoreResult>> {
+  store(
+    stream: string,
+    day: string,
+    upload: Upload,
+    declared?: Column[],
+  ): Promise<Parsed<StoreResult>> {
     return this.lockFor(stream).runExclusive(async () => {
-      const columns = mergeColumns(await this.readColumns(stream), upload);
+      const known = await this.readColumns(stream);
+      const schema = declared?.map((c, i) => ({ ...c, type: known?.[i]?.type ?? c.type }));
+      if (
+        known &&
+        declared &&
+        (declared.length !== known.length ||
+          declared.some(
+            (c, i) => known[i]?.name !== c.name || (known[i]?.type && known[i]?.type !== c.type),
+          ))
+      ) {
+        return { ok: false, error: "column schema does not match stream" };
+      }
+      const columns = mergeColumns(schema ?? known, upload);
       if (!columns.ok) {
         return columns;
       }

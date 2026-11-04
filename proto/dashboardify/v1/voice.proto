@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package dashboardify.v1;
 
+import "buf/validate/validate.proto";
+
 // Siri Shortcuts only. Takes loose spoken input, calls the other services and
 // returns one sentence to speak. Not AIP resource methods, on purpose.
 service VoiceService {
@@ -24,7 +26,11 @@ service VoiceService {
 // Request for AddTask.
 message AddTaskRequest {
   // Such as "call the bank tomorrow at 9am".
-  string text = 1;
+  string text = 1 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 20000
+    pattern: "(?s).*\\S.*"
+  }];
 
   // Made by the Shortcut, so retries are safe.
   string request_id = 2;
@@ -42,7 +48,11 @@ message AddTaskResponse {
 // Request for Log.
 message LogRequest {
   // What you said.
-  string text = 1;
+  string text = 1 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 20000
+    pattern: "(?s).*\\S.*"
+  }];
 }
 
 // Response for Log.
@@ -57,10 +67,10 @@ message LogResponse {
 // Request for CheckIn. Fields are text, as Shortcuts send them.
 message CheckInRequest {
   // 1 to 5.
-  string feel = 1;
+  string feel = 1 [(buf.validate.field).string.pattern = "^$|^[1-5]$"];
 
   // 0 to 10.
-  string rpe = 2;
+  string rpe = 2 [(buf.validate.field).string.pattern = "^$|^(10|[0-9])$"];
 
   // Comma-separated.
   string tags = 3;
@@ -87,7 +97,11 @@ message ListDueResponse {
 // Request for CompleteByText.
 message CompleteByTextRequest {
   // Such as "the bank one".
-  string text = 1;
+  string text = 1 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 20000
+    pattern: "(?s).*\\S.*"
+  }];
 }
 
 // Response for CompleteByText.
