@@ -1,0 +1,101 @@
+syntax = "proto3";
+
+package dashboardify.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+// Devices that may call the API, each with its own token.
+service DeviceService {
+  // Adds a device and returns its token, the only time the token is shown.
+  rpc CreateDevice(CreateDeviceRequest) returns (Device) {
+    option (google.api.http) = {
+      post: "/v1/devices"
+      body: "device"
+    };
+    option (google.api.method_signature) = "device";
+  }
+
+  // Lists devices, oldest first. Tokens are never listed.
+  rpc ListDevices(ListDevicesRequest) returns (ListDevicesResponse) {
+    option (google.api.http) = {get: "/v1/devices"};
+  }
+
+  // Revokes a device: its token stops working on the next request.
+  rpc DeleteDevice(DeleteDeviceRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=devices/*}"};
+    option (google.api.method_signature) = "name";
+  }
+}
+
+// A phone, computer or Shortcut that signs in with a token.
+message Device {
+  option (google.api.resource) = {
+    type: "dashboardify.app/Device"
+    pattern: "devices/{device}"
+    singular: "device"
+    plural: "devices"
+  };
+
+  // `devices/{device}`, where `{device}` comes from the name, such as `devices/pranavs-iphone`.
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+
+  // What you call it, such as "Pranav's iPhone".
+  string display_name = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string = {
+      min_len: 1
+      max_len: 100
+      pattern: ".*\\S.*"
+    }
+  ];
+
+  // When it was added.
+  google.protobuf.Timestamp create_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When it last signed in, to the minute.
+  google.protobuf.Timestamp last_used_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The bearer token. Set only in the CreateDevice response; never stored or returned again.
+  string token = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // True for the device making this request.
+  bool current = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// Request for CreateDevice.
+message CreateDeviceRequest {
+  // The device to add; only `display_name` is read.
+  Device device = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // Made by the client. A retry with the same id within ten minutes returns the same device
+  // and token instead of adding another.
+  string request_id = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request for ListDevices.
+message ListDevicesRequest {}
+
+// Response for ListDevices.
+message ListDevicesResponse {
+  // Every device.
+  repeated Device devices = 1;
+}
+
+// Request for DeleteDevice.
+message DeleteDeviceRequest {
+  // The device to revoke.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/Device",
+    (buf.validate.field).string.min_len = 1
+  ];
+}

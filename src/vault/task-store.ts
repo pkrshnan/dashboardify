@@ -38,10 +38,16 @@ export type CompleteResult =
       status: "not_found";
     };
 export class TaskStore {
+  /** `inbox` may be a function, so a change in Settings applies to the next new task. */
   constructor(
     private readonly vault: Vault,
-    readonly inboxPath: string,
+    private readonly inbox: string | (() => string),
   ) {}
+
+  get inboxPath(): string {
+    return typeof this.inbox === "string" ? this.inbox : this.inbox();
+  }
+
   /** Every task in the vault's Markdown files. Hidden folders (.obsidian, .trash, .cc) are skipped. */
   async list(): Promise<FoundTask[]> {
     const found: FoundTask[] = [];

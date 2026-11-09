@@ -17,7 +17,7 @@ import { messageRoutes } from "./routes/messages";
 import { sampleRoutes } from "./routes/samples";
 import { taskRoutes } from "./routes/tasks";
 import { todayRoutes } from "./routes/today";
-import { v1Services } from "./routes/v1";
+import { type SettingsDeps, v1Services } from "./routes/v1";
 import { v1Transport } from "./routes/v1-transport";
 import { webRoutes } from "./routes/web";
 import type { TailnetAuth } from "./tailnet";
@@ -25,6 +25,8 @@ import type { TailnetAuth } from "./tailnet";
 export interface AppDeps {
   /** Who may call the API: the DeviceStore in settings.db, or a fixed list in tests. */
   devices: DeviceMatcher;
+  /** settings.db, for the Settings and Device APIs and a live tasks inbox. */
+  settings?: SettingsDeps;
   /** Tailnet sign-in as it is now; read per request. Defaults to `config.tailnet`. */
   tailnet?: () => TailnetAuth | null;
   vault?: Vault;
@@ -37,7 +39,13 @@ export interface AppDeps {
 
 export function createApp(config: Config, deps: AppDeps): Hono<AuthEnv> {
   const vault = deps.vault ?? new Vault(config.vaultPath, config.timeZone);
-  const tasks = new TaskStore(vault, config.tasksInbox);
+  const general = deps.settings?.general;
+  const envInbox = deps.settings?.envChange.tasksInbox;
+  // The inbox in Settings applies to the next new task, unless .env still sets it.
+  const tasks = new TaskStore(
+    vault,
+    general ? () => envInbox ?? general.get().tasksInbox : config.tasksInbox,
+  );
   const raw = new RawStore(config.healthRawPath);
   const home = {
     tasks,
@@ -61,7 +69,9 @@ export function createApp(config: Config, deps: AppDeps): Hono<AuthEnv> {
   const app = new Hono<AuthEnv>();
   app.get("/healthz", (c) => c.json({ ok: true }));
   app.route("/api", api);
-  const v1 = v1Transport(v1Services(vault, tasks, raw, home, deps.now, deps.onSamples));
+  const v1 = v1Transport(
+    v1Services(vault, tasks, raw, home, deps.now, deps.onSamples, deps.settings),
+  );
   const modern = new Hono<AuthEnv>();
   modern.use("*", bearerAuth(deps.devices, tailnet));
   modern.route("/", v1);

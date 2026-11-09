@@ -4,7 +4,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createApp } from "../../../src/server/app";
-import "../../../src/settings/core";
+import { GeneralSettings, type SettingsChange } from "../../../src/settings/core";
 import { DeviceStore } from "../../../src/settings/devices";
 import { SecretBox } from "../../../src/settings/secret-box";
 import { SettingsStore } from "../../../src/settings/store";
@@ -13,7 +13,7 @@ import { SettingsStore } from "../../../src/settings/store";
  * Call inside a describe block to give each test an isolated vault, sample store and
  * settings.db, with one device ("test", token "secret").
  */
-export function useApi() {
+export function useApi(options: { envChange?: SettingsChange; envNames?: string[] } = {}) {
   let dir: string;
   let app: ReturnType<typeof createApp>;
   let settings: SettingsStore;
@@ -34,7 +34,16 @@ export function useApi() {
         tasksInbox: "Inbox.md",
         dataPath: join(dir, "data"),
       },
-      { devices, now: () => new Date("2026-11-03T12:00:00Z") },
+      {
+        devices,
+        settings: {
+          general: new GeneralSettings(settings),
+          devices,
+          envChange: options.envChange ?? {},
+          envNames: options.envNames ?? [],
+        },
+        now: () => new Date("2026-11-03T12:00:00Z"),
+      },
     );
   });
 
@@ -47,10 +56,13 @@ export function useApi() {
     get app() {
       return app;
     },
-    async call(path: string, method = "GET", body?: unknown) {
+    get settings() {
+      return settings;
+    },
+    async call(path: string, method = "GET", body?: unknown, token = "secret") {
       const response = await app.request(path, {
         method,
-        headers: { authorization: "Bearer secret", "content-type": "application/json" },
+        headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
         body: body === undefined ? undefined : JSON.stringify(body),
       });
       return { status: response.status, body: await response.json() };

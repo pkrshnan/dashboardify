@@ -141,6 +141,37 @@ and fields such as `nextEvent`, `taskGroups`, and `metrics`.
 Metric series use `dailyValues` plus `missingDays` indexes to represent missing data.
 The regular server has no calendar source by default; the demo supplies sample events.
 
+## Settings
+
+| Method | Path | Operation |
+| --- | --- | --- |
+| GET | `/v1/settings` | Read the time zone, tasks inbox and tailnet sign-in |
+| PATCH | `/v1/settings` | Change the fields in `updateMask` (lowerCamelCase), or every field sent |
+
+`timeZone` is an IANA name; empty means the server's own zone. A change to it is saved at once but
+applies after a restart, and the response lists it in `restartRequired`. The tasks inbox and
+tailnet sign-in apply to the next request. `envOverrides` lists fields still set in `.env`, which
+win over Settings; changing one returns `400` naming the variable to remove. Send the `etag` from a
+read to reject the update (`409`) if Settings changed in between.
+
+```sh
+curl -X PATCH "$SERVER/v1/settings?updateMask=timeZone" \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"timeZone": "Europe/London"}'
+```
+
+## Devices
+
+| Method | Path | Operation |
+| --- | --- | --- |
+| POST | `/v1/devices` | Add a device; the response holds its token, the only time it is shown |
+| GET | `/v1/devices` | List devices, with `current` set on the caller's own |
+| DELETE | `/v1/devices/{id}` | Revoke a device; its token stops working on the next request |
+
+Only a hash of each token is stored, so a lost token can't be shown again: add a new device and
+revoke the old one. `requestId` on create makes a retry within ten minutes return the same device
+and token.
+
 ## Updates, concurrency, and pagination
 
 Task and check-in PATCH requests accept an `updateMask` query parameter containing comma-separated

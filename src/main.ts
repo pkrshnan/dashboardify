@@ -27,12 +27,14 @@ function startHealthSummaries(config: Config, vault: Vault): SummaryScheduler {
 }
 
 if (import.meta.main) {
-  const { config, devices, tailnet } = await openSettings(loadStartup(), process.env);
+  const opened = await openSettings(loadStartup(), process.env);
+  const { config, devices, general, tailnet, overrides, envChange } = opened;
   const vault = new Vault(config.vaultPath, config.timeZone);
   const scheduler = startHealthSummaries(config, vault);
   const app = createApp(config, {
     devices,
     tailnet,
+    settings: { general, devices, envChange, envNames: overrides },
     vault,
     onSamples: (_stream, day) => scheduler.touchUtcDay(day),
   });
