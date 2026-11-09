@@ -107,6 +107,12 @@ Recovery is coloured by band only in the focus row, and its number is always sho
 - Day-month dates ("3 Nov"), 24-hour times, durations as "7h 12m", lateness as "3d late".
 - No cards or boxes on the main sections. Hairline dividers and spacing do the grouping. No explanatory labels.
 
+## Calendar capture and Settings
+
+The capture box, Settings and Settings › Calendars are on a second canvas:
+https://claude.ai/artifact/YNnwtKHE7AAzjLswS4JnSc. The plans that build them are
+[settings-plan.md](../settings-plan.md) and [calendar-plan.md](../calendar-plan.md).
+
 ## Not done yet
 
 - Sorting health rows so that metrics outside their normal band come first.
