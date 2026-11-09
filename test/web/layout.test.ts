@@ -6,7 +6,20 @@ import { dateSpan, longDate, startsIn } from "../../web/lib/format";
 import { assignLanes, hourRange, layoutBlocks, layoutPills } from "../../web/lib/timeline";
 
 function ev(startMin: number, endMin: number, title = "e"): AgendaEvent {
-  return { title, start: "", end: "", startMin, endMin, detail: "", category: "work", url: null };
+  return {
+    title,
+    start: "",
+    end: "",
+    startMin,
+    endMin,
+    detail: "",
+    category: "work",
+    url: null,
+    event: null,
+    calendar: null,
+    writable: false,
+    allDay: false,
+  };
 }
 
 function rem(minutes: number, id = String(minutes)): Reminder {

@@ -1,6 +1,6 @@
 // The Week view: a rolling week from today. Desktop shows seven columns with dated tasks at the
 // top of each; the phone shows a strip of days and the agenda for the chosen one. Reminders have
-// hollow markers, events filled ones. Nothing here can be ticked: that happens in the task list.
+// hollow markers, events filled ones, and all-day events hollow squares in their colour. Nothing here can be ticked: that happens in the task list.
 
 import { useState } from "preact/hooks";
 import type { DayAgenda } from "../../src/home/types";
@@ -37,14 +37,7 @@ export function WeekColumns({ days, nowMin }: { days: DayAgenda[]; nowMin: numbe
         {days.map((d, i) => (
           <div key={d.date} class="week-col">
             <div class={`week-day${i === 0 ? " today" : ""}`}>{dayLabel(d.date)}</div>
-            <div class="week-dated">
-              {d.dated.map((text) => (
-                <div key={text}>
-                  <span class="hollow" />
-                  <span class="ell">{text}</span>
-                </div>
-              ))}
-            </div>
+            <WeekDated day={d} />
             <div
               class="week-body"
               style={{
@@ -85,12 +78,34 @@ export function WeekColumns({ days, nowMin }: { days: DayAgenda[]; nowMin: numbe
   );
 }
 
+/** The top of a Week column: all-day events, then tasks due that day with no time. */
+function WeekDated({ day }: { day: DayAgenda }) {
+  return (
+    <div class="week-dated">
+      {day.allDay.map((e) => (
+        <div key={`a${e.event ?? e.title}`} title={`${e.title}, all day`}>
+          <span class="hollow all-day" style={{ borderColor: CATEGORY[e.category] }} />
+          <span class="ell">{e.title}</span>
+        </div>
+      ))}
+      {day.dated.map((text) => (
+        <div key={text}>
+          <span class="hollow" />
+          <span class="ell">{text}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 interface AgendaItem {
   key: string;
   time: string;
   text: string;
   color: string;
   filled: boolean;
+  /** All-day events: a square marker, so they read as events and not tasks. */
+  square?: boolean;
 }
 
 export function WeekStrip({ days }: { days: DayAgenda[] }) {
@@ -121,7 +136,7 @@ export function WeekStrip({ days }: { days: DayAgenda[] }) {
             <div key={item.key} class="agenda-row">
               <span class="agenda-time">{item.time}</span>
               <span
-                class="agenda-marker"
+                class={`agenda-marker${item.square ? " all-day" : ""}`}
                 style={{
                   borderColor: item.color,
                   background: item.filled ? item.color : "transparent",
@@ -137,7 +152,7 @@ export function WeekStrip({ days }: { days: DayAgenda[] }) {
 }
 
 function hasItems(d: DayAgenda): boolean {
-  return d.events.length + d.reminders.length + d.dated.length > 0;
+  return d.events.length + d.reminders.length + d.dated.length + d.allDay.length > 0;
 }
 
 /** Untimed tasks first, then events and reminders by time. */
@@ -158,6 +173,14 @@ function agendaOf(day: DayAgenda): AgendaItem[] {
       item: { key: `r${r.id}`, time: r.time, text: r.text, color: TEXT_3, filled: false },
     })),
   ].sort((a, b) => a.sort - b.sort);
+  const allDay = day.allDay.map((e) => ({
+    key: `a${e.event ?? e.title}`,
+    time: "All day",
+    text: e.title,
+    color: CATEGORY[e.category],
+    filled: false,
+    square: true,
+  }));
   const dated = day.dated.map((text) => ({
     key: `d${text}`,
     time: "",
@@ -165,5 +188,5 @@ function agendaOf(day: DayAgenda): AgendaItem[] {
     color: TEXT_3,
     filled: false,
   }));
-  return [...dated, ...timed.map((t) => t.item)];
+  return [...allDay, ...dated, ...timed.map((t) => t.item)];
 }

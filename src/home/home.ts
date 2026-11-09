@@ -3,10 +3,10 @@
 import type { HealthSync } from "../health/sync";
 import type { TaskStore } from "../vault/task-store";
 import { buildDays, groupTasks, nextEvent, WEEK_DAYS } from "./agenda";
-import type { CalendarSource } from "./calendar";
+import type { CalendarSource, CalendarStatus } from "./calendar";
 import type { HealthHistory } from "./health-history";
 import { daySentence } from "./sentence";
-import type { HomeView } from "./types";
+import type { CalendarSyncView, HomeView } from "./types";
 
 export interface HomeDeps {
   tasks: TaskStore;
@@ -15,6 +15,10 @@ export interface HomeDeps {
   /** When strap data last arrived. */
   sync: () => Promise<HealthSync | null>;
   timeZone: string;
+}
+
+function calendarSyncView(status: CalendarStatus | undefined): CalendarSyncView | null {
+  return status ? { lastSync: status.lastSyncTime ?? null, hasErrors: status.hasErrors } : null;
 }
 
 export async function homeView(deps: HomeDeps, now: Date): Promise<HomeView> {
@@ -50,5 +54,7 @@ export async function homeView(deps: HomeDeps, now: Date): Promise<HomeView> {
           upload: new Date(sync.uploadTs).toISOString(),
         }
       : null,
+    calendarSync: calendarSyncView(deps.calendar.status?.()),
+    captureHints: deps.calendar.hints?.(now.getTime()) ?? null,
   };
 }

@@ -96,6 +96,10 @@ describe("buildDays", () => {
         detail: "Room 4B",
         category: "work",
         url: null,
+        event: null,
+        calendar: null,
+        writable: false,
+        allDay: false,
       },
     ]);
     expect(today?.reminders.map((r) => [r.text, r.minutes, r.done])).toEqual([
@@ -114,6 +118,25 @@ describe("buildDays", () => {
     const [first, second] = buildDays(TODAY, TZ, [late], []);
     expect(first?.events[0]?.endMin).toBe(1500);
     expect(second?.events[0]?.startMin).toBe(0);
+  });
+
+  test("an all-day event is a Week marker on each of its days, never on the timeline", () => {
+    const trip: CalendarEvent = {
+      title: "Lisbon",
+      start: at(TODAY, "00:00"),
+      end: at("2026-11-05", "00:00"),
+      category: "personal",
+      allDay: true,
+      startDate: TODAY,
+      endDate: "2026-11-05",
+    };
+
+    const [first, second, third] = buildDays(TODAY, TZ, [trip], []);
+
+    expect(first?.events).toEqual([]);
+    expect(first?.allDay.map((e) => [e.title, e.allDay])).toEqual([["Lisbon", true]]);
+    expect(second?.allDay.map((e) => e.title)).toEqual(["Lisbon"]);
+    expect(third?.allDay).toEqual([]);
   });
 });
 

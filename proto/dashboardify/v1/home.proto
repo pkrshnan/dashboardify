@@ -58,6 +58,12 @@ message Home {
 
   // When strap data last arrived. Unset before the first upload.
   HealthSync health_sync = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When calendars last synced. Unset when no calendar is connected.
+  CalendarSync calendar_sync = 20 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // What the capture box needs to guess a calendar. Unset with no writable calendar.
+  CaptureHints capture_hints = 21 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // When strap data last reached the server.
@@ -106,6 +112,18 @@ message AgendaEvent {
 
   // Join link, if any.
   string url = 8;
+
+  // The event, `events/{event}`, for opening and editing.
+  string event = 9;
+
+  // Its calendar, `calendarAccounts/{calendar_account}/calendars/{calendar}`.
+  string calendar = 10;
+
+  // Whether it can be edited here.
+  bool writable = 11;
+
+  // Whether it lasts whole days. All-day events are in `all_day_events`, never in `events`.
+  bool all_day = 12;
 }
 
 // The event on now or next.
@@ -157,6 +175,9 @@ message DayAgenda {
 
   // Text of untimed tasks due that day.
   repeated string dated_tasks = 4;
+
+  // All-day events on this day, shown as Week view markers only.
+  repeated AgendaEvent all_day_events = 5;
 }
 
 // A task in the task list.
@@ -243,4 +264,64 @@ message GetHomeRequest {
     (google.api.resource_reference).type = "dashboardify.app/Home",
     (buf.validate.field).string.min_len = 1
   ];
+}
+
+// When calendars last synced, for "Calendar synced 09:10".
+message CalendarSync {
+  // The oldest successful sync across shown calendars. Unset before the first one finishes.
+  google.protobuf.Timestamp last_sync_time = 1;
+
+  // Whether any account is signed out or unreachable.
+  bool has_errors = 2;
+}
+
+// What the capture box needs to pick a calendar the way the server will.
+message CaptureHints {
+  // Calendars new events can go on.
+  repeated WritableCalendar calendars = 1;
+
+  // The default calendar.
+  string default_calendar = 2;
+
+  // Keyword rules, in order.
+  repeated CaptureRule rules = 3;
+
+  // Past titles and where they were, most frequent first (at most 300, past 180 days).
+  repeated TitleHint titles = 4;
+}
+
+// A calendar new events can go on.
+message WritableCalendar {
+  // `calendarAccounts/{calendar_account}/calendars/{calendar}`.
+  string name = 1;
+
+  // Its name in Apple Calendar.
+  string display_name = 2;
+
+  // `work`, `fitness`, `personal` or `focus`.
+  string category = 3;
+}
+
+// "gym, run, swim → Fitness".
+message CaptureRule {
+  // Whole words or phrases.
+  repeated string words = 1;
+
+  // The calendar.
+  string calendar = 2;
+}
+
+// How often a title was on a calendar.
+message TitleHint {
+  // The title in lower case, with times and punctuation removed.
+  string title_key = 1;
+
+  // The calendar.
+  string calendar = 2;
+
+  // How many events had this title there.
+  int32 count = 3;
+
+  // When the newest one was.
+  google.protobuf.Timestamp last_time = 4;
 }

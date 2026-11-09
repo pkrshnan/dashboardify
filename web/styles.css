@@ -482,6 +482,13 @@ button.link {
   flex: none;
 }
 
+/* All-day events: a hollow square in the calendar's colour, beside round task markers. */
+.hollow.all-day,
+.agenda-marker.all-day {
+  border-radius: 2px;
+  border-width: 1.5px;
+}
+
 /* ---- Calendar ---- */
 
 .calendar-grid {
