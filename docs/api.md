@@ -198,6 +198,26 @@ curl -X POST "$SERVER/v1/calendarAccounts?validateOnly=true" \
   -d '{"kind": "KIND_CALDAV", "provider": "icloud", "username": "you@icloud.com", "password": "xxxx-xxxx-xxxx-xxxx"}'
 ```
 
+## Activity
+
+| Method | Path | Operation |
+| --- | --- | --- |
+| GET | `/v1/activityDays?startDate.year=2026&startDate.month=11&startDate.day=2&endDate.year=2026&endDate.month=11&endDate.day=8` | Each day's workouts, walks and lifting log, up to 92 days |
+| GET | `/v1/days/{YYYY-MM-DD}/workouts/{HHMM}` | One workout, with heart rate every 15 seconds and, for lifting, its sets |
+| POST | `/v1/days/{YYYY-MM-DD}/workouts/{HHMM}:review` | Say what a workout was |
+
+These read the computed health tables, so a day appears once its summary has run. A workout's
+name is its day and local start time, such as `days/2026-11-08/workouts/1806`. Its `status` says
+how sure its `kind` is: `WORKOUT_STATUS_DETECTED` from the strap alone, `WORKOUT_STATUS_POSSIBLE`
+when worth asking (lifting with no log that day, or a workout of unknown kind),
+`WORKOUT_STATUS_CONFIRMED` after a review or when the daily note's lifting log matched it, and
+`WORKOUT_STATUS_DISMISSED` when you said it wasn't a workout.
+
+A review's body is `{"kind": "lifting"}`: one of `running`, `walking`, `volleyball`, `lifting`,
+`workout`, `none` for not a workout, or `""` to take a review back. It goes into the daily note's
+frontmatter (see [vault format](vault-format.md)), the day is recomputed, and the workout is
+returned as it now stands.
+
 ## Updates, concurrency, and pagination
 
 Task and check-in PATCH requests accept an `updateMask` query parameter containing comma-separated

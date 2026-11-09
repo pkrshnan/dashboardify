@@ -137,4 +137,15 @@ export const restBindings: Record<string, RestBinding> = {
     path: "/devices/:id",
     resource: { field: "name", prefix: "devices/" },
   },
+  listActivityDays: { method: "GET", path: "/activityDays" },
+  getWorkout: {
+    method: "GET",
+    path: "/days/:day/workouts/:workout",
+    resource: { field: "name", prefix: "days/" },
+  },
+  reviewWorkout: {
+    method: "POST",
+    path: "/days/:day/workouts/:workout{[0-9]{4}:review}",
+    resource: { field: "name", prefix: "days/" },
+  },
 };

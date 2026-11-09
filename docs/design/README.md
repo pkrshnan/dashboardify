@@ -114,6 +114,20 @@ The capture box, Settings and Settings › Calendars are on a second canvas:
 https://claude.ai/artifact/YNnwtKHE7AAzjLswS4JnSc. The plans that build them are
 [settings-plan.md](../settings-plan.md) and [calendar-plan.md](../calendar-plan.md).
 
+## Activity page
+
+Workouts and walks over a week, a month or three months, at `#activity` from the Health
+heading. Design canvas: https://claude.ai/artifact/Dm3mFqJPttBWpS9VxeYPUD
+
+- The same tokens as the home screen. Workouts are the activity cyan `#64D2FF`, walks a teal
+  `#66D4CF`. A workout the strap isn't sure of has a dashed outline and a question mark.
+- Week lists each day's sessions; Month is a calendar with a chip per session; 3M is active minutes
+  per week. A day, week or workout opens beside the list, below it on the phone.
+- An unsure workout asks "What was this?": "It was lifting" or "Not a workout". Any other has
+  "Not right?". A dismissed one stays in the list, greyed, with Undo.
+- A workout shows its heart rate every 15 seconds. For lifting, each matched set is a band in its
+  exercise's colour (paler for warm-ups), with the sets listed by exercise.
+
 ## Not done yet
 
 - Sorting health rows so that metrics outside their normal band come first.

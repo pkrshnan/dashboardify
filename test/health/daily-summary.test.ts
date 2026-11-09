@@ -7,8 +7,9 @@ import { DerivedStore } from "../../src/health/derived-store";
 import { RawStore, utcDays } from "../../src/health/raw-store";
 import type { Sample } from "../../src/health/samples";
 import { SummaryScheduler } from "../../src/health/scheduler";
-import { parseNote } from "../../src/vault/markdown";
+import { editNote, parseNote } from "../../src/vault/markdown";
 import { Vault } from "../../src/vault/vault";
+import { writeReview } from "../../src/vault/workout-reviews";
 import { accelDay, breathingBeats, HOUR, heartRate } from "./metrics/fixtures";
 
 const TZ = "America/Los_Angeles";
@@ -69,6 +70,32 @@ async function putNight(): Promise<void> {
   await put("temperature", ["celsius"], [{ ts: SLEEP.start + HOUR, values: [34.5] }]);
 }
 
+/** A 40-minute run at 18:00, with a quiet half hour either side so it stands apart from the
+ * fixture's all-day 110 bpm. */
+async function putRun(): Promise<void> {
+  const start = Date.parse(`${DATE}T17:30:00-08:00`);
+  const seconds = Array.from({ length: 100 * 60 }, (_, i) => i);
+  const running = (i: number) => i >= 30 * 60 && i < 70 * 60;
+  const at = (i: number) => start + i * 1000;
+  await put(
+    "heart_rate",
+    ["bpm"],
+    seconds.map((i) => ({ ts: at(i), values: [running(i) ? 165 : 80] })),
+  );
+  // 165 steps a minute while running; the counter holds still otherwise.
+  const count = (i: number) => Math.floor(2.75 * Math.min(Math.max(i - 30 * 60, 0), 40 * 60));
+  await put(
+    "steps",
+    ["count"],
+    seconds.map((i) => ({ ts: at(i), values: [count(i)] })),
+  );
+  await put(
+    "motion",
+    ["intensity", "intensity_long"],
+    seconds.map((i) => ({ ts: at(i), values: [running(i) ? 0.5 : 0.03, -3] })),
+  );
+}
+
 async function writeProfile(): Promise<void> {
   await mkdir(join(dir, "vault"), { recursive: true });
   await writeFile(
@@ -100,7 +127,7 @@ describe("DailySummary", () => {
     expect(note?.body.indexOf("## Health")).toBeLessThan(note?.body.indexOf("## Journal") ?? 0);
 
     expect((await derived.read("nights", DATE))?.rhr_bpm).toBeCloseTo(52, 0);
-    expect((await derived.read("days", DATE))?.algo_version).toBe("2");
+    expect((await derived.read("days", DATE))?.algo_version).toBe("3");
   });
 
   test("recovery appears once there are two weeks of nights", async () => {
@@ -124,29 +151,7 @@ describe("DailySummary", () => {
   test("a run becomes a workout line, a workouts row and the day's workout minutes", async () => {
     await putNight();
     await writeProfile();
-    // A 40-minute run at 18:00, with a quiet half hour either side so it stands apart from the
-    // fixture's all-day 110 bpm.
-    const start = Date.parse(`${DATE}T17:30:00-08:00`);
-    const seconds = Array.from({ length: 100 * 60 }, (_, i) => i);
-    const running = (i: number) => i >= 30 * 60 && i < 70 * 60;
-    const at = (i: number) => start + i * 1000;
-    await put(
-      "heart_rate",
-      ["bpm"],
-      seconds.map((i) => ({ ts: at(i), values: [running(i) ? 165 : 80] })),
-    );
-    // 165 steps a minute while running; the counter holds still otherwise.
-    const count = (i: number) => Math.floor(2.75 * Math.min(Math.max(i - 30 * 60, 0), 40 * 60));
-    await put(
-      "steps",
-      ["count"],
-      seconds.map((i) => ({ ts: at(i), values: [count(i)] })),
-    );
-    await put(
-      "motion",
-      ["intensity", "intensity_long"],
-      seconds.map((i) => ({ ts: at(i), values: [running(i) ? 0.5 : 0.03, -3] })),
-    );
+    await putRun();
 
     await summary.run(DATE);
 
@@ -154,10 +159,30 @@ describe("DailySummary", () => {
     expect(note?.body).toMatch(/- Running 18:00–18:40 · 40 min · 165 avg \/ 165 max · strain \d/);
     const rows = await derived.readAll("workouts", DATE);
     expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ kind: "running", duration_min: 40, algo_version: "2" });
+    expect(rows[0]).toMatchObject({ kind: "running", status: "detected", duration_min: 40 });
     expect((await derived.read("days", DATE))?.workout_min).toBe(40);
     // The run is fast stepping, but it is a workout, so it isn't also a walk.
     expect(await derived.readAll("walks", DATE)).toEqual([]);
+  });
+
+  test("a workout reviewed as not a workout leaves the note and the totals", async () => {
+    await putNight();
+    await writeProfile();
+    await putRun();
+    await summary.run(DATE);
+    await vault.update(vault.dailyPath(DATE), (source) =>
+      editNote(source, { frontmatter: {}, body: "" }, (note) => {
+        writeReview(note.frontmatter, { start: "18:00", end: "18:40", kind: "none" });
+        return note;
+      }),
+    );
+
+    await summary.run(DATE);
+
+    const note = await vault.readDaily(DATE);
+    expect(note?.body).not.toContain("- Running");
+    expect((await derived.readAll("workouts", DATE))[0]).toMatchObject({ status: "dismissed" });
+    expect((await derived.read("days", DATE))?.workout_min).toBe(0);
   });
 
   test("a lifting log in the note is summarized, even before the strap has the session", async () => {

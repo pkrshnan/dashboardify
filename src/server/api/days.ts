@@ -8,6 +8,11 @@ import { ApiError, invalidArgument } from "./errors";
 import type { ApiRequests, CheckinInput } from "./requests";
 import { requestedFields } from "./update-mask";
 
+/** A new daily note, for edits to a day that has none yet. */
+export function emptyDay(day: string) {
+  return { frontmatter: { date: day, tags: ["daily"] }, body: `# ${day}\n\n## Journal\n` };
+}
+
 /** Reads daily notes and updates check-in frontmatter under the vault lock. */
 export class DaysService {
   constructor(private readonly vault: Vault) {}
@@ -51,17 +56,13 @@ export class DaysService {
     const day = this.dayOf(checkin.name);
     const fields = requestedFields(request, checkin, ["feel", "rpe", "tags"]);
     await this.vault.update(this.vault.dailyPath(day), (source) =>
-      editNote(
-        source,
-        { frontmatter: { date: day, tags: ["daily"] }, body: `# ${day}\n\n## Journal\n` },
-        (note) => {
-          if (checkin.etag && shortHash(JSON.stringify(note.frontmatter)) !== checkin.etag) {
-            throw new ApiError(409, "stale etag");
-          }
-          applyCheckin(note.frontmatter, checkin, fields);
-          return note;
-        },
-      ),
+      editNote(source, emptyDay(day), (note) => {
+        if (checkin.etag && shortHash(JSON.stringify(note.frontmatter)) !== checkin.etag) {
+          throw new ApiError(409, "stale etag");
+        }
+        applyCheckin(note.frontmatter, checkin, fields);
+        return note;
+      }),
     );
     return this.checkin(day);
   };

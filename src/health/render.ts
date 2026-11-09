@@ -6,6 +6,7 @@ import type { Recovery } from "./metrics/recovery";
 import type { DayMetrics, NightMetrics } from "./metrics/summary";
 import type { Walk } from "./metrics/walks";
 import type { Workout } from "./metrics/workouts";
+import { counted, type ReviewedWorkout } from "./reviews";
 import { type HealthSync, lag, shortDuration } from "./sync";
 
 export interface DaySummary {
@@ -17,6 +18,8 @@ export interface DaySummary {
   tempDevC: number | null;
   /** Which params file version scored this day (see params.ts). */
   paramsVersion: string;
+  /** The day's workouts with your reviews applied; dismissed ones are kept but not shown. */
+  workouts: ReviewedWorkout[];
   /** The note's lifting log, joined to the strap; null without a log. */
   lifting: LiftingDay | null;
 }
@@ -68,7 +71,7 @@ export function healthBlock(
         s.night ? sleepLine(s.night, clock) : null,
         s.night ? vitalsLine(s.night, s.tempDevC) : null,
         strainLine(s.day),
-        ...s.day.workouts.map((w) => workoutLine(w, clock)),
+        ...counted(s.workouts).map((w) => workoutLine(w, clock)),
         ...s.day.walks.map((w) => walkLine(w, clock)),
         s.lifting ? liftingLine(s.lifting, clock) : null,
         s.day.steps > 0 ? `- Steps ${s.day.steps.toLocaleString("en-US")}` : null,
@@ -123,10 +126,11 @@ const KIND_NAMES: Record<Workout["kind"], string> = {
 };
 
 /** "- Volleyball 20:30–21:15 · 45 min · 138 avg / 179 max · strain 8.3" */
-function workoutLine(w: Workout, clock: (ts: number) => string): string {
+function workoutLine(w: ReviewedWorkout, clock: (ts: number) => string): string {
   const hr = `${Math.round(w.avgHr)} avg / ${Math.round(w.maxHr)} max`;
   const when = `${clock(w.start)}–${clock(w.end)}`;
-  return `- ${KIND_NAMES[w.kind]} ${when} · ${Math.round(w.minutes)} min · ${hr} · strain ${w.strain.toFixed(1)}`;
+  const name = `${KIND_NAMES[w.kind]}${w.status === "possible" ? "?" : ""}`;
+  return `- ${name} ${when} · ${Math.round(w.minutes)} min · ${hr} · strain ${w.strain.toFixed(1)}`;
 }
 
 /**
