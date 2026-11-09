@@ -9,6 +9,7 @@ import { DailySummary } from "./health/daily-summary";
 import { DerivedStore } from "./health/derived-store";
 import { RawStore } from "./health/raw-store";
 import { SummaryScheduler } from "./health/scheduler";
+import { PHOTON_URL, Photon } from "./places/photon";
 import { connectICloud } from "./server/api/calendar-accounts";
 import { createApp } from "./server/app";
 import { type Config, loadStartup } from "./server/config";
@@ -77,6 +78,7 @@ if (import.meta.main) {
       envChange,
       envNames: overrides,
       calendars: { accounts, cache, sync: calendarSync },
+      places: new Photon(process.env.PHOTON_URL || PHOTON_URL),
     },
     vault,
     onSamples: (_stream, day) => scheduler.touchUtcDay(day),

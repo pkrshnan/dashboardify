@@ -3,6 +3,7 @@ syntax = "proto3";
 package dashboardify.v1;
 
 import "buf/validate/validate.proto";
+import "dashboardify/v1/place.proto";
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
@@ -64,6 +65,9 @@ message Settings {
 
   // Fields changed by this update that apply only after a restart.
   repeated string restart_required = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Place searches look near here first, such as your home town. Unset searches everywhere.
+  Place places_near = 9 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Sign-in through Tailscale Serve, without a device token.

@@ -1,7 +1,8 @@
 // The core settings: one row of values that used to live in .env (time zone, tasks inbox,
-// tailnet sign-in). GeneralSettings reads it through a cache that reloads when the database
+// tailnet sign-in), and where place searches look first. GeneralSettings reads it through a cache that reloads when the database
 // changes, so a write from the CLI or the API is seen on the next request.
 
+import type { Place } from "../places/place";
 import { SettingsStore } from "./store";
 
 SettingsStore.register("core", [
@@ -21,6 +22,12 @@ SettingsStore.register("core", [
       );
     },
   },
+  {
+    version: 2,
+    up: (db) => {
+      db.run("ALTER TABLE settings ADD COLUMN places_near TEXT");
+    },
+  },
 ]);
 
 export interface StoredSettings {
@@ -30,6 +37,8 @@ export interface StoredSettings {
   /** An IP address, or "gateway" for the Docker bridge. */
   tailnetProxy?: string;
   tailnetLogins: string[];
+  /** Place searches look near here first. */
+  placesNear?: Place;
   updateTime: string;
 }
 
@@ -40,6 +49,7 @@ interface Row {
   tasks_inbox: string;
   tailnet_proxy: string | null;
   tailnet_logins: string;
+  places_near: string | null;
   update_time: string;
 }
 
@@ -57,7 +67,7 @@ export class GeneralSettings {
     if (!this.cached || version !== this.loadedVersion) {
       const row = this.store.db
         .query<Row, []>(
-          "SELECT time_zone, tasks_inbox, tailnet_proxy, tailnet_logins, update_time FROM settings WHERE id = 1",
+          "SELECT time_zone, tasks_inbox, tailnet_proxy, tailnet_logins, places_near, update_time FROM settings WHERE id = 1",
         )
         .get();
       if (!row) {
@@ -68,6 +78,7 @@ export class GeneralSettings {
         tasksInbox: row.tasks_inbox,
         tailnetProxy: row.tailnet_proxy ?? undefined,
         tailnetLogins: JSON.parse(row.tailnet_logins) as string[],
+        placesNear: row.places_near ? (JSON.parse(row.places_near) as Place) : undefined,
         updateTime: row.update_time,
       };
       this.loadedVersion = version;
@@ -83,13 +94,14 @@ export class GeneralSettings {
     const next = { ...this.get(), ...change, updateTime: this.now().toISOString() };
     this.store.db
       .query(
-        "UPDATE settings SET time_zone = ?, tasks_inbox = ?, tailnet_proxy = ?, tailnet_logins = ?, update_time = ? WHERE id = 1",
+        "UPDATE settings SET time_zone = ?, tasks_inbox = ?, tailnet_proxy = ?, tailnet_logins = ?, places_near = ?, update_time = ? WHERE id = 1",
       )
       .run(
         next.timeZone ?? null,
         next.tasksInbox,
         next.tailnetProxy ?? null,
         JSON.stringify(next.tailnetLogins),
+        next.placesNear ? JSON.stringify(next.placesNear) : null,
         next.updateTime,
       );
     this.cached = undefined;

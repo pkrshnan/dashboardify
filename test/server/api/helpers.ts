@@ -9,6 +9,7 @@ import { CalDavClient } from "../../../src/calendar/caldav";
 import { cacheSource } from "../../../src/calendar/source";
 import { CalendarSync } from "../../../src/calendar/sync";
 import type { CalendarSource } from "../../../src/home/calendar";
+import { Photon } from "../../../src/places/photon";
 import type { ConnectCalDav } from "../../../src/server/api/calendar-accounts";
 import { type AppDeps, createApp } from "../../../src/server/app";
 import { GeneralSettings, type SettingsChange } from "../../../src/settings/core";
@@ -17,6 +18,7 @@ import { SecretBox } from "../../../src/settings/secret-box";
 import type { SetupCode } from "../../../src/settings/setup-code";
 import { SettingsStore } from "../../../src/settings/store";
 import type { FakeCalDav } from "../../calendar/fake-caldav";
+import type { FakePhoton } from "../../places/fake-photon";
 
 /** CalDAV through the fake server, or a client that fails if a test reaches the network. */
 function fakeConnect(server: (() => FakeCalDav) | undefined): ConnectCalDav {
@@ -44,6 +46,8 @@ export function useApi(
     setupCode?: SetupCode;
     /** Answers calendar link requests. */
     feeds?: (request: Request) => Response;
+    /** Answers place searches. */
+    photon?: () => FakePhoton;
   } = {},
 ) {
   let dir: string;
@@ -95,6 +99,12 @@ export function useApi(
           envChange: options.envChange ?? {},
           envNames: options.envNames ?? [],
           calendars: { accounts, connect, cache, sync, feedFetch },
+          places: new Photon("https://photon.test", (request) => {
+            if (!options.photon) {
+              throw new Error(`Test tried to search places: ${request.url}`);
+            }
+            return options.photon().fetch(request);
+          }),
         },
         recompute: options.recompute,
         now: () => new Date("2026-11-03T12:00:00Z"),

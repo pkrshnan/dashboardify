@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+package dashboardify.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/type/latlng.proto";
+
+// Looks up real places, such as a café or an office, for an event's location. Answers come from
+// Photon (OpenStreetMap), nearest to the place in Settings first.
+service PlaceService {
+  // Places matching what was typed, best first.
+  rpc SearchPlaces(SearchPlacesRequest) returns (SearchPlacesResponse) {
+    option (google.api.http) = {get: "/v1/places:search"};
+  }
+}
+
+// A real place.
+message Place {
+  // Its name, such as `Dishoom`.
+  string display_name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string = {
+      min_len: 1
+      max_len: 500
+    }
+  ];
+
+  // Street, town and country, such as `7 Boundary Street, London, United Kingdom`. Empty when
+  // the name is the whole address.
+  string address = 2 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).string.max_len = 1000
+  ];
+
+  // Where it is.
+  google.type.LatLng location = 3 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // An Apple Maps link with a pin on it.
+  string maps_uri = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// Request for SearchPlaces.
+message SearchPlacesRequest {
+  // What was typed, such as `Dishoom Shoreditch`.
+  string query = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string = {
+      min_len: 1
+      max_len: 200
+    }
+  ];
+}
+
+// Response for SearchPlaces.
+message SearchPlacesResponse {
+  // At most five, best first.
+  repeated Place places = 1;
+}

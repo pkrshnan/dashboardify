@@ -14,6 +14,7 @@ import { cacheSource } from "../src/calendar/source";
 import { CalendarSync } from "../src/calendar/sync";
 import { DerivedStore } from "../src/health/derived-store";
 import type { Category } from "../src/home/types";
+import { Photon } from "../src/places/photon";
 import { CalendarAccountService, type ConnectCalDav } from "../src/server/api/calendar-accounts";
 import { createApp } from "../src/server/app";
 import type { Config } from "../src/server/config";
@@ -23,6 +24,7 @@ import { loadKey } from "../src/settings/key";
 import { SecretBox } from "../src/settings/secret-box";
 import { SettingsStore } from "../src/settings/store";
 import { FakeCalDav } from "../test/calendar/fake-caldav";
+import { DISHOOM, FakePhoton } from "../test/places/fake-photon";
 import homepage from "../web/index.html";
 
 /** Which demo calendar holds each category's events. */
@@ -78,10 +80,44 @@ const app = createApp(config, {
     envChange: {},
     envNames: [],
     calendars,
+    places: demoPlaces(),
   },
 });
 Bun.serve({ port: config.port, routes: { "/": homepage }, fetch: app.fetch, development: true });
 console.log(`demo on http://localhost:${config.port}, token ${TOKEN}`);
+
+/**
+ * Place search from a few London places, so the demo works offline. DEMO_PLACES=photon asks the
+ * real Photon server instead.
+ */
+function demoPlaces(): Photon {
+  if (process.env.DEMO_PLACES === "photon") {
+    return new Photon();
+  }
+  const london = { city: "London", country: "United Kingdom", countrycode: "GB" };
+  const server = new FakePhoton([
+    DISHOOM,
+    { name: "London", country: "United Kingdom", countrycode: "GB", lat: 51.5074, lon: -0.1278 },
+    {
+      ...london,
+      name: "British Library",
+      street: "Euston Road",
+      housenumber: "96",
+      lat: 51.5299,
+      lon: -0.1277,
+    },
+    { ...london, name: "Barbican Centre", street: "Silk Street", lat: 51.5202, lon: -0.0938 },
+    {
+      ...london,
+      name: "Monmouth Coffee",
+      street: "Park Street",
+      housenumber: "2",
+      lat: 51.5054,
+      lon: -0.0911,
+    },
+  ]);
+  return new Photon("https://photon.demo", server.fetch);
+}
 
 function tasks(): string[] {
   return [

@@ -233,6 +233,8 @@ export interface SettingsView {
   timeZone: string;
   tasksInbox: string;
   tailnet: { proxy: string; allowedLogins: string[] };
+  /** Place searches look near here first. */
+  placesNear?: PlaceView;
   etag: string;
   /** Fields still set in .env, such as "time_zone". */
   envOverrides: string[];
@@ -249,6 +251,7 @@ function settingsView(json: SettingsJson): SettingsView {
     timeZone: json.timeZone ?? "",
     tasksInbox: json.tasksInbox ?? "",
     tailnet: { proxy: json.tailnet?.proxy ?? "", allowedLogins: json.tailnet?.allowedLogins ?? [] },
+    placesNear: json.placesNear && placeView(json.placesNear),
     etag: json.etag ?? "",
     envOverrides: json.envOverrides ?? [],
     restartRequired: json.restartRequired ?? [],
@@ -267,7 +270,7 @@ export async function getSettings(token: Token): Promise<SettingsView> {
 /** Changes the given fields only, e.g. `{ timeZone: "Europe/London" }`. */
 export async function updateSettings(
   token: Token,
-  change: Partial<Pick<SettingsView, "timeZone" | "tasksInbox" | "tailnet">>,
+  change: Partial<Pick<SettingsView, "timeZone" | "tasksInbox" | "tailnet" | "placesNear">>,
 ): Promise<SettingsView> {
   return settingsView(
     await call<SettingsJson>(token, "/dashboardify.v1.SettingsService/UpdateSettings", {
@@ -278,6 +281,36 @@ export async function updateSettings(
       }),
     }),
   );
+}
+
+/** A real place, from place search. */
+export interface PlaceView {
+  displayName: string;
+  address: string;
+  location: { latitude: number; longitude: number };
+  mapsUri: string;
+}
+
+function placeView(json: Partial<PlaceView>): PlaceView {
+  return {
+    displayName: json.displayName ?? "",
+    address: json.address ?? "",
+    location: {
+      latitude: json.location?.latitude ?? 0,
+      longitude: json.location?.longitude ?? 0,
+    },
+    mapsUri: json.mapsUri ?? "",
+  };
+}
+
+/** Places matching what was typed, nearest to Settings' places_near first. */
+export async function searchPlaces(token: Token, query: string): Promise<PlaceView[]> {
+  const { places } = await call<{ places?: Partial<PlaceView>[] }>(
+    token,
+    "/dashboardify.v1.PlaceService/SearchPlaces",
+    { method: "POST", body: JSON.stringify({ query }) },
+  );
+  return (places ?? []).map(placeView);
 }
 
 export interface DeviceView {
