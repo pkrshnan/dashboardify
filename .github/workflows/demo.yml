@@ -1,12 +1,13 @@
 # Runs `bun run demo` from a pull request and opens it on a temporary public URL, so a change
 # can be tried in a browser before merging. Add the `demo` label to a PR to start it; each push
-# to a labelled PR restarts it with the new code. Remove the label, or cancel the run, to stop.
+# to a labelled PR restarts it with the new code. It stops when the PR is merged or closed, the
+# label is removed, or the run is cancelled.
 # The demo only has made-up data and its sign-in token is in scripts/demo.ts.
 name: Demo
 
 on:
   pull_request:
-    types: [labeled, synchronize]
+    types: [labeled, unlabeled, synchronize, closed]
   workflow_dispatch:
     inputs:
       minutes:
@@ -17,8 +18,15 @@ permissions:
   contents: read
   pull-requests: write
 
+# A new run in a PR's group cancels its live demo: a push restarts it, and closing the PR or
+# removing the label stops it (that run's job is skipped). Other label changes get a group of
+# their own, so they leave the demo alone.
 concurrency:
-  group: demo-${{ github.event.pull_request.number || github.ref }}
+  group: >-
+    ${{ (github.event_name == 'workflow_dispatch' || github.event.action == 'synchronize' ||
+         github.event.action == 'closed' || github.event.label.name == 'demo')
+        && format('demo-{0}', github.event.pull_request.number || github.ref)
+        || format('demo-other-{0}', github.run_id) }}
   cancel-in-progress: true
 
 env:
@@ -92,7 +100,7 @@ jobs:
         run: sleep $(( KEEP_MINUTES * 60 ))
 
       - name: Say the demo ended
-        if: success() && env.PR
+        if: (success() || cancelled()) && env.PR
         run: gh pr comment "$PR" --edit-last --body "Demo ended. Push a commit, or remove and re-add the \`demo\` label, to start another."
 
       - name: Server log
