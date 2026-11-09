@@ -218,6 +218,20 @@ A review's body is `{"kind": "lifting"}`: one of `running`, `walking`, `volleyba
 frontmatter (see [vault format](vault-format.md)), the day is recomputed, and the workout is
 returned as it now stands.
 
+## Captures
+
+| Method | Path | Operation |
+| --- | --- | --- |
+| POST | `/v1/captures:parse` | Read a line without writing: event or reminder, title, times, calendar, and why |
+| POST | `/v1/captures` | Read a line, then create the event in iCloud or the task in the inbox |
+
+Body: `text`, optional `requestId` (the same id always gives one event or task), and `kind`
+(`CAPTURE_KIND_EVENT` or `CAPTURE_KIND_REMINDER`) and `calendar` only when picked by hand. The
+server reads the line with its own clock and zone. With no writable calendar, a line that reads as
+an event becomes a reminder; an explicit `CAPTURE_KIND_EVENT` then returns `failed_precondition`.
+The response's `message` is a sentence such as "Added Lunch with Sam to Personal, Wed 4 Nov
+12:30–13:30."
+
 ## Events
 
 | Method | Path | Operation |

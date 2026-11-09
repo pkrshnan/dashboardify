@@ -1,5 +1,6 @@
 // The Day view: hour lines from an hour before now to 22:00, event blocks on the left, timed
-// tasks as dashed pills in a lane on the right, and a red line for now.
+// tasks as dashed pills in a lane on the right, and a red line for now. An event the capture box
+// is still saving has a stronger fill and a ring.
 
 import type { DayAgenda } from "../../src/home/types";
 import { alpha, CATEGORY, TEXT, TEXT_2, TEXT_3 } from "../lib/colors";
@@ -51,6 +52,20 @@ export function DayTimeline({ day, nowMin, isPhone, onComplete }: Props) {
   );
 }
 
+function blockStyle(block: Block, laneWidth: number, color: string, fill: number) {
+  const pending = block.event.pending;
+  return {
+    top: `${block.top}px`,
+    height: `${block.height}px`,
+    left: `${block.lane * laneWidth}%`,
+    width: `calc(${laneWidth}% - ${block.lanes > 1 ? 4 : 0}px)`,
+    // Still saving: a stronger fill and a ring, so it reads as just added.
+    background: alpha(color, pending ? 0.4 : fill),
+    borderLeft: `3px solid ${color}`,
+    boxShadow: pending ? `0 0 0 2px ${alpha(color, 0.5)}` : undefined,
+  };
+}
+
 function EventBlock({ block, width, isPhone }: { block: Block; width: number; isPhone: boolean }) {
   const { event } = block;
   const color = CATEGORY[event.category];
@@ -61,15 +76,8 @@ function EventBlock({ block, width, isPhone }: { block: Block; width: number; is
   const detail = [event.start, event.detail].filter((p) => p !== "").join(" · ");
   return (
     <div
-      class={`event${block.oneLine ? " one-line" : ""}`}
-      style={{
-        top: `${block.top}px`,
-        height: `${block.height}px`,
-        left: `${block.lane * laneWidth}%`,
-        width: `calc(${laneWidth}% - ${block.lanes > 1 ? 4 : 0}px)`,
-        background: alpha(color, fill),
-        borderLeft: `3px solid ${color}`,
-      }}
+      class={`event${block.oneLine ? " one-line" : ""}${event.pending ? " pending" : ""}`}
+      style={blockStyle(block, laneWidth, color, fill)}
     >
       {block.oneLine || isPhone ? (
         <div class="ell">

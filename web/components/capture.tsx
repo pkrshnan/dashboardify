@@ -1,10 +1,22 @@
 // One box for events and reminders (the Main artboard). As you type it highlights the time and
-// the people, says whether the line will be an event or a reminder and why, and Return adds it.
-// Until a calendar is connected, Event is shown but off and everything becomes a reminder.
+// the people, says whether the line will be an event or a reminder and why, and which calendar
+// it goes on. Return adds it. Until a calendar is connected, Event is off and everything becomes
+// a reminder.
 
 import { useEffect, useRef, useState } from "preact/hooks";
-import type { CaptureKind, CaptureParse } from "../../src/capture/parse";
-import { type BoxState, type Preview, preview, segments, switched, typed } from "../lib/capture";
+import type { CaptureKind } from "../../src/capture/parse";
+import type { CaptureHints } from "../../src/home/calendar";
+import type { CaptureResult } from "../api";
+import {
+  type BoxState,
+  nextCalendar,
+  type Preview,
+  preview,
+  segments,
+  switched,
+  typed,
+} from "../lib/capture";
+import { alpha, CATEGORY, TEXT_2 } from "../lib/colors";
 
 /** A line just added, shown under the box with Undo. */
 interface Added {
@@ -12,52 +24,68 @@ interface Added {
   title: string;
   when: string;
   where: string;
-  /** "tasks/{id}" */
-  name: string;
+  /** The calendar's colour for events; undefined for reminders. */
+  color?: string;
+  result: CaptureResult;
 }
 
 interface Props {
   timeZone: string;
+  /** Writable calendars and the guess's history, or null with no calendar connected. */
+  hints: CaptureHints | null;
   /** On the phone the kind switch moves under the text, next to an Add button. */
   isPhone: boolean;
-  /** Saves the parsed line and returns the new task's name. */
-  onAdd: (parse: CaptureParse, requestId: string) => Promise<string>;
-  onUndo: (name: string) => Promise<void>;
+  /** Saves the line (the server parses it again) and returns what was made. */
+  onAdd: (box: BoxState, shown: Preview, requestId: string) => Promise<CaptureResult>;
+  onUndo: (result: CaptureResult) => Promise<void>;
   newRequestId: () => string;
 }
 
 const NO_CALENDAR_TIP = "Connect a calendar in Settings to add events.";
 
-export function Capture({ timeZone, isPhone, onAdd, onUndo, newRequestId }: Props) {
+export function Capture({ timeZone, hints, isPhone, onAdd, onUndo, newRequestId }: Props) {
   const [box, setBox] = useState<BoxState>({ text: "" });
   const input = useFocusKey("n");
-  const shown = preview(box, { now: new Date(), timeZone, eventsEnabled: false });
+  const shown = preview(box, { now: new Date(), timeZone, hints });
   const adding = useAdding({ onAdd, onUndo, newRequestId });
   const submit = (event?: Event) => {
     event?.preventDefault();
     if (shown?.parse.title) {
-      adding.add(shown).then((ok) => ok && setBox({ text: "" }));
+      adding.add(box, shown).then((ok) => ok && setBox({ text: "" }));
     }
   };
   const kind = shown?.parse.kind;
+  const color = shown?.calendar ? CATEGORY[shown.calendar.category] : undefined;
   const kindSwitch = (
-    <KindSwitch kind={kind} reason={shown?.reason} onPick={(k) => setBox((s) => switched(s, k))} />
+    <KindSwitch
+      kind={kind}
+      reason={shown?.reason}
+      eventsEnabled={hints !== null}
+      onPick={(k) => setBox((s) => switched(s, k))}
+    />
   );
+  const cycle = () =>
+    hints && shown?.calendar && setBox((s) => nextCalendar(s, hints, shown.calendar?.name ?? ""));
   return (
     <div class="capture-wrap">
-      <form class={`capture${kind ? ` kind-${kind}` : ""}`} onSubmit={submit}>
+      <form
+        class={`capture${kind ? ` kind-${kind}` : ""}`}
+        style={formStyle(color)}
+        onSubmit={submit}
+      >
         <div class="capture-row">
-          <KindIcon kind={kind} />
+          <KindIcon kind={kind} color={color} />
           <Mirror
             text={box.text}
             shown={shown}
+            color={color}
             input={input}
             busy={adding.busy}
             onInput={(text) => setBox((state) => typed(state, text))}
           />
           {!isPhone && kindSwitch}
         </div>
-        {shown && <PreviewLine shown={shown} busy={adding.busy} />}
+        {shown && <PreviewLine shown={shown} busy={adding.busy} onCycle={cycle} />}
         {isPhone && (
           <div class="capture-actions">
             {kindSwitch}
@@ -68,14 +96,7 @@ export function Capture({ timeZone, isPhone, onAdd, onUndo, newRequestId }: Prop
           </div>
         )}
       </form>
-      {adding.failed && (
-        <div class="capture-note bad" role="alert">
-          Couldn't add that.
-          <button type="button" class="link" onClick={() => submit()}>
-            Retry
-          </button>
-        </div>
-      )}
+      {adding.failed && <RetryNote onRetry={() => submit()} />}
       {adding.added.map((row) => (
         <AddedRow key={row.key} row={row} onUndo={() => adding.undo(row)} />
       ))}
@@ -83,27 +104,52 @@ export function Capture({ timeZone, isPhone, onAdd, onUndo, newRequestId }: Prop
   );
 }
 
+/** The box takes the calendar's colour while the line reads as an event. */
+function formStyle(color: string | undefined) {
+  return color
+    ? { borderColor: alpha(color, 0.7), boxShadow: `0 0 0 3px ${alpha(color, 0.16)}` }
+    : undefined;
+}
+
+function RetryNote({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div class="capture-note bad" role="alert">
+      Couldn't add that.
+      <button type="button" class="link" onClick={onRetry}>
+        Retry
+      </button>
+    </div>
+  );
+}
+
 /** Sending a line, the last few added (for Undo), and whether the last try failed. */
-function useAdding({ onAdd, onUndo, newRequestId }: Omit<Props, "timeZone" | "isPhone">) {
+function useAdding({
+  onAdd,
+  onUndo,
+  newRequestId,
+}: Pick<Props, "onAdd" | "onUndo" | "newRequestId">) {
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   const [added, setAdded] = useState<Added[]>([]);
   // Kept across a Retry, so a request that did reach the server isn't added twice.
   const requestId = useRef(newRequestId());
 
-  const add = async (shown: Preview): Promise<boolean> => {
+  const add = async (box: BoxState, shown: Preview): Promise<boolean> => {
     if (busy) {
       return false;
     }
     setBusy(true);
     try {
-      const name = await onAdd(shown.parse, requestId.current);
+      const result = await onAdd(box, shown, requestId.current);
+      const color =
+        shown.calendar && result.kind === "event" ? CATEGORY[shown.calendar.category] : undefined;
       const row = {
         key: requestId.current,
         title: shown.parse.title,
         when: shown.when,
         where: shown.where,
-        name,
+        color,
+        result,
       };
       setAdded((rows) => [row, ...rows].slice(0, 3));
       setFailed(false);
@@ -118,15 +164,18 @@ function useAdding({ onAdd, onUndo, newRequestId }: Omit<Props, "timeZone" | "is
   };
   const undo = async (row: Added) => {
     setAdded((rows) => rows.filter((r) => r.key !== row.key));
-    await onUndo(row.name);
+    await onUndo(row.result);
   };
   return { busy, failed, added, add, undo };
 }
 
 function AddedRow({ row, onUndo }: { row: Added; onUndo: () => void }) {
+  const mark = row.color
+    ? { background: row.color, borderColor: row.color, borderStyle: "solid", borderRadius: "3px" }
+    : undefined;
   return (
     <div class="capture-added" aria-live="polite">
-      <span class="capture-added-mark" aria-hidden="true" />
+      <span class="capture-added-mark" style={mark} aria-hidden="true" />
       <span class="ell capture-added-title">{row.title}</span>
       <span class="muted-2">{row.when}</span>
       <span class="capture-spacer" />
@@ -141,19 +190,25 @@ function AddedRow({ row, onUndo }: { row: Added; onUndo: () => void }) {
 interface MirrorProps {
   text: string;
   shown: Preview | undefined;
+  /** The calendar's colour while it reads as an event. */
+  color: string | undefined;
   input: { current: HTMLInputElement | null };
   busy: boolean;
   onInput: (text: string) => void;
 }
 
 /** A transparent input over a copy of its text, so phrases can be highlighted as you type. */
-function Mirror({ text, shown, input, busy, onInput }: MirrorProps) {
+function Mirror({ text, shown, color, input, busy, onInput }: MirrorProps) {
   return (
     <div class="capture-field">
       <div class="capture-mirror" aria-hidden="true">
         {segments(text, shown?.parse).map((run, i) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: runs have no identity beyond their order
-          <span key={i} class={run.kind ? `mark-${run.kind}` : undefined}>
+          <span
+            key={i}
+            class={run.kind ? `mark-${run.kind}` : undefined}
+            style={markStyle(run.kind, color)}
+          >
             {run.text}
           </span>
         ))}
@@ -173,7 +228,28 @@ function Mirror({ text, shown, input, busy, onInput }: MirrorProps) {
   );
 }
 
-function KindIcon({ kind }: { kind: CaptureKind | undefined }) {
+/** Event phrases are filled with the calendar's colour; reminders keep the dashed outline. */
+function markStyle(kind: "when" | "who" | undefined, color: string | undefined) {
+  if (!(kind && color)) {
+    return undefined;
+  }
+  if (kind === "who") {
+    return { textDecorationColor: color };
+  }
+  return { background: alpha(color, 0.32), boxShadow: `0 0 0 2px ${alpha(color, 0.32)}` };
+}
+
+function KindIcon({ kind, color }: { kind: CaptureKind | undefined; color?: string }) {
+  if (kind === "event") {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" class="capture-icon">
+        <g fill="none" stroke={color ?? TEXT_2} stroke-width="2" stroke-linecap="round">
+          <rect x="3.5" y="5" width="17" height="15.5" rx="3" />
+          <path d="M3.5 10h17M8 3v4M16 3v4" />
+        </g>
+      </svg>
+    );
+  }
   if (kind === "reminder") {
     return (
       <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" class="capture-icon">
@@ -205,19 +281,27 @@ function KindIcon({ kind }: { kind: CaptureKind | undefined }) {
 interface KindSwitchProps {
   kind: CaptureKind | undefined;
   reason: string | undefined;
+  eventsEnabled: boolean;
   onPick: (kind: CaptureKind) => void;
 }
 
-function KindSwitch({ kind, reason, onPick }: KindSwitchProps) {
+function KindSwitch({ kind, reason, eventsEnabled, onPick }: KindSwitchProps) {
+  const tip = (mine: CaptureKind, other: string) => (kind === mine ? reason : other);
   return (
     <fieldset class="capture-kind" aria-label="Kind">
-      <button type="button" aria-pressed={kind === "event"} disabled title={NO_CALENDAR_TIP}>
+      <button
+        type="button"
+        aria-pressed={kind === "event"}
+        disabled={!eventsEnabled}
+        title={eventsEnabled ? tip("event", "Make it a calendar event") : NO_CALENDAR_TIP}
+        onClick={() => onPick("event")}
+      >
         Event
       </button>
       <button
         type="button"
         aria-pressed={kind === "reminder"}
-        title={kind === "reminder" ? reason : "Make it a reminder"}
+        title={tip("reminder", "Make it a reminder")}
         onClick={() => onPick("reminder")}
       >
         Reminder
@@ -226,20 +310,40 @@ function KindSwitch({ kind, reason, onPick }: KindSwitchProps) {
   );
 }
 
-function PreviewLine({ shown, busy }: { shown: Preview; busy: boolean }) {
+function PreviewLine({
+  shown,
+  busy,
+  onCycle,
+}: {
+  shown: Preview;
+  busy: boolean;
+  onCycle: () => void;
+}) {
   const title = shown.parse.title;
+  const calendar = shown.calendar;
   return (
     <div class="capture-preview">
       <div class="capture-preview-main">
         <span class={`ell capture-title${title ? "" : " muted"}`}>{title || "Add what it is"}</span>
         <span class="ell">{shown.when}</span>
         <span class="capture-spacer" />
-        <span class="muted">{shown.where}</span>
-        <span class="muted capture-hint">{busy ? "Adding…" : "Return to add"}</span>
+        {calendar ? (
+          <button type="button" class="capture-calendar" title={calendar.reason} onClick={onCycle}>
+            <span class="capture-dot" style={{ background: CATEGORY[calendar.category] }} />
+            {calendar.displayName}
+          </button>
+        ) : (
+          <span class="muted">{shown.where}</span>
+        )}
+        <span class="muted capture-hint">{busy ? hint(shown) : "Return to add"}</span>
       </div>
       <div class="capture-reason">{shown.reason}</div>
     </div>
   );
+}
+
+function hint(shown: Preview): string {
+  return shown.calendar ? "Saving to iCloud…" : "Adding…";
 }
 
 /** Focuses the input when `key` is pressed anywhere outside a text field. */

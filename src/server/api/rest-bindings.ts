@@ -120,6 +120,8 @@ export const restBindings: Record<string, RestBinding> = {
     bodyField: "calendar",
     resource: { field: "calendar.name", prefix: "calendarAccounts/", nested: "calendars" },
   },
+  parseCapture: { method: "POST", path: "/captures:parse" },
+  capture: { method: "POST", path: "/captures" },
   getEvent: { method: "GET", path: "/events/:id", resource: { field: "name", prefix: "events/" } },
   listEvents: { method: "GET", path: "/events" },
   createEvent: { method: "POST", path: "/events", bodyField: "event" },

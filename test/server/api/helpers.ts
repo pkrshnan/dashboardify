@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { CalendarAccounts } from "../../../src/calendar/accounts";
 import { EventCache } from "../../../src/calendar/cache";
 import { CalDavClient } from "../../../src/calendar/caldav";
+import { cacheSource } from "../../../src/calendar/source";
 import { CalendarSync } from "../../../src/calendar/sync";
 import type { CalendarSource } from "../../../src/home/calendar";
 import type { ConnectCalDav } from "../../../src/server/api/calendar-accounts";
@@ -69,7 +70,7 @@ export function useApi(
       },
       {
         devices,
-        calendar: options.calendar,
+        calendar: options.calendar ?? (options.calDav ? cacheSource(cache, accounts) : undefined),
         settings: {
           general: new GeneralSettings(settings),
           devices,
@@ -102,6 +103,10 @@ export function useApi(
     },
     get cache() {
       return cache;
+    },
+    /** A file in the test's vault, such as Inbox.md. */
+    vaultFile(name: string): Promise<string> {
+      return Bun.file(join(dir, "vault", name)).text();
     },
     get sync() {
       return sync;

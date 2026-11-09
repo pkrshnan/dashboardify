@@ -57,6 +57,8 @@ export interface AgendaEvent {
   calendar: string | null;
   writable: boolean;
   allDay: boolean;
+  /** Client only: drawn while the capture box is still saving it. */
+  pending?: boolean;
 }
 
 export interface NextEvent {

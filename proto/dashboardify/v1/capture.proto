@@ -1,0 +1,135 @@
+syntax = "proto3";
+
+package dashboardify.v1;
+
+import "buf/validate/validate.proto";
+import "dashboardify/v1/event.proto";
+import "dashboardify/v1/task.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+import "google/type/date.proto";
+import "google/type/timeofday.proto";
+
+// Turns one line ("Lunch with Sam tomorrow 12:30–13:30") into a calendar event or a reminder.
+// The web app's capture box and the "Add to command center" Shortcut use it.
+service CaptureService {
+  // Reads a line without writing anything.
+  rpc ParseCapture(ParseCaptureRequest) returns (CaptureParse) {
+    option (google.api.http) = {
+      post: "/v1/captures:parse"
+      body: "*"
+    };
+  }
+
+  // Reads a line, then creates the event or the task.
+  rpc Capture(CaptureRequest) returns (CaptureResponse) {
+    option (google.api.http) = {
+      post: "/v1/captures"
+      body: "*"
+    };
+  }
+}
+
+// What a line becomes.
+enum CaptureKind {
+  // Decide from the text.
+  CAPTURE_KIND_UNSPECIFIED = 0;
+  // A calendar event.
+  CAPTURE_KIND_EVENT = 1;
+  // A task, with a due date and time if the line has them.
+  CAPTURE_KIND_REMINDER = 2;
+}
+
+// Request for ParseCapture.
+message ParseCaptureRequest {
+  // The line.
+  string text = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string = {
+      min_len: 1
+      max_len: 1000
+    }
+  ];
+
+  // Set only when switched by hand.
+  CaptureKind kind = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Set only when picked by hand: `calendarAccounts/{a}/calendars/{c}`.
+  string calendar = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request for Capture.
+message CaptureRequest {
+  // The line.
+  string text = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string = {
+      min_len: 1
+      max_len: 1000
+    }
+  ];
+
+  // Made by the client. The same id always gives the same event or task, so retries are safe.
+  string request_id = 2 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).string.max_len = 100
+  ];
+
+  // Set only when switched by hand.
+  CaptureKind kind = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Set only when picked by hand: `calendarAccounts/{a}/calendars/{c}`.
+  string calendar = 4 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// How the server read the line.
+message CaptureParse {
+  // Event or reminder.
+  CaptureKind kind = 1;
+
+  // Why, in a sentence: "It has an end time or a length, so it blocks time."
+  string reason = 2;
+
+  // The line without its time words.
+  string title = 3;
+
+  // Events: when it starts.
+  google.protobuf.Timestamp start_time = 4;
+
+  // Events: when it ends.
+  google.protobuf.Timestamp end_time = 5;
+
+  // Reminders: the due date, if the line has one.
+  google.type.Date due_date = 6;
+
+  // Reminders: the time, if the line has one.
+  google.type.TimeOfDay due_time = 7;
+
+  // Reminders: a Tasks rule such as `every week`.
+  string recurrence = 8;
+
+  // Events: the calendar it goes on.
+  string calendar = 9;
+
+  // Events: why that calendar, such as "Physio is usually on Fitness."
+  string calendar_reason = 10;
+}
+
+// Response for Capture.
+message CaptureResponse {
+  // How the line was read.
+  CaptureParse parse = 1;
+
+  // What was made.
+  oneof result {
+    // The event, for events.
+    Event event = 2;
+
+    // The task, for reminders.
+    Task task = 3;
+  }
+
+  // A sentence for Siri and the "added" line: "Added Lunch with Sam to Personal, Thu 12 Nov 12:30."
+  string message = 4;
+}
