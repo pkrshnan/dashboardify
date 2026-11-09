@@ -1,18 +1,35 @@
-// Workouts: sustained efforts found in the day's heart rate, then told apart by how you stepped
-// and moved. The strap gives a step counter and a motion intensity about once a second, far too
-// coarse for reps or individual swings, so this names whole sessions. See docs/health-metrics.md.
+// Workouts: stretches where HR is well above your own awake baseline, or up while you move, that
+// were either hard or had lifting's spike-and-calm rhythm. Then told apart by how you stepped and
+// moved. The strap gives a step counter and a motion intensity about once a second, far too coarse
+// for reps or individual swings, so this names whole sessions. See docs/health-metrics.md.
 
 import type { MinuteHr } from "./heart-rate";
-import { bucket, mean, median } from "./stats";
+import type { SetClimb } from "./sets";
+import { bucket, mean, median, percentile } from "./stats";
 import { reserve, type Sex, strain, trimp } from "./strain";
 import type { Motion, Span } from "./types";
 import { MINUTE_MS } from "./types";
 
-/** Strain's floor for minutes that count: 30% of heart-rate reserve, plus a margin. */
-const ACTIVE_RESERVE = 0.35;
-/** A workout has to be hard for part of the time, not just a long walk. */
+/**
+ * Your awake baseline is the 25th percentile of the day's awake minutes: mostly sitting, even on an
+ * active day. A minute is active 20 bpm above it, or 8 above it while moving.
+ */
+const BASELINE_PERCENTILE = 25;
+const ELEVATED_BPM = 20;
+const MOVING_ELEVATED_BPM = 8;
+const MOVING_MOTION = 0.08;
+/** A cardio workout is hard for part of the time, at half of heart-rate reserve or more. */
 const HARD_RESERVE = 0.5;
 const MIN_HARD_MIN = 5;
+/**
+ * Lifting rarely gets that hard. It shows instead as big HR climbs, one a set, that keep coming:
+ * at least 2 every 10 minutes. Sitting still has climbs of 10 bpm several times every 10 minutes
+ * from ordinary HR swings, but rarely of 25.
+ */
+export const BIG_CLIMB_BPM = 25;
+const MIN_CLIMBS_PER_10_MIN = 2;
+/** And enough of them to be a session, not a few stairs: about half an hour of sets. */
+const MIN_CLIMBS = 6;
 /** Rests between sets or games drop HR for a few minutes; longer gaps end the workout. */
 const MAX_REST_MIN = 5;
 const MIN_WORKOUT_MIN = 15;
@@ -49,6 +66,8 @@ export interface Workout {
 
 export interface WorkoutInput {
   minutes: MinuteHr[];
+  /** The day's HR climbs of 25+ bpm (see climbs in sets.ts). */
+  climbs: SetClimb[];
   /** Steps per minute, keyed by minute start (see stepsPerMinute). */
   steps: Map<number, number>;
   motion: Motion[];
@@ -68,26 +87,35 @@ interface Minute extends MinuteHr {
 /** The day's workouts, oldest first. */
 export function workouts(input: WorkoutInput): Workout[] {
   const minutes = input.minutes.filter((m) => !input.exclude.some((s) => inSpan(m.ts, s)));
-  const fraction = (m: MinuteHr) => reserve(m.bpm, input.restingHr, input.maxHr);
+  const baseline = percentile(
+    minutes.map((m) => m.bpm),
+    BASELINE_PERCENTILE,
+  );
+  if (baseline === null) {
+    return [];
+  }
   const motion = minuteMotion(input.motion);
+  const withData = minutes.map((m) => ({
+    ...m,
+    steps: input.steps.get(m.ts) ?? 0,
+    motion: motion.get(m.ts) ?? 0,
+  }));
+  // A minute where a big climb peaks is active too, so a set always belongs to its session.
+  const peaks = new Set(input.climbs.map((c) => Math.floor(c.peak / MINUTE_MS) * MINUTE_MS));
+  const active = withData.filter(
+    (m) =>
+      m.bpm >= baseline + ELEVATED_BPM ||
+      (m.bpm >= baseline + MOVING_ELEVATED_BPM && m.motion >= MOVING_MOTION) ||
+      peaks.has(m.ts),
+  );
   const results: Workout[] = [];
-  for (const active of activeSpans(minutes.filter((m) => fraction(m) >= ACTIVE_RESERVE))) {
-    const inside = trimToEffort(
-      minutes
-        .filter((m) => inSpan(m.ts, active))
-        .map((m) => ({ ...m, steps: input.steps.get(m.ts) ?? 0, motion: motion.get(m.ts) ?? 0 })),
-      fraction,
+  for (const candidate of activeSpans(active)) {
+    const workout = toWorkout(
+      withData.filter((m) => inSpan(m.ts, candidate)),
+      input,
     );
-    const first = inside[0];
-    const last = inside[inside.length - 1];
-    if (!(first && last)) {
-      continue;
-    }
-    const span = { start: first.ts, end: last.ts + MINUTE_MS };
-    const hard = inside.filter((m) => fraction(m) >= HARD_RESERVE).length;
-    const moving = (median(inside.map((m) => m.motion)) ?? 0) >= MIN_MEDIAN_MOTION;
-    if ((span.end - span.start) / MINUTE_MS >= MIN_WORKOUT_MIN && hard >= MIN_HARD_MIN && moving) {
-      results.push(toWorkout(span, inside, input));
+    if (workout) {
+      results.push(workout);
     }
   }
   return results;
@@ -138,10 +166,9 @@ function activeSpans(active: { ts: number }[]): Span[] {
 /**
  * HR lags effort both ways: it takes a minute or two to climb, and many more to come back down
  * afterwards, often while you walk away. So a workout runs from its first to its last minute of
- * real effort, hard HR or a burst of movement, not for as long as HR stays up.
+ * real effort: hard HR, a burst of movement or a big climb, not for as long as HR stays up.
  */
-function trimToEffort(minutes: Minute[], fraction: (m: MinuteHr) => number): Minute[] {
-  const effort = (m: Minute) => fraction(m) >= HARD_RESERVE || m.motion >= BURST_MOTION;
+function trimToEffort(minutes: Minute[], effort: (m: Minute) => boolean): Minute[] {
   const first = minutes.findIndex(effort);
   let last = minutes.length - 1;
   while (last > first && !effort(minutes[last] as Minute)) {
@@ -150,17 +177,58 @@ function trimToEffort(minutes: Minute[], fraction: (m: MinuteHr) => number): Min
   return first === -1 ? [] : minutes.slice(first, last + 1);
 }
 
-function toWorkout(span: Span, inside: Minute[], input: WorkoutInput): Workout {
-  const total = trimp(inside, input.restingHr, input.maxHr, input.sex);
-  const bpms = inside.map((m) => m.bpm);
+/**
+ * A workout from a candidate stretch, or null when it was neither hard nor lifting. A hard workout
+ * is trimmed to its hard minutes and bursts of movement; a climb in the warm-up or the recovery
+ * doesn't stretch it. Only failing that is it checked for lifting, trimmed to its climbs too.
+ */
+function toWorkout(candidate: Minute[], input: WorkoutInput): Workout | null {
+  const hard = (m: Minute) => reserve(m.bpm, input.restingHr, input.maxHr) >= HARD_RESERVE;
+  const burst = (m: Minute) => m.motion >= BURST_MOTION;
+  const climbsIn = (span: Span) =>
+    input.climbs.filter((c) => c.peak >= span.start && c.peak < span.end).length;
+  const climbing = (m: Minute) => climbsIn({ start: m.ts, end: m.ts + MINUTE_MS }) > 0;
+  const rhythm = (s: Session) =>
+    climbsIn(s.span) >= Math.max(MIN_CLIMBS, (s.length / 10) * MIN_CLIMBS_PER_10_MIN);
+
+  const cardio = session(trimToEffort(candidate, (m) => hard(m) || burst(m)));
+  if (cardio && cardio.inside.filter(hard).length >= MIN_HARD_MIN) {
+    return describe(cardio, rhythm(cardio), input);
+  }
+  const lifting = session(trimToEffort(candidate, (m) => hard(m) || burst(m) || climbing(m)));
+  return lifting && rhythm(lifting) ? describe(lifting, true, input) : null;
+}
+
+interface Session {
+  inside: Minute[];
+  span: Span;
+  length: number;
+}
+
+/** The trimmed minutes as a session, or null when too short or the strap wasn't moving. */
+function session(inside: Minute[]): Session | null {
+  const first = inside[0];
+  const last = inside[inside.length - 1];
+  if (!(first && last)) {
+    return null;
+  }
+  const span = { start: first.ts, end: last.ts + MINUTE_MS };
+  const length = (span.end - span.start) / MINUTE_MS;
+  const moving = (median(inside.map((m) => m.motion)) ?? 0) >= MIN_MEDIAN_MOTION;
+  return length >= MIN_WORKOUT_MIN && moving ? { inside, span, length } : null;
+}
+
+function describe(s: Session, rhythm: boolean, input: WorkoutInput): Workout {
+  const total = trimp(s.inside, input.restingHr, input.maxHr, input.sex);
+  const bpms = s.inside.map((m) => m.bpm);
   return {
-    start: span.start,
-    end: span.end,
-    kind: classify(inside),
-    minutes: (span.end - span.start) / MINUTE_MS,
+    start: s.span.start,
+    end: s.span.end,
+    kind: classify(s.inside, rhythm),
+    minutes: s.length,
     avgHr: mean(bpms) ?? 0,
     maxHr: Math.max(...bpms),
-    cadence: median(inside.map((m) => m.steps)) ?? 0,
+    cadence: median(s.inside.map((m) => m.steps)) ?? 0,
     trimp: total,
     strain: strain(total),
   };
@@ -168,9 +236,10 @@ function toWorkout(span: Span, inside: Minute[], input: WorkoutInput): Workout {
 
 /**
  * Running and walking are steady strides. Volleyball is stop-and-go: short shuffles, bursts of
- * hard movement and breaks between rallies. Lifting is standing in place between sets.
+ * hard movement and breaks between rallies. Lifting is standing in place, with HR spiking each set
+ * and calming between (`rhythm`).
  */
-export function classify(minutes: Minute[]): WorkoutKind {
+export function classify(minutes: Minute[], rhythm: boolean): WorkoutKind {
   const share = (test: (m: Minute) => boolean) =>
     minutes.filter(test).length / Math.max(1, minutes.length);
   if (share((m) => m.steps >= RUN_SPM) >= 0.5) {
@@ -183,7 +252,7 @@ export function classify(minutes: Minute[]): WorkoutKind {
   if (share((m) => m.steps >= STILL_SPM && m.steps < WALK_SPM) >= 0.3 && bursts >= 0.2) {
     return "volleyball";
   }
-  if (share((m) => m.steps < STILL_SPM) >= 0.6 && bursts < 0.2) {
+  if (share((m) => m.steps < STILL_SPM) >= 0.6 && bursts < 0.2 && rhythm) {
     return "lifting";
   }
   return "workout";

@@ -4,6 +4,7 @@
 import { breathingRate } from "./breathing";
 import { type MinuteHr, minuteHr, predictedMaxHr, restingHr, zoneMinutes } from "./heart-rate";
 import { cleanRr, goodWindows, nightHrv } from "./hrv";
+import { climbs, type SetClimb } from "./sets";
 import { sleepSkinTemp } from "./skin-temp";
 import { rawAngleChanges, sleepWindow } from "./sleep";
 import { scoreEpochs, sleepTimes } from "./sleep-epochs";
@@ -12,7 +13,7 @@ import { stepsPerMinute, stepsTaken } from "./steps";
 import { type Sex, strain, trimp } from "./strain";
 import type { Accel, HeartRate, Motion, RrInterval, SkinTemp, Span, StepCounter } from "./types";
 import { type Walk, walks } from "./walks";
-import { type Workout, workouts } from "./workouts";
+import { BIG_CLIMB_BPM, type Workout, workouts } from "./workouts";
 
 export interface NightInput {
   accel: Accel[];
@@ -160,6 +161,7 @@ function effortMetrics(
     zoneMin: zoneMinutes(minutes, maxHr),
     workouts: workouts({
       minutes,
+      climbs: dayClimbs(input.heartRate),
       steps: perMinute,
       motion: input.motion,
       restingHr: input.restingHr,
@@ -168,6 +170,15 @@ function effortMetrics(
       exclude: sleep,
     }),
   };
+}
+
+/** The day's big HR climbs, for lifting's rhythm. */
+function dayClimbs(heartRate: HeartRate[]): SetClimb[] {
+  const first = heartRate[0];
+  const last = heartRate[heartRate.length - 1];
+  return first && last
+    ? climbs(heartRate, { start: first.ts, end: last.ts + 1 }, BIG_CLIMB_BPM)
+    : [];
 }
 
 function profileMaxHr(profile: Profile): number | null {
