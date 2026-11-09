@@ -109,6 +109,8 @@ async function writeHealth(store: DerivedStore): Promise<void> {
   for (let back = 380; back >= 0; back--) {
     const date = day(-back);
     const recent = back < 7 ? 1 : 0;
+    // Today's activity is a running total, part way through the day.
+    const sofar = back === 0 ? 0.4 : 1;
     const wave = Math.sin(back / 40);
     await store.write("nights", date, {
       date,
@@ -122,12 +124,12 @@ async function writeHealth(store: DerivedStore): Promise<void> {
     await store.write("days", date, {
       date,
       recovery_pct: back === 0 ? 62 : 68 + 11 * noise() * 2 - recent * 10,
-      strain: 11 + 3 * noise() * 2,
-      steps: 8500 + 2400 * noise() * 2,
-      zone2_min: 20 + 8 * noise() * 2,
-      zone3_min: 10 + 5 * noise() * 2,
-      zone4_min: 4,
-      zone5_min: 1,
+      strain: (11 + 3 * noise() * 2) * sofar,
+      steps: (8500 + 2400 * noise() * 2) * sofar,
+      zone2_min: (20 + 8 * noise() * 2) * sofar,
+      zone3_min: (10 + 5 * noise() * 2) * sofar,
+      zone4_min: 4 * sofar,
+      zone5_min: 1 * sofar,
     });
   }
 }

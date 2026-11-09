@@ -105,7 +105,12 @@ function Metric({
   const delta = (
     <span>
       {metric.delta && <span style={{ color: toneColor(metric.tone) }}>{metric.delta}</span>}
-      {metric.yesterday && <span class="muted"> · yesterday</span>}
+      {metric.partial && (
+        <span class="muted">
+          {metric.delta && " · "}
+          {yesterdayLabel(metric)}
+        </span>
+      )}
     </span>
   );
   return (
@@ -126,6 +131,12 @@ function Metric({
       <Sparkline metric={metric} range={range} isPhone={isPhone} />
     </div>
   );
+}
+
+/** "9,840 yesterday", "42 min yesterday", or "– yesterday" without data. */
+function yesterdayLabel(metric: MetricTrend): string {
+  const value = metric.yesterdayValue ?? "–";
+  return `${value}${metric.unit && metric.yesterdayValue ? ` ${metric.unit}` : ""} yesterday`;
 }
 
 function Sparkline({
@@ -156,15 +167,7 @@ function Sparkline({
           fill-opacity="0.13"
         />
       )}
-      <path
-        d={shape.dots}
-        stroke={color}
-        stroke-opacity="0.45"
-        stroke-width={isPhone ? 2.5 : 3}
-        stroke-linecap="round"
-        fill="none"
-        vector-effect="non-scaling-stroke"
-      />
+      <Dots d={shape.dots} color={color} width={isPhone ? 2.5 : 3} opacity={0.45} />
       <path
         d={shape.line}
         stroke={color}
@@ -173,6 +176,32 @@ function Sparkline({
         fill="none"
         vector-effect="non-scaling-stroke"
       />
+      <Dots d={shape.latest} color={color} width={isPhone ? 5 : 6} opacity={1} />
     </svg>
+  );
+}
+
+/** Zero-length segments drawn with round caps, so each is a dot. */
+function Dots({
+  d,
+  color,
+  width,
+  opacity,
+}: {
+  d: string;
+  color: string;
+  width: number;
+  opacity: number;
+}) {
+  return (
+    <path
+      d={d}
+      stroke={color}
+      stroke-opacity={opacity}
+      stroke-width={width}
+      stroke-linecap="round"
+      fill="none"
+      vector-effect="non-scaling-stroke"
+    />
   );
 }

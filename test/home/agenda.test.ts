@@ -129,7 +129,7 @@ describe("nextEvent", () => {
 
 describe("daySentence", () => {
   const recovery = (raw: number, tone: MetricTrend["tone"]) =>
-    ({ key: "recovery", raw, tone, yesterday: false }) as MetricTrend;
+    ({ key: "recovery", raw, tone }) as MetricTrend;
 
   test("next event, a judgement on recovery, and at most one overdue mention", () => {
     const sentence = daySentence({
