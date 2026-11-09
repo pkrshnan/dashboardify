@@ -9,14 +9,15 @@ export type AuthEnv = { Variables: { device: string } };
 
 /**
  * Accept `Authorization: Bearer <token>` for any device in Settings, or a tailnet user signed in
- * through Tailscale Serve (see tailnet.ts), and set the device id on the context.
+ * through Tailscale Serve (see tailnet.ts), and set the device id on the context. `tailnet` is
+ * read on every request, so a change in Settings applies without a restart.
  */
 export function bearerAuth(
   devices: DeviceMatcher,
-  tailnet: TailnetAuth | null = null,
+  tailnet: () => TailnetAuth | null = () => null,
 ): MiddlewareHandler<AuthEnv> {
   return async (c, next) => {
-    const login = tailnetUser(tailnet, peerAddress(c), c.req.header(LOGIN_HEADER));
+    const login = tailnetUser(tailnet(), peerAddress(c), c.req.header(LOGIN_HEADER));
     const device =
       devices.match(bearerToken(c.req.header("authorization"))) ??
       (login ? `tailnet:${login}` : undefined);

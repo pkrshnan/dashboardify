@@ -39,8 +39,9 @@ cp .env.example .env
 
 Edit `.env` to set your time zone and replace `INGEST_TOKENS` with a device name and a random
 token, such as `mac:<token>`. Generate a token with `openssl rand -hex 24`. The first start
-imports it into `data/settings.db` as a hashed device, and later starts no longer read it. The
-default `VAULT_PATH=./vault` uses the symlink above; you can instead set an absolute vault path.
+copies both into Settings (`data/settings.db`, with the token stored only as a hash); after that
+you can remove them from `.env`. The default `VAULT_PATH=./vault` uses the symlink above; you can
+instead set an absolute vault path. Only `VAULT_PATH` is required.
 
 Load the configuration and start the server:
 
