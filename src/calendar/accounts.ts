@@ -195,7 +195,7 @@ export class CalendarAccounts {
           account.username,
           this.seal(account.id, account.password),
           time,
-          time,
+          null,
           time,
           time,
         );
@@ -326,6 +326,15 @@ export class CalendarAccounts {
     return this.get(id) as Account;
   }
 
+  /** A check of the server succeeded: the account's sync time is now, and it is working. */
+  synced(id: string): void {
+    this.store.db
+      .query(
+        "UPDATE calendar_accounts SET last_sync_time = ?, status = 'ok', status_detail = NULL WHERE id = ?",
+      )
+      .run(this.now().toISOString(), id);
+  }
+
   setStatus(id: string, status: AccountStatus, detail?: string): void {
     this.store.db
       .query("UPDATE calendar_accounts SET status = ?, status_detail = ? WHERE id = ?")
@@ -369,8 +378,8 @@ export class CalendarAccounts {
         `DELETE FROM calendars WHERE account_id = ? AND id NOT IN (${placeholders || "''"})`,
       ).run(accountId, ...ids);
       db.query(
-        "UPDATE calendar_accounts SET last_sync_time = ?, last_used_time = ?, status = 'ok', status_detail = NULL WHERE id = ?",
-      ).run(time, time, accountId);
+        "UPDATE calendar_accounts SET last_used_time = ?, status = 'ok', status_detail = NULL WHERE id = ?",
+      ).run(time, accountId);
     });
   }
 

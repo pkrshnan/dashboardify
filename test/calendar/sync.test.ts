@@ -129,6 +129,25 @@ describe("CalendarSync", () => {
     expect(server.requests).toEqual(["PROPFIND p42-caldav.icloud.com/1234567/calendars/"]);
   });
 
+  test("every successful check sets the sync time, even when nothing changed", async () => {
+    await sync.tick();
+    now = new Date("2026-11-10T08:02:00Z");
+
+    await sync.tick();
+
+    expect(accounts.get("icloud")?.lastSyncTime).toBe("2026-11-10T08:02:00.000Z");
+  });
+
+  test("a failed check leaves the sync time alone", async () => {
+    await sync.tick();
+    now = new Date("2026-11-10T08:02:00Z");
+    down = true;
+
+    await sync.tick();
+
+    expect(accounts.get("icloud")?.lastSyncTime).toBe("2026-11-10T08:00:00.000Z");
+  });
+
   test("an event added, changed or deleted in Apple Calendar shows after one tick", async () => {
     await sync.tick();
     server.putEvent("home", "a.ics", ics("a", "Physio"));

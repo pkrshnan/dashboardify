@@ -294,9 +294,7 @@ export class CalendarSync {
 
   private succeeded(account: Account): void {
     this.backoff.delete(account.id);
-    if (account.status !== "ok") {
-      this.deps.accounts.setStatus(account.id, "ok");
-    }
+    this.deps.accounts.synced(account.id);
   }
 
   private failed(account: Account, error: unknown): void {

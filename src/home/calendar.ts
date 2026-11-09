@@ -29,7 +29,7 @@ export interface CalendarEvent {
 
 /** When calendars last synced, for "Calendar synced 09:10". */
 export interface CalendarStatus {
-  /** The oldest successful sync across shown calendars, ISO. */
+  /** The oldest last successful check of the server across accounts, ISO. */
   lastSyncTime?: string;
   /** Any account signed out or unreachable. */
   hasErrors: boolean;

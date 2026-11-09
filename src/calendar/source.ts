@@ -53,12 +53,7 @@ export function cacheSource(cache: EventCache, accounts: CalendarAccounts): Cale
       if (list.length === 0) {
         return undefined;
       }
-      const times = [...calendars()]
-        .filter(([, c]) => c.enabled)
-        .map(([key]) => {
-          const [accountId = "", calendarId = ""] = key.split("/");
-          return cache.state(accountId, calendarId).lastSyncTime;
-        });
+      const times = list.map((account) => account.lastSyncTime);
       const synced = times.every(Boolean) ? (times as string[]).sort()[0] : undefined;
       return { lastSyncTime: synced, hasErrors: list.some((a) => a.status !== "ok") };
     },
