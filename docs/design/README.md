@@ -86,6 +86,8 @@ Recovery is coloured by band only in the focus row, and its number is always sho
 | work | `#0A84FF` | work events |
 | fitness | `#40C8E0` | gym, runs, physio |
 | personal | `#BF5AF2` | social and personal events |
+| relationships | `#FF375F` | dates and time with a partner |
+| family | `#5E5CE6` | family events |
 | focus | `#8E8E93` | focus blocks |
 
 **Health categories.** One line colour per group, the way Apple Health does it.

@@ -19,6 +19,8 @@ export const CATEGORY: Record<Category, string> = {
   work: "#0A84FF",
   fitness: "#40C8E0",
   personal: "#BF5AF2",
+  relationships: "#FF375F",
+  family: "#5E5CE6",
   focus: "#8E8E93",
 };
 

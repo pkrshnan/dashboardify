@@ -103,7 +103,7 @@ message Event {
   // A link, such as a video call.
   string url = 10 [(google.api.field_behavior) = OPTIONAL];
 
-  // The calendar's category: `work`, `fitness`, `personal` or `focus`.
+  // The calendar's category: `work`, `fitness`, `personal`, `relationships`, `family` or `focus`.
   string category = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Whether it can be changed here.

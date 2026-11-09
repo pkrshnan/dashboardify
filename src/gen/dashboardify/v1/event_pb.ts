@@ -98,7 +98,7 @@ export type Event = Message<"dashboardify.v1.Event"> & {
   url: string;
 
   /**
-   * The calendar's category: `work`, `fitness`, `personal` or `focus`.
+   * The calendar's category: `work`, `fitness`, `personal`, `relationships`, `family` or `focus`.
    *
    * @generated from field: string category = 11;
    */

@@ -3,7 +3,7 @@ import type { CaptureHints } from "./calendar";
 // so the web app only lays it out. The web app imports these types directly.
 
 export type Tone = "good" | "bad" | "neutral";
-export type Category = "work" | "fitness" | "personal" | "focus";
+export type Category = "work" | "fitness" | "personal" | "relationships" | "family" | "focus";
 export type HealthGroup = "heart" | "sleep" | "activity" | "vitals";
 export type TaskGroupName = "Overdue" | "Today" | "This week" | "Later" | "Someday";
 

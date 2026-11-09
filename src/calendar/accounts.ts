@@ -57,7 +57,7 @@ SettingsStore.register("calendar", [
 
 SettingsStore.registerSealed("calendar_accounts", "id", ["password_sealed", "feed_url_sealed"]);
 
-export type Category = "work" | "fitness" | "personal" | "focus";
+export type Category = "work" | "fitness" | "personal" | "relationships" | "family" | "focus";
 
 export type AccountStatus = "ok" | "auth_failed" | "unreachable";
 
@@ -479,6 +479,12 @@ export function guessCategory(name: string): Category {
   }
   if (/\b(fitness|gym|run|training|sport)/i.test(name)) {
     return "fitness";
+  }
+  if (/\b(family|kids|mum|mom|dad|parents)\b/i.test(name)) {
+    return "family";
+  }
+  if (/\b(partner|couple|date night|dates?)\b/i.test(name)) {
+    return "relationships";
   }
   return "personal";
 }
