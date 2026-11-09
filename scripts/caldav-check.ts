@@ -24,5 +24,7 @@ console.log(`Calendar home on ${new URL(home).host}`);
 for (const calendar of await client.listCalendars(home)) {
   const sync = await client.sync(calendar.url, undefined);
   const events = sync.kind === "changes" ? `${sync.changed.length} events` : "sync token expired";
-  console.log(`- ${calendar.displayName} (${calendar.writable ? "writable" : "read-only"}, ${events})`);
+  console.log(
+    `- ${calendar.displayName} (${calendar.writable ? "writable" : "read-only"}, ${events})`,
+  );
 }
