@@ -18,6 +18,9 @@ import {
   Unauthorized,
   UnsafeRedirect,
 } from "../../calendar/caldav";
+import { FeedError, FeedGone, feedName, feedUrl, fetchFeed } from "../../calendar/feed";
+import { readOccurrences } from "../../calendar/ical";
+import { slug } from "../../settings/devices";
 import { ApiError, failedPrecondition, invalidArgument } from "./errors";
 import { requestedFields } from "./update-mask";
 
@@ -39,6 +42,7 @@ export const connectICloud: ConnectCalDav = (account) =>
 
 interface AccountInput {
   name?: string;
+  feedUrl?: string;
   kind?: string;
   provider?: string;
   displayName?: string;
@@ -59,6 +63,9 @@ export class CalendarAccountService {
   constructor(
     private readonly accounts: CalendarAccounts,
     private readonly connect: ConnectCalDav = connectICloud,
+    /** How calendar links are fetched; tests pass a fake server. */
+    private readonly feedFetch?: (request: Request) => Promise<Response>,
+    private readonly now: () => Date = () => new Date(),
   ) {}
 
   listCalendarAccounts = async () => ({
@@ -73,8 +80,8 @@ export class CalendarAccountService {
     validateOnly?: boolean;
   }) => {
     const input = request.calendarAccount;
-    if (input.kind && input.kind !== "KIND_CALDAV") {
-      invalidArgument("Only iCloud (KIND_CALDAV) accounts can be added for now");
+    if (input.kind === "KIND_ICS") {
+      return this.createLink(input, request.calendarAccountId, request.validateOnly ?? false);
     }
     if (!(input.username?.trim() && input.password)) {
       invalidArgument("calendar_account.username and calendar_account.password are required");
@@ -83,7 +90,7 @@ export class CalendarAccountService {
     if (!/^[a-z][a-z0-9-]{0,40}$/.test(id)) {
       invalidArgument("calendar_account_id must be a lower-case slug");
     }
-    if (this.accounts.list().length > 0) {
+    if (this.accounts.list().some((account) => account.kind === "caldav")) {
       throw new ApiError(
         409,
         "There is already an iCloud account. Remove it first to use another.",
@@ -108,6 +115,13 @@ export class CalendarAccountService {
     if (input.etag && input.etag !== etagOf(current)) {
       throw new ApiError(409, "The account changed since you loaded it. Reload and try again.");
     }
+    if (current.kind === "ics") {
+      return this.updateLink(
+        current,
+        input,
+        requestedFields(request, input, ["displayName", "feedUrl"]),
+      );
+    }
     const fields = requestedFields(request, input, ["displayName", "password"]);
     const change: { displayName?: string; password?: string } = {};
     if (fields.includes("password")) {
@@ -130,6 +144,10 @@ export class CalendarAccountService {
 
   syncCalendarAccount = async (request: { name: string }) => {
     const account = this.account(request.name);
+    if (account.kind === "ics") {
+      // Links are fetched by the sync loop every 15 minutes.
+      return accountView(account);
+    }
     try {
       const { calendars } = await this.signIn({
         ...account,
@@ -198,6 +216,86 @@ export class CalendarAccountService {
     this.accounts.setPreferences(next);
     return this.settingsView(next);
   };
+
+  /** Fetches the link once to check it, then saves it (unless only validating). */
+  private async createLink(
+    input: AccountInput,
+    requestedId: string | undefined,
+    validateOnly: boolean,
+  ) {
+    const { url, ics } = await this.checkLink(input.feedUrl ?? "");
+    const name = input.displayName?.trim() || feedName(ics) || url.host;
+    const eventCount = this.countEvents(ics);
+    const category = guessCategory(name);
+    if (validateOnly) {
+      return {
+        kind: "KIND_ICS",
+        provider: "url",
+        displayName: name,
+        feedHost: url.host,
+        eventCount,
+        calendars: [{ displayName: name, category, enabled: true, writable: false }],
+      };
+    }
+    const id = requestedId || this.freeId(slug(name));
+    const account = this.accounts.createLink({
+      id,
+      displayName: name,
+      url: url.href,
+      host: url.host,
+      category,
+    });
+    return {
+      ...accountView(account),
+      eventCount,
+      calendars: this.accounts.calendars(id).map(calendarView),
+    };
+  }
+
+  private async updateLink(current: Account, input: AccountInput, fields: string[]) {
+    const change: { url?: string; host?: string; displayName?: string } = {};
+    if (fields.includes("feedUrl")) {
+      const { url } = await this.checkLink(input.feedUrl ?? "");
+      change.url = url.href;
+      change.host = url.host;
+    }
+    if (fields.includes("displayName") && input.displayName?.trim()) {
+      change.displayName = input.displayName.trim();
+    }
+    return accountView(this.accounts.updateLink(current.id, change));
+  }
+
+  /** The link must be https (or webcal) and answer with iCalendar. Errors name only the host. */
+  private async checkLink(input: string) {
+    try {
+      const url = feedUrl(input);
+      const result = await fetchFeed(url.href, {}, this.feedFetch);
+      return { url, ics: result.kind === "ok" ? result.ics : "" };
+    } catch (error) {
+      if (error instanceof FeedError || error instanceof FeedGone) {
+        invalidArgument(error.message);
+      }
+      throw error;
+    }
+  }
+
+  private countEvents(ics: string): number {
+    const from = this.now();
+    const to = new Date(from.getTime() + 60 * 86_400_000);
+    try {
+      return readOccurrences(ics, { from, to, floatingZone: "UTC" }).length;
+    } catch {
+      invalidArgument("That link isn't a calendar feed.");
+    }
+  }
+
+  private freeId(base: string): string {
+    let id = base;
+    for (let n = 2; this.accounts.get(id); n++) {
+      id = `${base}-${n}`;
+    }
+    return id;
+  }
 
   /** Signs in and lists event calendars. A refused password is FAILED_PRECONDITION. */
   private async signIn(login: { serverUrl: string; username: string; password: string }) {
@@ -316,7 +414,8 @@ const STATUS = {
 function accountView(account: Account) {
   return {
     name: `calendarAccounts/${account.id}`,
-    kind: "KIND_CALDAV",
+    kind: account.kind === "ics" ? "KIND_ICS" : "KIND_CALDAV",
+    ...(account.kind === "ics" && { feedUrlSet: true, feedHost: account.feedHost ?? "" }),
     provider: account.provider,
     displayName: account.displayName,
     serverUrl: account.serverUrl,

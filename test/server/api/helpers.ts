@@ -42,6 +42,8 @@ export function useApi(
     recompute?: AppDeps["recompute"];
     calendar?: CalendarSource;
     setupCode?: SetupCode;
+    /** Answers calendar link requests. */
+    feeds?: (request: Request) => Response;
   } = {},
 ) {
   let dir: string;
@@ -59,7 +61,20 @@ export function useApi(
     const accounts = new CalendarAccounts(settings);
     const connect = fakeConnect(options.calDav);
     cache = await EventCache.open(join(dir, "data"));
-    sync = new CalendarSync({ accounts, cache, connect, timeZone: "UTC", log: () => undefined });
+    const feedFetch = (request: Request) => {
+      if (!options.feeds) {
+        throw new Error(`Test tried to fetch ${request.url}`);
+      }
+      return Promise.resolve(options.feeds(request));
+    };
+    sync = new CalendarSync({
+      accounts,
+      cache,
+      connect,
+      feedFetch,
+      timeZone: "UTC",
+      log: () => undefined,
+    });
     app = createApp(
       {
         vaultPath: join(dir, "vault"),
@@ -79,7 +94,7 @@ export function useApi(
           devices,
           envChange: options.envChange ?? {},
           envNames: options.envNames ?? [],
-          calendars: { accounts, connect, cache, sync },
+          calendars: { accounts, connect, cache, sync, feedFetch },
         },
         recompute: options.recompute,
         now: () => new Date("2026-11-03T12:00:00Z"),

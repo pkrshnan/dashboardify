@@ -18,35 +18,21 @@ import {
 import { calendarNote, statusLine } from "./calendar-helpers";
 import { ConnectDialog } from "./connect-icloud";
 import { CategoryPicker, PasswordField, Switch } from "./controls";
+import { type Link, LinksSection } from "./links";
 import { NewEvents } from "./new-events";
 import type { SectionProps } from "./settings";
 
 interface Loaded {
+  /** The iCloud account and its calendars. */
   account?: CalendarAccountView;
   calendars: CalendarView[];
+  links: Link[];
   preferences: CalendarPreferencesView;
 }
 
 export function Calendars({ token, onUnauthorized }: SectionProps) {
-  const [loaded, setLoaded] = useState<Loaded | null>(null);
+  const { loaded, error, load } = useCalendars(token, onUnauthorized);
   const [dialog, setDialog] = useState<"connect" | "password" | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const load = useCallback(async () => {
-    try {
-      const [account] = await listCalendarAccounts(token);
-      const calendars = account ? await listCalendars(token, account.name) : [];
-      setLoaded({ account, calendars, preferences: await getCalendarPreferences(token) });
-    } catch (e) {
-      if (e instanceof Unauthorized) {
-        onUnauthorized(e.setup);
-        return;
-      }
-      setError((e as Error).message);
-    }
-  }, [token, onUnauthorized]);
-  useEffect(() => {
-    load();
-  }, [load]);
   if (!loaded) {
     return <p class="muted">{error ?? "Loading…"}</p>;
   }
@@ -67,6 +53,7 @@ export function Calendars({ token, onUnauthorized }: SectionProps) {
       ) : (
         <NoAccount onConnect={() => setDialog("connect")} />
       )}
+      <LinksSection token={token} links={loaded.links} onChanged={load} />
       {loaded.account && (
         <NewEvents token={token} calendars={loaded.calendars} preferences={loaded.preferences} />
       )}
@@ -76,6 +63,38 @@ export function Calendars({ token, onUnauthorized }: SectionProps) {
       )}
     </div>
   );
+}
+
+/** The iCloud account, its calendars, the links and the preferences, reloaded on demand. */
+function useCalendars(
+  token: SectionProps["token"],
+  onUnauthorized: SectionProps["onUnauthorized"],
+) {
+  const [loaded, setLoaded] = useState<Loaded | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const load = useCallback(async () => {
+    try {
+      const accounts = await listCalendarAccounts(token);
+      const account = accounts.find((a) => a.kind === "KIND_CALDAV");
+      const calendars = account ? await listCalendars(token, account.name) : [];
+      const links = await Promise.all(
+        accounts
+          .filter((a) => a.kind === "KIND_ICS")
+          .map(async (a) => ({ account: a, calendar: (await listCalendars(token, a.name))[0] })),
+      );
+      setLoaded({ account, calendars, links, preferences: await getCalendarPreferences(token) });
+    } catch (e) {
+      if (e instanceof Unauthorized) {
+        onUnauthorized(e.setup);
+        return;
+      }
+      setError((e as Error).message);
+    }
+  }, [token, onUnauthorized]);
+  useEffect(() => {
+    load();
+  }, [load]);
+  return { loaded, error, load };
 }
 
 function NoAccount({ onConnect }: { onConnect: () => void }) {

@@ -329,6 +329,9 @@ export type CalendarCategory = "work" | "fitness" | "personal" | "focus";
 export interface CalendarAccountView {
   /** "calendarAccounts/{id}" */
   name: string;
+  kind: "KIND_CALDAV" | "KIND_ICS";
+  /** Links: the URL's host, the only part of it shown. */
+  feedHost?: string;
   displayName: string;
   username: string;
   status: "STATUS_OK" | "STATUS_AUTH_FAILED" | "STATUS_UNREACHABLE";
@@ -376,6 +379,8 @@ function calendarView(c: Partial<CalendarView>): CalendarView {
 function accountView(a: Partial<CalendarAccountView>): CalendarAccountView {
   return {
     name: a.name ?? "",
+    kind: a.kind ?? "KIND_CALDAV",
+    feedHost: a.feedHost,
     displayName: a.displayName ?? "iCloud",
     username: a.username ?? "",
     status: a.status ?? "STATUS_OK",
@@ -405,6 +410,38 @@ export async function connectICloud(
     { calendarAccount: { kind: "KIND_CALDAV", provider: "icloud", ...login }, validateOnly },
   );
   return { account: accountView(r), calendars: (r.calendars ?? []).map(calendarView) };
+}
+
+/** Checks a calendar link (`validateOnly`) or adds it. The URL is never sent back. */
+export async function addCalendarLink(
+  token: Token,
+  link: { feedUrl: string; displayName?: string },
+  validateOnly: boolean,
+): Promise<{ account: CalendarAccountView; calendars: CalendarView[]; eventCount: number }> {
+  const r = await rpc<
+    Partial<CalendarAccountView> & { calendars?: Partial<CalendarView>[]; eventCount?: number }
+  >(token, "CreateCalendarAccount", {
+    calendarAccount: { kind: "KIND_ICS", ...link },
+    validateOnly,
+  });
+  return {
+    account: accountView(r),
+    calendars: (r.calendars ?? []).map(calendarView),
+    eventCount: r.eventCount ?? 0,
+  };
+}
+
+export async function replaceLink(
+  token: Token,
+  account: string,
+  feedUrl: string,
+): Promise<CalendarAccountView> {
+  return accountView(
+    await rpc(token, "UpdateCalendarAccount", {
+      calendarAccount: { name: account, feedUrl },
+      updateMask: "feedUrl",
+    }),
+  );
 }
 
 export async function replacePassword(

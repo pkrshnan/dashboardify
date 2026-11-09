@@ -84,7 +84,12 @@ describe("calendar API adapter", () => {
 
 describe("calendar helpers", () => {
   test("status lines", () => {
-    const account = { name: "a", displayName: "iCloud", username: "u" };
+    const account = {
+      name: "a",
+      kind: "KIND_CALDAV" as const,
+      displayName: "iCloud",
+      username: "u",
+    };
 
     expect(statusLine({ ...account, status: "STATUS_AUTH_FAILED" })).toMatchObject({ warn: true });
     expect(statusLine({ ...account, status: "STATUS_OK" }).text).toBe("Not synced yet");

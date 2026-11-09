@@ -63,13 +63,16 @@ export type AccountStatus = "ok" | "auth_failed" | "unreachable";
 
 export interface Account {
   id: string;
-  kind: "caldav";
+  /** caldav: the iCloud account. ics: a calendar link, read-only, with one calendar. */
+  kind: "caldav" | "ics";
   provider: string;
   displayName: string;
   serverUrl: string;
   homeUrl?: string;
   username: string;
   passwordSet: boolean;
+  /** Links only: the URL's host, the only part of it ever shown. */
+  feedHost?: string;
   lastUsedTime?: string;
   lastSyncTime?: string;
   status: AccountStatus;
@@ -115,13 +118,14 @@ export class AccountExists extends Error {}
 
 interface AccountRow {
   id: string;
-  kind: "caldav";
+  kind: "caldav" | "ics";
   provider: string;
   display_name: string;
   server_url: string | null;
   home_url: string | null;
   username: string | null;
   password_sealed: Uint8Array | null;
+  feed_host: string | null;
   last_used_time: string | null;
   last_sync_time: string | null;
   status: AccountStatus;
@@ -206,6 +210,88 @@ export class CalendarAccounts {
       throw error;
     }
     return this.get(account.id) as Account;
+  }
+
+  /** Saves a calendar link as an account with one read-only calendar, "feed". */
+  createLink(link: {
+    id: string;
+    displayName: string;
+    url: string;
+    host: string;
+    category: Category;
+  }): Account {
+    const time = this.now().toISOString();
+    this.store.transaction((db) => {
+      db.query(
+        `INSERT INTO calendar_accounts (id, kind, provider, display_name, feed_url_sealed, feed_host,
+          create_time, update_time) VALUES (?, 'ics', 'url', ?, ?, ?, ?, ?)`,
+      ).run(link.id, link.displayName, this.sealFeed(link.id, link.url), link.host, time, time);
+      db.query(
+        `INSERT INTO calendars (account_id, id, href, display_name, category, server_writable)
+         VALUES (?, 'feed', 'feed', ?, ?, 0)`,
+      ).run(link.id, link.displayName, link.category);
+    });
+    return this.get(link.id) as Account;
+  }
+
+  /** A link's URL, opened to fetch it. */
+  feedUrl(id: string): string {
+    const row = this.store.db
+      .query<{ feed_url_sealed: Uint8Array | null }, [string]>(
+        "SELECT feed_url_sealed FROM calendar_accounts WHERE id = ?",
+      )
+      .get(id);
+    if (!row?.feed_url_sealed) {
+      throw new Error(`No link stored for ${id}`);
+    }
+    return this.store.box.open(`calendar_accounts/${id}/feed_url_sealed`, row.feed_url_sealed);
+  }
+
+  /** Replaces a link's URL (and forgets the old one's cache validators), or renames it. */
+  updateLink(id: string, change: { url?: string; host?: string; displayName?: string }): Account {
+    const time = this.now().toISOString();
+    this.store.transaction((db) => {
+      if (change.url && change.host) {
+        db.query(
+          "UPDATE calendar_accounts SET feed_url_sealed = ?, feed_host = ?, http_etag = NULL, http_last_modified = NULL, status = 'ok', status_detail = NULL, update_time = ? WHERE id = ?",
+        ).run(this.sealFeed(id, change.url), change.host, time, id);
+      }
+      if (change.displayName) {
+        db.query("UPDATE calendar_accounts SET display_name = ?, update_time = ? WHERE id = ?").run(
+          change.displayName,
+          time,
+          id,
+        );
+        db.query("UPDATE calendars SET display_name = ? WHERE account_id = ?").run(
+          change.displayName,
+          id,
+        );
+      }
+    });
+    return this.get(id) as Account;
+  }
+
+  /** The validators from the last fetch, for a conditional GET. */
+  httpCache(id: string): { etag?: string; lastModified?: string } {
+    const row = this.store.db
+      .query<{ http_etag: string | null; http_last_modified: string | null }, [string]>(
+        "SELECT http_etag, http_last_modified FROM calendar_accounts WHERE id = ?",
+      )
+      .get(id);
+    return {
+      etag: row?.http_etag ?? undefined,
+      lastModified: row?.http_last_modified ?? undefined,
+    };
+  }
+
+  /** A link fetched: keep its validators and mark it working. */
+  linkFetched(id: string, cache: { etag?: string; lastModified?: string }): void {
+    const time = this.now().toISOString();
+    this.store.db
+      .query(
+        "UPDATE calendar_accounts SET http_etag = ?, http_last_modified = ?, last_sync_time = ?, last_used_time = ?, status = 'ok', status_detail = NULL WHERE id = ?",
+      )
+      .run(cache.etag ?? null, cache.lastModified ?? null, time, time, id);
   }
 
   /** The stored password, opened for a request to the server. */
@@ -363,6 +449,10 @@ export class CalendarAccounts {
     });
   }
 
+  private sealFeed(id: string, url: string): Uint8Array {
+    return this.store.box.seal(`calendar_accounts/${id}/feed_url_sealed`, url);
+  }
+
   private seal(id: string, password: string): Uint8Array {
     return this.store.box.seal(aad(id), password);
   }
@@ -403,6 +493,7 @@ function toAccount(row: AccountRow): Account {
     homeUrl: row.home_url ?? undefined,
     username: row.username ?? "",
     passwordSet: row.password_sealed !== null,
+    feedHost: row.feed_host ?? undefined,
     lastUsedTime: row.last_used_time ?? undefined,
     lastSyncTime: row.last_sync_time ?? undefined,
     status: row.status,
