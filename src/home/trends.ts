@@ -3,7 +3,8 @@
 // - change = the 7-day mean against a baseline of the 60 days before those 7;
 // - it is a percentage, except skin temperature, which is a difference in °C;
 // - green or red only when the change is at least half a baseline SD, otherwise grey;
-// - cumulative metrics (strain, steps, zone 2+) end yesterday, so a partial day never counts.
+// - cumulative metrics (strain, steps, zone 2+) show today's running total next to yesterday's,
+//   but the change leaves today out, so a partial day never counts.
 
 import type { HealthGroup, MetricTrend, Tone } from "./types";
 
@@ -31,15 +32,14 @@ export interface MetricDef {
 
 /**
  * The trend for one metric. `values` are daily values, oldest first, the last one being
- * `today`. For a cumulative metric today's value is dropped, so the series ends yesterday.
+ * `today`. For a cumulative metric today's value is a running total: it is shown, but the
+ * change is computed from the days before it.
  */
 export function trend(def: MetricDef, values: (number | null)[], today: string): MetricTrend {
-  const series = def.cumulative ? values.slice(0, -1) : values;
-  const lastDate = def.cumulative
-    ? Temporal.PlainDate.from(today).subtract({ days: 1 }).toString()
-    : today;
-  const current = series.at(-1) ?? null;
-  const change = changeOf(series);
+  const completed = def.cumulative ? values.slice(0, -1) : values;
+  const current = values.at(-1) ?? null;
+  const yesterday = def.cumulative ? (completed.at(-1) ?? null) : null;
+  const change = changeOf(completed);
   return {
     key: def.key,
     name: def.name,
@@ -49,10 +49,11 @@ export function trend(def: MetricDef, values: (number | null)[], today: string):
     raw: current,
     delta: change ? formatDelta(change.diff, change.mean, def) : null,
     tone: change ? toneOf(change, def.better) : "neutral",
-    yesterday: Boolean(def.cumulative),
+    partial: Boolean(def.cumulative),
+    yesterdayValue: yesterday === null ? null : formatValue(yesterday, def.format),
     baseline: change ? { mean: change.mean, sd: change.sd } : null,
-    values: series,
-    lastDate,
+    values,
+    lastDate: today,
   };
 }
 

@@ -92,8 +92,10 @@ export interface MetricTrend {
   /** "−11%", "+0.1 °C", or null without enough history. */
   delta: string | null;
   tone: Tone;
-  /** Cumulative metrics show yesterday's completed day. */
-  yesterday: boolean;
+  /** Cumulative metrics: the last value is today's running total, left out of the change. */
+  partial: boolean;
+  /** Yesterday's completed total, formatted, for cumulative metrics. */
+  yesterdayValue: string | null;
   /** Mean and SD of the baseline (the 60 days before the last 7), for the chart band. */
   baseline: { mean: number; sd: number } | null;
   /** Daily values, oldest first, ending at `lastDate`. Missing days are null. */

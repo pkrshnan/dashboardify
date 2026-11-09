@@ -215,8 +215,9 @@ message MetricTrend {
   // Good, bad or neutral.
   Tone tone = 8;
 
-  // True for cumulative metrics, which show yesterday.
-  bool yesterday = 9;
+  // True for cumulative metrics, whose last daily value is today's running total. It is
+  // left out of the change.
+  bool partial_today = 9;
 
   // Unset without enough history.
   Baseline baseline = 10;
@@ -229,6 +230,9 @@ message MetricTrend {
 
   // Date of the last daily value.
   google.type.Date last_date = 13;
+
+  // Yesterday's completed total, formatted, for cumulative metrics. Unset otherwise.
+  optional string yesterday_value = 14;
 }
 
 // Request for GetHome.

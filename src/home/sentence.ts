@@ -33,7 +33,7 @@ const RECOVERY_HIGH = 67;
 function healthPart(health: MetricTrend[]): string | null {
   const recovery = health.find((m) => m.key === "recovery");
   const sleep = health.find((m) => m.key === "sleepScore");
-  const pct = recovery?.yesterday ? null : (recovery?.raw ?? null);
+  const pct = recovery?.raw ?? null;
   if (pct === null) {
     return null;
   }

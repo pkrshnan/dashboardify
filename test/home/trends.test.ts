@@ -55,14 +55,32 @@ describe("trend", () => {
     expect(trend(strain, series(10, 1, 15), "2026-11-04").tone).toBe("neutral");
   });
 
-  test("cumulative metrics drop today's partial value and end yesterday", () => {
+  test("cumulative metrics show today's running total, with yesterday's next to it", () => {
     const steps: MetricDef = { ...hrv, format: "thousands", cumulative: true };
     const values = [...series(8000, 1000, 9840), 120];
+
     const t = trend(steps, values, "2026-11-04");
-    expect(t.value).toBe("9,840");
-    expect(t.yesterday).toBe(true);
-    expect(t.lastDate).toBe("2026-11-03");
-    expect(t.values).toHaveLength(values.length - 1);
+
+    expect(t.value).toBe("120");
+    expect(t.yesterdayValue).toBe("9,840");
+    expect(t.partial).toBe(true);
+    expect(t.lastDate).toBe("2026-11-04");
+    expect(t.values).toEqual(values);
+  });
+
+  test("today's running total never feeds the change", () => {
+    const steps: MetricDef = { ...hrv, format: "thousands", cumulative: true };
+
+    const t = trend(steps, [...series(8000, 1000, 9840), 120], "2026-11-04");
+
+    // 9,840 against 8,000; counting the 120 would make it +5%.
+    expect(t.delta).toBe("+23%");
+  });
+
+  test("snapshot metrics have no yesterday value", () => {
+    const t = trend(hrv, series(50, 5, 45), "2026-11-04");
+    expect(t.partial).toBe(false);
+    expect(t.yesterdayValue).toBeNull();
   });
 
   test("skin temperature changes are shown in °C", () => {

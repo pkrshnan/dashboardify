@@ -39,10 +39,10 @@ The screenshots are rendered from the `.dc.html` files with sample data.
 
 ## Health numbers
 
-- **Time basis.** Snapshot metrics (recovery, HRV, resting HR, sleep, breathing rate, skin temperature) show this morning's value. Cumulative metrics (strain, steps, zone 2+) show yesterday's completed day, marked "· yesterday". Today's partial totals never feed a comparison.
+- **Time basis.** Snapshot metrics (recovery, HRV, resting HR, sleep, breathing rate, skin temperature) show this morning's value. Cumulative metrics (strain, steps, zone 2+) show today's running total, with yesterday's completed total beside the change ("+4% · 9,840 yesterday"). Today's partial totals never feed a comparison or the chart's rolling line.
 - **Change.** The 7-day mean against a baseline: the 60 days before those 7. It is shown as a percentage, except skin temperature, which is shown in °C because a percentage of a temperature means nothing. The range switch changes only the chart, never the number. The focus row and the Health section read the same value.
 - **Colour of the change.** Green when it is good for you and red when it is bad. Up is good for recovery, HRV, sleep score, time asleep, steps and zone 2+, and down is good for resting HR. It is grey when the change is under half a standard deviation of the baseline, so normal day-to-day noise stays grey. It is always grey for strain, breathing rate and skin temperature.
-- **Charts.** Each metric has a fixed y-range of baseline ± 3 SD, so a small drift looks small. A shaded band shows the normal range (baseline ± 1 SD). The line is the 7-day rolling mean and each day is a faint dot. 1Y shows weekly means.
+- **Charts.** Each metric has a fixed y-range of baseline ± 3 SD, so a small drift looks small. A shaded band shows the normal range (baseline ± 1 SD). The line is the 7-day rolling mean and each day is a faint dot. 1Y shows weekly means. Every chart ends in a solid dot at today's value.
 - **Order.** Heart (recovery, HRV, resting HR), sleep (sleep score, time asleep), activity (strain, steps, zone 2+), vitals (breathing rate, skin temperature). Groups are separated by extra space, not labels.
 
 ## Look

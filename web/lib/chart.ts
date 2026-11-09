@@ -2,7 +2,8 @@
 // - a fixed y-range of baseline ± 3 SD, so a small drift looks small;
 // - a shaded band for the normal range, baseline ± 1 SD;
 // - the line is the 7-day rolling mean, and each day is a faint dot;
-// - 1Y shows weekly means, without dots.
+// - 1Y shows weekly means, without dots;
+// - the latest day is a solid dot at the right edge, so every chart ends at today's value.
 // The chart is drawn in a 600 × 100 box that the SVG stretches to fit.
 
 import type { MetricTrend } from "../../src/home/types";
@@ -23,14 +24,16 @@ export interface ChartShape {
   dots: string;
   /** SVG path of the rolling-mean line, broken where there is no data. */
   line: string;
+  /** SVG path of the latest day's dot, or "" when it has no data. */
+  latest: string;
 }
 
 export function chartShape(metric: MetricTrend, range: Range): ChartShape {
   const days = RANGE_DAYS[range];
-  const points =
-    range === "1y" ? weeklyMeans(metric.values, days) : rollingMeans(metric.values, days);
+  const points = linePoints(metric, range, days);
   const shown = range === "1y" ? [] : metric.values.slice(-days);
-  const scale = yScale(metric, [...points, ...shown]);
+  const last = metric.values.at(-1) ?? null;
+  const scale = yScale(metric, [...points, ...shown, last]);
   const band = metric.baseline
     ? {
         y: scale(metric.baseline.mean + metric.baseline.sd),
@@ -45,7 +48,19 @@ export function chartShape(metric: MetricTrend, range: Range): ChartShape {
       .map((v, i) => (v === null ? "" : `M${x(i, shown.length)},${round(scale(v))}h0`))
       .join(""),
     line: linePath(points, scale),
+    latest: last === null ? "" : `M${WIDTH},${round(scale(last))}h0`,
   };
+}
+
+/** Today's running total would drag a mean down, so for those metrics the line leaves it out. */
+function linePoints(metric: MetricTrend, range: Range, days: number): (number | null)[] {
+  const completed = metric.partial ? metric.values.slice(0, -1) : metric.values;
+  if (range === "1y") {
+    return weeklyMeans(metric.partial ? [...completed, null] : completed, days);
+  }
+  return metric.partial
+    ? [...rollingMeans(completed, days - 1), null]
+    : rollingMeans(completed, days);
 }
 
 /** The 7-day rolling mean for each of the last `days` days; null where the week is empty. */

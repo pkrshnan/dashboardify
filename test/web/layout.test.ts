@@ -59,7 +59,11 @@ describe("timeline", () => {
   });
 });
 
-function metric(values: (number | null)[], baseline: MetricTrend["baseline"]): MetricTrend {
+function metric(
+  values: (number | null)[],
+  baseline: MetricTrend["baseline"],
+  partial = false,
+): MetricTrend {
   return {
     key: "hrv",
     name: "HRV",
@@ -69,7 +73,8 @@ function metric(values: (number | null)[], baseline: MetricTrend["baseline"]): M
     raw: null,
     delta: null,
     tone: "neutral",
-    yesterday: false,
+    partial,
+    yesterdayValue: null,
     baseline,
     values,
     lastDate: "2026-11-03",
@@ -98,6 +103,27 @@ describe("chart", () => {
     const shape = chartShape(metric(values, null), "1y");
     expect(shape.dots).toBe("");
     expect(shape.line.match(/M/g)?.length).toBe(2);
+  });
+
+  test("every chart ends in a solid dot at today's value", () => {
+    const values = [...Array(39).fill(50), 65];
+
+    const shape = chartShape(metric(values, { mean: 50, sd: 5 }), "1y");
+
+    // 65 is baseline + 3 SD, the top of the range.
+    expect(shape.latest).toBe("M600,4.0h0");
+    expect(chartShape(metric([...values, null], null), "2w").latest).toBe("");
+  });
+
+  test("a running total for today is a dot, but stays out of the line", () => {
+    const values = [...Array(39).fill(50), 5];
+
+    const shape = chartShape(metric(values, { mean: 50, sd: 5 }, true), "2w");
+
+    expect(shape.dots.match(/M/g)).toHaveLength(14);
+    expect(shape.line.match(/[ML]/g)).toHaveLength(13);
+    expect(shape.line).not.toContain("96.0");
+    expect(shape.latest).toBe("M600,96.0h0");
   });
 
   test("range label", () => {
