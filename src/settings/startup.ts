@@ -2,6 +2,7 @@
 // settings.db and migrate, import .env once, apply variables still in the environment on top,
 // then build the Config the rest of the server uses.
 
+import { join } from "node:path";
 import {
   buildConfig,
   type Config,
@@ -15,7 +16,7 @@ import { DeviceStore } from "./devices";
 import { fromEnv, importEnvSettings, importEnvTokens, warnOverrides } from "./env-import";
 import { loadKey } from "./key";
 import { SecretBox } from "./secret-box";
-import { SettingsStore } from "./store";
+import { KeyMismatch, SettingsStore } from "./store";
 
 type Env = Record<string, string | undefined>;
 
@@ -37,7 +38,7 @@ export async function openSettings(
   log: (message: string) => void = console.warn,
 ): Promise<Opened> {
   const key = await loadKey({ dataPath: startup.dataPath, keyFile: startup.keyFile });
-  const store = await SettingsStore.open(startup.dataPath, new SecretBox(key));
+  const store = await openStore(startup, key);
   const devices = new DeviceStore(store);
   const general = new GeneralSettings(store);
   importEnvTokens(store, devices, env.INGEST_TOKENS, log);
@@ -52,6 +53,21 @@ export async function openSettings(
   }
   const tailnet = liveTailnet(inForce);
   return { store, devices, general, config, tailnet, overrides, envChange: change };
+}
+
+/** Opens settings.db, saying what to do if a rotate-key stopped before renaming the new key. */
+async function openStore(startup: Startup, key: Uint8Array): Promise<SettingsStore> {
+  try {
+    return await SettingsStore.open(startup.dataPath, new SecretBox(key));
+  } catch (error) {
+    const keyPath = startup.keyFile ?? join(startup.dataPath, "secret.key");
+    if (error instanceof KeyMismatch && (await Bun.file(`${keyPath}.new`).exists())) {
+      throw new Error(
+        `${keyPath} doesn't match settings.db, but ${keyPath}.new does: a rotate-key was interrupted. Move ${keyPath}.new to ${keyPath} and start again.`,
+      );
+    }
+    throw error;
+  }
 }
 
 /** Re-reads tailnet sign-in only when its settings change ("gateway" reads /proc each time). */

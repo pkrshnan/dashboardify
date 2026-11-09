@@ -88,4 +88,13 @@ describe("openSettings", () => {
     expect(tailnet()).toEqual({ proxy: "100.64.0.1", users: new Set(["you@github"]) });
     cli.close();
   });
+
+  test("an interrupted rotate-key says to move secret.key.new into place", async () => {
+    await start();
+    const keyPath = join(dir, "data", "secret.key");
+    await Bun.write(`${keyPath}.new`, await Bun.file(keyPath).arrayBuffer());
+    await Bun.write(keyPath, new Uint8Array(32).fill(7));
+
+    await expect(start()).rejects.toThrow("a rotate-key was interrupted");
+  });
 });

@@ -14,7 +14,8 @@
     "demo": "bun scripts/demo.ts",
     "proto:lint": "buf format --diff --exit-code && buf lint",
     "proto:generate": "buf generate --include-imports",
-    "format:check": "biome format ."
+    "format:check": "biome format .",
+    "settings": "bun scripts/settings.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.4",
