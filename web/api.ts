@@ -83,6 +83,7 @@ export async function fetchHome(token: Token): Promise<HomeView> {
           detail: v.nextEvent.detail,
           inMin: v.nextEvent.minutesUntil,
           url: v.nextEvent.url || null,
+          mapsUrl: v.nextEvent.mapsUri || null,
         }
       : null,
     days: v.days.map((d) => ({
@@ -161,6 +162,7 @@ function agendaEvent(e: AgendaEventMessage, time: Time): AgendaEvent {
     detail: e.detail,
     category: e.category as AgendaEvent["category"],
     url: e.url || null,
+    mapsUrl: e.mapsUri || null,
     event: e.event || null,
     calendar: e.calendar || null,
     writable: e.writable,

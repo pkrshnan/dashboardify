@@ -4,7 +4,7 @@
 
 import ICAL from "ical.js";
 import { instantAt, offsetMinutes, type WallClock, wallClock } from "../capture/zone";
-import type { Place } from "../places/place";
+import type { LatLng, Place } from "../places/place";
 
 /** One occurrence of an event, as the cache stores it. */
 export interface Occurrence {
@@ -13,6 +13,8 @@ export interface Occurrence {
   recurrenceId?: string;
   title: string;
   location: string;
+  /** The location's coordinates, from GEO or Apple's structured location. */
+  geo?: LatLng;
   notes: string;
   url: string;
   start: Date;
@@ -102,6 +104,7 @@ function occurrenceOf(
     uid: event.uid,
     title: event.summary ?? "",
     location: event.location ?? "",
+    ...geoOf(event.component),
     notes: event.description ?? "",
     url: text("url"),
     start: toInstant(startTime, reader),
@@ -112,6 +115,22 @@ function occurrenceOf(
     timeZone: allDay ? undefined : zoneName(startTime),
     recurring: false,
   };
+}
+
+/** GEO (lat;lon), else the geo: URI of X-APPLE-STRUCTURED-LOCATION. Nothing if neither is valid. */
+function geoOf(vevent: ICAL.Component): { geo?: LatLng } {
+  const geo = vevent.getFirstPropertyValue("geo") as unknown;
+  const structured = String(vevent.getFirstPropertyValue("x-apple-structured-location") ?? "");
+  const match = /^geo:(-?[\d.]+),(-?[\d.]+)/i.exec(structured);
+  const [latitude, longitude] = Array.isArray(geo)
+    ? geo.map(Number)
+    : [Number(match?.[1]), Number(match?.[2])];
+  const valid =
+    latitude !== undefined &&
+    longitude !== undefined &&
+    Math.abs(latitude) <= 90 &&
+    Math.abs(longitude) <= 180;
+  return valid ? { geo: { latitude, longitude } } : {};
 }
 
 function overlaps(occurrence: Occurrence, reader: Reader): boolean {

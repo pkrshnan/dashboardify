@@ -127,9 +127,11 @@ describe("events API", () => {
     const typed = server.event("home", "r1.ics")?.ics ?? "";
 
     expect(created.body.location).toBe("Dishoom\n7 Boundary Street, London");
+    expect(created.body.place).toMatchObject({ ...place, mapsUri: expect.stringContaining("ll=") });
     expect(placed).toContain("GEO:51.5245;-0.0773");
     expect(updated.body.location).toBe("Sam's flat");
     expect(typed).not.toContain("GEO");
+    expect(updated.body.place).toBeUndefined();
   });
 
   test("an update after a change in Apple Calendar is ABORTED", async () => {

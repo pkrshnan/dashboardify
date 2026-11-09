@@ -12,7 +12,7 @@ import type { ConnectCalDav } from "./calendar-accounts";
 import { ApiError, failedPrecondition, invalidArgument } from "./errors";
 import { filterItems } from "./filter";
 import { paginate } from "./pagination";
-import { type PlaceInput, placeFromInput } from "./places";
+import { type PlaceInput, placeFromInput, placeView } from "./places";
 import { requestedFields } from "./update-mask";
 
 const DAY_MS = 86_400_000;
@@ -283,6 +283,7 @@ export class EventsService {
       timeZone: event.timeZone ?? "",
       allDay: event.allDay,
       location: event.location,
+      ...(event.geo && { place: placeOf(event.location || event.title, event.geo) }),
       notes: event.notes,
       url: event.url,
       category: calendar?.category ?? "personal",
@@ -292,6 +293,12 @@ export class EventsService {
       etag: stored?.etag ?? "",
     };
   }
+}
+
+/** The location as a Place: its first line is the name, the rest the address. */
+function placeOf(location: string, geo: { latitude: number; longitude: number }) {
+  const [name = "", ...address] = location.split("\n");
+  return placeView({ name, address: address.join(", "), ...geo });
 }
 
 const EDITABLE = ["title", "location", "place", "notes", "url", "startTime", "endTime"];

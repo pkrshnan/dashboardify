@@ -186,6 +186,7 @@ export function pendingEvent(shown: Preview, timeZone: string, key: string): Pen
       detail: "Saving to iCloud…",
       category: calendar.category,
       url: null,
+      mapsUrl: null,
       event: null,
       calendar: calendar.name,
       writable: false,

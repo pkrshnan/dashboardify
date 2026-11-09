@@ -138,7 +138,9 @@ endpoint; deploy a server that supports it before updating the client.
 of agenda items, task groups, and health metric trends. It uses protobuf date/time objects
 and fields such as `nextEvent`, `taskGroups`, and `metrics`.
 
-Metric series use `dailyValues` plus `missingDays` indexes to represent missing data.
+Metric series use `dailyValues` plus `missingDays` indexes to represent missing data. An event
+whose location has coordinates (from `GEO` or Apple's structured location, as Apple Calendar and
+the capture box write it) has a `mapsUri` that opens Apple Maps; text-only locations don't.
 The regular server has no calendar source by default; the demo supplies sample events.
 
 ## Settings

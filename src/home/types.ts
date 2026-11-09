@@ -51,6 +51,8 @@ export interface AgendaEvent {
   detail: string;
   category: Category;
   url: string | null;
+  /** Apple Maps, for an event whose location has coordinates. */
+  mapsUrl: string | null;
   /** `events/{id}`, or null for events not from a calendar resource. */
   event: string | null;
   /** `calendarAccounts/{a}/calendars/{c}`, or null. */
@@ -68,6 +70,7 @@ export interface NextEvent {
   /** Minutes from now until it starts; 0 or less while it is on. */
   inMin: number;
   url: string | null;
+  mapsUrl: string | null;
 }
 
 /** A task with a time: drawn on the timeline, never in the task list. */

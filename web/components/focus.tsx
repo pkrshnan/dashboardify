@@ -1,4 +1,5 @@
-// Focus: date and time, the day's sentence, four snapshot numbers, and the next event.
+// Focus: date and time, the day's sentence, four snapshot numbers, and the next event, with Join
+// for a call and Map for a located place.
 
 import type { HomeView, MetricTrend, NextEvent } from "../../src/home/types";
 import type { Now } from "../lib/clock";
@@ -74,6 +75,11 @@ function Next({ event, inMin }: { event: NextEvent; inMin: number }) {
           <div class="next-title ell">{event.title}</div>
           <div class="next-detail ell">{detail}</div>
         </div>
+        {event.mapsUrl && (
+          <a class="pill-button" href={event.mapsUrl} target="_blank" rel="noreferrer">
+            Map
+          </a>
+        )}
         {event.url && (
           <a class="pill-button" href={event.url} target="_blank" rel="noreferrer">
             Join

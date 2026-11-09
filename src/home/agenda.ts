@@ -71,6 +71,7 @@ function agendaEvent(e: CalendarEvent, midnight: number, timeZone: string): Agen
     detail: e.detail ?? "",
     category: e.category,
     url: e.url ?? null,
+    mapsUrl: e.mapsUrl ?? null,
     event: e.event ?? null,
     calendar: e.calendar ?? null,
     writable: e.writable ?? false,
@@ -90,6 +91,7 @@ export function nextEvent(today: DayAgenda | undefined, nowMin: number): NextEve
     detail: event.detail,
     inMin: event.startMin - nowMin,
     url: event.url,
+    mapsUrl: event.mapsUrl,
   };
 }
 

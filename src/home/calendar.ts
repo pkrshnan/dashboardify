@@ -13,6 +13,8 @@ export interface CalendarEvent {
   category: Category;
   /** A video call or other link, for the Join button. */
   url?: string;
+  /** An Apple Maps link to the location, when it has coordinates. */
+  mapsUrl?: string;
   /** `events/{id}`, for opening and editing; absent for events with no source resource. */
   event?: string;
   /** `calendarAccounts/{a}/calendars/{c}`. */

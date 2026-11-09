@@ -15,6 +15,7 @@ function ev(startMin: number, endMin: number, title = "e"): AgendaEvent {
     detail: "",
     category: "work",
     url: null,
+    mapsUrl: null,
     event: null,
     calendar: null,
     writable: false,
