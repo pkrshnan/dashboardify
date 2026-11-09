@@ -128,8 +128,9 @@ heading. Design canvas: https://claude.ai/artifact/Dm3mFqJPttBWpS9VxeYPUD
   `#66D4CF`. A workout the strap isn't sure of has a dashed outline and a question mark.
 - Week lists each day's sessions; Month is a calendar with a chip per session; 3M is active minutes
   per week. A day, week or workout opens beside the list, below it on the phone.
-- An unsure workout asks "What was this?": "It was lifting" or "Not a workout". Any other has
-  "Not right?". A dismissed one stays in the list, greyed, with Undo.
+- In a workout's detail, an unsure one asks "What was this?": "It was lifting" or "Not a workout".
+  Any other has "Not right?". The day list only marks them. A dismissed one stays in the list,
+  greyed, and its detail has Undo.
 - A workout shows its heart rate every 15 seconds. For lifting, each matched set is a band in its
   exercise's colour (paler for warm-ups), with the sets listed by exercise.
 
