@@ -26,7 +26,7 @@ The screenshots are rendered from the `.dc.html` files with sample data.
    - The next event, with a Join button. No free-time list: the gaps are visible on the timeline.
 2. **Calendar and tasks.** A Day/Week toggle.
    - Day: a timeline from an hour before now to 22:00, with a red line for now. Events are blocks; the next event is a little brighter. Events under about 50 minutes take one line: title, start time and detail, cut with an ellipsis. Timed tasks (`⏰ HH:MM`) are reminders, drawn as dashed pills at their time in a lane to the right of the events.
-   - All-day events have no place on the Day timeline (one home per item). In the Week view they are hollow squares in their calendar's colour at the top of each day they cover; on the phone they head the day's agenda as "All day".
+   - All-day events sit in a row above the Day timeline, one slim bar each in their calendar's colour with "All day" on the right, never on the timeline itself. In the Week view they are hollow squares in their calendar's colour at the top of each day they cover; on the phone they head the day's agenda as "All day".
    - "Calendar synced 09:10" sits beside the heading once a calendar is connected, in orange when it is over 15 minutes old or an account needs attention in Settings.
    - Week: a rolling week from today. On desktop it has seven columns, with dated tasks at the top of each column. On the phone it is a strip of tappable days, then the agenda for the chosen day. Reminders have hollow markers and events have filled ones.
    - The capture box, under the heading: one line for events and reminders. As you type it highlights the time (and a "with Sam"), shows Event or Reminder with the reason, and a preview line with the title, the day and time, and where it will go. A switch overrides the kind until the box is cleared. Return adds it; the line just added shows under the box with Undo. `N` focuses it on desktop. On the phone the switch sits under the text with an Add button. An event takes its calendar's colour (border, highlight, icon), and the preview line has a calendar button that cycles through writable calendars; its tooltip says why that one was chosen ("Physio is usually on Fitness."). While it saves, the event is already on the timeline with a stronger fill, a ring and "Saving to iCloud…". Until a calendar is connected, Event is off and everything becomes a reminder in the inbox.
@@ -36,7 +36,7 @@ The screenshots are rendered from the `.dc.html` files with sample data.
 ## One home per item
 
 - Anything with a time today lives on the timeline only.
-- Anything without a time lives in the task list only. There is no all-day chip row.
+- Anything without a time lives in the task list only. All-day events are not tasks: they have their own row above the Day timeline.
 - Overdue items appear in the task list, plus at most one mention in the sentence.
 - The week view shows dated tasks as hollow markers that cannot be ticked. Ticking happens in the task list.
 

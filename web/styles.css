@@ -524,6 +524,26 @@ button.link {
   margin-left: 48px;
 }
 
+/* All-day events, in a row above the Day timeline. */
+.all-day-row {
+  list-style: none;
+  margin: 0 0 16px 48px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.all-day-event {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 13px;
+  line-height: 18px;
+}
+
 .hour-label {
   position: absolute;
   left: -48px;
@@ -1626,6 +1646,10 @@ button.link {
 
   .timeline {
     margin: 8px 0 12px 28px;
+  }
+
+  .all-day-row {
+    margin: 8px 0 16px 28px;
   }
 
   .hour-label {

@@ -203,8 +203,9 @@ function seedServer(): FakeCalDav {
     });
     server.putEvent(CALENDAR_FOR[category], `demo-${i}.ics`, ics);
   });
-  // A shared, read-only calendar, and a long weekend away as an all-day event.
+  // A shared, read-only calendar, a birthday today and a long weekend away as all-day events.
   server.putEvent("dinners", "dinner.ics", ics("dinner", "Dinner with Sam", at(0, 19), at(0, 21)));
+  server.putEvent("home", "birthday.ics", allDay("birthday", "Mum's birthday", day(0), day(1)));
   server.putEvent("home", "lisbon.ics", allDay("lisbon", "Lisbon", day(4), day(7)));
   return server;
 }
