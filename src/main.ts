@@ -1,6 +1,7 @@
 import { rmSync } from "node:fs";
 import homepage from "../web/index.html";
 import { CalendarAccounts } from "./calendar/accounts";
+import { AgendaWriter } from "./calendar/agenda-block";
 import { EventCache } from "./calendar/cache";
 import { cacheSource } from "./calendar/source";
 import { CalendarSync } from "./calendar/sync";
@@ -52,20 +53,24 @@ if (import.meta.main) {
   const accounts = new CalendarAccounts(opened.store);
   // The home screen reads the cache; syncing rebuilds it if it is missing.
   const cache = await EventCache.open(config.dataPath);
+  const calendar = cacheSource(cache, accounts);
+  const vault = new Vault(config.vaultPath, config.timeZone);
+  // Today's events go into the daily note's agenda block after each sync that changes them.
+  const agenda = new AgendaWriter(vault, calendar, config.timeZone);
   const calendarSync = new CalendarSync({
     accounts,
     cache,
     connect: connectICloud,
     timeZone: config.timeZone,
+    onPass: () => (accounts.list().length > 0 ? agenda.write() : Promise.resolve(false)),
   });
   calendarSync.start();
-  const vault = new Vault(config.vaultPath, config.timeZone);
   const scheduler = startHealthSummaries(config, vault);
   const app = createApp(config, {
     devices,
     tailnet,
     setupCode: opened.setupCode,
-    calendar: cacheSource(cache, accounts),
+    calendar,
     settings: {
       general,
       devices,
