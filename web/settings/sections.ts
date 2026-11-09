@@ -9,6 +9,7 @@ export interface SettingsSection {
 export const SECTIONS: SettingsSection[] = [
   { id: "general", title: "General" },
   { id: "devices", title: "Devices" },
+  { id: "calendars", title: "Calendars" },
 ];
 
 /** "#settings", "#settings/general" → the section to show, or undefined for the list (phone). */

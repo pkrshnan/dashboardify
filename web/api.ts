@@ -324,6 +324,151 @@ export function deleteDevice(token: Token, name: string): Promise<unknown> {
   });
 }
 
+export type CalendarCategory = "work" | "fitness" | "personal" | "focus";
+
+export interface CalendarAccountView {
+  /** "calendarAccounts/{id}" */
+  name: string;
+  displayName: string;
+  username: string;
+  status: "STATUS_OK" | "STATUS_AUTH_FAILED" | "STATUS_UNREACHABLE";
+  statusDetail?: string;
+  lastSyncTime?: string;
+}
+
+export interface CalendarView {
+  /** "calendarAccounts/{a}/calendars/{c}"; empty in a preview */
+  name: string;
+  displayName: string;
+  serverColor?: string;
+  category: CalendarCategory;
+  enabled: boolean;
+  forceReadOnly: boolean;
+  writable: boolean;
+}
+
+export interface CalendarPreferencesView {
+  defaultCalendar: string;
+  keywordRules: { words: string[]; calendar: string }[];
+}
+
+type Json = Record<string, unknown>;
+
+function rpc<T>(token: Token, method: string, body: Json): Promise<T> {
+  return call<T>(token, `/dashboardify.v1.CalendarAccountService/${method}`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+function calendarView(c: Partial<CalendarView>): CalendarView {
+  return {
+    name: c.name ?? "",
+    displayName: c.displayName ?? "",
+    serverColor: c.serverColor,
+    category: c.category ?? "personal",
+    enabled: c.enabled ?? false,
+    forceReadOnly: c.forceReadOnly ?? false,
+    writable: c.writable ?? false,
+  };
+}
+
+function accountView(a: Partial<CalendarAccountView>): CalendarAccountView {
+  return {
+    name: a.name ?? "",
+    displayName: a.displayName ?? "iCloud",
+    username: a.username ?? "",
+    status: a.status ?? "STATUS_OK",
+    statusDetail: a.statusDetail,
+    lastSyncTime: a.lastSyncTime,
+  };
+}
+
+export async function listCalendarAccounts(token: Token): Promise<CalendarAccountView[]> {
+  const r = await rpc<{ calendarAccounts?: Partial<CalendarAccountView>[] }>(
+    token,
+    "ListCalendarAccounts",
+    {},
+  );
+  return (r.calendarAccounts ?? []).map(accountView);
+}
+
+/** Signs in to iCloud. With `validateOnly`, saves nothing and returns what it found. */
+export async function connectICloud(
+  token: Token,
+  login: { username: string; password: string },
+  validateOnly: boolean,
+): Promise<{ account: CalendarAccountView; calendars: CalendarView[] }> {
+  const r = await rpc<Partial<CalendarAccountView> & { calendars?: Partial<CalendarView>[] }>(
+    token,
+    "CreateCalendarAccount",
+    { calendarAccount: { kind: "KIND_CALDAV", provider: "icloud", ...login }, validateOnly },
+  );
+  return { account: accountView(r), calendars: (r.calendars ?? []).map(calendarView) };
+}
+
+export async function replacePassword(
+  token: Token,
+  account: string,
+  password: string,
+): Promise<CalendarAccountView> {
+  return accountView(
+    await rpc(token, "UpdateCalendarAccount", {
+      calendarAccount: { name: account, password },
+      updateMask: "password",
+    }),
+  );
+}
+
+export async function syncCalendarAccount(
+  token: Token,
+  account: string,
+): Promise<CalendarAccountView> {
+  return accountView(await rpc(token, "SyncCalendarAccount", { name: account }));
+}
+
+export function deleteCalendarAccount(token: Token, account: string): Promise<unknown> {
+  return rpc(token, "DeleteCalendarAccount", { name: account });
+}
+
+export async function listCalendars(token: Token, account: string): Promise<CalendarView[]> {
+  const r = await rpc<{ calendars?: Partial<CalendarView>[] }>(token, "ListCalendars", {
+    parent: account,
+  });
+  return (r.calendars ?? []).map(calendarView);
+}
+
+export async function updateCalendar(
+  token: Token,
+  name: string,
+  change: Partial<Pick<CalendarView, "category" | "enabled" | "forceReadOnly">>,
+): Promise<CalendarView> {
+  return calendarView(
+    await rpc(token, "UpdateCalendar", {
+      calendar: { name, ...change },
+      updateMask: Object.keys(change).join(","),
+    }),
+  );
+}
+
+export async function getCalendarPreferences(token: Token): Promise<CalendarPreferencesView> {
+  const r = await rpc<Partial<CalendarPreferencesView>>(token, "GetCalendarSettings", {
+    name: "calendarSettings",
+  });
+  return { defaultCalendar: r.defaultCalendar ?? "", keywordRules: r.keywordRules ?? [] };
+}
+
+export async function updateCalendarPreferences(
+  token: Token,
+  change: Partial<CalendarPreferencesView>,
+): Promise<CalendarPreferencesView> {
+  const r = await rpc<Partial<CalendarPreferencesView>>(token, "UpdateCalendarSettings", {
+    calendarSettings: { name: "calendarSettings", ...change },
+    updateMask: Object.keys(change).join(","),
+  });
+  return { defaultCalendar: r.defaultCalendar ?? "", keywordRules: r.keywordRules ?? [] };
+}
+
 /** The error a service sent ("time_zone is set by TZ_NAME in .env…"), to show beside a field. */
 export class ServiceError extends Error {}
 
