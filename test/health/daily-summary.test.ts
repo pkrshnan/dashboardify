@@ -96,6 +96,24 @@ async function putRun(): Promise<void> {
   );
 }
 
+/** The night after DATE, 23:00 to 07:00, with data from 20:00 so it doesn't overlap putRun. */
+async function putNextNight(): Promise<void> {
+  const from = EVENING + 26 * HOUR;
+  const to = EVENING + 44 * HOUR;
+  const sleep = { start: SLEEP.start + 24 * HOUR, end: SLEEP.end + 24 * HOUR };
+  await put(
+    "accel",
+    ["x", "y", "z"],
+    accelDay(from, to, sleep).map((a) => ({ ts: a.ts, values: [a.x, a.y, a.z] })),
+  );
+  const bpm = (ts: number) => (ts >= sleep.start && ts < sleep.end ? 52 : 80);
+  await put(
+    "heart_rate",
+    ["bpm"],
+    heartRate(from, to, bpm).map((h) => ({ ts: h.ts, values: [h.bpm] })),
+  );
+}
+
 async function writeProfile(): Promise<void> {
   await mkdir(join(dir, "vault"), { recursive: true });
   await writeFile(
@@ -127,7 +145,7 @@ describe("DailySummary", () => {
     expect(note?.body.indexOf("## Health")).toBeLessThan(note?.body.indexOf("## Journal") ?? 0);
 
     expect((await derived.read("nights", DATE))?.rhr_bpm).toBeCloseTo(52, 0);
-    expect((await derived.read("days", DATE))?.algo_version).toBe("3");
+    expect((await derived.read("days", DATE))?.algo_version).toBe("4");
   });
 
   test("recovery appears once there are two weeks of nights", async () => {
@@ -163,6 +181,19 @@ describe("DailySummary", () => {
     expect((await derived.read("days", DATE))?.workout_min).toBe(40);
     // The run is fast stepping, but it is a workout, so it isn't also a walk.
     expect(await derived.readAll("walks", DATE)).toEqual([]);
+  });
+
+  test("a day with no night before borrows the closest night's resting HR", async () => {
+    // No night before DATE and no earlier nights, as on the day the strap was first worn.
+    await writeProfile();
+    await putRun();
+    await putNextNight();
+
+    const result = await summary.run(DATE);
+
+    expect(result?.night).toBeNull();
+    expect(result?.day.workouts.map((w) => w.kind)).toEqual(["running"]);
+    expect(result?.day.strain).toBeGreaterThan(0);
   });
 
   test("a workout reviewed as not a workout leaves the note and the totals", async () => {

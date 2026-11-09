@@ -101,7 +101,7 @@ export interface DayInput {
   motion: Motion[];
   /** Last night's sleep, which can't hold a workout. */
   sleep: Span | null;
-  /** Resting HR from last night, or your recent normal if last night is missing. */
+  /** Resting HR from last night, your recent normal if it is missing, or else the closest night's. */
   restingHr: number | null;
   profile: Profile;
 }

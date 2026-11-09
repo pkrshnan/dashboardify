@@ -161,7 +161,10 @@ past a point, lactate and stress hormones climb exponentially.
    1.67, fitted to the blood-lactate curve).
 3. `Strain = 21 × (1 − e^(−TRIMP / 100))`, so each extra point is harder to earn.
 
-Resting HR is last night's. Max HR is `hr_max_measured` from `profile.md` if you've set it,
+Resting HR is last night's, or the median of the past week's nights if last night is missing. With
+no nights before, as on the first day with data, it is the closest night's within a week, checking
+earlier nights before later ones, since a hard day can raise the night after it.
+Max HR is `hr_max_measured` from `profile.md` if you've set it,
 otherwise `208 − 0.7 × age` (Tanaka 2001). Without a birth date or measured max there is no strain.
 
 Example: a 45-minute run at 150 bpm (resting 55, max 190) is HRR 0.70, weight 2.45, 1.72 a minute,

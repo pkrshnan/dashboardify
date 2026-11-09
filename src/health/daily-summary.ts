@@ -39,7 +39,10 @@ import { type DaySummary, frontmatter, healthBlock, syncLine } from "./render";
 import { counted, type ReviewedWorkout, reviewFor, reviewWorkouts } from "./reviews";
 
 /** Bump when a calculation changes, so old rows can be told apart and rebuilt. */
-export const ALGO_VERSION = "3";
+export const ALGO_VERSION = "4";
+
+/** How far either way to look for a night with resting HR when there is no recent one. */
+const NEAREST_NIGHT_DAYS = 7;
 
 export class DailySummary {
   private readonly params: ParamsStore;
@@ -87,7 +90,7 @@ export class DailySummary {
       steps,
       motion,
       sleep,
-      restingHr: night?.restingHr ?? median(recentRestingHrs(history)),
+      restingHr: await this.restingHr(date, night, history),
       profile: parseProfile(profileFields, date),
     });
     return {
@@ -153,6 +156,41 @@ export class DailySummary {
       needMin,
       minutesAfterNoon,
     });
+  }
+
+  /**
+   * Resting HR for the day's effort: last night's, else the past week's median. With no nights
+   * before, as on the first day with data, it takes the closest night's, an earlier one first at
+   * the same distance, since a hard day can raise the night after it.
+   */
+  private async restingHr(
+    date: string,
+    night: NightMetrics | null,
+    history: NightSignals[],
+  ): Promise<number | null> {
+    const known = night?.restingHr ?? median(recentRestingHrs(history));
+    if (known !== null) {
+      return known;
+    }
+    const day = Temporal.PlainDate.from(date);
+    for (let away = 1; away <= NEAREST_NIGHT_DAYS; away++) {
+      for (const other of [day.subtract({ days: away }), day.add({ days: away })]) {
+        const restingHr = await this.nightRestingHr(other.toString());
+        if (restingHr !== null) {
+          return restingHr;
+        }
+      }
+    }
+    return null;
+  }
+
+  /** A night's resting HR: stored, or computed from the samples when that day hasn't run yet. */
+  private async nightRestingHr(date: string): Promise<number | null> {
+    const stored = await this.derived.read("nights", date);
+    if (typeof stored?.rhr_bpm === "number") {
+      return stored.rhr_bpm;
+    }
+    return (await this.night(date, [], DEFAULT_NEED_MIN))?.restingHr ?? null;
   }
 
   /** Earlier nights from the stored nights table, oldest first. */
@@ -268,13 +306,6 @@ function toPastNight(row: DerivedRow, minutesAfterNoon: (ts: number) => number):
     return null;
   }
   return { onsetMin: minutesAfterNoon(onset), wakeMin: minutesAfterNoon(wake), asleepMin: asleep };
-}
-
-function recentRestingHrs(history: NightSignals[]): number[] {
-  return history
-    .slice(-7)
-    .map((n) => n.restingHr)
-    .filter((v): v is number => v !== null);
 }
 
 function nightRow(night: NightMetrics): DerivedRow {
@@ -408,4 +439,11 @@ function toSteps(row: Row): StepCounter | null {
 function toMotion(row: Row): Motion | null {
   const v = nums(row, ["intensity"]);
   return v ? { ts: row.ts, intensity: v[0] ?? 0 } : null;
+}
+
+function recentRestingHrs(history: NightSignals[]): number[] {
+  return history
+    .slice(-7)
+    .map((n) => n.restingHr)
+    .filter((v): v is number => v !== null);
 }
