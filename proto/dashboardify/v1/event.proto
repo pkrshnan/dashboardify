@@ -1,0 +1,197 @@
+syntax = "proto3";
+
+package dashboardify.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+
+// Calendar events. Reads come from the sync cache; writes go to the calendar server before
+// returning, then the calendar is synced so the cache holds the server's copy.
+service EventService {
+  // Returns one event.
+  rpc GetEvent(GetEventRequest) returns (Event) {
+    option (google.api.http) = {get: "/v1/{name=events/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  // Lists events by start time. `filter` takes `start_time`, `end_time` and `calendar`, such as
+  // `end_time > "2026-11-10T00:00:00Z" AND start_time < "2026-11-17T00:00:00Z"`.
+  rpc ListEvents(ListEventsRequest) returns (ListEventsResponse) {
+    option (google.api.http) = {get: "/v1/events"};
+  }
+
+  // Creates a single event on a writable calendar.
+  rpc CreateEvent(CreateEventRequest) returns (Event) {
+    option (google.api.http) = {
+      post: "/v1/events"
+      body: "event"
+    };
+    option (google.api.method_signature) = "event";
+  }
+
+  // Changes title, location, notes, start or end. Not the calendar; not recurring events.
+  rpc UpdateEvent(UpdateEventRequest) returns (Event) {
+    option (google.api.http) = {
+      patch: "/v1/{event.name=events/*}"
+      body: "event"
+    };
+    option (google.api.method_signature) = "event,update_mask";
+  }
+
+  // Deletes an event. Not recurring events.
+  rpc DeleteEvent(DeleteEventRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=events/*}"};
+    option (google.api.method_signature) = "name";
+  }
+}
+
+// One occurrence of a calendar event.
+message Event {
+  option (google.api.resource) = {
+    type: "dashboardify.app/Event"
+    pattern: "events/{event}"
+    singular: "event"
+    plural: "events"
+  };
+
+  // `events/{event}`: 16 characters, stable across syncs.
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+
+  // The calendar, `calendarAccounts/{calendar_account}/calendars/{calendar}`.
+  string calendar = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.field_behavior) = IMMUTABLE
+  ];
+
+  // What it is.
+  string title = 3 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.max_len = 500
+  ];
+
+  // When it starts.
+  google.protobuf.Timestamp start_time = 4 [(google.api.field_behavior) = REQUIRED];
+
+  // When it ends; after the start.
+  google.protobuf.Timestamp end_time = 5 [(google.api.field_behavior) = REQUIRED];
+
+  // IANA zone the times are written in. Defaults to the server's.
+  string time_zone = 6 [(google.api.field_behavior) = OPTIONAL];
+
+  // Whether it lasts whole days.
+  bool all_day = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Where.
+  string location = 8 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).string.max_len = 2000
+  ];
+
+  // Notes.
+  string notes = 9 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).string.max_len = 20000
+  ];
+
+  // A link, such as a video call.
+  string url = 10 [(google.api.field_behavior) = OPTIONAL];
+
+  // The calendar's category: `work`, `fitness`, `personal` or `focus`.
+  string category = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Whether it can be changed here.
+  bool writable = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Whether it is one occurrence of a repeating event.
+  bool recurring = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The iCalendar UID.
+  string uid = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The server's version. Updates and deletes with a stale etag are rejected.
+  string etag = 15 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request for GetEvent.
+message GetEventRequest {
+  // The event.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/Event",
+    (buf.validate.field).string.min_len = 1
+  ];
+}
+
+// Request for ListEvents.
+message ListEventsRequest {
+  // At most this many; default 100, at most 1000.
+  int32 page_size = 1 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 1000
+    }
+  ];
+
+  // From a previous response.
+  string page_token = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Conditions on `start_time`, `end_time` and `calendar`, joined with AND. Without a range,
+  // the next seven days.
+  string filter = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for ListEvents.
+message ListEventsResponse {
+  // The events, by start time.
+  repeated Event events = 1;
+
+  // For the next page; empty on the last.
+  string next_page_token = 2;
+}
+
+// Request for CreateEvent.
+message CreateEventRequest {
+  // The event: calendar, title, start and end are required.
+  Event event = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // Made by the client; it becomes the UID, so a retry finds the event already made.
+  string request_id = 2 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).string.max_len = 100
+  ];
+}
+
+// Request for UpdateEvent.
+message UpdateEventRequest {
+  // The event with the new values.
+  Event event = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // `title`, `location`, `notes`, `url`, `start_time` and/or `end_time`.
+  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request for DeleteEvent.
+message DeleteEventRequest {
+  // The event.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/Event",
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // Delete only if the server's version is still this one.
+  string etag = 2 [(google.api.field_behavior) = OPTIONAL];
+}

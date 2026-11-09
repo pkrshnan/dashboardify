@@ -4,7 +4,9 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { CalendarAccounts } from "../../../src/calendar/accounts";
+import { EventCache } from "../../../src/calendar/cache";
 import { CalDavClient } from "../../../src/calendar/caldav";
+import { CalendarSync } from "../../../src/calendar/sync";
 import type { CalendarSource } from "../../../src/home/calendar";
 import type { ConnectCalDav } from "../../../src/server/api/calendar-accounts";
 import { type AppDeps, createApp } from "../../../src/server/app";
@@ -42,6 +44,8 @@ export function useApi(
   let dir: string;
   let app: ReturnType<typeof createApp>;
   let settings: SettingsStore;
+  let cache: EventCache;
+  let sync: CalendarSync;
 
   beforeEach(async () => {
     dir = await mkdtemp(join(tmpdir(), "api-"));
@@ -49,6 +53,10 @@ export function useApi(
     settings = await SettingsStore.open(join(dir, "data"), new SecretBox(randomBytes(32)));
     const devices = new DeviceStore(settings);
     devices.add("test", "secret");
+    const accounts = new CalendarAccounts(settings);
+    const connect = fakeConnect(options.calDav);
+    cache = await EventCache.open(join(dir, "data"));
+    sync = new CalendarSync({ accounts, cache, connect, timeZone: "UTC", log: () => undefined });
     app = createApp(
       {
         vaultPath: join(dir, "vault"),
@@ -67,10 +75,7 @@ export function useApi(
           devices,
           envChange: options.envChange ?? {},
           envNames: options.envNames ?? [],
-          calendars: {
-            accounts: new CalendarAccounts(settings),
-            connect: fakeConnect(options.calDav),
-          },
+          calendars: { accounts, connect, cache, sync },
         },
         recompute: options.recompute,
         now: () => new Date("2026-11-03T12:00:00Z"),
@@ -79,6 +84,7 @@ export function useApi(
   });
 
   afterEach(async () => {
+    cache.close();
     settings.close();
     await rm(dir, { recursive: true, force: true });
   });
@@ -93,6 +99,12 @@ export function useApi(
     },
     get settings() {
       return settings;
+    },
+    get cache() {
+      return cache;
+    },
+    get sync() {
+      return sync;
     },
     async call(path: string, method = "GET", body?: unknown, token = "secret") {
       const response = await app.request(path, {

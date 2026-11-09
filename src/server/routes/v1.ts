@@ -1,9 +1,12 @@
 import type { DescService } from "@bufbuild/protobuf";
 import type { CalendarAccounts } from "../../calendar/accounts";
+import type { EventCache } from "../../calendar/cache";
+import type { CalendarSync } from "../../calendar/sync";
 import { ActivityService as ActivitySchema } from "../../gen/dashboardify/v1/activity_pb";
 import { CalendarAccountService as CalendarAccountSchema } from "../../gen/dashboardify/v1/calendar_account_pb";
 import { DayService as DaySchema } from "../../gen/dashboardify/v1/day_pb";
 import { DeviceService as DeviceSchema } from "../../gen/dashboardify/v1/device_pb";
+import { EventService as EventSchema } from "../../gen/dashboardify/v1/event_pb";
 import { HomeService as HomeSchema } from "../../gen/dashboardify/v1/home_pb";
 import { JournalService as JournalSchema } from "../../gen/dashboardify/v1/journal_pb";
 import { MessageService as MessageSchema } from "../../gen/dashboardify/v1/message_pb";
@@ -18,9 +21,14 @@ import type { DeviceStore } from "../../settings/devices";
 import type { TaskStore } from "../../vault/task-store";
 import type { Vault } from "../../vault/vault";
 import { type ActivityDeps, ActivityService } from "../api/activity";
-import { CalendarAccountService, type ConnectCalDav } from "../api/calendar-accounts";
+import {
+  CalendarAccountService,
+  type ConnectCalDav,
+  connectICloud,
+} from "../api/calendar-accounts";
 import { DaysService } from "../api/days";
 import { DevicesService } from "../api/devices";
+import { EventsService } from "../api/events";
 import { HomeService } from "../api/home";
 import { JournalService } from "../api/journal";
 import { MessagesService } from "../api/messages";
@@ -36,8 +44,16 @@ export interface SettingsDeps {
   /** The environment's values and the variables that set them, which win over Settings. */
   envChange: SettingsChange;
   envNames: string[];
-  /** Calendar accounts, and how to reach their server (the fake one in tests). */
-  calendars?: { accounts: CalendarAccounts; connect?: ConnectCalDav };
+  /**
+   * Calendar accounts, and how to reach their server (the fake one in tests). With the cache
+   * and the sync loop, events can be read and written too.
+   */
+  calendars?: {
+    accounts: CalendarAccounts;
+    connect?: ConnectCalDav;
+    cache?: EventCache;
+    sync?: Pick<CalendarSync, "syncCalendar">;
+  };
 }
 
 export interface ServiceRegistration {
@@ -76,20 +92,40 @@ export function v1Services(
     { schema: HomeSchema, implementation: new HomeService(home, now) },
     { schema: ActivitySchema, implementation: new ActivityService(activity) },
     { schema: VoiceSchema, implementation: voiceService },
-    ...(settings ? settingsServices(settings, now) : []),
+    ...(settings ? settingsServices(settings, now, vault.timeZone) : []),
   ];
 }
 
-function settingsServices(settings: SettingsDeps, now: () => Date): ServiceRegistration[] {
+function settingsServices(
+  settings: SettingsDeps,
+  now: () => Date,
+  timeZone: string,
+): ServiceRegistration[] {
   const { general, devices, envChange, envNames, calendars } = settings;
   return [
     { schema: SettingsSchema, implementation: new SettingsService(general, envChange, envNames) },
     { schema: DeviceSchema, implementation: new DevicesService(devices, now) },
-    ...(calendars
+    ...(calendars ? calendarServices(calendars, now, timeZone) : []),
+  ];
+}
+
+function calendarServices(
+  calendars: NonNullable<SettingsDeps["calendars"]>,
+  now: () => Date,
+  timeZone: string,
+): ServiceRegistration[] {
+  const { accounts, cache, sync } = calendars;
+  const connect = calendars.connect ?? connectICloud;
+  return [
+    {
+      schema: CalendarAccountSchema,
+      implementation: new CalendarAccountService(accounts, connect),
+    },
+    ...(cache && sync
       ? [
           {
-            schema: CalendarAccountSchema,
-            implementation: new CalendarAccountService(calendars.accounts, calendars.connect),
+            schema: EventSchema,
+            implementation: new EventsService({ accounts, cache, sync, connect, timeZone, now }),
           },
         ]
       : []),

@@ -210,6 +210,92 @@ export function writeEvent(event: NewEvent): string {
   return calendar.toString();
 }
 
+/** Fields UpdateEvent can change. An empty string clears a text field. */
+export interface EventChange {
+  title?: string;
+  location?: string;
+  notes?: string;
+  url?: string;
+  start?: Date;
+  end?: Date;
+  /** Times are written in the event's own IANA zone, else this one. */
+  timeZone: string;
+  now: Date;
+}
+
+export class NotEditable extends Error {}
+
+/**
+ * Changes one single event in place, keeping everything else the server stored (alarms,
+ * attendees, Apple's own properties). Bumps SEQUENCE and DTSTAMP. Recurring events and the
+ * times of all-day events are refused.
+ */
+export function editEvent(ics: string, change: EventChange): string {
+  const calendar = new ICAL.Component(ICAL.parse(ics));
+  const vevents = calendar.getAllSubcomponents("vevent");
+  const [vevent] = vevents;
+  if (
+    !vevent ||
+    vevents.length > 1 ||
+    vevent.hasProperty("rrule") ||
+    vevent.hasProperty("recurrence-id")
+  ) {
+    throw new NotEditable(
+      "Recurring events can't be changed here yet. Change it in Apple Calendar.",
+    );
+  }
+  setText(vevent, "summary", change.title);
+  setText(vevent, "location", change.location);
+  setText(vevent, "description", change.notes);
+  setText(vevent, "url", change.url);
+  if (change.start || change.end) {
+    setTimes(calendar, vevent, change);
+  }
+  vevent.updatePropertyWithValue("dtstamp", ICAL.Time.fromJSDate(change.now, true));
+  vevent.updatePropertyWithValue("last-modified", ICAL.Time.fromJSDate(change.now, true));
+  vevent.updatePropertyWithValue(
+    "sequence",
+    Number(vevent.getFirstPropertyValue("sequence") ?? 0) + 1,
+  );
+  return calendar.toString();
+}
+
+function setText(vevent: ICAL.Component, name: string, value: string | undefined): void {
+  if (value === undefined) {
+    return;
+  }
+  if (value === "") {
+    vevent.removeAllProperties(name);
+  } else {
+    vevent.updatePropertyWithValue(name, value);
+  }
+}
+
+function setTimes(calendar: ICAL.Component, vevent: ICAL.Component, change: EventChange): void {
+  const event = new ICAL.Event(vevent);
+  if (event.startDate.isDate) {
+    throw new NotEditable("All-day events' dates can't be changed here yet.");
+  }
+  const own = zoneName(event.startDate);
+  const zone = own && isIanaZone(own) ? own : change.timeZone;
+  const zones = new Map<string, ICAL.Timezone>();
+  for (const vtimezone of calendar.getAllSubcomponents("vtimezone")) {
+    const defined = new ICAL.Timezone(vtimezone);
+    zones.set(defined.tzid, defined);
+  }
+  const reader = { from: new Date(0), to: new Date(0), floatingZone: change.timeZone, zones };
+  const start = change.start ?? toInstant(event.startDate, reader);
+  const end = change.end ?? toInstant(event.endDate, reader);
+  vevent.removeAllProperties("dtstart");
+  vevent.removeAllProperties("dtend");
+  vevent.removeAllProperties("duration");
+  vevent.addProperty(zonedProperty("dtstart", start, zone));
+  vevent.addProperty(zonedProperty("dtend", end, zone));
+  if (!zones.has(zone)) {
+    calendar.addSubcomponent(vtimezone(zone, start, end));
+  }
+}
+
 function zonedProperty(name: string, at: Date, timeZone: string): ICAL.Property {
   const clock = wallClock(at, timeZone);
   const property = new ICAL.Property(name);

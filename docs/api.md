@@ -218,6 +218,29 @@ A review's body is `{"kind": "lifting"}`: one of `running`, `walking`, `volleyba
 frontmatter (see [vault format](vault-format.md)), the day is recomputed, and the workout is
 returned as it now stands.
 
+## Events
+
+| Method | Path | Operation |
+| --- | --- | --- |
+| GET | `/v1/events?filter=…` | List events from the sync cache, by start time |
+| GET | `/v1/events/{id}` | Read one |
+| POST | `/v1/events?requestId=…` | Create a single event on a writable calendar |
+| PATCH | `/v1/events/{id}?updateMask=title,startTime` | Change title, location, notes, url, start or end |
+| DELETE | `/v1/events/{id}` | Delete it |
+
+Reads never wait on iCloud. Writes go to iCloud before returning, then that calendar is synced.
+`requestId` becomes the event's UID, so a retried create returns the same event. The filter takes
+`start_time`, `end_time` and `calendar`, such as
+`end_time > "2026-11-10T00:00:00Z" AND start_time < "2026-11-17T00:00:00Z"`; without a range it
+lists the next seven days.
+
+| Error | When |
+| --- | --- |
+| `403 permission_denied` | The calendar is read-only |
+| `409 aborted` | It changed in Apple Calendar since you read it (stale `etag`) |
+| `400 failed_precondition` | A recurring event (change it in Apple Calendar), or iCloud refused the password |
+| `503 unavailable` | iCloud couldn't be reached |
+
 ## Updates, concurrency, and pagination
 
 Task and check-in PATCH requests accept an `updateMask` query parameter containing comma-separated

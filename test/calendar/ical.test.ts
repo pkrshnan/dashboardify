@@ -1,6 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
-import { type ReadOptions, readOccurrences, writeEvent } from "../../src/calendar/ical";
+import {
+  editEvent,
+  NotEditable,
+  type ReadOptions,
+  readOccurrences,
+  writeEvent,
+} from "../../src/calendar/ical";
 
 // Hand-written in the shapes iCloud and Outlook produce; not captured from a real account.
 async function fixture(name: string): Promise<string> {
@@ -237,3 +243,63 @@ describe("writeEvent", () => {
     expect(ics).not.toContain("DESCRIPTION");
   });
 });
+
+describe("editEvent", () => {
+  const now = new Date("2026-11-11T09:00:00Z");
+
+  test("changes the given fields and keeps everything else the server stored", async () => {
+    const ics = (await fixture("icloud-timed.ics")).replace(
+      "END:VEVENT",
+      "BEGIN:VALARM\nACTION:DISPLAY\nTRIGGER:-PT15M\nEND:VALARM\nEND:VEVENT",
+    );
+
+    const edited = editEvent(ics, {
+      title: "Physio, shoulder",
+      start: new Date("2026-11-12T19:00:00Z"),
+      end: new Date("2026-11-12T20:00:00Z"),
+      timeZone: "Europe/London",
+      now,
+    });
+    const [read] = readOccurrences(edited, window);
+
+    expect(read).toMatchObject({
+      title: "Physio, shoulder",
+      location: "Northside Clinic\n12 High St",
+      start: new Date("2026-11-12T19:00:00Z"),
+      timeZone: "America/Los_Angeles",
+    });
+    expect(edited).toContain("DTSTART;TZID=America/Los_Angeles:20261112T110000");
+    expect(edited).toContain("TRIGGER:-PT15M");
+    expect(edited).toContain("X-APPLE-TRAVEL-ADVISORY-BEHAVIOR:AUTOMATIC");
+    expect(edited).toContain("SEQUENCE:1");
+  });
+
+  test("an empty string clears a field", async () => {
+    const edited = editEvent(await fixture("icloud-timed.ics"), {
+      location: "",
+      timeZone: "UTC",
+      now,
+    });
+
+    expect(edited).not.toMatch(/^LOCATION/m);
+  });
+
+  test("refuses recurring events and the dates of all-day ones", async () => {
+    expect(() => editEvent(fixtureText.recurring, { title: "x", timeZone: "UTC", now })).toThrow(
+      NotEditable,
+    );
+    expect(() =>
+      editEvent(fixtureText.allDay, {
+        start: now,
+        end: new Date(now.getTime() + 1),
+        timeZone: "UTC",
+        now,
+      }),
+    ).toThrow(NotEditable);
+  });
+});
+
+const fixtureText = {
+  recurring: await fixture("icloud-recurring.ics"),
+  allDay: await fixture("icloud-all-day.ics"),
+};

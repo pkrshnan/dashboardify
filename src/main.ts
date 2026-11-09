@@ -55,7 +55,7 @@ if (import.meta.main) {
       devices,
       envChange,
       envNames: overrides,
-      calendars: { accounts },
+      calendars: { accounts, cache, sync: calendarSync },
     },
     vault,
     onSamples: (_stream, day) => scheduler.touchUtcDay(day),
