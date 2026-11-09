@@ -64,6 +64,7 @@ if (import.meta.main) {
   const app = createApp(config, {
     devices,
     tailnet,
+    setupCode: opened.setupCode,
     calendar: cacheSource(cache, accounts),
     settings: {
       general,

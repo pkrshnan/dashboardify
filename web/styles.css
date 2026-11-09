@@ -935,7 +935,50 @@ button.link {
 }
 
 .sign-in .error {
-  color: var(--now);
+  color: var(--bad);
+}
+
+.setup-line {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--fill);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--text-2);
+  white-space: pre-wrap;
+}
+
+.setup-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.setup-field input {
+  height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--line-3);
+  border-radius: 12px;
+  background: var(--fill);
+  color: var(--text);
+  font-size: 17px;
+  outline: none;
+}
+
+.setup-field input:focus {
+  border-color: var(--control);
+}
+
+.setup-field .setup-code {
+  height: 56px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 22px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 /* ---- Phone ---- */

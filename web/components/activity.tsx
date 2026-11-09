@@ -42,7 +42,7 @@ interface Props {
   token: Token;
   timeZone: string;
   today: string;
-  onUnauthorized: () => void;
+  onUnauthorized: (setup: boolean) => void;
 }
 
 export function Activity({ token, timeZone, today, onUnauthorized }: Props) {
@@ -56,7 +56,7 @@ export function Activity({ token, timeZone, today, onUnauthorized }: Props) {
       setDays(await fetchActivity(token, start, end));
     } catch (err) {
       if (err instanceof Unauthorized) {
-        onUnauthorized();
+        onUnauthorized(err.setup);
       }
     }
   }, [token, start, end, onUnauthorized]);

@@ -52,7 +52,7 @@ set +a
 bun run dev
 ```
 
-Open [localhost:8787](http://localhost:8787) and enter your device token. Your vault and `.env`
+Open [localhost:8787](http://localhost:8787) and enter your device token. Without `INGEST_TOKENS`, the first start prints a one-time setup code instead ("No devices yet. Open … and enter setup code 4KQ7-MZ2D"); enter it on the "Set up this device" screen to add this browser. Add more devices later with `bun run settings devices add <name>`. Your vault and `.env`
 are git-ignored. See [development notes](docs/development.md) for checks, demo options, and hosting.
 
 ## How it works

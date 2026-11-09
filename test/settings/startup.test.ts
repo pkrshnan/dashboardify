@@ -97,4 +97,21 @@ describe("openSettings", () => {
 
     await expect(start()).rejects.toThrow("a rotate-key was interrupted");
   });
+
+  test("a fresh install prints a setup code; one with a device or tailnet sign-in doesn't", async () => {
+    const fresh = await start();
+    const printed = log.find((line) => line.includes("setup code"));
+    fresh.devices.add("Mac");
+    log = [];
+    const later = await start();
+    const tailnet = await start({ TAILSCALE_PROXY: "100.64.0.1", TAILNET_USERS: "you@github" });
+
+    expect(printed).toMatch(
+      /^No devices yet\. Open http:\/\/localhost:8787 and enter setup code [2-9A-Z]{4}-[2-9A-Z]{4} \(valid 15 minutes\)\.$/,
+    );
+    expect(fresh.setupCode.active()).toBe(true);
+    expect(log.some((line) => line.includes("setup code"))).toBe(false);
+    expect(later.setupCode.active()).toBe(false);
+    expect(tailnet.setupCode.active()).toBe(false);
+  });
 });

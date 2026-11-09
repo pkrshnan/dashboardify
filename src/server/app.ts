@@ -7,6 +7,7 @@ import { RawStore } from "../health/raw-store";
 import { type CalendarSource, noCalendar } from "../home/calendar";
 import { HealthHistory } from "../home/health-history";
 import type { DeviceMatcher } from "../settings/devices";
+import type { SetupCode } from "../settings/setup-code";
 import { TaskStore } from "../vault/task-store";
 import { Vault } from "../vault/vault";
 import type { ActivityDeps } from "./api/activity";
@@ -29,6 +30,8 @@ export interface AppDeps {
   devices: DeviceMatcher;
   /** settings.db, for the Settings and Device APIs and a live tasks inbox. */
   settings?: SettingsDeps;
+  /** The first-run setup code, accepted only to add a device. */
+  setupCode?: SetupCode;
   /** Tailnet sign-in as it is now; read per request. Defaults to `config.tailnet`. */
   tailnet?: () => TailnetAuth | null;
   vault?: Vault;
@@ -61,7 +64,7 @@ export function createApp(config: Config, deps: AppDeps): Hono<AuthEnv> {
 
   const tailnet = deps.tailnet ?? (() => config.tailnet ?? null);
   const api = new Hono<AuthEnv>();
-  api.use("*", bearerAuth(deps.devices, tailnet));
+  api.use("*", bearerAuth(deps.devices, tailnet, deps.setupCode));
   api.route("/ingest/journal", journalRoutes(vault));
   api.route("/ingest/messages", messageRoutes(vault));
   api.route("/ingest/samples", sampleRoutes(raw, deps.onSamples));
@@ -77,7 +80,7 @@ export function createApp(config: Config, deps: AppDeps): Hono<AuthEnv> {
     v1Services(vault, tasks, raw, home, activity, deps.now, deps.onSamples, deps.settings),
   );
   const modern = new Hono<AuthEnv>();
-  modern.use("*", bearerAuth(deps.devices, tailnet));
+  modern.use("*", bearerAuth(deps.devices, tailnet, deps.setupCode));
   modern.route("/", v1);
   app.route("/", webRoutes());
   app.route("/", modern);

@@ -16,6 +16,7 @@ import { DeviceStore } from "./devices";
 import { fromEnv, importEnvSettings, importEnvTokens, warnOverrides } from "./env-import";
 import { loadKey } from "./key";
 import { SecretBox } from "./secret-box";
+import { SetupCode } from "./setup-code";
 import { KeyMismatch, SettingsStore } from "./store";
 
 type Env = Record<string, string | undefined>;
@@ -30,6 +31,8 @@ export interface Opened {
   /** Variables still set in the environment, which win over Settings, and their values. */
   overrides: string[];
   envChange: SettingsChange;
+  /** Issued only on a fresh install; inactive otherwise. */
+  setupCode: SetupCode;
 }
 
 export async function openSettings(
@@ -48,11 +51,15 @@ export async function openSettings(
   warnOverrides(overrides, log);
   const inForce = (): InForce => ({ ...general.get(), ...change });
   const config = buildConfig(startup, inForce());
+  const setupCode = new SetupCode();
   if (devices.list().length === 0 && !config.tailnet) {
-    log("No devices in Settings and no tailnet sign-in: every API request will be rejected.");
+    const code = setupCode.issue();
+    log(
+      `No devices yet. Open http://localhost:${config.port} and enter setup code ${code} (valid 15 minutes).`,
+    );
   }
   const tailnet = liveTailnet(inForce);
-  return { store, devices, general, config, tailnet, overrides, envChange: change };
+  return { store, devices, general, config, tailnet, overrides, envChange: change, setupCode };
 }
 
 /** Opens settings.db, saying what to do if a rotate-key stopped before renaming the new key. */
