@@ -6,6 +6,7 @@ import { DerivedStore } from "../../src/health/derived-store";
 import type { HomeView } from "../../src/home/types";
 import { createApp } from "../../src/server/app";
 import type { Config } from "../../src/server/config";
+import { tokenDevices } from "./devices";
 
 const TOKEN = "test-token-0123456789";
 const TZ = "Europe/London";
@@ -21,7 +22,7 @@ beforeEach(async () => {
     healthRawPath: join(dir, "raw"),
     healthDerivedPath: join(dir, "derived"),
     tasksInbox: "Inbox.md",
-    tokens: new Map([["mac", TOKEN]]),
+    dataPath: join(dir, "data"),
   };
   await Bun.write(
     join(config.vaultPath, "Inbox.md"),
@@ -41,7 +42,7 @@ async function getHome(app: ReturnType<typeof createApp>): Promise<HomeView> {
 
 describe("GET /api/home", () => {
   test("needs a token", async () => {
-    const app = createApp(config, { now: ninePastNine });
+    const app = createApp(config, { devices: tokenDevices({ mac: TOKEN }), now: ninePastNine });
     expect((await app.request("/api/home")).status).toBe(401);
   });
 
@@ -67,7 +68,9 @@ describe("GET /api/home", () => {
           },
         ]),
     };
-    const view = await getHome(createApp(config, { now: ninePastNine, calendar }));
+    const view = await getHome(
+      createApp(config, { devices: tokenDevices({ mac: TOKEN }), now: ninePastNine, calendar }),
+    );
 
     expect(view.date).toBe("2026-11-03");
     expect(view.sentence).toBe(
@@ -103,14 +106,16 @@ describe("GET /api/home", () => {
   });
 
   test("works with no health data and no calendar", async () => {
-    const view = await getHome(createApp(config, { now: ninePastNine }));
+    const view = await getHome(
+      createApp(config, { devices: tokenDevices({ mac: TOKEN }), now: ninePastNine }),
+    );
     expect(view.next).toBeNull();
     expect(view.health.every((m) => m.value === null)).toBe(true);
     expect(view.days).toHaveLength(7);
   });
 
   test("picks up a rewritten day without a restart", async () => {
-    const app = createApp(config, { now: ninePastNine });
+    const app = createApp(config, { devices: tokenDevices({ mac: TOKEN }), now: ninePastNine });
     const derived = new DerivedStore(config.healthDerivedPath);
     await derived.write("days", "2026-11-03", { recovery_pct: 50 });
     expect((await getHome(app)).health[0]?.value).toBe("50");
@@ -122,7 +127,9 @@ describe("GET /api/home", () => {
 
 describe("web files", () => {
   test("serves the manifest's icons without a token", async () => {
-    const res = await createApp(config).request("/icon.svg");
+    const res = await createApp(config, { devices: tokenDevices({ mac: TOKEN }) }).request(
+      "/icon.svg",
+    );
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toBe("image/svg+xml");
   });

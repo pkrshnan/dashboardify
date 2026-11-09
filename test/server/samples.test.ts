@@ -6,6 +6,7 @@ import { gzipSync } from "node:zlib";
 import { parquetReadObjects } from "hyparquet";
 import { createApp } from "../../src/server/app";
 import type { Config } from "../../src/server/config";
+import { tokenDevices } from "./devices";
 
 const TOKEN = "test-token-0123456789";
 const T0 = Date.parse("2026-11-02T00:00:00Z");
@@ -21,9 +22,9 @@ beforeEach(async () => {
     healthRawPath: join(dir, "health-raw"),
     healthDerivedPath: join(dir, "health-derived"),
     tasksInbox: "Inbox.md",
-    tokens: new Map([["iphone", TOKEN]]),
+    dataPath: join(dir, "data"),
   };
-  app = createApp(config);
+  app = createApp(config, { devices: tokenDevices({ iphone: TOKEN }) });
 });
 afterEach(() => rm(dir, { recursive: true, force: true }));
 

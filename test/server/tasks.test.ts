@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createApp } from "../../src/server/app";
 import type { Config } from "../../src/server/config";
+import { tokenDevices } from "./devices";
 
 type Json = Record<string, unknown>;
 
@@ -21,9 +22,9 @@ beforeEach(async () => {
     healthRawPath: join(dir, "..", "raw-unused"),
     healthDerivedPath: join(dir, "..", "derived-unused"),
     tasksInbox: "Inbox.md",
-    tokens: new Map([["iphone", TOKEN]]),
+    dataPath: join(dir, "data"),
   };
-  app = createApp(config);
+  app = createApp(config, { devices: tokenDevices({ iphone: TOKEN }) });
 });
 afterEach(async () => {
   setSystemTime();

@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createApp } from "../../src/server/app";
 import type { Config } from "../../src/server/config";
+import { tokenDevices } from "./devices";
 
 const TOKEN = "test-token-0123456789";
 let dir: string;
@@ -18,12 +19,11 @@ beforeEach(async () => {
     healthRawPath: join(dir, "..", "raw-unused"),
     healthDerivedPath: join(dir, "..", "derived-unused"),
     tasksInbox: "Inbox.md",
-    tokens: new Map([
-      ["iphone", TOKEN],
-      ["mac", "another-token-abcdefgh"],
-    ]),
+    dataPath: join(dir, "data"),
   };
-  app = createApp(config);
+  app = createApp(config, {
+    devices: tokenDevices({ iphone: TOKEN, mac: "another-token-abcdefgh" }),
+  });
 });
 afterEach(() => rm(dir, { recursive: true, force: true }));
 

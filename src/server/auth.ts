@@ -1,26 +1,24 @@
-import { timingSafeEqual } from "node:crypto";
 import type { Context, MiddlewareHandler } from "hono";
 import { getConnInfo } from "hono/bun";
+import type { DeviceMatcher } from "../settings/devices";
 import { LOGIN_HEADER, type TailnetAuth, tailnetUser } from "./tailnet";
 
-/** Hono context type for authenticated routes: the matched device name is available. */
+/** Hono context type for authenticated routes: the matched device id is available. */
 // biome-ignore lint/style/useNamingConvention: `Variables` is the key Hono expects.
 export type AuthEnv = { Variables: { device: string } };
 
 /**
- * Accept `Authorization: Bearer <token>` for any configured device, or a tailnet user signed in
- * through Tailscale Serve (see tailnet.ts), and set the device name on the context.
+ * Accept `Authorization: Bearer <token>` for any device in Settings, or a tailnet user signed in
+ * through Tailscale Serve (see tailnet.ts), and set the device id on the context.
  */
 export function bearerAuth(
-  tokens: Map<string, string>,
+  devices: DeviceMatcher,
   tailnet: TailnetAuth | null = null,
 ): MiddlewareHandler<AuthEnv> {
-  const known = [...tokens].map(([device, token]) => ({ device, token: Buffer.from(token) }));
-
   return async (c, next) => {
     const login = tailnetUser(tailnet, peerAddress(c), c.req.header(LOGIN_HEADER));
     const device =
-      matchDevice(known, bearerToken(c.req.header("authorization"))) ??
+      devices.match(bearerToken(c.req.header("authorization"))) ??
       (login ? `tailnet:${login}` : undefined);
     if (!device) {
       return c.json({ error: "unauthorized" }, 401);
@@ -30,24 +28,9 @@ export function bearerAuth(
   };
 }
 
-function bearerToken(header: string | undefined): Buffer {
+function bearerToken(header: string | undefined): string {
   const prefix = "Bearer ";
-  return Buffer.from(header?.startsWith(prefix) ? header.slice(prefix.length) : "");
-}
-
-/** Compare against every token, so the time taken doesn't reveal which device matched. */
-function matchDevice(
-  known: { device: string; token: Buffer }[],
-  given: Buffer,
-): string | undefined {
-  let match: string | undefined;
-  for (const { device, token } of known) {
-    const isEqual = token.length === given.length && timingSafeEqual(token, given);
-    if (isEqual) {
-      match = device;
-    }
-  }
-  return match;
+  return header?.startsWith(prefix) ? header.slice(prefix.length) : "";
 }
 
 /** The connecting address, or undefined when the server doesn't say (as in tests without one). */

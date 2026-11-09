@@ -32,8 +32,13 @@ storage paths, time zone, port, task inbox, and sign-in settings. Follow the
 [README](../README.md#getting-started) to load the configuration and start the server locally.
 
 The web app is served at `/` by the same process as the API. Away from Tailscale, it asks for a
-device token from `INGEST_TOKENS`. Behind Tailscale Serve, configure `TAILSCALE_PROXY` and
+device token. Devices are kept, hashed, in `$DATA_PATH/settings.db` (default `./data`); the first
+start imports them from `INGEST_TOKENS`. Behind Tailscale Serve, configure `TAILSCALE_PROXY` and
 `TAILNET_USERS` to use tailnet sign-in.
+
+`DATA_PATH` also holds `secret.key`, which seals secrets in `settings.db`. Back up `DATA_PATH`
+without `secret.key`, and keep the key in a password manager: a backup that holds both can open
+every secret.
 
 The repository's `Dockerfile` is built by the home server's compose project in the private
 `pkrshnan/homeserver` repository. Its deployment configuration lives there.

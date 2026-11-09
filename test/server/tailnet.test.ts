@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { createApp } from "../../src/server/app";
 import type { Config } from "../../src/server/config";
 import { defaultGateway, parseTailnet, tailnetUser } from "../../src/server/tailnet";
+import { tokenDevices } from "./devices";
 
 const PROXY = "172.18.0.1";
 const auth = { proxy: PROXY, users: new Set(["pkrshnan@github"]) };
@@ -56,13 +57,15 @@ describe("API sign-in through Tailscale", () => {
       healthRawPath: join(dir, "raw"),
       healthDerivedPath: join(dir, "derived"),
       tasksInbox: "Inbox.md",
-      tokens: new Map([["healthstrap", "healthstrap-token-0123"]]),
+      dataPath: join(dir, "data"),
       tailnet: auth,
     };
     // Bun passes its server to fetch; requestIP is how Hono reads the peer address.
     const server = { requestIP: () => ({ address: peer, family: "IPv4", port: 50000 }) };
     const headers: Record<string, string> = login ? { "tailscale-user-login": login } : {};
-    const res = await createApp(config).request("/api/tasks", { headers }, server);
+    const res = await createApp(config, {
+      devices: tokenDevices({ healthstrap: "healthstrap-token-0123" }),
+    }).request("/api/tasks", { headers }, server);
     await rm(dir, { recursive: true, force: true });
     return res.status;
   }
