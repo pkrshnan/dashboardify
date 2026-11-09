@@ -27,7 +27,8 @@ The screenshots are rendered from the `.dc.html` files with sample data.
 2. **Calendar and tasks.** A Day/Week toggle.
    - Day: a timeline from an hour before now to 22:00, with a red line for now. Events are blocks; the next event is a little brighter. Events under about 50 minutes take one line: title, start time and detail, cut with an ellipsis. Timed tasks (`⏰ HH:MM`) are reminders, drawn as dashed pills at their time in a lane to the right of the events.
    - Week: a rolling week from today. On desktop it has seven columns, with dated tasks at the top of each column. On the phone it is a strip of tappable days, then the agenda for the chosen day. Reminders have hollow markers and events have filled ones.
-   - Task list with a quick-add box, grouped into Overdue, Today, This week and Someday. It is a side column on desktop and its own section on the phone.
+   - The capture box, under the heading: one line for events and reminders. As you type it highlights the time (and a "with Sam"), shows Event or Reminder with the reason, and a preview line with the title, the day and time, and where it will go. A switch overrides the kind until the box is cleared. Return adds it; the line just added shows under the box with Undo. `N` focuses it on desktop. On the phone the switch sits under the text with an Add button. Until a calendar is connected, Event is off and everything becomes a reminder in the inbox.
+   - Task list, grouped into Overdue, Today, This week and Someday. It is a side column on desktop and its own section on the phone.
 3. **Health trends.** A 2W/1M/3M/1Y range switch, with the date range shown once next to the heading, then "Synced 14:02" (the newest strap sample). Past two hours it reads "Synced 5h ago" in orange; on the phone it takes its own line.
 
 ## One home per item
@@ -57,7 +58,7 @@ Dark mode only for now (`color-scheme: dark`). Colours are Apple's dark-mode sys
 | text | `#F5F5F7` | primary text |
 | text-2 | `#A1A1A6` | labels, past event titles |
 | text-3 | `#8E8E93` | dimmest text allowed (about 6:1 on the background) |
-| fill | `#1C1C1E` | segmented control track, quick-add field, buttons |
+| fill | `#1C1C1E` | segmented control track, capture box, buttons |
 | line-2 | `#2C2C2E` | dividers and hour lines |
 | line-3 | `#3A3A3C` | button outlines, reminder guide lines |
 | control | `#636366` | selected segment, checkbox rings, reminder outlines; never text |

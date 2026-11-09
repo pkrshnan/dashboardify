@@ -1,4 +1,4 @@
-// Calendar and tasks, with a Day/Week toggle. On desktop the task list sits beside the
+// Calendar and tasks, with a Day/Week toggle and the capture box under the heading. On desktop the task list sits beside the
 // calendar; on the phone it is its own section below.
 
 import type { ComponentChildren } from "preact";
@@ -16,11 +16,13 @@ interface Props {
   nowMin: number;
   isPhone: boolean;
   onComplete: (id: string) => void;
+  /** The capture box, under the heading. */
+  capture?: ComponentChildren;
   /** The task list, beside the calendar on desktop. */
   aside?: ComponentChildren;
 }
 
-export function Calendar({ view, nowMin, isPhone, onComplete, aside }: Props) {
+export function Calendar({ view, nowMin, isPhone, onComplete, capture, aside }: Props) {
   const [mode, setMode] = useState<View>("day");
   const today = view.days[0];
   const last = view.days.at(-1);
@@ -39,6 +41,7 @@ export function Calendar({ view, nowMin, isPhone, onComplete, aside }: Props) {
           onChange={setMode}
         />
       </div>
+      {capture}
       <div class="calendar-grid">
         <div>
           {mode === "day" && today && (

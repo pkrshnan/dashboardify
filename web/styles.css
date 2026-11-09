@@ -12,6 +12,8 @@
   --control: #636366;
   --warn: #ff9f0a;
   --now: #ff453a;
+  --bad: #ff453a;
+  --link: #8ab4ff;
   --gutter: 64px;
 }
 
@@ -208,6 +210,241 @@ h2 {
 .segmented button[aria-pressed="true"] {
   background: var(--control);
   color: var(--text);
+}
+
+/* ---- Capture box ---- */
+
+.capture-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.capture {
+  border-radius: 14px;
+  background: var(--fill);
+  border: 1px solid var(--line-2);
+}
+
+.capture.kind-reminder {
+  border: 1px dashed var(--text-3);
+}
+
+.capture-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 60px;
+  padding: 0 10px 0 18px;
+}
+
+.capture-icon {
+  flex: none;
+  color: var(--text-3);
+}
+
+.capture.kind-reminder .capture-icon {
+  color: var(--text-2);
+}
+
+.capture-field {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 24px;
+  font-size: 17px;
+  line-height: 24px;
+}
+
+.capture-mirror,
+.capture-field input {
+  position: absolute;
+  inset: 0;
+  white-space: pre;
+  overflow: hidden;
+}
+
+.capture-mirror {
+  pointer-events: none;
+}
+
+.capture-field input {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--text);
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.capture-field input::placeholder {
+  color: var(--text-3);
+}
+
+.capture-mirror span {
+  border-radius: 3px;
+}
+
+.capture.kind-reminder .mark-when {
+  outline: 1px dashed var(--text-2);
+  outline-offset: 2px;
+}
+
+.mark-who {
+  text-decoration: underline dotted var(--text-3);
+  text-underline-offset: 5px;
+}
+
+.capture-kind {
+  display: flex;
+  flex: none;
+  margin: 0;
+  border: 0;
+  min-width: 0;
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 3px;
+}
+
+.capture-kind button {
+  height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-2);
+}
+
+.capture-kind button[aria-pressed="true"] {
+  background: var(--control);
+  color: var(--text);
+}
+
+.capture-kind button:disabled {
+  cursor: not-allowed;
+  color: var(--line-3);
+}
+
+.capture-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 18px 12px;
+  border-top: 1px solid var(--line-2);
+  font-size: 15px;
+  color: var(--text-2);
+}
+
+.capture-preview-main,
+.capture-added {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.capture-title {
+  max-width: 360px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.capture-title.muted {
+  color: var(--text-3);
+  font-weight: 400;
+}
+
+.capture-preview .muted,
+.capture-reason,
+.capture-note {
+  font-size: 13px;
+}
+
+.capture-reason {
+  color: var(--text-3);
+}
+
+.capture-spacer {
+  flex: 1;
+}
+
+.capture-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px 10px;
+}
+
+.capture-add {
+  height: 44px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 22px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.capture-add:disabled {
+  background: var(--line-3);
+  color: var(--text-3);
+  cursor: default;
+}
+
+.capture-added {
+  height: 44px;
+  border-bottom: 1px solid var(--line-2);
+  font-size: 15px;
+}
+
+.capture-added-mark {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 6px;
+  border: 1.5px dashed var(--text-2);
+}
+
+.capture-added-title {
+  font-weight: 500;
+}
+
+.capture-added .muted {
+  font-size: 13px;
+}
+
+.muted-2 {
+  color: var(--text-2);
+}
+
+.capture-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.capture-note.bad {
+  color: var(--bad);
+}
+
+button.link {
+  height: 32px;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: var(--link);
+  font-size: 13px;
+  cursor: pointer;
 }
 
 /* ---- Checkbox rings ---- */
@@ -533,12 +770,6 @@ h2 {
   outline: none;
 }
 
-.quick-add-note {
-  font-size: 13px;
-  color: var(--text-3);
-  margin-top: -16px;
-}
-
 .task-group h3 {
   margin: 0 0 2px;
   font-size: 13px;
@@ -682,6 +913,24 @@ h2 {
 @media (max-width: 899px) {
   :root {
     --gutter: 20px;
+  }
+
+  .capture-row {
+    height: 56px;
+    padding: 0 6px 0 14px;
+    gap: 10px;
+  }
+
+  .capture-hint {
+    display: none;
+  }
+
+  .capture-preview {
+    padding: 10px 14px 12px;
+  }
+
+  .capture-kind button {
+    height: 38px;
   }
 
   h2 {
