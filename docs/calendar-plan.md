@@ -163,9 +163,8 @@ flowchart LR
   `ical.js` resolves `VTIMEZONE` blocks; floating times are read in the server's zone.
 - New events are written with `TZID` set to `settings.time_zone` (S3; `TZ_NAME` still overrides it)
   and a matching `VTIMEZONE`.
-- All-day events are `VALUE=DATE` spans. The home screen has no all-day row (design README: one
-  home per item), so v1 shows them as hollow markers in the Week view's dated-task area, labelled
-  as events, and leaves them off the Day timeline. The capture box never creates all-day events;
+- All-day events are `VALUE=DATE` spans. They show in a row above the Day timeline (never on
+  it), and as hollow markers in the Week view's dated-task area, labelled as events. The capture box never creates all-day events;
   "Dentist Friday" with no time stays a dated task. Revisit with the design.
 - An event over midnight is split per day, as `agenda.ts` already does with `endMin` past 1440.
 
@@ -794,8 +793,8 @@ Not in v1. Each is one PR on top of C12 and needs no migration:
 
 ## Open questions
 
-- [ ] All-day events: Week markers only, or a place on the Day view too? This touches the "one
-      home per item" rule.
+- [x] All-day events: Week markers only, or a place on the Day view too? A row above the Day
+      timeline (C13).
 - [ ] Should the box create events with no time ("Dentist Friday") as all-day events, or keep
       them as dated tasks as planned?
 - [ ] Poll every 2 minutes for CalDAV: fast enough, or should the home screen trigger a sync when

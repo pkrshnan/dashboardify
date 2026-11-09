@@ -1,8 +1,8 @@
-// The Day view: hour lines from an hour before now to 22:00, event blocks on the left, timed
-// tasks as dashed pills in a lane on the right, and a red line for now. An event the capture box
-// is still saving has a stronger fill and a ring.
+// The Day view: all-day events in a row on top, then hour lines from an hour before now to 22:00,
+// event blocks on the left, timed tasks as dashed pills in a lane on the right, and a red line for
+// now. An event the capture box is still saving has a stronger fill and a ring.
 
-import type { DayAgenda } from "../../src/home/types";
+import type { AgendaEvent, DayAgenda } from "../../src/home/types";
 import { alpha, CATEGORY, TEXT, TEXT_2, TEXT_3 } from "../lib/colors";
 import { hourLabel } from "../lib/format";
 import { type Block, hourRange, layoutBlocks, layoutPills, type Pill } from "../lib/timeline";
@@ -26,29 +26,61 @@ export function DayTimeline({ day, nowMin, isPhone, onComplete }: Props) {
   const nowTop = ((nowMin - range.startHour * 60) / 60) * hourPx;
   const eventWidth = isPhone ? 52 : 62;
   return (
-    <div class="timeline" style={{ height: `${(range.endHour - range.startHour) * hourPx}px` }}>
-      {hours.map((h) => (
-        <div key={h}>
-          <span class="hour-label" style={{ top: `${(h - range.startHour) * hourPx}px` }}>
-            {hourLabel(h)}
-          </span>
-          <div class="hour-line" style={{ top: `${(h - range.startHour) * hourPx}px` }} />
-        </div>
-      ))}
-      {pills.map((p) => (
-        <div key={`g${p.reminder.id}`} class="reminder-guide" style={{ top: `${p.lineTop}px` }} />
-      ))}
-      {blocks.map((b, i) => (
-        <EventBlock key={`${b.event.start}-${i}`} block={b} width={eventWidth} isPhone={isPhone} />
-      ))}
-      {pills.map((p) => (
-        <ReminderPill key={p.reminder.id} pill={p} isPhone={isPhone} onComplete={onComplete} />
-      ))}
-      {blocks.length === 0 && pills.length === 0 && (
-        <div class="empty-day">Nothing on the calendar.</div>
-      )}
-      {nowTop >= 0 && <div class="now-line" style={{ top: `${nowTop}px` }} />}
-    </div>
+    <>
+      <AllDayRow events={day.allDay} />
+      <div class="timeline" style={{ height: `${(range.endHour - range.startHour) * hourPx}px` }}>
+        {hours.map((h) => (
+          <div key={h}>
+            <span class="hour-label" style={{ top: `${(h - range.startHour) * hourPx}px` }}>
+              {hourLabel(h)}
+            </span>
+            <div class="hour-line" style={{ top: `${(h - range.startHour) * hourPx}px` }} />
+          </div>
+        ))}
+        {pills.map((p) => (
+          <div key={`g${p.reminder.id}`} class="reminder-guide" style={{ top: `${p.lineTop}px` }} />
+        ))}
+        {blocks.map((b, i) => (
+          <EventBlock
+            key={`${b.event.start}-${i}`}
+            block={b}
+            width={eventWidth}
+            isPhone={isPhone}
+          />
+        ))}
+        {pills.map((p) => (
+          <ReminderPill key={p.reminder.id} pill={p} isPhone={isPhone} onComplete={onComplete} />
+        ))}
+        {blocks.length === 0 && pills.length === 0 && day.allDay.length === 0 && (
+          <div class="empty-day">Nothing on the calendar.</div>
+        )}
+        {nowTop >= 0 && <div class="now-line" style={{ top: `${nowTop}px` }} />}
+      </div>
+    </>
+  );
+}
+
+/** All-day events above the hours: one bar each in its calendar's colour, never on the timeline. */
+function AllDayRow({ events }: { events: AgendaEvent[] }) {
+  if (events.length === 0) {
+    return null;
+  }
+  return (
+    <ul class="all-day-row" aria-label="All day">
+      {events.map((e) => {
+        const color = CATEGORY[e.category];
+        return (
+          <li
+            key={e.event ?? e.title}
+            class="all-day-event"
+            style={{ background: alpha(color, 0.15), borderLeft: `3px solid ${color}` }}
+          >
+            <span class="ell event-title">{e.title}</span>
+            <span class="muted">All day</span>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

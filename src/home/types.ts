@@ -85,7 +85,7 @@ export interface DayAgenda {
   reminders: Reminder[];
   /** Untimed tasks due that day, shown as hollow markers in the week view. */
   dated: string[];
-  /** All-day events that day: Week view markers only, never on the Day timeline. */
+  /** All-day events that day: a row above the Day timeline, and markers in the Week view. */
   allDay: AgendaEvent[];
 }
 
