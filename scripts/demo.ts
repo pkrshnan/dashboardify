@@ -118,7 +118,10 @@ function fakeCalendar(): CalendarSource {
   const all: CalendarEvent[] = [...events, trip];
   return {
     events: (from, to) => Promise.resolve(all.filter((e) => e.start < to && e.end > from)),
-    status: () => ({ lastSyncTime: new Date(Date.now() - 2 * 60_000).toISOString(), hasErrors: false }),
+    status: () => ({
+      lastSyncTime: new Date(Date.now() - 2 * 60_000).toISOString(),
+      hasErrors: false,
+    }),
   };
 }
 
