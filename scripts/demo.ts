@@ -1,7 +1,8 @@
 // Serves the web app with made-up data, for working on the UI without a vault or a strap:
 //   bun run demo   then open http://localhost:8788 and sign in with "demo-token-0123456789"
-// It writes a temporary vault and a year of computed health rows, and runs the calendar against
-// the in-memory iCloud the tests use, so the capture box can add, show and undo real events.
+// It writes a temporary vault, a year of computed health rows and three months of workouts and
+// walks (demo-activity.ts), and runs the calendar against the in-memory iCloud the tests use, so
+// the capture box can add, show and undo real events.
 
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -13,6 +14,7 @@ import { writeEvent } from "../src/calendar/ical";
 import { cacheSource } from "../src/calendar/source";
 import { CalendarSync } from "../src/calendar/sync";
 import { DerivedStore } from "../src/health/derived-store";
+import { RawStore } from "../src/health/raw-store";
 import type { Category } from "../src/home/types";
 import { Photon } from "../src/places/photon";
 import { CalendarAccountService, type ConnectCalDav } from "../src/server/api/calendar-accounts";
@@ -23,9 +25,11 @@ import { DeviceStore } from "../src/settings/devices";
 import { loadKey } from "../src/settings/key";
 import { SecretBox } from "../src/settings/secret-box";
 import { SettingsStore } from "../src/settings/store";
+import { Vault } from "../src/vault/vault";
 import { FakeCalDav } from "../test/calendar/fake-caldav";
 import { DISHOOM, FakePhoton } from "../test/places/fake-photon";
 import homepage from "../web/index.html";
+import { DemoActivity } from "./demo-activity";
 
 /** Which demo calendar holds each category's events. */
 const CALENDAR_FOR: Record<Category, string> = {
@@ -52,11 +56,22 @@ const config: Config = {
 };
 
 await Bun.write(join(config.vaultPath, "Inbox.md"), tasks().join("\n"));
-await writeHealth(new DerivedStore(config.healthDerivedPath));
+const derived = new DerivedStore(config.healthDerivedPath);
+await writeHealth(derived);
 
 // DEMO_TIME=09:12 pins the server's clock to that time today, for screenshots.
 const pinned = process.env.DEMO_TIME?.split(":").map(Number);
 const now = pinned ? () => new Date(at(0, (pinned[0] ?? 0) + (pinned[1] ?? 0) / 60)) : undefined;
+// Before sync.json, since storing the workouts' heart rate records a sync of its own.
+const activity = new DemoActivity({
+  derived,
+  raw: new RawStore(config.healthRawPath),
+  vault: new Vault(config.vaultPath, TIME_ZONE),
+  timeZone: TIME_ZONE,
+  today,
+  now: (now?.() ?? new Date()).getTime(),
+});
+await activity.write();
 // DEMO_SYNC_MIN=300 makes the strap data that many minutes old (default 12), to see it lag.
 const syncAt = (now?.() ?? new Date()).getTime() - Number(process.env.DEMO_SYNC_MIN ?? 12) * 60_000;
 await Bun.write(
@@ -73,6 +88,7 @@ const calendars = await demoCalendars();
 const app = createApp(config, {
   devices,
   now,
+  recompute: activity.recompute,
   calendar: cacheSource(calendars.cache, calendars.accounts),
   settings: {
     general: new GeneralSettings(settings),
@@ -313,6 +329,7 @@ async function writeHealth(store: DerivedStore): Promise<void> {
       zone3_min: (10 + 5 * noise() * 2) * sofar,
       zone4_min: 4 * sofar,
       zone5_min: 1 * sofar,
+      worn_min: Math.round((900 + 40 * Math.sin(back / 3)) * sofar),
     });
   }
 }

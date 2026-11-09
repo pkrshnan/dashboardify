@@ -15,7 +15,9 @@ git check-ignore vault
 ```
 
 The home screen lives in `web/` and is bundled by Bun. `bun run demo` runs it with temporary notes,
-health history, and calendar events. To pin the clock for screenshots:
+health history, and calendar events. The Activity page (`#activity`) has three months of runs,
+lifting, volleyball and walks, with a few workouts left to review. To pin the clock for
+screenshots:
 
 ```sh
 DEMO_TIME=09:12 bun run demo
