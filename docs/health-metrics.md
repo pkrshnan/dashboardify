@@ -218,6 +218,28 @@ afternoon on 14 October (115–150 bpm, almost no steps, low motion; not confirm
 published cadences alone. Treat the names as provisional until they have been checked against more
 sessions.
 
+## Lifting sets (`sets.ts`, `lifting.ts`)
+
+**Why it works.** A set lifts heart rate for 30–60 seconds, and the rest after it lets it fall,
+so each set is a climb. You rest between sets, not between exercises, so moving to the next exercise
+looks like any other rest. The log in the daily note says how many sets there were and in what
+order, which is everything else that's needed: no times.
+
+**How.**
+
+1. Read the log (see [vault format](vault-format.md)) and expand it into sets, in order.
+2. Find the day's lifting session: the longest workout named lifting, or else the longest unnamed
+   one.
+3. In that session, average the once-a-second HR per 5 seconds and smooth it over 15. Minute
+   averages, which the workout search uses, blur a 45-second set away.
+4. Every peak's climb is its rise from the lowest point in the 90 seconds before it. Climbs under
+   6 bpm are noise.
+5. Take the N clearest climbs at least a minute apart, where N is the number of logged sets, and
+   give them to the sets in order. With fewer than N clear climbs nothing is matched, rather than
+   pinning a set to a moment the data can't support. The log is still counted.
+
+Volume is weight × reps over every set, in pounds (kg × 2.20462).
+
 ## Walks (`walks.ts`)
 
 **Why it works.** Walking is light effort, so it rarely lifts heart rate enough to be a workout, but

@@ -84,7 +84,25 @@ steps: 8412
 
 - To backfill or recompute: `bun src/health/summarize.ts 2026-10-13 2026-11-03`. On the server: `docker compose exec dashboardify bun src/health/summarize.ts 2026-10-13 2026-11-03`.
 - `feel`, `effort_rpe` and `health_tags` come from the morning check-in, not the strap. See [the feedback loop](health-feedback.md).
-- The computed tables also go to `health-derived/nights/`, `health-derived/days/`, `health-derived/workouts/` and `health-derived/walks/` (Parquet, one file per date, rebuildable; workouts and walks have a row each, and no file on a day without any).
+- The computed tables also go to `health-derived/nights/`, `health-derived/days/`, `health-derived/workouts/`, `health-derived/walks/` and `health-derived/sets/` (Parquet, one file per date, rebuildable; workouts and walks have a row each, and no file on a day without any).
+
+## Lifting log in the daily note
+
+Write what you lifted under `## Workouts`, one bullet per exercise in the order you did them, with an indented line per load. No times needed. The server only reads this section; it never edits it.
+
+```markdown
+## Workouts
+- Chest Press
+    - 60lbs, 1x10
+    - 80lbs, 3x10
+- Pull-ups
+    - 3x12
+```
+
+- A load line is `weight unit, sets x reps`. `lb`, `lbs` or `kg`, with or without a space, and `x` or `×`. Several groups can share one weight: `15lbs, 2x10, 1x8` is two sets of 10, then one of 8. Leave the weight out for bodyweight.
+- Any other indented line is a note to yourself and is skipped.
+- A first line lighter than the exercise's heaviest counts as a warm-up.
+- The Health block gets `- Lifting log · 3 exercises · 12 sets · 4,650 lb`, ending `· sets matched 18:02–19:05` once each set is lined up with the strap's heart rate, or `· not matched to the strap` until then. Each set is also a row in `health-derived/sets/`.
 
 ## Health: `health/YYYY/YYYY-MM.csv`
 

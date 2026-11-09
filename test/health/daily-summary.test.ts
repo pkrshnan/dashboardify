@@ -160,6 +160,29 @@ describe("DailySummary", () => {
     expect(await derived.readAll("walks", DATE)).toEqual([]);
   });
 
+  test("a lifting log in the note is summarized, even before the strap has the session", async () => {
+    await putNight();
+    await writeProfile();
+    await vault.appendJournal(new Date(SLEEP.end + HOUR), "Gym later.");
+    const path = vault.dailyPath(DATE);
+    const text = (await vault.read(path)) ?? "";
+    await writeFile(
+      join(dir, "vault", path),
+      `${text}\n## Workouts\n- Chest Press\n    - 60lbs, 1x10\n    - 80lbs, 3x10\n`,
+    );
+
+    await summary.run(DATE);
+
+    const note = await vault.readDaily(DATE);
+    expect(note?.body).toContain(
+      "- Lifting log · 1 exercise · 4 sets · 3,000 lb · not matched to the strap",
+    );
+    expect(note?.body).toContain("## Workouts\n- Chest Press");
+    const sets = await derived.readAll("sets", DATE);
+    expect(sets.map((s) => s.warm_up)).toEqual([1, 0, 0, 0]);
+    expect(sets[0]).toMatchObject({ exercise: "Chest Press", weight: 60, reps: 10, peak_ts: null });
+  });
+
   test("a day with no workouts leaves no workouts file", async () => {
     await derived.writeAll("workouts", DATE, [{ kind: "lifting" }]);
 

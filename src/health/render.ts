@@ -1,6 +1,7 @@
 // What the daily note shows: frontmatter numbers (for Dataview, charts and the API) and a short
 // Health block for reading. Units are in the frontmatter key names, so values are plain numbers.
 
+import type { LiftingDay } from "./lifting";
 import type { Recovery } from "./metrics/recovery";
 import type { DayMetrics, NightMetrics } from "./metrics/summary";
 import type { Walk } from "./metrics/walks";
@@ -16,6 +17,8 @@ export interface DaySummary {
   tempDevC: number | null;
   /** Which params file version scored this day (see params.ts). */
   paramsVersion: string;
+  /** The note's lifting log, joined to the strap; null without a log. */
+  lifting: LiftingDay | null;
 }
 
 type Fields = Record<string, number | null | undefined>;
@@ -67,6 +70,7 @@ export function healthBlock(
         strainLine(s.day),
         ...s.day.workouts.map((w) => workoutLine(w, clock)),
         ...s.day.walks.map((w) => walkLine(w, clock)),
+        s.lifting ? liftingLine(s.lifting, clock) : null,
         s.day.steps > 0 ? `- Steps ${s.day.steps.toLocaleString("en-US")}` : null,
       ]
     : [];
@@ -125,10 +129,28 @@ function workoutLine(w: Workout, clock: (ts: number) => string): string {
   return `- ${KIND_NAMES[w.kind]} ${when} · ${Math.round(w.minutes)} min · ${hr} · strain ${w.strain.toFixed(1)}`;
 }
 
+/**
+ * "- Lifting log · 3 exercises · 12 sets · 4,650 lb · sets matched 18:02–19:05", or "· not
+ * matched to the strap" when no session or not every set's climb was found.
+ */
+function liftingLine(l: LiftingDay, clock: (ts: number) => string): string {
+  const volume = `${Math.round(l.volumeLb).toLocaleString("en-US")} lb`;
+  const log = `- Lifting log · ${count(l.exercises, "exercise")} · ${count(l.sets.length, "set")} · ${volume}`;
+  const first = l.sets[0]?.climb;
+  const last = l.sets[l.sets.length - 1]?.climb;
+  return l.matched && first && last
+    ? `${log} · sets matched ${clock(first.start)}–${clock(last.peak)}`
+    : `${log} · not matched to the strap`;
+}
+
 /** "- Walk 16:01–16:28 · 27 min · 2,790 steps · 104 spm" */
 function walkLine(w: Walk, clock: (ts: number) => string): string {
   const steps = `${w.steps.toLocaleString("en-US")} steps · ${Math.round(w.cadence)} spm`;
   return `- Walk ${clock(w.start)}–${clock(w.end)} · ${Math.round(w.minutes)} min · ${steps}`;
+}
+
+function count(n: number, noun: string): string {
+  return `${n} ${noun}${n === 1 ? "" : "s"}`;
 }
 
 function duration(minutes: number): string {
