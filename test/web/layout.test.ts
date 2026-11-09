@@ -51,10 +51,30 @@ describe("timeline", () => {
   });
 
   test("overlapping events share the width", () => {
-    expect(assignLanes([ev(600, 660), ev(630, 700), ev(700, 760)])).toEqual([
+    const spans = [
+      { start: 600, end: 660 },
+      { start: 630, end: 700 },
+      { start: 700, end: 760 },
+    ];
+    expect(assignLanes(spans)).toEqual([
       { lane: 0, lanes: 2 },
       { lane: 1, lanes: 2 },
       { lane: 0, lanes: 1 },
+    ]);
+  });
+
+  test("back-to-back short events stretched to the minimum height don't cover each other", () => {
+    const range = { startHour: 8, endHour: 22 };
+    const blocks = layoutBlocks([ev(600, 615), ev(615, 630), ev(630, 645)], range, 52, 0);
+    expect(blocks.map((b) => [b.lane, b.lanes])).toEqual([
+      [0, 2],
+      [1, 2],
+      [0, 2],
+    ]);
+    const hourLong = layoutBlocks([ev(600, 660), ev(660, 720)], range, 52, 0);
+    expect(hourLong.map((b) => [b.lane, b.lanes])).toEqual([
+      [0, 1],
+      [0, 1],
     ]);
   });
 

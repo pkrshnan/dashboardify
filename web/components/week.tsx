@@ -6,6 +6,7 @@ import { useState } from "preact/hooks";
 import type { DayAgenda } from "../../src/home/types";
 import { alpha, CATEGORY, TEXT_3 } from "../lib/colors";
 import { dayLabel, dayOfMonth, hourLabel, weekday } from "../lib/format";
+import { assignLanes } from "../lib/timeline";
 
 const FIRST_HOUR = 7;
 const LAST_HOUR = 22;
@@ -45,22 +46,7 @@ export function WeekColumns({ days, nowMin }: { days: DayAgenda[]; nowMin: numbe
                 backgroundImage: `repeating-linear-gradient(to bottom, var(--line-2) 0, var(--line-2) 1px, transparent 1px, transparent ${HOUR_PX * 2}px)`,
               }}
             >
-              {d.events.map((e) => (
-                <div
-                  key={`${e.start}${e.title}`}
-                  class="week-event ell"
-                  style={{
-                    left: "2px",
-                    right: "2px",
-                    top: `${y(e.startMin)}px`,
-                    height: `${Math.max(20, y(e.endMin) - y(e.startMin) - 2)}px`,
-                    background: alpha(CATEGORY[e.category], 0.15),
-                    borderLeft: `2px solid ${CATEGORY[e.category]}`,
-                  }}
-                >
-                  {e.title}
-                </div>
-              ))}
+              <WeekEvents day={d} y={y} />
               {d.reminders.map((r) => (
                 <div key={r.id} class="week-reminder ell" style={{ top: `${y(r.minutes)}px` }}>
                   <span class="hollow" />
@@ -75,6 +61,40 @@ export function WeekColumns({ days, nowMin }: { days: DayAgenda[]; nowMin: numbe
         ))}
       </div>
     </div>
+  );
+}
+
+/** A column's event blocks, with overlapping ones side by side as on the Day timeline. */
+function WeekEvents({ day, y }: { day: DayAgenda; y: (min: number) => number }) {
+  const spans = day.events.map((e) => {
+    const top = y(e.startMin);
+    return { start: top, end: top + Math.max(20, y(e.endMin) - top - 2) };
+  });
+  const lanes = assignLanes(spans);
+  return (
+    <>
+      {day.events.map((e, i) => {
+        const { lane = 0, lanes: count = 1 } = lanes[i] ?? {};
+        const span = spans[i] ?? { start: 0, end: 0 };
+        return (
+          <div
+            key={`${e.start}${e.title}-${i}`}
+            class="week-event ell"
+            title={e.title}
+            style={{
+              left: `calc(${(lane * 100) / count}% + 2px)`,
+              width: `calc(${100 / count}% - 4px)`,
+              top: `${span.start}px`,
+              height: `${span.end - span.start}px`,
+              background: alpha(CATEGORY[e.category], 0.15),
+              borderLeft: `2px solid ${CATEGORY[e.category]}`,
+            }}
+          >
+            {e.title}
+          </div>
+        );
+      })}
+    </>
   );
 }
 
@@ -161,7 +181,7 @@ function agendaOf(day: DayAgenda): AgendaItem[] {
     ...day.events.map((e) => ({
       sort: e.startMin,
       item: {
-        key: `e${e.start}${e.title}`,
+        key: `e${e.start}${e.title}${e.event ?? ""}`,
         time: e.start,
         text: e.title,
         color: CATEGORY[e.category],
