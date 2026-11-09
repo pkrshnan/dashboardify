@@ -1,8 +1,10 @@
-// SettingsService: the time zone, tasks inbox and tailnet sign-in, from settings.db. A field
+// SettingsService: the time zone, tasks inbox, tailnet sign-in and where place searches look
+// first, from settings.db. A field
 // still set in the environment wins and can't be changed here until it is removed from .env.
 
 import type { GeneralSettings, SettingsChange, StoredSettings } from "../../settings/core";
 import { ApiError, invalidArgument } from "./errors";
+import { type PlaceInput, placeFromInput, placeView } from "./places";
 import { requestedFields } from "./update-mask";
 
 export interface SettingsInput {
@@ -10,6 +12,7 @@ export interface SettingsInput {
   timeZone?: string;
   tasksInbox?: string;
   tailnet?: { proxy?: string; allowedLogins?: string[] };
+  placesNear?: PlaceInput;
   etag?: string;
 }
 
@@ -21,7 +24,7 @@ const ENV_FIELDS: Record<string, string> = {
   TAILNET_USERS: "tailnet",
 };
 
-const FIELDS = ["timeZone", "tasksInbox", "tailnet"];
+const FIELDS = ["timeZone", "tasksInbox", "tailnet", "placesNear"];
 
 /** Fields that apply only after a restart: the vault and schedulers take the zone at start. */
 const RESTART_FIELDS = new Set(["timeZone"]);
@@ -81,6 +84,9 @@ export class SettingsService {
         .map((l) => l.trim())
         .filter(Boolean);
     }
+    if (fields.includes("placesNear")) {
+      change.placesNear = placeFromInput(input.placesNear, "places_near");
+    }
     try {
       return this.general.update(change);
     } catch (error) {
@@ -95,6 +101,7 @@ export class SettingsService {
       timeZone: inForce.timeZone ?? "",
       tasksInbox: inForce.tasksInbox,
       tailnet: { proxy: inForce.tailnetProxy ?? "", allowedLogins: inForce.tailnetLogins },
+      ...(inForce.placesNear && { placesNear: placeView(inForce.placesNear) }),
       updateTime: stored.updateTime,
       etag: etagOf(stored),
       envOverrides: [...new Set(this.overridden.keys())].map(snake),
@@ -122,6 +129,9 @@ function differs(field: string, before: StoredSettings, after: StoredSettings): 
       before.tailnetProxy !== after.tailnetProxy ||
       before.tailnetLogins.join(",") !== after.tailnetLogins.join(",")
     );
+  }
+  if (field === "placesNear") {
+    return JSON.stringify(before.placesNear) !== JSON.stringify(after.placesNear);
   }
   return before[field as keyof StoredSettings] !== after[field as keyof StoredSettings];
 }

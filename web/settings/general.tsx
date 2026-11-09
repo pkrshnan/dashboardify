@@ -1,8 +1,9 @@
-// Settings › General: time zone, tasks inbox and Tailscale sign-in. Changes save as you make
+// Settings › General: time zone, tasks inbox, where place searches look, and Tailscale sign-in. Changes save as you make
 // them. A field still set in .env is read-only and says where it is set.
 
 import { useEffect, useState } from "preact/hooks";
 import { getSettings, type SettingsView, Unauthorized, updateSettings } from "../api";
+import { PlacesNear } from "./places-near";
 import { lockedBy, timeZones } from "./sections";
 import type { SectionProps } from "./settings";
 
@@ -46,6 +47,17 @@ export function General({ token, onUnauthorized }: SectionProps) {
         save={save}
       />
       <TasksSection settings={settings} error={errorFor("tasks_inbox")} save={save} />
+      <section class="settings-group">
+        <h3>Places</h3>
+        <Row label="Search near" id="places-near">
+          <PlacesNear
+            token={token}
+            settings={settings}
+            error={errorFor("places_near")}
+            onSave={(placesNear) => save("places_near", { placesNear })}
+          />
+        </Row>
+      </section>
       <TailnetSection settings={settings} error={errorFor("tailnet")} save={save} />
       <p class="settings-foot">Changes save as you make them.</p>
     </div>

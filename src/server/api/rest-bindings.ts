@@ -33,6 +33,7 @@ export const restBindings: Record<string, RestBinding> = {
     resource: { field: "name", prefix: "tasks/" },
   },
   searchTasks: { method: "GET", path: "/tasks:search" },
+  searchPlaces: { method: "GET", path: "/places:search" },
   getDay: { method: "GET", path: "/days/:day", resource: { field: "name", prefix: "days/" } },
   getCheckin: {
     method: "GET",

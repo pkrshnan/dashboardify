@@ -11,12 +11,14 @@ import { EventService as EventSchema } from "../../gen/dashboardify/v1/event_pb"
 import { HomeService as HomeSchema } from "../../gen/dashboardify/v1/home_pb";
 import { JournalService as JournalSchema } from "../../gen/dashboardify/v1/journal_pb";
 import { MessageService as MessageSchema } from "../../gen/dashboardify/v1/message_pb";
+import { PlaceService as PlaceSchema } from "../../gen/dashboardify/v1/place_pb";
 import { SampleService as SampleSchema } from "../../gen/dashboardify/v1/sample_pb";
 import { SettingsService as SettingsSchema } from "../../gen/dashboardify/v1/settings_pb";
 import { TaskService as TaskSchema } from "../../gen/dashboardify/v1/task_pb";
 import { VoiceService as VoiceSchema } from "../../gen/dashboardify/v1/voice_pb";
 import type { RawStore } from "../../health/raw-store";
 import type { HomeDeps } from "../../home/home";
+import type { PlaceSearch } from "../../places/place";
 import type { GeneralSettings, SettingsChange } from "../../settings/core";
 import type { DeviceStore } from "../../settings/devices";
 import type { TaskStore } from "../../vault/task-store";
@@ -35,6 +37,7 @@ import { EventsService } from "../api/events";
 import { HomeService } from "../api/home";
 import { JournalService } from "../api/journal";
 import { MessagesService } from "../api/messages";
+import { PlacesService } from "../api/places";
 import { SamplesService } from "../api/samples";
 import { SettingsService } from "../api/settings";
 import { TasksService } from "../api/tasks";
@@ -59,6 +62,8 @@ export interface SettingsDeps {
     /** How calendar links are fetched; tests pass a fake server. */
     feedFetch?: (request: Request) => Promise<Response>;
   };
+  /** Place search for event locations (Photon; a fake in tests). Without it, it isn't served. */
+  places?: PlaceSearch;
 }
 
 export interface ServiceRegistration {
@@ -116,10 +121,13 @@ export function v1Services(
 }
 
 function settingsServices(settings: SettingsDeps, now: () => Date): ServiceRegistration[] {
-  const { general, devices, envChange, envNames, calendars } = settings;
+  const { general, devices, envChange, envNames, calendars, places } = settings;
   return [
     { schema: SettingsSchema, implementation: new SettingsService(general, envChange, envNames) },
     { schema: DeviceSchema, implementation: new DevicesService(devices, now) },
+    ...(places
+      ? [{ schema: PlaceSchema, implementation: new PlacesService(places, general) }]
+      : []),
     ...(calendars
       ? [
           {

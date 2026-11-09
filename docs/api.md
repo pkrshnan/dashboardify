@@ -145,7 +145,7 @@ The regular server has no calendar source by default; the demo supplies sample e
 
 | Method | Path | Operation |
 | --- | --- | --- |
-| GET | `/v1/settings` | Read the time zone, tasks inbox and tailnet sign-in |
+| GET | `/v1/settings` | Read the time zone, tasks inbox, tailnet sign-in and `placesNear` |
 | PATCH | `/v1/settings` | Change the fields in `updateMask` (lowerCamelCase), or every field sent |
 
 `timeZone` is an IANA name; empty means the server's own zone. A change to it is saved at once but
@@ -159,6 +159,20 @@ curl -X PATCH "$SERVER/v1/settings?updateMask=timeZone" \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"timeZone": "Europe/London"}'
 ```
+
+`placesNear` is a place from `/v1/places:search`, such as your town; place searches look near it
+first. Send `updateMask=placesNear` with no `placesNear` to clear it.
+
+## Places
+
+| Method | Path | Operation |
+| --- | --- | --- |
+| GET | `/v1/places:search?query=Dishoom` | Up to five places, best first, nearest to `placesNear` first |
+
+Each place has a `displayName`, an `address`, a `location` (`latitude`, `longitude`) and a
+`mapsUri` that opens Apple Maps with a pin. Answers come from Photon (OpenStreetMap):
+photon.komoot.io unless `PHOTON_URL` points elsewhere. They are cached for an hour. If Photon
+can't be reached the call returns `503 unavailable`.
 
 ## Devices
 
