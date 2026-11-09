@@ -3,7 +3,8 @@ export interface RestBinding {
   method: string;
   path: string;
   bodyField?: string;
-  resource?: { field: string; prefix: string; suffix?: string };
+  /** How to rebuild the resource name from the path; `nested` adds "/<nested>/:child". */
+  resource?: { field: string; prefix: string; suffix?: string; nested?: string };
 }
 
 export const restBindings: Record<string, RestBinding> = {
@@ -81,6 +82,55 @@ export const restBindings: Record<string, RestBinding> = {
     resource: { field: "settings.name", prefix: "settings" },
   },
   createDevice: { method: "POST", path: "/devices", bodyField: "device" },
+  listCalendarAccounts: { method: "GET", path: "/calendarAccounts" },
+  getCalendarAccount: {
+    method: "GET",
+    path: "/calendarAccounts/:id",
+    resource: { field: "name", prefix: "calendarAccounts/" },
+  },
+  createCalendarAccount: {
+    method: "POST",
+    path: "/calendarAccounts",
+    bodyField: "calendarAccount",
+  },
+  updateCalendarAccount: {
+    method: "PATCH",
+    path: "/calendarAccounts/:id",
+    bodyField: "calendarAccount",
+    resource: { field: "calendarAccount.name", prefix: "calendarAccounts/" },
+  },
+  deleteCalendarAccount: {
+    method: "DELETE",
+    path: "/calendarAccounts/:id",
+    resource: { field: "name", prefix: "calendarAccounts/" },
+  },
+  syncCalendarAccount: {
+    method: "POST",
+    path: "/calendarAccounts/:id{[a-z0-9-]+:sync}",
+    resource: { field: "name", prefix: "calendarAccounts/" },
+  },
+  listCalendars: {
+    method: "GET",
+    path: "/calendarAccounts/:id/calendars",
+    resource: { field: "parent", prefix: "calendarAccounts/" },
+  },
+  updateCalendar: {
+    method: "PATCH",
+    path: "/calendarAccounts/:id/calendars/:child",
+    bodyField: "calendar",
+    resource: { field: "calendar.name", prefix: "calendarAccounts/", nested: "calendars" },
+  },
+  getCalendarSettings: {
+    method: "GET",
+    path: "/calendarSettings",
+    resource: { field: "name", prefix: "calendarSettings" },
+  },
+  updateCalendarSettings: {
+    method: "PATCH",
+    path: "/calendarSettings",
+    bodyField: "calendarSettings",
+    resource: { field: "calendarSettings.name", prefix: "calendarSettings" },
+  },
   listDevices: { method: "GET", path: "/devices" },
   deleteDevice: {
     method: "DELETE",

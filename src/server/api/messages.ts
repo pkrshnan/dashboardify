@@ -32,7 +32,7 @@ export class MessagesService {
       return JSON.stringify(value);
     });
     if (exists) {
-      throw new ApiError(409, "message already exists");
+      throw new ApiError(409, "message already exists", "already_exists");
     }
     await this.vault.appendMessage({
       id,

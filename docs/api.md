@@ -172,6 +172,32 @@ Only a hash of each token is stored, so a lost token can't be shown again: add a
 revoke the old one. `requestId` on create makes a retry within ten minutes return the same device
 and token.
 
+## Calendar accounts
+
+One iCloud account, read and write, over CalDAV with an app-specific password.
+
+| Method | Path | Operation |
+| --- | --- | --- |
+| POST | `/v1/calendarAccounts?validateOnly=true` | Sign in and list the calendars found, saving nothing |
+| POST | `/v1/calendarAccounts` | Sign in, then save the account and its calendars |
+| GET | `/v1/calendarAccounts`, `/v1/calendarAccounts/{id}` | Read accounts, with `status` and `passwordSet` |
+| PATCH | `/v1/calendarAccounts/{id}?updateMask=password` | Replace the password, after signing in with it |
+| POST | `/v1/calendarAccounts/{id}:sync` | Find calendars again now |
+| DELETE | `/v1/calendarAccounts/{id}` | Remove the account and its calendars |
+| GET | `/v1/calendarAccounts/{id}/calendars` | List its calendars |
+| PATCH | `/v1/calendarAccounts/{id}/calendars/{calendar}` | Change `category`, `enabled` or `forceReadOnly` |
+| GET, PATCH | `/v1/calendarSettings` | The default calendar and keyword rules |
+
+The password is stored sealed and never returned. A password iCloud refuses returns `400` with
+code `failed_precondition` and a hint to use an app-specific password. A second iCloud account
+returns `409` `already_exists`. The default calendar and keyword rule targets must be writable.
+
+```sh
+curl -X POST "$SERVER/v1/calendarAccounts?validateOnly=true" \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"kind": "KIND_CALDAV", "provider": "icloud", "username": "you@icloud.com", "password": "xxxx-xxxx-xxxx-xxxx"}'
+```
+
 ## Updates, concurrency, and pagination
 
 Task and check-in PATCH requests accept an `updateMask` query parameter containing comma-separated

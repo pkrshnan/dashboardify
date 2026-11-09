@@ -1,0 +1,354 @@
+syntax = "proto3";
+
+package dashboardify.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+
+// Calendar accounts (one iCloud account), their calendars, and where new events go.
+service CalendarAccountService {
+  // Lists accounts.
+  rpc ListCalendarAccounts(ListCalendarAccountsRequest) returns (ListCalendarAccountsResponse) {
+    option (google.api.http) = {get: "/v1/calendarAccounts"};
+  }
+
+  // Returns one account.
+  rpc GetCalendarAccount(GetCalendarAccountRequest) returns (CalendarAccount) {
+    option (google.api.http) = {get: "/v1/{name=calendarAccounts/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  // Signs in and finds the account's calendars, then saves it. With `validate_only` it only
+  // signs in and returns what it found, for the "Test" step in Settings.
+  rpc CreateCalendarAccount(CreateCalendarAccountRequest) returns (CalendarAccount) {
+    option (google.api.http) = {
+      post: "/v1/calendarAccounts"
+      body: "calendar_account"
+    };
+    option (google.api.method_signature) = "calendar_account,calendar_account_id";
+  }
+
+  // Replaces the password (after signing in with it) or renames the account.
+  rpc UpdateCalendarAccount(UpdateCalendarAccountRequest) returns (CalendarAccount) {
+    option (google.api.http) = {
+      patch: "/v1/{calendar_account.name=calendarAccounts/*}"
+      body: "calendar_account"
+    };
+    option (google.api.method_signature) = "calendar_account,update_mask";
+  }
+
+  // Removes the account and its calendars.
+  rpc DeleteCalendarAccount(DeleteCalendarAccountRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=calendarAccounts/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  // Finds the account's calendars again now, picking up new, renamed and removed ones.
+  rpc SyncCalendarAccount(SyncCalendarAccountRequest) returns (CalendarAccount) {
+    option (google.api.http) = {
+      post: "/v1/{name=calendarAccounts/*}:sync"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  // Lists an account's calendars.
+  rpc ListCalendars(ListCalendarsRequest) returns (ListCalendarsResponse) {
+    option (google.api.http) = {get: "/v1/{parent=calendarAccounts/*}/calendars"};
+    option (google.api.method_signature) = "parent";
+  }
+
+  // Changes a calendar's category, whether it is shown, and whether it is kept read-only.
+  rpc UpdateCalendar(UpdateCalendarRequest) returns (Calendar) {
+    option (google.api.http) = {
+      patch: "/v1/{calendar.name=calendarAccounts/*/calendars/*}"
+      body: "calendar"
+    };
+    option (google.api.method_signature) = "calendar,update_mask";
+  }
+
+  // Returns the default calendar and keyword rules.
+  rpc GetCalendarSettings(GetCalendarSettingsRequest) returns (CalendarSettings) {
+    option (google.api.http) = {get: "/v1/{name=calendarSettings}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  // Changes the default calendar or keyword rules.
+  rpc UpdateCalendarSettings(UpdateCalendarSettingsRequest) returns (CalendarSettings) {
+    option (google.api.http) = {
+      patch: "/v1/{calendar_settings.name=calendarSettings}"
+      body: "calendar_settings"
+    };
+    option (google.api.method_signature) = "calendar_settings,update_mask";
+  }
+}
+
+// A calendar account: iCloud over CalDAV.
+message CalendarAccount {
+  option (google.api.resource) = {
+    type: "dashboardify.app/CalendarAccount"
+    pattern: "calendarAccounts/{calendar_account}"
+    singular: "calendarAccount"
+    plural: "calendarAccounts"
+  };
+
+  // How the account is reached.
+  enum Kind {
+    // Not set.
+    KIND_UNSPECIFIED = 0;
+    // CalDAV, read and write. Only one CalDAV account is allowed.
+    KIND_CALDAV = 1;
+  }
+
+  // Whether the last request worked.
+  enum Status {
+    // Not set.
+    STATUS_UNSPECIFIED = 0;
+    // Signed in and syncing.
+    STATUS_OK = 1;
+    // The server refused the password: replace it.
+    STATUS_AUTH_FAILED = 2;
+    // The server couldn't be reached; syncing retries on its own.
+    STATUS_UNREACHABLE = 3;
+  }
+
+  // `calendarAccounts/{calendar_account}`, such as `calendarAccounts/icloud`.
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+
+  // How the account is reached.
+  Kind kind = 2 [(google.api.field_behavior) = IMMUTABLE];
+
+  // The provider, `icloud`.
+  string provider = 3 [(google.api.field_behavior) = IMMUTABLE];
+
+  // What Settings calls it.
+  string display_name = 4 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).string.max_len = 100
+  ];
+
+  // Where discovery starts. Defaults to the provider's server.
+  string server_url = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // The Apple ID.
+  string username = 6 [(google.api.field_behavior) = OPTIONAL];
+
+  // The app-specific password. Written only; never returned.
+  string password = 7 [(google.api.field_behavior) = INPUT_ONLY];
+
+  // Whether a password is stored.
+  bool password_set = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When the server last accepted the password.
+  google.protobuf.Timestamp last_used_time = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When calendars were last fetched.
+  google.protobuf.Timestamp last_sync_time = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Whether the last request worked.
+  Status status = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // What went wrong, in a sentence for Settings.
+  string status_detail = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Changes on every update.
+  string etag = 15 [(google.api.field_behavior) = OPTIONAL];
+
+  // The calendars found, returned by CreateCalendarAccount (including `validate_only`).
+  repeated Calendar calendars = 17 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// One calendar in an account.
+message Calendar {
+  option (google.api.resource) = {
+    type: "dashboardify.app/Calendar"
+    pattern: "calendarAccounts/{calendar_account}/calendars/{calendar}"
+    singular: "calendar"
+    plural: "calendars"
+  };
+
+  // `calendarAccounts/{calendar_account}/calendars/{calendar}`.
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+
+  // The calendar's name in Apple Calendar.
+  string display_name = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Its colour in Apple Calendar, such as `#FF2968FF`. Shown in Settings only.
+  string server_color = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // How it is drawn on the home screen: `work`, `fitness`, `personal` or `focus`.
+  string category = 4 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).string = {
+      in: [
+        "",
+        "work",
+        "fitness",
+        "personal",
+        "focus"
+      ]
+    }
+  ];
+
+  // Whether its events are shown.
+  bool enabled = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // Kept read-only here even if the server allows writes.
+  bool force_read_only = 6 [(google.api.field_behavior) = OPTIONAL];
+
+  // Whether new events can go on it.
+  bool writable = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When its events were last fetched.
+  google.protobuf.Timestamp last_sync_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// Where new events go when the capture box can't tell from history.
+message CalendarSettings {
+  option (google.api.resource) = {
+    type: "dashboardify.app/CalendarSettings"
+    pattern: "calendarSettings"
+    singular: "calendarSettings"
+    plural: "calendarSettings"
+  };
+
+  // Always `calendarSettings`.
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+
+  // A writable calendar, `calendarAccounts/{a}/calendars/{c}`.
+  string default_calendar = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Checked in order after past titles: the first whose words appear in the title wins.
+  repeated KeywordRule keyword_rules = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// "gym, run, swim → Fitness".
+message KeywordRule {
+  // Whole words or phrases, such as `gym` or `stand up`.
+  repeated string words = 1 [(buf.validate.field).repeated.min_items = 1];
+
+  // A writable calendar, `calendarAccounts/{a}/calendars/{c}`.
+  string calendar = 2 [(buf.validate.field).string.min_len = 1];
+}
+
+// Request for ListCalendarAccounts.
+message ListCalendarAccountsRequest {}
+
+// Response for ListCalendarAccounts.
+message ListCalendarAccountsResponse {
+  // Every account.
+  repeated CalendarAccount calendar_accounts = 1;
+}
+
+// Request for GetCalendarAccount.
+message GetCalendarAccountRequest {
+  // The account.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/CalendarAccount",
+    (buf.validate.field).string.min_len = 1
+  ];
+}
+
+// Request for CreateCalendarAccount.
+message CreateCalendarAccountRequest {
+  // The account: kind, provider, username and password.
+  CalendarAccount calendar_account = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // The account id; `icloud` when empty.
+  string calendar_account_id = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Sign in and list calendars without saving anything.
+  bool validate_only = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request for UpdateCalendarAccount.
+message UpdateCalendarAccountRequest {
+  // The account, with the new password or display name.
+  CalendarAccount calendar_account = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // `password` and/or `display_name`.
+  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request for DeleteCalendarAccount.
+message DeleteCalendarAccountRequest {
+  // The account.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/CalendarAccount",
+    (buf.validate.field).string.min_len = 1
+  ];
+}
+
+// Request for SyncCalendarAccount.
+message SyncCalendarAccountRequest {
+  // The account.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/CalendarAccount",
+    (buf.validate.field).string.min_len = 1
+  ];
+}
+
+// Request for ListCalendars.
+message ListCalendarsRequest {
+  // The account, `calendarAccounts/{calendar_account}`.
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/CalendarAccount",
+    (buf.validate.field).string.min_len = 1
+  ];
+}
+
+// Response for ListCalendars.
+message ListCalendarsResponse {
+  // The account's calendars, in the server's order.
+  repeated Calendar calendars = 1;
+}
+
+// Request for UpdateCalendar.
+message UpdateCalendarRequest {
+  // The calendar, with the new values.
+  Calendar calendar = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // `category`, `enabled` and/or `force_read_only`.
+  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request for GetCalendarSettings.
+message GetCalendarSettingsRequest {
+  // Always `calendarSettings`.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/CalendarSettings",
+    (buf.validate.field).string.const = "calendarSettings"
+  ];
+}
+
+// Request for UpdateCalendarSettings.
+message UpdateCalendarSettingsRequest {
+  // The new values; `name` must be `calendarSettings`.
+  CalendarSettings calendar_settings = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // `default_calendar` and/or `keyword_rules`.
+  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = OPTIONAL];
+}

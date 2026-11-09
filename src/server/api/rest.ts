@@ -1,4 +1,4 @@
-import { type DescMethod, type Message, toJson } from "@bufbuild/protobuf";
+import { type DescMethod, type Message, ScalarType, toJson } from "@bufbuild/protobuf";
 import type { Context, Hono } from "hono";
 import type { AuthEnv } from "../auth";
 import { ApiError } from "./errors";
@@ -18,7 +18,10 @@ export function registerRest(
   routes.on(binding.method, `/v1${binding.path}`, async (context) => {
     const body = await readBody(context, binding.method);
     const request: WireObject = Object.fromEntries(
-      Object.entries(context.req.query()).map(([name, value]) => [camelCase(name), value]),
+      Object.entries(context.req.query()).map(([name, value]) => [
+        camelCase(name),
+        queryValue(method, camelCase(name), value),
+      ]),
     );
     if (binding.bodyField) {
       request[binding.bodyField] = body;
@@ -57,6 +60,9 @@ function bindResourceName(
   if (binding.path.includes("/:")) {
     name += context.req.param("id")?.split(":")[0] ?? context.req.param("day");
   }
+  if (resource.nested) {
+    name += `/${resource.nested}/${context.req.param("child")}`;
+  }
   name += resource.suffix ?? "";
   if (resource.field.endsWith(".name")) {
     if (body.name && body.name !== name) {
@@ -66,6 +72,16 @@ function bindResourceName(
     return;
   }
   request[resource.field] = name;
+}
+
+/** Query strings are text; a boolean field needs `true` or `false` as JSON. */
+function queryValue(method: DescMethod, name: string, value: string): unknown {
+  const field = method.input.fields.find((f) => f.jsonName === name);
+  const isBool = field?.fieldKind === "scalar" && field.scalar === ScalarType.BOOL;
+  if (isBool && (value === "true" || value === "false")) {
+    return value === "true";
+  }
+  return value;
 }
 
 function camelCase(name: string) {
