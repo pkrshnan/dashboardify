@@ -20,10 +20,13 @@ import { todayRoutes } from "./routes/today";
 import { v1Services } from "./routes/v1";
 import { v1Transport } from "./routes/v1-transport";
 import { webRoutes } from "./routes/web";
+import type { TailnetAuth } from "./tailnet";
 
 export interface AppDeps {
   /** Who may call the API: the DeviceStore in settings.db, or a fixed list in tests. */
   devices: DeviceMatcher;
+  /** Tailnet sign-in as it is now; read per request. Defaults to `config.tailnet`. */
+  tailnet?: () => TailnetAuth | null;
   vault?: Vault;
   /** Told about every stored strap upload, e.g. to recompute health summaries. */
   onSamples?: (stream: string, day: string) => void;
@@ -44,8 +47,9 @@ export function createApp(config: Config, deps: AppDeps): Hono<AuthEnv> {
     timeZone: config.timeZone,
   };
 
+  const tailnet = deps.tailnet ?? (() => config.tailnet ?? null);
   const api = new Hono<AuthEnv>();
-  api.use("*", bearerAuth(deps.devices, config.tailnet ?? null));
+  api.use("*", bearerAuth(deps.devices, tailnet));
   api.route("/ingest/journal", journalRoutes(vault));
   api.route("/ingest/messages", messageRoutes(vault));
   api.route("/ingest/samples", sampleRoutes(raw, deps.onSamples));
@@ -59,7 +63,7 @@ export function createApp(config: Config, deps: AppDeps): Hono<AuthEnv> {
   app.route("/api", api);
   const v1 = v1Transport(v1Services(vault, tasks, raw, home, deps.now, deps.onSamples));
   const modern = new Hono<AuthEnv>();
-  modern.use("*", bearerAuth(deps.devices, config.tailnet ?? null));
+  modern.use("*", bearerAuth(deps.devices, tailnet));
   modern.route("/", v1);
   app.route("/", webRoutes());
   app.route("/", modern);

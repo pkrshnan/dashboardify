@@ -2,6 +2,8 @@
 // meta ("env_import.tokens"), so a part added in a later release still runs on an existing
 // server. Values are logged by name, never by value.
 
+import type { GeneralSettings, SettingsChange, StoredSettings } from "./core";
+import { checkTimeZone } from "./core";
 import type { DeviceStore } from "./devices";
 import type { SettingsStore } from "./store";
 
@@ -37,6 +39,80 @@ export function importEnvTokens(
     }
     markDone(store, done);
   });
+}
+
+type Env = Record<string, string | undefined>;
+
+/** The .env variables that became settings, and what each one sets. */
+const ENV_SETTINGS: { name: string; read: (value: string) => SettingsChange }[] = [
+  { name: "TZ_NAME", read: (value) => ({ timeZone: value }) },
+  { name: "TASKS_INBOX", read: (value) => ({ tasksInbox: value }) },
+  { name: "TAILSCALE_PROXY", read: (value) => ({ tailnetProxy: value }) },
+  {
+    name: "TAILNET_USERS",
+    read: (value) => ({
+      tailnetLogins: value
+        .split(",")
+        .map((login) => login.trim())
+        .filter((login) => login !== ""),
+    }),
+  },
+];
+
+/** The settings set in `env`, and the names of the variables that set them. */
+export function fromEnv(env: Env): { change: SettingsChange; names: string[] } {
+  const change: SettingsChange = {};
+  const names: string[] = [];
+  for (const variable of ENV_SETTINGS) {
+    const value = env[variable.name]?.trim();
+    if (value) {
+      Object.assign(change, variable.read(value));
+      names.push(variable.name);
+    }
+  }
+  if (change.timeZone) {
+    checkTimeZone(change.timeZone, "TZ_NAME in the environment");
+  }
+  return { change, names };
+}
+
+/** Copies TZ_NAME, TASKS_INBOX and the tailnet variables into Settings, the first time only. */
+export function importEnvSettings(
+  store: SettingsStore,
+  settings: GeneralSettings,
+  env: Env,
+  log: Log = console.warn,
+): void {
+  const done = "env_import.settings";
+  if (isDone(store, done)) {
+    return;
+  }
+  const { change, names } = fromEnv(env);
+  store.transaction(() => {
+    if (names.length > 0) {
+      settings.update(change);
+      log(`Imported ${names.join(", ")} into Settings.`);
+    }
+    markDone(store, done);
+  });
+}
+
+/**
+ * For one release a variable still set in the environment wins over Settings, so nothing
+ * changes under you after the upgrade. `overrides` names them, for warnings and the page.
+ */
+export function withEnvOverrides(
+  stored: StoredSettings,
+  env: Env,
+): { settings: StoredSettings; overrides: string[] } {
+  const { change, names } = fromEnv(env);
+  return { settings: { ...stored, ...change }, overrides: names };
+}
+
+export function warnOverrides(overrides: string[], log: Log = console.warn): void {
+  for (const name of overrides) {
+    log(`${name} is set in the environment and overrides Settings. Remove it from .env.`);
+  }
 }
 
 /** "iphone:abc123,mac:def456" → [["iphone", "abc123"], ["mac", "def456"]] */
