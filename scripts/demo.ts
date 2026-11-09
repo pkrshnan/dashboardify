@@ -1,20 +1,37 @@
 // Serves the web app with made-up data, for working on the UI without a vault or a strap:
 //   bun run demo   then open http://localhost:8788 and sign in with "demo-token-0123456789"
-// It writes a temporary vault and a year of computed health rows, and fakes the calendar.
+// It writes a temporary vault and a year of computed health rows, and runs the calendar against
+// the in-memory iCloud the tests use, so the capture box can add, show and undo real events.
 
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { CalendarAccounts } from "../src/calendar/accounts";
+import { EventCache } from "../src/calendar/cache";
+import { CalDavClient } from "../src/calendar/caldav";
+import { writeEvent } from "../src/calendar/ical";
+import { cacheSource } from "../src/calendar/source";
+import { CalendarSync } from "../src/calendar/sync";
 import { DerivedStore } from "../src/health/derived-store";
-import type { CalendarEvent, CalendarSource } from "../src/home/calendar";
+import type { Category } from "../src/home/types";
+import { CalendarAccountService, type ConnectCalDav } from "../src/server/api/calendar-accounts";
 import { createApp } from "../src/server/app";
 import type { Config } from "../src/server/config";
-import "../src/settings/core";
+import { GeneralSettings } from "../src/settings/core";
 import { DeviceStore } from "../src/settings/devices";
 import { loadKey } from "../src/settings/key";
 import { SecretBox } from "../src/settings/secret-box";
 import { SettingsStore } from "../src/settings/store";
+import { FakeCalDav } from "../test/calendar/fake-caldav";
 import homepage from "../web/index.html";
+
+/** Which demo calendar holds each category's events. */
+const CALENDAR_FOR: Record<Category, string> = {
+  work: "work",
+  focus: "work",
+  fitness: "fitness",
+  personal: "home",
+};
 
 const TOKEN = "demo-token-0123456789";
 const TIME_ZONE = process.env.TZ_NAME ?? "Europe/London";
@@ -50,7 +67,19 @@ const settings = await SettingsStore.open(
 );
 const devices = new DeviceStore(settings);
 devices.add("Demo", TOKEN);
-const app = createApp(config, { devices, calendar: fakeCalendar(), now });
+const calendars = await demoCalendars();
+const app = createApp(config, {
+  devices,
+  now,
+  calendar: cacheSource(calendars.cache, calendars.accounts),
+  settings: {
+    general: new GeneralSettings(settings),
+    devices,
+    envChange: {},
+    envNames: [],
+    calendars,
+  },
+});
 Bun.serve({ port: config.port, routes: { "/": homepage }, fetch: app.fetch, development: true });
 console.log(`demo on http://localhost:${config.port}, token ${TOKEN}`);
 
@@ -76,16 +105,40 @@ function at(offset: number, hour: number): number {
     .epochMilliseconds;
 }
 
-type Spec = [number, number, number, string, CalendarEvent["category"], string?, string?];
+type Spec = [number, number, number, string, Category, string?, string?];
 
-function fakeCalendar(): CalendarSource {
+/**
+ * The fake iCloud, seeded with this week and a few past weeks (so the calendar guess has history),
+ * an account already connected, and the sync loop running every 30 seconds.
+ */
+async function demoCalendars() {
+  const server = seedServer();
+  const accounts = new CalendarAccounts(settings);
+  const connect: ConnectCalDav = (account) =>
+    new CalDavClient({ ...account, allowedDomains: ["icloud.com"] }, server.fetch);
+  await new CalendarAccountService(accounts, connect).createCalendarAccount({
+    calendarAccount: { username: server.username, password: server.password },
+  });
+  const cache = await EventCache.open(config.dataPath);
+  const sync = new CalendarSync({ accounts, cache, connect, timeZone: TIME_ZONE });
+  await sync.tick();
+  sync.start(30_000);
+  return { accounts, connect, cache, sync };
+}
+
+function seedServer(): FakeCalDav {
+  const server = new FakeCalDav([
+    { id: "home", displayName: "Personal" },
+    { id: "work", displayName: "Work" },
+    { id: "fitness", displayName: "Fitness" },
+    { id: "dinners", displayName: "Dinners with Alex", writable: false },
+  ]);
   const specs: Spec[] = [
     [0, 8, 8.87, "Gym, lower body", "fitness", "Strain 5.1 · peak 158"],
     [0, 10, 10.25, "Standup", "work", "Video call", "https://meet.example.com/standup"],
     [0, 12.5, 13.25, "Lunch with Priya", "work", "Café on Albert St · ask about Lisbon"],
     [0, 14, 15, "Design review", "work", "Room 4B · Ana, Jordan, Sam K"],
     [0, 17.5, 18.25, "Physio", "fitness", "Northside Clinic · shoulder"],
-    [0, 19, 21, "Dinner with Sam", "personal", "Sam's place · bring the book"],
     [1, 10, 10.25, "Standup", "work"],
     [1, 13, 14.5, "Focus block", "focus"],
     [1, 18, 19, "Climbing", "fitness"],
@@ -96,33 +149,56 @@ function fakeCalendar(): CalendarSource {
     [4, 8, 9.5, "Long run", "fitness"],
     [5, 11, 13, "Brunch with family", "personal"],
     [6, 15, 16, "Planning", "work"],
+    // History for the calendar guess: physio is on Fitness, so "Physio Fri 3pm" goes there.
+    [-7, 17.5, 18.25, "Physio", "fitness"],
+    [-14, 17.5, 18.25, "Physio", "fitness"],
+    [-21, 17.5, 18.25, "Physio", "fitness"],
   ];
-  const events = specs.map(([offset, from, to, title, category, detail, url]) => ({
+  specs.forEach(([offset, from, to, title, category, location, url], i) => {
+    const ics = writeEvent({
+      uid: `demo-${i}@dashboardify`,
+      title,
+      start: new Date(at(offset, from)),
+      end: new Date(at(offset, to)),
+      timeZone: TIME_ZONE,
+      location,
+      url,
+      now: new Date(),
+    });
+    server.putEvent(CALENDAR_FOR[category], `demo-${i}.ics`, ics);
+  });
+  // A shared, read-only calendar, and a long weekend away as an all-day event.
+  server.putEvent("dinners", "dinner.ics", ics("dinner", "Dinner with Sam", at(0, 19), at(0, 21)));
+  server.putEvent("home", "lisbon.ics", allDay("lisbon", "Lisbon", day(4), day(7)));
+  return server;
+}
+
+function ics(uid: string, title: string, start: number, end: number): string {
+  return writeEvent({
+    uid,
     title,
-    start: at(offset, from),
-    end: at(offset, to),
-    category,
-    detail,
-    url,
-  }));
-  // A long weekend away, as an all-day event: a Week marker on each day.
-  const trip: CalendarEvent = {
-    title: "Lisbon",
-    start: at(4, 0),
-    end: at(7, 0),
-    category: "personal",
-    allDay: true,
-    startDate: day(4),
-    endDate: day(7),
-  };
-  const all: CalendarEvent[] = [...events, trip];
-  return {
-    events: (from, to) => Promise.resolve(all.filter((e) => e.start < to && e.end > from)),
-    status: () => ({
-      lastSyncTime: new Date(Date.now() - 2 * 60_000).toISOString(),
-      hasErrors: false,
-    }),
-  };
+    start: new Date(start),
+    end: new Date(end),
+    timeZone: TIME_ZONE,
+    now: new Date(),
+  });
+}
+
+function allDay(uid: string, title: string, first: string, after: string): string {
+  const compact = (date: string) => date.replaceAll("-", "");
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "BEGIN:VEVENT",
+    `UID:${uid}`,
+    "DTSTAMP:20260101T000000Z",
+    `DTSTART;VALUE=DATE:${compact(first)}`,
+    `DTEND;VALUE=DATE:${compact(after)}`,
+    `SUMMARY:${title}`,
+    "END:VEVENT",
+    "END:VCALENDAR",
+    "",
+  ].join("\r\n");
 }
 
 /** A year of plausible nights and days, with this week a little worse than usual. */

@@ -174,15 +174,42 @@ export function completeTask(token: Token, id: string): Promise<unknown> {
   });
 }
 
-/** Fields already parsed by the capture box. The same request id always gives one task. */
-export function createTask(
+export interface CaptureResult {
+  /** "events/{id}" or "tasks/{id}", for Undo. */
+  name: string;
+  kind: "event" | "reminder";
+  message: string;
+}
+
+/**
+ * One line from the capture box. The server parses it again with its own clock; `kind` and
+ * `calendar` are sent only when picked by hand. The same request id makes one event or task.
+ */
+export async function capture(
   token: Token,
-  task: Record<string, unknown>,
-  requestId: string,
-): Promise<{ name: string }> {
-  return call(token, "/dashboardify.v1.TaskService/CreateTask", {
+  request: { text: string; requestId: string; kind?: "event" | "reminder"; calendar?: string },
+): Promise<CaptureResult> {
+  const kind =
+    request.kind &&
+    { event: "CAPTURE_KIND_EVENT", reminder: "CAPTURE_KIND_REMINDER" }[request.kind];
+  const result = await call<{ event?: { name: string }; task?: { name: string }; message: string }>(
+    token,
+    "/dashboardify.v1.CaptureService/Capture",
+    {
+      method: "POST",
+      body: JSON.stringify({ ...request, kind }),
+    },
+  );
+  return result.event
+    ? { name: result.event.name, kind: "event", message: result.message }
+    : { name: result.task?.name ?? "", kind: "reminder", message: result.message };
+}
+
+/** Undo for an event the capture box just added. `name` is "events/{id}". */
+export function deleteEvent(token: Token, name: string): Promise<unknown> {
+  return call(token, "/dashboardify.v1.EventService/DeleteEvent", {
     method: "POST",
-    body: JSON.stringify({ task, requestId }),
+    body: JSON.stringify({ name }),
   });
 }
 

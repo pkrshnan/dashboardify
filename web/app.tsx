@@ -3,10 +3,12 @@
 
 import { render } from "preact";
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
+import type { CaptureHints } from "../src/home/calendar";
 import type { HomeView } from "../src/home/types";
 import {
+  capture,
   completeTask,
-  createTask,
+  deleteEvent,
   deleteTask,
   fetchHome,
   randomKey,
@@ -22,7 +24,7 @@ import { Focus } from "./components/focus";
 import { Health } from "./components/health";
 import { SignIn } from "./components/sign-in";
 import { TaskList } from "./components/task-list";
-import { taskFields } from "./lib/capture";
+import { type Pending, pendingEvent, withPending } from "./lib/capture";
 import { type Now, nowIn } from "./lib/clock";
 
 const REFRESH_MS = 5 * 60_000;
@@ -85,19 +87,27 @@ function HomeScreen(props: {
 }) {
   const { view, now, isPhone, token, load } = props;
   const [done, setDone] = useState(new Set<string>());
+  const [pending, setPending] = useState<Pending[]>([]);
   const complete = (id: string) => {
     setDone((d) => new Set(d).add(id));
     completeTask(token, id).then(load, load);
   };
   const capture = (
-    <HomeCapture token={token} timeZone={view.timeZone} isPhone={isPhone} reload={load} />
+    <HomeCapture
+      token={token}
+      timeZone={view.timeZone}
+      hints={view.captureHints}
+      isPhone={isPhone}
+      reload={load}
+      onPending={setPending}
+    />
   );
   const tasks = <TaskList groups={view.tasks} done={done} onComplete={complete} />;
   return (
     <main class="home">
       <Focus view={view} now={now} />
       <Calendar
-        view={withTicked(view, done)}
+        view={withPending(withTicked(view, done), pending)}
         nowMin={now.minutes}
         isPhone={isPhone}
         onComplete={complete}
@@ -123,26 +133,47 @@ function HomeScreen(props: {
   );
 }
 
-/** The capture box, saving reminders as tasks. Undo deletes the task again. */
+/**
+ * The capture box. An event is drawn on the timeline at once ("Saving to iCloud…") until the
+ * refresh after saving brings the real one. Undo deletes the event or the task again.
+ */
 function HomeCapture(props: {
   token: Token;
   timeZone: string;
+  hints: CaptureHints | null;
   isPhone: boolean;
   reload: () => Promise<void>;
+  onPending: (update: (pending: Pending[]) => Pending[]) => void;
 }) {
-  const { token, reload } = props;
+  const { token, reload, onPending } = props;
   return (
     <Capture
       timeZone={props.timeZone}
+      hints={props.hints}
       isPhone={props.isPhone}
       newRequestId={randomKey}
-      onAdd={async (parse, requestId) => {
-        const task = await createTask(token, taskFields(parse), requestId);
-        reload();
-        return task.name;
+      onAdd={async (box, shown, requestId) => {
+        const drawn = pendingEvent(shown, props.timeZone, requestId);
+        if (drawn) {
+          onPending((list) => [...list.filter((p) => p.key !== requestId), drawn]);
+        }
+        try {
+          const result = await capture(token, {
+            text: box.text,
+            requestId,
+            kind: box.override,
+            calendar: box.calendar,
+          });
+          await reload();
+          return result;
+        } finally {
+          onPending((list) => list.filter((p) => p.key !== requestId));
+        }
       }}
-      onUndo={async (name) => {
-        await deleteTask(token, name);
+      onUndo={async (result) => {
+        await (result.kind === "event"
+          ? deleteEvent(token, result.name)
+          : deleteTask(token, result.name));
         await reload();
       }}
     />

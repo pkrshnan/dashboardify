@@ -1,11 +1,31 @@
 import { describe, expect, test } from "bun:test";
 import { parseCapture } from "../../src/capture/parse";
-import { preview, segments, switched, taskFields, typed } from "../../web/lib/capture";
+import type { HomeView } from "../../src/home/types";
+import {
+  nextCalendar,
+  pendingEvent,
+  preview,
+  segments,
+  switched,
+  typed,
+  withPending,
+} from "../../web/lib/capture";
 
 // Tuesday 10 November 2026, 08:00 in London.
 const context = { now: new Date("2026-11-10T08:00:00Z"), timeZone: "Europe/London" };
-const noCalendar = { ...context, eventsEnabled: false };
-const withCalendar = { ...context, eventsEnabled: true };
+const PERSONAL = "calendarAccounts/icloud/calendars/home";
+const FITNESS = "calendarAccounts/icloud/calendars/fitness";
+const hints = {
+  calendars: [
+    { name: PERSONAL, displayName: "Personal", category: "personal" as const },
+    { name: FITNESS, displayName: "Fitness", category: "fitness" as const },
+  ],
+  defaultCalendar: PERSONAL,
+  rules: [{ words: ["gym"], calendar: FITNESS }],
+  titles: [],
+};
+const noCalendar = { ...context, hints: null };
+const withCalendar = { ...context, hints };
 
 describe("segments", () => {
   test("covers the text once, with highlighted runs in order", () => {
@@ -79,21 +99,66 @@ describe("preview", () => {
   });
 });
 
-describe("taskFields", () => {
-  test("sends what the preview showed", () => {
-    const parse = parseCapture("Gym every Monday 7am", context);
+describe("calendar choice", () => {
+  test("an event shows the same guess the server makes", () => {
+    const shown = preview({ text: "Gym 7am for 1h" }, withCalendar);
 
-    expect(parse && taskFields(parse)).toEqual({
-      description: "Gym",
-      dueDate: { year: 2026, month: 11, day: 16 },
-      dueTime: { hours: 7, minutes: 0 },
-      recurrence: "every week",
+    expect(shown?.calendar).toMatchObject({
+      name: FITNESS,
+      displayName: "Fitness",
+      reason: "Your rule “gym” puts it on Fitness.",
     });
+    expect(shown?.where).toBe("Fitness");
   });
 
-  test("leaves out what wasn't said", () => {
-    const parse = parseCapture("Pay rent", context);
+  test("the picker cycles through writable calendars, and the pick holds while typing", () => {
+    const picked = nextCalendar({ text: "Gym 7am for 1h" }, hints, FITNESS);
 
-    expect(parse && taskFields(parse)).toEqual({ description: "Pay rent" });
+    const after = typed(picked, "Gym 7am for 90 minutes");
+
+    expect(picked.calendar).toBe(PERSONAL);
+    expect(preview(after, withCalendar)?.calendar).toMatchObject({
+      name: PERSONAL,
+      reason: "Picked by hand.",
+    });
+    expect(typed(after, "").calendar).toBeUndefined();
+  });
+
+  test("a reminder has no calendar", () => {
+    expect(preview({ text: "Call dentist Fri 10:00" }, withCalendar)?.calendar).toBeUndefined();
+  });
+});
+
+describe("pending events", () => {
+  const shown = preview({ text: "Lunch with Sam tomorrow 12:30–13:30" }, withCalendar);
+  const day = (date: string) => ({ date, events: [], reminders: [], dated: [], allDay: [] });
+  const view = { days: [day("2026-11-10"), day("2026-11-11")] } as unknown as HomeView;
+
+  test("are drawn on their day, marked as saving", () => {
+    const drawn = shown && pendingEvent(shown, "Europe/London", "r1");
+
+    const merged = withPending(view, drawn ? [drawn] : []);
+
+    expect(merged.days[0]?.events).toEqual([]);
+    expect(merged.days[1]?.events).toEqual([
+      expect.objectContaining({
+        title: "Lunch with Sam",
+        startMin: 750,
+        endMin: 810,
+        detail: "Saving to iCloud…",
+        category: "personal",
+        pending: true,
+      }),
+    ]);
+  });
+
+  test("a reminder isn't drawn", () => {
+    const reminder = preview({ text: "Call dentist Fri 10:00" }, withCalendar);
+
+    expect(reminder && pendingEvent(reminder, "Europe/London", "r2")).toBeUndefined();
+  });
+
+  test("with nothing pending the view is unchanged", () => {
+    expect(withPending(view, [])).toBe(view);
   });
 });

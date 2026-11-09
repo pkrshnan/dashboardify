@@ -4,6 +4,7 @@ import type { EventCache } from "../../calendar/cache";
 import type { CalendarSync } from "../../calendar/sync";
 import { ActivityService as ActivitySchema } from "../../gen/dashboardify/v1/activity_pb";
 import { CalendarAccountService as CalendarAccountSchema } from "../../gen/dashboardify/v1/calendar_account_pb";
+import { CaptureService as CaptureSchema } from "../../gen/dashboardify/v1/capture_pb";
 import { DayService as DaySchema } from "../../gen/dashboardify/v1/day_pb";
 import { DeviceService as DeviceSchema } from "../../gen/dashboardify/v1/device_pb";
 import { EventService as EventSchema } from "../../gen/dashboardify/v1/event_pb";
@@ -26,8 +27,10 @@ import {
   type ConnectCalDav,
   connectICloud,
 } from "../api/calendar-accounts";
+import { CaptureService } from "../api/capture";
 import { DaysService } from "../api/days";
 import { DevicesService } from "../api/devices";
+import { failedPrecondition } from "../api/errors";
 import { EventsService } from "../api/events";
 import { HomeService } from "../api/home";
 import { JournalService } from "../api/journal";
@@ -83,6 +86,18 @@ export function v1Services(
     vault.timeZone,
     now,
   );
+  const events = eventService(settings?.calendars, now, vault.timeZone);
+  const captureService = new CaptureService(
+    {
+      createTask: taskService.createTask,
+      createEvent: events
+        ? events.createEvent
+        : () => failedPrecondition("Connect a calendar in Settings to add events."),
+    },
+    home.calendar,
+    vault.timeZone,
+    now,
+  );
   return [
     { schema: TaskSchema, implementation: taskService },
     { schema: DaySchema, implementation: dayService },
@@ -92,42 +107,41 @@ export function v1Services(
     { schema: HomeSchema, implementation: new HomeService(home, now) },
     { schema: ActivitySchema, implementation: new ActivityService(activity) },
     { schema: VoiceSchema, implementation: voiceService },
-    ...(settings ? settingsServices(settings, now, vault.timeZone) : []),
+    { schema: CaptureSchema, implementation: captureService },
+    ...(events ? [{ schema: EventSchema, implementation: events }] : []),
+    ...(settings ? settingsServices(settings, now) : []),
   ];
 }
 
-function settingsServices(
-  settings: SettingsDeps,
-  now: () => Date,
-  timeZone: string,
-): ServiceRegistration[] {
+function settingsServices(settings: SettingsDeps, now: () => Date): ServiceRegistration[] {
   const { general, devices, envChange, envNames, calendars } = settings;
   return [
     { schema: SettingsSchema, implementation: new SettingsService(general, envChange, envNames) },
     { schema: DeviceSchema, implementation: new DevicesService(devices, now) },
-    ...(calendars ? calendarServices(calendars, now, timeZone) : []),
-  ];
-}
-
-function calendarServices(
-  calendars: NonNullable<SettingsDeps["calendars"]>,
-  now: () => Date,
-  timeZone: string,
-): ServiceRegistration[] {
-  const { accounts, cache, sync } = calendars;
-  const connect = calendars.connect ?? connectICloud;
-  return [
-    {
-      schema: CalendarAccountSchema,
-      implementation: new CalendarAccountService(accounts, connect),
-    },
-    ...(cache && sync
+    ...(calendars
       ? [
           {
-            schema: EventSchema,
-            implementation: new EventsService({ accounts, cache, sync, connect, timeZone, now }),
+            schema: CalendarAccountSchema,
+            implementation: new CalendarAccountService(
+              calendars.accounts,
+              calendars.connect ?? connectICloud,
+            ),
           },
         ]
       : []),
   ];
+}
+
+/** Events need the cache and the sync loop as well as the accounts. */
+function eventService(
+  calendars: SettingsDeps["calendars"],
+  now: () => Date,
+  timeZone: string,
+): EventsService | undefined {
+  if (!(calendars?.cache && calendars.sync)) {
+    return undefined;
+  }
+  const { accounts, cache, sync } = calendars;
+  const connect = calendars.connect ?? connectICloud;
+  return new EventsService({ accounts, cache, sync, connect, timeZone, now });
 }
