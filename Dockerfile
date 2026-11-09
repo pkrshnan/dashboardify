@@ -10,6 +10,7 @@ COPY web ./web
 ENV NODE_ENV=production \
     PORT=8787 \
     VAULT_PATH=/data/vault \
+    DATA_PATH=/data/settings \
     HEALTH_RAW_PATH=/data/health-raw \
     HEALTH_DERIVED_PATH=/data/health-derived
 EXPOSE 8787

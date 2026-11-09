@@ -6,8 +6,10 @@ The [protobuf definitions](../proto/dashboardify/v1/) describe the resources and
 
 ## Authentication
 
-Send `Authorization: Bearer <token>` using a device token from `INGEST_TOKENS`.
-Missing or invalid credentials return `401`.
+Send `Authorization: Bearer <token>` using a device token. Devices live in `settings.db` under
+`DATA_PATH`, which stores only a SHA-256 hash of each token. On the first start, the server
+imports the `name:token` pairs in `INGEST_TOKENS` as devices, so existing tokens keep working;
+after that the variable is no longer read. Missing or invalid credentials return `401`.
 
 Behind Tailscale Serve, an allowed tailnet login can replace the token when `TAILSCALE_PROXY`
 and `TAILNET_USERS` are configured. The server trusts the `Tailscale-User-Login` header only

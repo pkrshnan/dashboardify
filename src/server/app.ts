@@ -5,6 +5,7 @@ import { DerivedStore } from "../health/derived-store";
 import { RawStore } from "../health/raw-store";
 import { type CalendarSource, noCalendar } from "../home/calendar";
 import { HealthHistory } from "../home/health-history";
+import type { DeviceMatcher } from "../settings/devices";
 import { TaskStore } from "../vault/task-store";
 import { Vault } from "../vault/vault";
 import { type AuthEnv, bearerAuth } from "./auth";
@@ -21,6 +22,8 @@ import { v1Transport } from "./routes/v1-transport";
 import { webRoutes } from "./routes/web";
 
 export interface AppDeps {
+  /** Who may call the API: the DeviceStore in settings.db, or a fixed list in tests. */
+  devices: DeviceMatcher;
   vault?: Vault;
   /** Told about every stored strap upload, e.g. to recompute health summaries. */
   onSamples?: (stream: string, day: string) => void;
@@ -29,7 +32,7 @@ export interface AppDeps {
   now?: () => Date;
 }
 
-export function createApp(config: Config, deps: AppDeps = {}): Hono<AuthEnv> {
+export function createApp(config: Config, deps: AppDeps): Hono<AuthEnv> {
   const vault = deps.vault ?? new Vault(config.vaultPath, config.timeZone);
   const tasks = new TaskStore(vault, config.tasksInbox);
   const raw = new RawStore(config.healthRawPath);
@@ -42,7 +45,7 @@ export function createApp(config: Config, deps: AppDeps = {}): Hono<AuthEnv> {
   };
 
   const api = new Hono<AuthEnv>();
-  api.use("*", bearerAuth(config.tokens, config.tailnet ?? null));
+  api.use("*", bearerAuth(deps.devices, config.tailnet ?? null));
   api.route("/ingest/journal", journalRoutes(vault));
   api.route("/ingest/messages", messageRoutes(vault));
   api.route("/ingest/samples", sampleRoutes(raw, deps.onSamples));
@@ -56,7 +59,7 @@ export function createApp(config: Config, deps: AppDeps = {}): Hono<AuthEnv> {
   app.route("/api", api);
   const v1 = v1Transport(v1Services(vault, tasks, raw, home, deps.now, deps.onSamples));
   const modern = new Hono<AuthEnv>();
-  modern.use("*", bearerAuth(config.tokens, config.tailnet ?? null));
+  modern.use("*", bearerAuth(deps.devices, config.tailnet ?? null));
   modern.route("/", v1);
   app.route("/", webRoutes());
   app.route("/", modern);

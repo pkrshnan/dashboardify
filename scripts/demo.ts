@@ -9,6 +9,11 @@ import { DerivedStore } from "../src/health/derived-store";
 import type { CalendarEvent, CalendarSource } from "../src/home/calendar";
 import { createApp } from "../src/server/app";
 import type { Config } from "../src/server/config";
+import "../src/settings/core";
+import { DeviceStore } from "../src/settings/devices";
+import { loadKey } from "../src/settings/key";
+import { SecretBox } from "../src/settings/secret-box";
+import { SettingsStore } from "../src/settings/store";
 import homepage from "../web/index.html";
 
 const TOKEN = "demo-token-0123456789";
@@ -24,7 +29,7 @@ const config: Config = {
   healthRawPath: join(root, "health-raw"),
   healthDerivedPath: join(root, "health-derived"),
   tasksInbox: "Inbox.md",
-  tokens: new Map([["demo", TOKEN]]),
+  dataPath: join(root, "data"),
 };
 
 await Bun.write(join(config.vaultPath, "Inbox.md"), tasks().join("\n"));
@@ -39,7 +44,13 @@ await Bun.write(
   join(config.healthRawPath, "sync.json"),
   JSON.stringify({ latestSampleTs: syncAt, uploadTs: syncAt + 60_000 }),
 );
-const app = createApp(config, { calendar: fakeCalendar(), now });
+const settings = await SettingsStore.open(
+  config.dataPath,
+  new SecretBox(await loadKey({ dataPath: config.dataPath })),
+);
+const devices = new DeviceStore(settings);
+devices.add("Demo", TOKEN);
+const app = createApp(config, { devices, calendar: fakeCalendar(), now });
 Bun.serve({ port: config.port, routes: { "/": homepage }, fetch: app.fetch, development: true });
 console.log(`demo on http://localhost:${config.port}, token ${TOKEN}`);
 

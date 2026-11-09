@@ -5,6 +5,12 @@ import { RawStore } from "./health/raw-store";
 import { SummaryScheduler } from "./health/scheduler";
 import { createApp } from "./server/app";
 import { type Config, loadConfig } from "./server/config";
+import "./settings/core";
+import { DeviceStore } from "./settings/devices";
+import { importEnvTokens } from "./settings/env-import";
+import { loadKey } from "./settings/key";
+import { SecretBox } from "./settings/secret-box";
+import { SettingsStore } from "./settings/store";
 import { localDate } from "./vault/time";
 import { Vault } from "./vault/vault";
 
@@ -25,14 +31,27 @@ function startHealthSummaries(config: Config, vault: Vault): SummaryScheduler {
   return scheduler;
 }
 
+/** settings.db under DATA_PATH, with the key checked and .env tokens imported once. */
+async function openDevices(config: Config): Promise<DeviceStore> {
+  const key = await loadKey({ dataPath: config.dataPath, keyFile: config.keyFile });
+  const store = await SettingsStore.open(config.dataPath, new SecretBox(key));
+  const devices = new DeviceStore(store);
+  importEnvTokens(store, devices, process.env.INGEST_TOKENS);
+  if (devices.list().length === 0 && !config.tailnet) {
+    console.warn(
+      "No devices in Settings and no tailnet sign-in: every API request will be rejected",
+    );
+  }
+  return devices;
+}
+
 if (import.meta.main) {
   const config = loadConfig();
-  if (config.tokens.size === 0) {
-    console.warn("INGEST_TOKENS is empty: every /api request will be rejected");
-  }
+  const devices = await openDevices(config);
   const vault = new Vault(config.vaultPath, config.timeZone);
   const scheduler = startHealthSummaries(config, vault);
   const app = createApp(config, {
+    devices,
     vault,
     onSamples: (_stream, day) => scheduler.touchUtcDay(day),
   });
@@ -44,6 +63,6 @@ if (import.meta.main) {
     development: process.env.NODE_ENV !== "production",
   });
   console.log(
-    `dashboardify listening on :${config.port}, vault ${config.vaultPath}, tz ${config.timeZone}`,
+    `dashboardify listening on :${config.port}, vault ${config.vaultPath}, data ${config.dataPath}, tz ${config.timeZone}`,
   );
 }
