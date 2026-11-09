@@ -1,7 +1,7 @@
 // Steps from the strap's raw counter. It is cumulative and 16-bit, so it wraps at 65,536, and it
 // can reset to zero when the strap restarts. Meaning inferred by healthstrap, not documented.
 
-import type { StepCounter } from "./types";
+import { MINUTE_MS, type StepCounter } from "./types";
 
 const COUNTER_SIZE = 65_536;
 /** A wrap only happens near the top; a drop from lower down is a reset. */
@@ -20,6 +20,21 @@ export function stepsTaken(samples: StepCounter[]): number {
     }
   }
   return total;
+}
+
+/** Steps taken in each minute, keyed by the minute's start. Minutes with no steps are left out. */
+export function stepsPerMinute(samples: StepCounter[]): Map<number, number> {
+  const minutes = new Map<number, number>();
+  for (let i = 1; i < samples.length; i++) {
+    const prev = samples[i - 1];
+    const cur = samples[i];
+    const delta = prev && cur ? stepDelta(prev, cur) : 0;
+    if (cur && delta > 0) {
+      const minute = Math.floor(cur.ts / MINUTE_MS) * MINUTE_MS;
+      minutes.set(minute, (minutes.get(minute) ?? 0) + delta);
+    }
+  }
+  return minutes;
 }
 
 function stepDelta(prev: StepCounter, cur: StepCounter): number {

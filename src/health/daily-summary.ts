@@ -17,14 +17,16 @@ import {
 import { DEFAULT_NEED_MIN, type PastNight } from "./metrics/sleep-score";
 import { median } from "./metrics/stats";
 import { dayMetrics, type NightMetrics, nightMetrics } from "./metrics/summary";
-import type { Accel, HeartRate, RrInterval, SkinTemp, StepCounter } from "./metrics/types";
+import type { Accel, HeartRate, Motion, RrInterval, SkinTemp, StepCounter } from "./metrics/types";
+import type { Walk } from "./metrics/walks";
+import type { Workout } from "./metrics/workouts";
 import { ParamsStore } from "./params";
 import { parseProfile } from "./profile";
 import type { RawStore, Row } from "./raw-store";
 import { type DaySummary, frontmatter, healthBlock, syncLine } from "./render";
 
 /** Bump when a calculation changes, so old rows can be told apart and rebuilt. */
-export const ALGO_VERSION = "1";
+export const ALGO_VERSION = "2";
 
 export class DailySummary {
   private readonly params: ParamsStore;
@@ -66,6 +68,8 @@ export class DailySummary {
     const day = dayMetrics({
       heartRate: await this.load(date, "heart_rate", 0, 24, toHeartRate),
       steps: await this.load(date, "steps", 0, 24, toSteps),
+      motion: await this.load(date, "motion", 0, 24, toMotion),
+      sleep: night ? { start: night.bed, end: night.wake } : null,
       restingHr: night?.restingHr ?? median(recentRestingHrs(history)),
       profile: parseProfile(profileFields, date),
     });
@@ -152,6 +156,16 @@ export class DailySummary {
       await this.derived.write("nights", date, { ...stamp, ...nightRow(summary.night) });
     }
     await this.derived.write("days", date, { ...stamp, ...dayRow(summary) });
+    await this.derived.writeAll(
+      "workouts",
+      date,
+      summary.day.workouts.map((w) => ({ ...stamp, ...workoutRow(w) })),
+    );
+    await this.derived.writeAll(
+      "walks",
+      date,
+      summary.day.walks.map((w) => ({ ...stamp, ...walkRow(w) })),
+    );
     await this.vault.recordHealth(date, frontmatter(summary), "strap");
     await this.vault.setDailyBlock(
       date,
@@ -250,7 +264,36 @@ function dayRow(s: DaySummary): DerivedRow {
     max_hr: s.day.maxHr,
     steps: s.day.steps,
     temp_dev_c: s.tempDevC,
+    workout_min: s.day.workouts.reduce((sum, w) => sum + w.minutes, 0),
+    walk_min: s.day.walks.reduce((sum, w) => sum + w.minutes, 0),
+    walk_steps: s.day.walks.reduce((sum, w) => sum + w.steps, 0),
     ...Object.fromEntries([0, 1, 2, 3, 4].map((i) => [`zone${i + 1}_min`, zones[i] ?? null])),
+  };
+}
+
+function workoutRow(w: Workout): DerivedRow {
+  return {
+    start_ts: w.start,
+    end_ts: w.end,
+    kind: w.kind,
+    duration_min: w.minutes,
+    avg_hr: w.avgHr,
+    max_hr: w.maxHr,
+    cadence_spm: w.cadence,
+    trimp: w.trimp,
+    strain: w.strain,
+  };
+}
+
+function walkRow(w: Walk): DerivedRow {
+  return {
+    start_ts: w.start,
+    end_ts: w.end,
+    duration_min: w.minutes,
+    steps: w.steps,
+    cadence_spm: w.cadence,
+    brisk_min: w.briskMin,
+    avg_hr: w.avgHr,
   };
 }
 
@@ -284,4 +327,9 @@ function toSkinTemp(row: Row): SkinTemp | null {
 function toSteps(row: Row): StepCounter | null {
   const v = nums(row, ["count"]);
   return v ? { ts: row.ts, count: v[0] ?? 0 } : null;
+}
+
+function toMotion(row: Row): Motion | null {
+  const v = nums(row, ["intensity"]);
+  return v ? { ts: row.ts, intensity: v[0] ?? 0 } : null;
 }

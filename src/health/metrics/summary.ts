@@ -2,15 +2,17 @@
 // day. Still pure: the caller loads the samples and decides what to do with the results.
 
 import { breathingRate } from "./breathing";
-import { minuteHr, predictedMaxHr, restingHr, zoneMinutes } from "./heart-rate";
+import { type MinuteHr, minuteHr, predictedMaxHr, restingHr, zoneMinutes } from "./heart-rate";
 import { cleanRr, goodWindows, nightHrv } from "./hrv";
 import { sleepSkinTemp } from "./skin-temp";
 import { rawAngleChanges, sleepWindow } from "./sleep";
 import { scoreEpochs, sleepTimes } from "./sleep-epochs";
 import { type PastNight, type SleepScore, sleepScore } from "./sleep-score";
-import { stepsTaken } from "./steps";
+import { stepsPerMinute, stepsTaken } from "./steps";
 import { type Sex, strain, trimp } from "./strain";
-import type { Accel, HeartRate, RrInterval, SkinTemp, StepCounter } from "./types";
+import type { Accel, HeartRate, Motion, RrInterval, SkinTemp, Span, StepCounter } from "./types";
+import { type Walk, walks } from "./walks";
+import { type Workout, workouts } from "./workouts";
 
 export interface NightInput {
   accel: Accel[];
@@ -95,6 +97,9 @@ export interface Profile {
 export interface DayInput {
   heartRate: HeartRate[];
   steps: StepCounter[];
+  motion: Motion[];
+  /** Last night's sleep, which can't hold a workout. */
+  sleep: Span | null;
   /** Resting HR from last night, or your recent normal if last night is missing. */
   restingHr: number | null;
   profile: Profile;
@@ -109,25 +114,60 @@ export interface DayMetrics {
   trimp: number | null;
   strain: number | null;
   zoneMin: number[] | null;
+  /** Empty when resting or max HR is unknown, like strain. */
+  workouts: Workout[];
+  /** Walks outside workouts. Needs only the step counter. */
+  walks: Walk[];
 }
 
 /** The day's activity, from samples covering the local calendar day. */
 export function dayMetrics(input: DayInput): DayMetrics {
   const minutes = minuteHr(input.heartRate);
   const bpms = minutes.map((m) => m.bpm);
-  const base = {
+  const perMinute = stepsPerMinute(input.steps);
+  const sleep = input.sleep ? [input.sleep] : [];
+  const effort = effortMetrics(input, minutes, perMinute, sleep);
+  return {
     wornMin: minutes.length,
     avgHr: bpms.length > 0 ? bpms.reduce((s, b) => s + b, 0) / bpms.length : null,
     maxHr: bpms.length > 0 ? Math.max(...bpms) : null,
     steps: stepsTaken(input.steps),
+    ...effort,
+    // A walk can't be inside a workout: walking to the court is a walk, the game isn't.
+    walks: walks(perMinute, minutes, [...sleep, ...effort.workouts]),
   };
+}
+
+type EffortMetrics = Pick<DayMetrics, "trimp" | "strain" | "zoneMin" | "workouts">;
+
+/** Strain, zones and workouts, which all need resting and max HR. */
+function effortMetrics(
+  input: DayInput,
+  minutes: MinuteHr[],
+  perMinute: Map<number, number>,
+  sleep: Span[],
+): EffortMetrics {
   const maxHr = profileMaxHr(input.profile);
   if (maxHr === null || input.restingHr === null || maxHr <= input.restingHr) {
-    return { ...base, trimp: null, strain: null, zoneMin: null };
+    return { trimp: null, strain: null, zoneMin: null, workouts: [] };
   }
   // Without a sex in the profile, use the men's constants (the original, most-cited fit).
-  const total = trimp(minutes, input.restingHr, maxHr, input.profile.sex ?? "male");
-  return { ...base, trimp: total, strain: strain(total), zoneMin: zoneMinutes(minutes, maxHr) };
+  const sex = input.profile.sex ?? "male";
+  const total = trimp(minutes, input.restingHr, maxHr, sex);
+  return {
+    trimp: total,
+    strain: strain(total),
+    zoneMin: zoneMinutes(minutes, maxHr),
+    workouts: workouts({
+      minutes,
+      steps: perMinute,
+      motion: input.motion,
+      restingHr: input.restingHr,
+      maxHr,
+      sex,
+      exclude: sleep,
+    }),
+  };
 }
 
 function profileMaxHr(profile: Profile): number | null {

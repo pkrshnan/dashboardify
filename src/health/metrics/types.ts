@@ -31,6 +31,15 @@ export interface StepCounter {
   count: number;
 }
 
+/**
+ * The strap's motion intensity, unscaled, about once a second. healthstrap inferred its meaning:
+ * about 0.006 asleep and 0.03 awake.
+ */
+export interface Motion {
+  ts: number;
+  intensity: number;
+}
+
 /** A span of time, [start, end) in epoch ms. */
 export interface Span {
   start: number;

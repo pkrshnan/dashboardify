@@ -3,6 +3,8 @@
 
 import type { Recovery } from "./metrics/recovery";
 import type { DayMetrics, NightMetrics } from "./metrics/summary";
+import type { Walk } from "./metrics/walks";
+import type { Workout } from "./metrics/workouts";
 import { type HealthSync, lag, shortDuration } from "./sync";
 
 export interface DaySummary {
@@ -63,6 +65,8 @@ export function healthBlock(
         s.night ? sleepLine(s.night, clock) : null,
         s.night ? vitalsLine(s.night, s.tempDevC) : null,
         strainLine(s.day),
+        ...s.day.workouts.map((w) => workoutLine(w, clock)),
+        ...s.day.walks.map((w) => walkLine(w, clock)),
         s.day.steps > 0 ? `- Steps ${s.day.steps.toLocaleString("en-US")}` : null,
       ]
     : [];
@@ -104,6 +108,27 @@ function strainLine(day: DayMetrics): string | null {
     return day.wornMin > 0 ? `- Worn ${duration(day.wornMin)}` : null;
   }
   return `- Strain **${day.strain.toFixed(1)}** · Zones ${day.zoneMin.join(" / ")} min`;
+}
+
+const KIND_NAMES: Record<Workout["kind"], string> = {
+  running: "Running",
+  walking: "Walking",
+  volleyball: "Volleyball",
+  lifting: "Lifting",
+  workout: "Workout",
+};
+
+/** "- Volleyball 20:30–21:15 · 45 min · 138 avg / 179 max · strain 8.3" */
+function workoutLine(w: Workout, clock: (ts: number) => string): string {
+  const hr = `${Math.round(w.avgHr)} avg / ${Math.round(w.maxHr)} max`;
+  const when = `${clock(w.start)}–${clock(w.end)}`;
+  return `- ${KIND_NAMES[w.kind]} ${when} · ${Math.round(w.minutes)} min · ${hr} · strain ${w.strain.toFixed(1)}`;
+}
+
+/** "- Walk 16:01–16:28 · 27 min · 2,790 steps · 104 spm" */
+function walkLine(w: Walk, clock: (ts: number) => string): string {
+  const steps = `${w.steps.toLocaleString("en-US")} steps · ${Math.round(w.cadence)} spm`;
+  return `- Walk ${clock(w.start)}–${clock(w.end)} · ${Math.round(w.minutes)} min · ${steps}`;
 }
 
 function duration(minutes: number): string {

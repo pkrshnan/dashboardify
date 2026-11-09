@@ -56,6 +56,8 @@ steps: 8412
 - Sleep **84** · 7h 12m of 8h 00m · 23:41–07:05
 - RHR 52 · HRV 48 ms · Breathing 14.2 · Skin +0.2 °C
 - Strain **11.4** · Zones 42 / 18 / 6 / 0 / 0 min
+- Volleyball 20:30–21:15 · 45 min · 138 avg / 179 max · strain 8.3
+- Walk 16:01–16:28 · 27 min · 2,790 steps · 104 spm
 - Steps 8,412
 - Synced 07:58
 <!-- /cc:health -->
@@ -63,7 +65,8 @@ steps: 8412
 ## Journal
 ```
 
-- The night is the one that ended that morning. Strain, zones and steps cover the calendar day.
+- The night is the one that ended that morning. Strain, zones, workouts and steps cover the calendar day.
+- Each workout is a line: running, walking, volleyball, lifting, or plain workout when it fits none. Workouts need resting and max HR, like strain. Walks are 10+ minutes of steady stepping outside workouts, and need only the step counter.
 - Recovery shows "calibrating" until there are 14 nights of history.
 - Synced is the newest strap sample, on today's note only, refreshed hourly. Once it is over two
   hours old it reads `- Synced 1 Nov 21:40 · **14h behind**`, and today gets the block even before
@@ -81,7 +84,7 @@ steps: 8412
 
 - To backfill or recompute: `bun src/health/summarize.ts 2026-10-13 2026-11-03`. On the server: `docker compose exec dashboardify bun src/health/summarize.ts 2026-10-13 2026-11-03`.
 - `feel`, `effort_rpe` and `health_tags` come from the morning check-in, not the strap. See [the feedback loop](health-feedback.md).
-- The computed tables also go to `health-derived/nights/` and `health-derived/days/` (Parquet, one file per date, rebuildable).
+- The computed tables also go to `health-derived/nights/`, `health-derived/days/`, `health-derived/workouts/` and `health-derived/walks/` (Parquet, one file per date, rebuildable; workouts and walks have a row each, and no file on a day without any).
 
 ## Health: `health/YYYY/YYYY-MM.csv`
 

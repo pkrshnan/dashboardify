@@ -69,6 +69,14 @@ async function putNight(): Promise<void> {
   await put("temperature", ["celsius"], [{ ts: SLEEP.start + HOUR, values: [34.5] }]);
 }
 
+async function writeProfile(): Promise<void> {
+  await mkdir(join(dir, "vault"), { recursive: true });
+  await writeFile(
+    join(dir, "vault", "profile.md"),
+    "---\nbirth_date: 1996-05-01\nsex: male\n---\n",
+  );
+}
+
 describe("DailySummary", () => {
   test("no data writes nothing", async () => {
     expect(await summary.run(DATE)).toBeNull();
@@ -77,11 +85,7 @@ describe("DailySummary", () => {
 
   test("writes the night and day to the daily note and the derived tables", async () => {
     await putNight();
-    await mkdir(join(dir, "vault"), { recursive: true });
-    await writeFile(
-      join(dir, "vault", "profile.md"),
-      "---\nbirth_date: 1996-05-01\nsex: male\n---\n",
-    );
+    await writeProfile();
     const result = await summary.run(DATE);
     expect(result?.night?.restingHr).toBeCloseTo(52, 0);
 
@@ -96,7 +100,7 @@ describe("DailySummary", () => {
     expect(note?.body.indexOf("## Health")).toBeLessThan(note?.body.indexOf("## Journal") ?? 0);
 
     expect((await derived.read("nights", DATE))?.rhr_bpm).toBeCloseTo(52, 0);
-    expect((await derived.read("days", DATE))?.algo_version).toBe("1");
+    expect((await derived.read("days", DATE))?.algo_version).toBe("2");
   });
 
   test("recovery appears once there are two weeks of nights", async () => {
@@ -115,6 +119,53 @@ describe("DailySummary", () => {
     const note = await vault.readDaily(DATE);
     expect(note?.frontmatter.recovery_pct).toBe(Math.round(result?.recovery?.pct ?? -1));
     expect(note?.frontmatter.temp_dev_c).toBeCloseTo(0.1, 2);
+  });
+
+  test("a run becomes a workout line, a workouts row and the day's workout minutes", async () => {
+    await putNight();
+    await writeProfile();
+    // A 40-minute run at 18:00, with a quiet half hour either side so it stands apart from the
+    // fixture's all-day 110 bpm.
+    const start = Date.parse(`${DATE}T17:30:00-08:00`);
+    const seconds = Array.from({ length: 100 * 60 }, (_, i) => i);
+    const running = (i: number) => i >= 30 * 60 && i < 70 * 60;
+    const at = (i: number) => start + i * 1000;
+    await put(
+      "heart_rate",
+      ["bpm"],
+      seconds.map((i) => ({ ts: at(i), values: [running(i) ? 165 : 80] })),
+    );
+    // 165 steps a minute while running; the counter holds still otherwise.
+    const count = (i: number) => Math.floor(2.75 * Math.min(Math.max(i - 30 * 60, 0), 40 * 60));
+    await put(
+      "steps",
+      ["count"],
+      seconds.map((i) => ({ ts: at(i), values: [count(i)] })),
+    );
+    await put(
+      "motion",
+      ["intensity", "intensity_long"],
+      seconds.map((i) => ({ ts: at(i), values: [running(i) ? 0.5 : 0.03, -3] })),
+    );
+
+    await summary.run(DATE);
+
+    const note = await vault.readDaily(DATE);
+    expect(note?.body).toMatch(/- Running 18:00–18:40 · 40 min · 165 avg \/ 165 max · strain \d/);
+    const rows = await derived.readAll("workouts", DATE);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ kind: "running", duration_min: 40, algo_version: "2" });
+    expect((await derived.read("days", DATE))?.workout_min).toBe(40);
+    // The run is fast stepping, but it is a workout, so it isn't also a walk.
+    expect(await derived.readAll("walks", DATE)).toEqual([]);
+  });
+
+  test("a day with no workouts leaves no workouts file", async () => {
+    await derived.writeAll("workouts", DATE, [{ kind: "lifting" }]);
+
+    await derived.writeAll("workouts", DATE, []);
+
+    expect(await derived.readAll("workouts", DATE)).toEqual([]);
   });
 
   test("rerunning only replaces the Health block", async () => {
