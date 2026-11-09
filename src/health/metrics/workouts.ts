@@ -93,8 +93,36 @@ export function workouts(input: WorkoutInput): Workout[] {
   return results;
 }
 
+/**
+ * Moving in place, for finding a lifting session the note says happened. Lifting often never lifts
+ * HR to a workout's level, but the arm keeps moving between sets while the feet stay put.
+ */
+const IN_PLACE_MOTION = 0.06;
+
+/**
+ * The longest stretch of moving in place: minutes with motion of 0.06 or more and under 20 steps,
+ * joined across rests of up to 5 minutes, at least 15 minutes long. Null when there is none.
+ */
+export function movingInPlace(
+  motion: Motion[],
+  steps: Map<number, number>,
+  exclude: Span[],
+): Span | null {
+  const busy = [...minuteMotion(motion)]
+    .filter(([ts, m]) => m >= IN_PLACE_MOTION && (steps.get(ts) ?? 0) < STILL_SPM)
+    .filter(([ts]) => !exclude.some((s) => inSpan(ts, s)))
+    .map(([ts]) => ({ ts }))
+    .sort((a, b) => a.ts - b.ts);
+  return activeSpans(busy)
+    .filter((s) => (s.end - s.start) / MINUTE_MS >= MIN_WORKOUT_MIN)
+    .reduce<Span | null>(
+      (best, s) => (best && best.end - best.start >= s.end - s.start ? best : s),
+      null,
+    );
+}
+
 /** Active minutes joined across rests of up to 5 minutes. */
-function activeSpans(active: MinuteHr[]): Span[] {
+function activeSpans(active: { ts: number }[]): Span[] {
   const spans: Span[] = [];
   for (const m of active) {
     const last = spans[spans.length - 1];

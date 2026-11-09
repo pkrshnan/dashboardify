@@ -18,10 +18,11 @@ import {
 } from "./metrics/recovery";
 import { DEFAULT_NEED_MIN, type PastNight } from "./metrics/sleep-score";
 import { median } from "./metrics/stats";
+import { stepsPerMinute } from "./metrics/steps";
 import { dayMetrics, type NightMetrics, nightMetrics } from "./metrics/summary";
 import type { Accel, HeartRate, Motion, RrInterval, SkinTemp, StepCounter } from "./metrics/types";
 import type { Walk } from "./metrics/walks";
-import type { Workout } from "./metrics/workouts";
+import { movingInPlace, type Workout } from "./metrics/workouts";
 import { ParamsStore } from "./params";
 import { parseProfile } from "./profile";
 import type { RawStore, Row } from "./raw-store";
@@ -68,11 +69,14 @@ export class DailySummary {
     const night = await this.night(date, rows, needMinutes(profileFields));
     const signals = night ? toSignals(night) : null;
     const heartRate = await this.load(date, "heart_rate", 0, 24, toHeartRate);
+    const steps = await this.load(date, "steps", 0, 24, toSteps);
+    const motion = await this.load(date, "motion", 0, 24, toMotion);
+    const sleep = night ? { start: night.bed, end: night.wake } : null;
     const day = dayMetrics({
       heartRate,
-      steps: await this.load(date, "steps", 0, 24, toSteps),
-      motion: await this.load(date, "motion", 0, 24, toMotion),
-      sleep: night ? { start: night.bed, end: night.wake } : null,
+      steps,
+      motion,
+      sleep,
       restingHr: night?.restingHr ?? median(recentRestingHrs(history)),
       profile: parseProfile(profileFields, date),
     });
@@ -86,6 +90,11 @@ export class DailySummary {
       lifting: liftingDay(
         parseLiftingLog((await this.vault.readDaily(date))?.body ?? ""),
         day.workouts,
+        movingInPlace(motion, stepsPerMinute(steps), [
+          ...(sleep ? [sleep] : []),
+          ...day.workouts,
+          ...day.walks,
+        ]),
         heartRate,
       ),
     };

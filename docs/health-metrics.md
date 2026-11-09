@@ -229,7 +229,10 @@ order, which is everything else that's needed: no times.
 
 1. Read the log (see [vault format](vault-format.md)) and expand it into sets, in order.
 2. Find the day's lifting session: the longest workout named lifting, or else the longest unnamed
-   one.
+   one. Lifting often never lifts HR to a workout's level (on 8 November it passed 50% of reserve
+   for one minute), so failing that it is the longest stretch of **moving in place**: minutes with
+   motion of 0.06 or more and under 20 steps, joined across rests of up to 5 minutes, at least 15
+   minutes long, outside sleep, workouts and walks.
 3. In that session, average the once-a-second HR per 5 seconds and smooth it over 15. Minute
    averages, which the workout search uses, blur a 45-second set away.
 4. Every peak's climb is its rise from the lowest point in the 90 seconds before it. Climbs under
@@ -237,6 +240,11 @@ order, which is everything else that's needed: no times.
 5. Take the N clearest climbs at least a minute apart, where N is the number of logged sets, and
    give them to the sets in order. With fewer than N clear climbs nothing is matched, rather than
    pinning a set to a moment the data can't support. The log is still counted.
+
+On 8 November (4 exercises, 15 sets, logged without times) this found the session from moving in
+place, 18:05–18:54, and 27 climbs in it, about 2–2½ minutes apart. The 15 clearest ended at 18:50,
+a minute before the last set was written down. With more set-like climbs than sets, which ones
+are the sets is the clearest-first guess; more labeled sessions will show how good it is.
 
 Volume is weight × reps over every set, in pounds (kg × 2.20462).
 

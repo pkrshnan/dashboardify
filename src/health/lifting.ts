@@ -3,7 +3,7 @@
 
 import { type Exercise, type LoggedSet, loggedSets } from "../vault/lifting";
 import { type SetClimb, setClimbs } from "./metrics/sets";
-import type { HeartRate } from "./metrics/types";
+import type { HeartRate, Span } from "./metrics/types";
 import type { Workout } from "./metrics/workouts";
 
 const LB_PER_KG = 2.20462;
@@ -18,34 +18,46 @@ export interface LiftingDay {
   sets: LiftingSet[];
   /** Weight × reps over every set, in pounds. Bodyweight sets add nothing. */
   volumeLb: number;
-  /** The strap session the log was joined to, if any. */
-  session: Workout | null;
+  /** The stretch of strap data the log was joined to, if any. */
+  session: Span | null;
+  /** A workout the strap found, or moving in place when HR never got that high. */
+  found: "workout" | "movement" | null;
   /** Whether every set found its HR climb. */
   matched: boolean;
 }
 
 /**
- * Join the log to the day's lifting session: the longest workout named lifting, or else the
- * longest unnamed one. Null when the note has no log.
+ * Join the log to the day's lifting session: the longest workout named lifting, else the longest
+ * unnamed one, else `moving` (see movingInPlace). Null when the note has no log.
  */
 export function liftingDay(
   exercises: Exercise[],
   workouts: Workout[],
+  moving: Span | null,
   heartRate: HeartRate[],
 ): LiftingDay | null {
   const logged = loggedSets(exercises);
   if (logged.length === 0) {
     return null;
   }
-  const session = longest(workouts, "lifting") ?? longest(workouts, "workout");
+  const workout = longest(workouts, "lifting") ?? longest(workouts, "workout");
+  const session = workout ?? moving;
   const climbs = session ? setClimbs(heartRate, session, logged.length) : null;
   return {
     exercises: exercises.length,
     sets: logged.map((set, i) => ({ ...set, climb: climbs?.[i] ?? null })),
     volumeLb: logged.reduce((sum, s) => sum + pounds(s) * s.reps, 0),
-    session,
+    session: session ? { start: session.start, end: session.end } : null,
+    found: foundBy(workout, moving),
     matched: climbs !== null,
   };
+}
+
+function foundBy(workout: Workout | null, moving: Span | null): LiftingDay["found"] {
+  if (workout) {
+    return "workout";
+  }
+  return moving ? "movement" : null;
 }
 
 function longest(workouts: Workout[], kind: Workout["kind"]): Workout | null {

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { stepsPerMinute } from "../../../src/health/metrics/steps";
 import { MINUTE_MS } from "../../../src/health/metrics/types";
-import { type WorkoutInput, workouts } from "../../../src/health/metrics/workouts";
+import { movingInPlace, type WorkoutInput, workouts } from "../../../src/health/metrics/workouts";
 import { T0 } from "./fixtures";
 
 interface Phase {
@@ -122,5 +122,29 @@ describe("workouts", () => {
       [T0, 5],
       [T0 + MINUTE_MS, 5],
     ]);
+  });
+});
+
+describe("moving in place", () => {
+  test("finds a lifting session that never lifted HR, and skips walks and stillness", () => {
+    const input = day([
+      { minutes: 20, bpm: 100, spm: 110, motion: 0.2 },
+      { minutes: 10, bpm: 70, spm: 0, motion: 0.01 },
+      { minutes: 40, bpm: 95, spm: 2, motion: 0.15 },
+    ]);
+
+    const span = movingInPlace(input.motion, input.steps, []);
+
+    expect(span).toEqual({ start: T0 + 60 * MINUTE_MS, end: T0 + 100 * MINUTE_MS });
+  });
+
+  test("under 15 minutes, or excluded, is nothing", () => {
+    const short = day([{ minutes: 10, bpm: 95, spm: 0, motion: 0.15 }]);
+    const long = day([{ minutes: 40, bpm: 95, spm: 0, motion: 0.15 }]);
+
+    expect(movingInPlace(short.motion, short.steps, [])).toBeNull();
+    expect(
+      movingInPlace(long.motion, long.steps, [{ start: T0, end: T0 + 200 * MINUTE_MS }]),
+    ).toBeNull();
   });
 });

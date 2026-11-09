@@ -27,23 +27,34 @@ const twoSets = heartRate(T0, T0 + 6 * 60_000, (ts) => {
 
 describe("lifting day", () => {
   test("joins the log to the lifting session and matches sets in order", () => {
-    const day = liftingDay(LOG, [workout("volleyball", 60), workout("lifting", 6)], twoSets);
+    const day = liftingDay(LOG, [workout("volleyball", 60), workout("lifting", 6)], null, twoSets);
 
-    expect(day?.session?.kind).toBe("lifting");
+    expect(day?.found).toBe("workout");
     expect(day?.matched).toBe(true);
     expect(day?.sets.map((s) => Math.round(((s.climb?.peak ?? 0) - T0) / 60_000))).toEqual([1, 4]);
     // 20 lb × 10 + 10 kg × 10 in pounds.
     expect(day?.volumeLb).toBeCloseTo(200 + 220.46, 1);
   });
 
-  test("a log with no strap session is kept, unmatched", () => {
-    const day = liftingDay(LOG, [workout("running", 30)], twoSets);
+  test("without a lifting workout, moving in place is the session", () => {
+    const day = liftingDay(
+      LOG,
+      [workout("running", 30)],
+      { start: T0, end: T0 + 6 * 60_000 },
+      twoSets,
+    );
 
-    expect(day).toMatchObject({ exercises: 1, session: null, matched: false });
+    expect(day).toMatchObject({ found: "movement", matched: true });
+  });
+
+  test("a log with no strap session is kept, unmatched", () => {
+    const day = liftingDay(LOG, [workout("running", 30)], null, twoSets);
+
+    expect(day).toMatchObject({ exercises: 1, session: null, found: null, matched: false });
     expect(day?.sets.every((s) => s.climb === null)).toBe(true);
   });
 
   test("no log, nothing to join", () => {
-    expect(liftingDay([], [workout("lifting", 30)], twoSets)).toBeNull();
+    expect(liftingDay([], [workout("lifting", 30)], null, twoSets)).toBeNull();
   });
 });
