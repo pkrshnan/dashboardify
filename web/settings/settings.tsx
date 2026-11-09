@@ -2,6 +2,7 @@
 // beside the section. Phone: the list, which pushes to each section.
 
 import type { Token } from "../api";
+import { Calendars } from "./calendars";
 import { Devices } from "./devices";
 import { General } from "./general";
 import { SECTIONS } from "./sections";
@@ -15,6 +16,7 @@ export interface SectionProps {
 const VIEWS: Record<string, (props: SectionProps) => preact.JSX.Element> = {
   general: General,
   devices: Devices,
+  calendars: Calendars,
 };
 
 interface Props extends SectionProps {
