@@ -14,6 +14,7 @@ import { type AppDeps, createApp } from "../../../src/server/app";
 import { GeneralSettings, type SettingsChange } from "../../../src/settings/core";
 import { DeviceStore } from "../../../src/settings/devices";
 import { SecretBox } from "../../../src/settings/secret-box";
+import type { SetupCode } from "../../../src/settings/setup-code";
 import { SettingsStore } from "../../../src/settings/store";
 import type { FakeCalDav } from "../../calendar/fake-caldav";
 
@@ -40,6 +41,7 @@ export function useApi(
     calDav?: () => FakeCalDav;
     recompute?: AppDeps["recompute"];
     calendar?: CalendarSource;
+    setupCode?: SetupCode;
   } = {},
 ) {
   let dir: string;
@@ -70,6 +72,7 @@ export function useApi(
       },
       {
         devices,
+        setupCode: options.setupCode,
         calendar: options.calendar ?? (options.calDav ? cacheSource(cache, accounts) : undefined),
         settings: {
           general: new GeneralSettings(settings),

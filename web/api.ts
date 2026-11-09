@@ -18,7 +18,12 @@ import type { ActivityDayView, WorkoutDetail, WorkoutView } from "./lib/activity
 
 const TOKEN_KEY = "dashboardify.token";
 
-export class Unauthorized extends Error {}
+export class Unauthorized extends Error {
+  /** The server is waiting for its first-run setup code. */
+  constructor(readonly setup = false) {
+    super("unauthorized");
+  }
+}
 
 export function savedToken(): string | null {
   try {
@@ -49,7 +54,8 @@ async function call<T>(token: Token, path: string, init: RequestInit = {}): Prom
   }
   const response = await fetch(path, { ...init, headers });
   if (response.status === 401) {
-    throw new Unauthorized("unauthorized");
+    const body = (await response.json().catch(() => ({}))) as { setup?: boolean };
+    throw new Unauthorized(body.setup === true);
   }
   if (!response.ok) {
     throw new Error(`${path}: ${response.status}`);
@@ -219,6 +225,22 @@ export function deleteTask(token: Token, name: string): Promise<unknown> {
     method: "POST",
     body: JSON.stringify({ name }),
   });
+}
+
+/**
+ * First run: adds this device using the setup code the server printed, and returns the new
+ * device's token to keep.
+ */
+export async function setUpDevice(code: string, displayName: string): Promise<string> {
+  const device = await call<{ token: string }>(
+    code,
+    "/dashboardify.v1.DeviceService/CreateDevice",
+    {
+      method: "POST",
+      body: JSON.stringify({ device: { displayName }, requestId: randomKey() }),
+    },
+  );
+  return device.token;
 }
 
 /** randomUUID needs HTTPS; over plain HTTP on the tailnet fall back to random bytes. */

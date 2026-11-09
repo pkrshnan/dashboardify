@@ -34,11 +34,12 @@ const PHONE_QUERY = "(max-width: 899px)";
 /** Straight to the home screen; the sign-in screen only when the server wants a token. */
 function App() {
   const [token, setToken] = useState<Token>(savedToken);
-  const [signIn, setSignIn] = useState<"no" | "ask" | "failed">("no");
+  const [signIn, setSignIn] = useState<"no" | "ask" | "failed" | "setup">("no");
   if (signIn !== "no") {
     return (
       <SignIn
         failed={signIn === "failed"}
+        setup={signIn === "setup"}
         onToken={(t) => {
           saveToken(t);
           setToken(t);
@@ -47,16 +48,26 @@ function App() {
       />
     );
   }
-  const unauthorized = () => {
+  const unauthorized = (setup: boolean) => {
     saveToken(null);
-    setSignIn(token ? "failed" : "ask");
+    if (setup) {
+      setSignIn("setup");
+    } else {
+      setSignIn(token ? "failed" : "ask");
+    }
     setToken(null);
   };
   return <Home token={token} onUnauthorized={unauthorized} />;
 }
 
 /** Loads the home view, then shows the home screen or, at #activity, the Activity page. */
-function Home({ token, onUnauthorized }: { token: Token; onUnauthorized: () => void }) {
+function Home({
+  token,
+  onUnauthorized,
+}: {
+  token: Token;
+  onUnauthorized: (setup: boolean) => void;
+}) {
   const { view, error, load } = useHome(token, onUnauthorized);
   const now = useNow(view?.timeZone);
   const isPhone = useMedia(PHONE_QUERY);
@@ -181,7 +192,7 @@ function HomeCapture(props: {
 }
 
 /** The home view, refreshed on a timer, when the tab comes back, and when the day changes. */
-function useHome(token: Token, onUnauthorized: () => void) {
+function useHome(token: Token, onUnauthorized: (setup: boolean) => void) {
   const [view, setView] = useState<HomeView | null>(null);
   const [error, setError] = useState(false);
   // A ref, so a new callback on each render doesn't restart the refresh timer.
@@ -194,7 +205,7 @@ function useHome(token: Token, onUnauthorized: () => void) {
       setError(false);
     } catch (err) {
       if (err instanceof Unauthorized) {
-        unauthorized.current();
+        unauthorized.current(err.setup);
         return;
       }
       setError(true);

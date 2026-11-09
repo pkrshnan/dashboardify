@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { fetchHome } from "../../web/api";
+import { SetupCode } from "../../src/settings/setup-code";
+import { fetchHome, setUpDevice, Unauthorized } from "../../web/api";
 import { useApi } from "../server/api/helpers";
 
 describe("home UI API adapter", () => {
@@ -33,5 +34,40 @@ describe("home UI API adapter", () => {
     const { modern, legacy } = await compare();
 
     expect(modern).toEqual(legacy);
+  });
+});
+
+describe("first-run sign-in", () => {
+  const setupCode = new SetupCode();
+  const api = useApi({ setupCode });
+
+  async function through<T>(run: () => Promise<T>): Promise<T> {
+    const original = globalThis.fetch;
+    globalThis.fetch = ((url: string, init?: RequestInit) =>
+      api.app.request(url, init)) as typeof fetch;
+    try {
+      return await run();
+    } finally {
+      globalThis.fetch = original;
+    }
+  }
+
+  test("a 401 says the server is waiting for its setup code", async () => {
+    setupCode.issue();
+
+    const error = await through(() => fetchHome(null).catch((e: unknown) => e));
+
+    expect(error).toBeInstanceOf(Unauthorized);
+    expect((error as Unauthorized).setup).toBe(true);
+  });
+
+  test("setting up with the code returns a token that signs in", async () => {
+    const code = setupCode.issue();
+
+    const token = await through(() => setUpDevice(code, "Mac"));
+    const home = await through(() => fetchHome(token));
+
+    expect(token).toMatch(/^dfy_/);
+    expect(home.timeZone).toBe("UTC");
   });
 });
