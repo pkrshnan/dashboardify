@@ -6,6 +6,7 @@ import { type CaptureKind, type CaptureParse, parseCapture } from "../../src/cap
 import { hhmm, isoDate, wallClock } from "../../src/capture/zone";
 import type { CaptureHints } from "../../src/home/calendar";
 import type { AgendaEvent, Category, HomeView } from "../../src/home/types";
+import type { PlaceView } from "../api";
 import { shortDate } from "./format";
 
 /** What's typed, and the kind and calendar if they were picked by hand. */
@@ -14,6 +15,8 @@ export interface BoxState {
   override?: CaptureKind;
   /** `calendarAccounts/{a}/calendars/{c}` */
   calendar?: string;
+  /** The search result picked for the typed place, while that place stays the same. */
+  place?: { query: string; index: number };
 }
 
 /** The calendar an event will go on, and why. */
@@ -24,10 +27,10 @@ export interface PreviewCalendar {
   reason: string;
 }
 
-/** A run of the typed text, highlighted when it is a time ("when") or a person ("who"). */
+/** A run of the typed text, highlighted when it is a time, a person or a place. */
 export interface Segment {
   text: string;
-  kind?: "when" | "who";
+  kind?: "when" | "who" | "where";
 }
 
 export interface Preview {
@@ -39,6 +42,8 @@ export interface Preview {
   where: string;
   /** Events only. */
   calendar?: PreviewCalendar;
+  /** Events at a place: the search result that will be saved, filled in by the box. */
+  place?: PlaceView;
 }
 
 export interface Context {
@@ -62,6 +67,21 @@ export function nextCalendar(state: BoxState, hints: CaptureHints, current: stri
   const names = hints.calendars.map((c) => c.name);
   const next = names[(names.indexOf(current) + 1) % names.length] ?? current;
   return { ...state, calendar: next };
+}
+
+/** The search result shown for the typed place: the one picked, else the best. */
+export function chosenPlace(
+  state: BoxState,
+  query: string | undefined,
+  places: PlaceView[],
+): { place?: PlaceView; index: number } {
+  const index = query && state.place?.query === query ? state.place.index : 0;
+  return { place: query ? places[index % Math.max(places.length, 1)] : undefined, index };
+}
+
+/** The next search result, for the place picker. */
+export function nextPlace(state: BoxState, query: string, index: number, count: number): BoxState {
+  return { ...state, place: { query, index: (index + 1) % Math.max(count, 1) } };
 }
 
 /** The text cut into plain and highlighted runs, covering every character once. */

@@ -1,15 +1,17 @@
-// One box for events and reminders (the Main artboard). As you type it highlights the time and
-// the people, says whether the line will be an event or a reminder and why, and which calendar
-// it goes on. Return adds it. Until a calendar is connected, Event is off and everything becomes
+// One box for events and reminders (the Main artboard). As you type it highlights the time, the
+// people and the place, says whether the line will be an event or a reminder and why, which
+// calendar it goes on, and which real place "at …" was found as. Return adds it. Until a calendar is connected, Event is off and everything becomes
 // a reminder.
 
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { CaptureKind } from "../../src/capture/parse";
 import type { CaptureHints } from "../../src/home/calendar";
-import type { CaptureResult } from "../api";
+import type { CaptureResult, Token } from "../api";
 import {
   type BoxState,
+  chosenPlace,
   nextCalendar,
+  nextPlace,
   type Preview,
   preview,
   segments,
@@ -17,6 +19,7 @@ import {
   typed,
 } from "../lib/capture";
 import { alpha, CATEGORY, TEXT_2 } from "../lib/colors";
+import { type PlaceResults, usePlaces } from "../lib/use-places";
 
 /** A line just added, shown under the box with Undo. */
 interface Added {
@@ -30,6 +33,8 @@ interface Added {
 }
 
 interface Props {
+  /** For looking up the line's place as it is typed. */
+  token: Token;
   timeZone: string;
   /** Writable calendars and the guess's history, or null with no calendar connected. */
   hints: CaptureHints | null;
@@ -43,10 +48,12 @@ interface Props {
 
 const NO_CALENDAR_TIP = "Connect a calendar in Settings to add events.";
 
-export function Capture({ timeZone, hints, isPhone, onAdd, onUndo, newRequestId }: Props) {
+export function Capture(props: Props) {
+  const { timeZone, hints, isPhone, onAdd, onUndo, newRequestId } = props;
   const [box, setBox] = useState<BoxState>({ text: "" });
   const input = useFocusKey("n");
-  const shown = preview(box, { now: new Date(), timeZone, hints });
+  const place = useShownPlace(props.token, box, preview(box, { now: new Date(), timeZone, hints }));
+  const shown = place.shown;
   const adding = useAdding({ onAdd, onUndo, newRequestId });
   const submit = (event?: Event) => {
     event?.preventDefault();
@@ -56,13 +63,9 @@ export function Capture({ timeZone, hints, isPhone, onAdd, onUndo, newRequestId 
   };
   const kind = shown?.parse.kind;
   const color = shown?.calendar ? CATEGORY[shown.calendar.category] : undefined;
+  const pick = (k: CaptureKind) => setBox((s) => switched(s, k));
   const kindSwitch = (
-    <KindSwitch
-      kind={kind}
-      reason={shown?.reason}
-      eventsEnabled={hints !== null}
-      onPick={(k) => setBox((s) => switched(s, k))}
-    />
+    <KindSwitch kind={kind} reason={shown?.reason} eventsEnabled={hints !== null} onPick={pick} />
   );
   const cycle = () =>
     hints && shown?.calendar && setBox((s) => nextCalendar(s, hints, shown.calendar?.name ?? ""));
@@ -85,21 +88,94 @@ export function Capture({ timeZone, hints, isPhone, onAdd, onUndo, newRequestId 
           />
           {!isPhone && kindSwitch}
         </div>
-        {shown && <PreviewLine shown={shown} busy={adding.busy} onCycle={cycle} />}
+        {shown && (
+          <PreviewLine shown={shown} busy={adding.busy} onCycle={cycle}>
+            <PlaceLine {...place} onNext={() => setBox((s) => place.next(s))} />
+          </PreviewLine>
+        )}
         {isPhone && (
-          <div class="capture-actions">
-            {kindSwitch}
-            <span class="capture-spacer" />
-            <button type="submit" class="capture-add" disabled={!shown?.parse.title || adding.busy}>
-              Add
-            </button>
-          </div>
+          <PhoneActions kindSwitch={kindSwitch} disabled={!shown?.parse.title || adding.busy} />
         )}
       </form>
       {adding.failed && <RetryNote onRetry={() => submit()} />}
       {adding.added.map((row) => (
         <AddedRow key={row.key} row={row} onUndo={() => adding.undo(row)} />
       ))}
+    </div>
+  );
+}
+
+/** The line's place, looked up as it is typed, and the preview with the match that will be saved. */
+function useShownPlace(token: Token, box: BoxState, base: Preview | undefined) {
+  const query = base?.parse.place;
+  const results = usePlaces(token, query ?? "");
+  const { place, index } = chosenPlace(box, query, results.places);
+  return {
+    query,
+    results,
+    index,
+    shown: base && (place ? { ...base, place } : base),
+    next: (s: BoxState) => nextPlace(s, query ?? "", index, results.places.length),
+  };
+}
+
+/** "📍 Dishoom · 7 Boundary Street, Whitechapel", with the next match a click away. */
+function PlaceLine(props: {
+  query: string | undefined;
+  results: PlaceResults;
+  index: number;
+  shown: Preview | undefined;
+  onNext: () => void;
+}) {
+  const { results, index } = props;
+  const place = props.shown?.place;
+  if (!props.query) {
+    return null;
+  }
+  if (!place) {
+    const note = results.searching
+      ? `Looking up ${props.query}…`
+      : `${props.query} wasn't found on the map, so it's saved as typed.`;
+    return <div class="capture-place muted">{note}</div>;
+  }
+  const count = results.places.length;
+  return (
+    <div class="capture-place">
+      <PinIcon />
+      <span class="ell capture-place-name">{place.displayName}</span>
+      <span class="ell muted">{place.address}</span>
+      {count > 1 && (
+        <button type="button" class="link" title="Show the next match" onClick={props.onNext}>
+          {(index % count) + 1} of {count}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function PinIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" class="capture-pin">
+      <path
+        d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      />
+      <circle cx="12" cy="10" r="2.2" fill="currentColor" />
+    </svg>
+  );
+}
+
+/** On the phone: the kind switch under the text, with an Add button. */
+function PhoneActions(props: { kindSwitch: preact.ComponentChildren; disabled: boolean }) {
+  return (
+    <div class="capture-actions">
+      {props.kindSwitch}
+      <span class="capture-spacer" />
+      <button type="submit" class="capture-add" disabled={props.disabled}>
+        Add
+      </button>
     </div>
   );
 }
@@ -229,11 +305,11 @@ function Mirror({ text, shown, color, input, busy, onInput }: MirrorProps) {
 }
 
 /** Event phrases are filled with the calendar's colour; reminders keep the dashed outline. */
-function markStyle(kind: "when" | "who" | undefined, color: string | undefined) {
+function markStyle(kind: "when" | "who" | "where" | undefined, color: string | undefined) {
   if (!(kind && color)) {
     return undefined;
   }
-  if (kind === "who") {
+  if (kind === "who" || kind === "where") {
     return { textDecorationColor: color };
   }
   return { background: alpha(color, 0.32), boxShadow: `0 0 0 2px ${alpha(color, 0.32)}` };
@@ -314,10 +390,13 @@ function PreviewLine({
   shown,
   busy,
   onCycle,
+  children,
 }: {
   shown: Preview;
   busy: boolean;
   onCycle: () => void;
+  /** The place line, for events at a place. */
+  children?: preact.ComponentChildren;
 }) {
   const title = shown.parse.title;
   const calendar = shown.calendar;
@@ -337,6 +416,7 @@ function PreviewLine({
         )}
         <span class="muted capture-hint">{busy ? hint(shown) : "Return to add"}</span>
       </div>
+      {children}
       <div class="capture-reason">{shown.reason}</div>
     </div>
   );

@@ -4,6 +4,7 @@ package dashboardify.v1;
 
 import "buf/validate/validate.proto";
 import "dashboardify/v1/event.proto";
+import "dashboardify/v1/place.proto";
 import "dashboardify/v1/task.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
@@ -81,6 +82,10 @@ message CaptureRequest {
 
   // Set only when picked by hand: `calendarAccounts/{a}/calendars/{c}`.
   string calendar = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // Events: the place the client showed for the line's "at …". Unset, the server looks it up and
+  // takes the best match.
+  Place place = 5 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // How the server read the line.
@@ -114,6 +119,13 @@ message CaptureParse {
 
   // Events: why that calendar, such as "Physio is usually on Fitness."
   string calendar_reason = 10;
+
+  // Events: where, as typed: `Dishoom` from "at Dishoom" or "@Dishoom".
+  string location = 11;
+
+  // Events, from Capture only: the place the location was found as. Unset when none was found;
+  // the event then has the typed location alone.
+  Place place = 12;
 }
 
 // Response for Capture.

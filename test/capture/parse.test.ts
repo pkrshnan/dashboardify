@@ -182,6 +182,60 @@ describe("parseCapture: times", () => {
   });
 });
 
+describe("parseCapture: places", () => {
+  test.each([
+    {
+      text: "Lunch with Sam at Dishoom tomorrow 1pm",
+      title: "Lunch with Sam",
+      place: "Dishoom",
+      spans: ["who:with Sam", "where:at Dishoom", "when:tomorrow 1pm"],
+    },
+    {
+      text: "Dinner @Dishoom Shoreditch Fri 7pm",
+      title: "Dinner",
+      place: "Dishoom Shoreditch",
+      spans: ["where:@Dishoom Shoreditch", "when:Fri 7pm"],
+    },
+    {
+      text: "Coffee at the Barbican, Thu 3pm",
+      title: "Coffee",
+      place: "Barbican",
+      spans: ["where:at the Barbican", "when:Thu 3pm"],
+    },
+    {
+      text: "Drinks at Monmouth Coffee on Fri 6-8pm",
+      title: "Drinks",
+      place: "Monmouth Coffee",
+      spans: ["where:at Monmouth Coffee", "when:on Fri 6-8pm"],
+    },
+  ])("$text", ({ text, title, place, spans }) => {
+    const parse = parseCapture(text, { now, timeZone });
+
+    expect(parse).toMatchObject({ kind: "event", title, place });
+    expect(read(text)?.spans).toEqual([...spans]);
+  });
+
+  test("a time after at stays a time", () => {
+    expect(parseCapture("Standup at 10 for 15m", { now, timeZone })?.place).toBeUndefined();
+    expect(parseCapture("Meet at Noon tomorrow", { now, timeZone })?.place).toBeUndefined();
+  });
+
+  test("a place makes a timed line an event", () => {
+    expect(read("Sam at Dishoom tomorrow 1pm")).toMatchObject({
+      kind: "event",
+      title: "Sam",
+      reason: "It's at a place, so it's an event. It gets an hour.",
+    });
+  });
+
+  test("a reminder keeps its place in the title", () => {
+    const parse = parseCapture("Pick up parcel at Post Office Fri", { now, timeZone });
+
+    expect(parse).toMatchObject({ kind: "reminder", title: "Pick up parcel at Post Office" });
+    expect(parse?.place).toBeUndefined();
+  });
+});
+
 describe("parseCapture: recurring", () => {
   test("a weekday rule repeats weekly from the next one", () => {
     expect(read("Gym every Monday 7am")).toMatchObject({

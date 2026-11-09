@@ -8,6 +8,13 @@ import {
   writeEvent,
 } from "../../src/calendar/ical";
 
+const DISHOOM = {
+  name: "Dishoom",
+  address: "7 Boundary Street, London",
+  latitude: 51.5245,
+  longitude: -0.0773,
+};
+
 // Hand-written in the shapes iCloud and Outlook produce; not captured from a real account.
 async function fixture(name: string): Promise<string> {
   return Bun.file(join(import.meta.dir, "fixtures", name)).text();
@@ -236,6 +243,17 @@ describe("writeEvent", () => {
     expect(read?.start.toISOString()).toBe("2026-07-01T08:00:00.000Z");
   });
 
+  test("a place gives the name and address, coordinates, and Apple's structured location", () => {
+    const ics = writeEvent({ ...event, place: DISHOOM }).replace(/\r\n /g, "");
+
+    expect(ics).toContain("LOCATION:Dishoom\\n7 Boundary Street\\, London");
+    expect(ics).toContain("GEO:51.5245;-0.0773");
+    expect(ics).toMatch(
+      /X-APPLE-STRUCTURED-LOCATION;X-ADDRESS="7 Boundary Street, London";X-APPLE-RADIUS=70;X-TITLE=Dishoom;VALUE=URI:geo:51.5245,-0.0773/,
+    );
+    expect(readOccurrences(ics, window)[0]?.location).toBe("Dishoom\n7 Boundary Street, London");
+  });
+
   test("leaves out empty optional fields", () => {
     const ics = writeEvent({ ...event, location: undefined });
 
@@ -282,6 +300,30 @@ describe("editEvent", () => {
     });
 
     expect(edited).not.toMatch(/^LOCATION/m);
+  });
+
+  test("a new location drops the old place's coordinates, and a new place brings its own", () => {
+    const placed = writeEvent({
+      uid: "u",
+      title: "Lunch",
+      start: now,
+      end: new Date(now.getTime() + 3_600_000),
+      timeZone: "UTC",
+      place: DISHOOM,
+      now,
+    });
+
+    const typed = editEvent(placed, { location: "Sam's flat", timeZone: "UTC", now });
+    const moved = editEvent(placed, {
+      place: { ...DISHOOM, name: "Barbican Centre", latitude: 51.52, longitude: -0.09 },
+      timeZone: "UTC",
+      now,
+    });
+
+    expect(typed).toContain("LOCATION:Sam's flat");
+    expect(typed).not.toMatch(/GEO|STRUCTURED/);
+    expect(moved.match(/^GEO:.*$/gm)).toEqual(["GEO:51.52;-0.09"]);
+    expect(moved).toContain("X-TITLE=Barbican Centre");
   });
 
   test("refuses recurring events and the dates of all-day ones", async () => {

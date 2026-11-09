@@ -5,6 +5,8 @@
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import { file_buf_validate_validate } from "@bufbuild/protovalidate/gen/buf/validate/validate_pb.js";
+import type { Place } from "./place_pb";
+import { file_dashboardify_v1_place } from "./place_pb";
 import { file_google_api_annotations } from "../../google/api/annotations_pb";
 import { file_google_api_client } from "../../google/api/client_pb";
 import { file_google_api_field_behavior } from "../../google/api/field_behavior_pb";
@@ -17,7 +19,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file dashboardify/v1/event.proto.
  */
 export const file_dashboardify_v1_event: GenFile = /*@__PURE__*/
-  fileDesc("ChtkYXNoYm9hcmRpZnkvdjEvZXZlbnQucHJvdG8SD2Rhc2hib2FyZGlmeS52MSLoAwoFRXZlbnQSEgoEbmFtZRgBIAEoCUIE4kEBCBIXCghjYWxlbmRhchgCIAEoCUIF4kECAgUSGwoFdGl0bGUYAyABKAlCDOJBAQK6SAVyAxj0AxI0CgpzdGFydF90aW1lGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIE4kEBAhIyCghlbmRfdGltZRgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBOJBAQISFwoJdGltZV96b25lGAYgASgJQgTiQQEBEhUKB2FsbF9kYXkYByABKAhCBOJBAQMSHgoIbG9jYXRpb24YCCABKAlCDOJBAQG6SAVyAxjQDxIcCgVub3RlcxgJIAEoCUIN4kEBAbpIBnIEGKCcARIRCgN1cmwYCiABKAlCBOJBAQESFgoIY2F0ZWdvcnkYCyABKAlCBOJBAQMSFgoId3JpdGFibGUYDCABKAhCBOJBAQMSFwoJcmVjdXJyaW5nGA0gASgIQgTiQQEDEhEKA3VpZBgOIAEoCUIE4kEBAxISCgRldGFnGA8gASgJQgTiQQEBOjrqQTcKFmRhc2hib2FyZGlmeS5hcHAvRXZlbnQSDmV2ZW50cy97ZXZlbnR9KgZldmVudHMyBWV2ZW50IkcKD0dldEV2ZW50UmVxdWVzdBI0CgRuYW1lGAEgASgJQibiQQEC+kEYChZkYXNoYm9hcmRpZnkuYXBwL0V2ZW50ukgEcgIQASJmChFMaXN0RXZlbnRzUmVxdWVzdBIhCglwYWdlX3NpemUYASABKAVCDuJBAQG6SAcaBRjoBygAEhgKCnBhZ2VfdG9rZW4YAiABKAlCBOJBAQESFAoGZmlsdGVyGAMgASgJQgTiQQEBIlUKEkxpc3RFdmVudHNSZXNwb25zZRImCgZldmVudHMYASADKAsyFi5kYXNoYm9hcmRpZnkudjEuRXZlbnQSFwoPbmV4dF9wYWdlX3Rva2VuGAIgASgJImgKEkNyZWF0ZUV2ZW50UmVxdWVzdBIxCgVldmVudBgBIAEoCzIWLmRhc2hib2FyZGlmeS52MS5FdmVudEIK4kEBArpIA8gBARIfCgpyZXF1ZXN0X2lkGAIgASgJQgviQQEBukgEcgIYZCJ+ChJVcGRhdGVFdmVudFJlcXVlc3QSMQoFZXZlbnQYASABKAsyFi5kYXNoYm9hcmRpZnkudjEuRXZlbnRCCuJBAQK6SAPIAQESNQoLdXBkYXRlX21hc2sYAiABKAsyGi5nb29nbGUucHJvdG9idWYuRmllbGRNYXNrQgTiQQEBIl4KEkRlbGV0ZUV2ZW50UmVxdWVzdBI0CgRuYW1lGAEgASgJQibiQQEC+kEYChZkYXNoYm9hcmRpZnkuYXBwL0V2ZW50ukgEcgIQARISCgRldGFnGAIgASgJQgTiQQEBMs0ECgxFdmVudFNlcnZpY2USaAoIR2V0RXZlbnQSIC5kYXNoYm9hcmRpZnkudjEuR2V0RXZlbnRSZXF1ZXN0GhYuZGFzaGJvYXJkaWZ5LnYxLkV2ZW50IiLaQQRuYW1lgtPkkwIVEhMvdjEve25hbWU9ZXZlbnRzLyp9EmkKCkxpc3RFdmVudHMSIi5kYXNoYm9hcmRpZnkudjEuTGlzdEV2ZW50c1JlcXVlc3QaIy5kYXNoYm9hcmRpZnkudjEuTGlzdEV2ZW50c1Jlc3BvbnNlIhKC0+STAgwSCi92MS9ldmVudHMSbQoLQ3JlYXRlRXZlbnQSIy5kYXNoYm9hcmRpZnkudjEuQ3JlYXRlRXZlbnRSZXF1ZXN0GhYuZGFzaGJvYXJkaWZ5LnYxLkV2ZW50IiHaQQVldmVudILT5JMCEzoFZXZlbnQiCi92MS9ldmVudHMSiAEKC1VwZGF0ZUV2ZW50EiMuZGFzaGJvYXJkaWZ5LnYxLlVwZGF0ZUV2ZW50UmVxdWVzdBoWLmRhc2hib2FyZGlmeS52MS5FdmVudCI82kERZXZlbnQsdXBkYXRlX21hc2uC0+STAiI6BWV2ZW50MhkvdjEve2V2ZW50Lm5hbWU9ZXZlbnRzLyp9Em4KC0RlbGV0ZUV2ZW50EiMuZGFzaGJvYXJkaWZ5LnYxLkRlbGV0ZUV2ZW50UmVxdWVzdBoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eSIi2kEEbmFtZYLT5JMCFSoTL3YxL3tuYW1lPWV2ZW50cy8qfWIGcHJvdG8z", [file_buf_validate_validate, file_google_api_annotations, file_google_api_client, file_google_api_field_behavior, file_google_api_resource, file_google_protobuf_empty, file_google_protobuf_field_mask, file_google_protobuf_timestamp]);
+  fileDesc("ChtkYXNoYm9hcmRpZnkvdjEvZXZlbnQucHJvdG8SD2Rhc2hib2FyZGlmeS52MSKVBAoFRXZlbnQSEgoEbmFtZRgBIAEoCUIE4kEBCBIXCghjYWxlbmRhchgCIAEoCUIF4kECAgUSGwoFdGl0bGUYAyABKAlCDOJBAQK6SAVyAxj0AxI0CgpzdGFydF90aW1lGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIE4kEBAhIyCghlbmRfdGltZRgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBOJBAQISFwoJdGltZV96b25lGAYgASgJQgTiQQEBEhUKB2FsbF9kYXkYByABKAhCBOJBAQMSHgoIbG9jYXRpb24YCCABKAlCDOJBAQG6SAVyAxjQDxIcCgVub3RlcxgJIAEoCUIN4kEBAbpIBnIEGKCcARIRCgN1cmwYCiABKAlCBOJBAQESFgoIY2F0ZWdvcnkYCyABKAlCBOJBAQMSFgoId3JpdGFibGUYDCABKAhCBOJBAQMSFwoJcmVjdXJyaW5nGA0gASgIQgTiQQEDEhEKA3VpZBgOIAEoCUIE4kEBAxISCgRldGFnGA8gASgJQgTiQQEBEisKBXBsYWNlGBAgASgLMhYuZGFzaGJvYXJkaWZ5LnYxLlBsYWNlQgTiQQEBOjrqQTcKFmRhc2hib2FyZGlmeS5hcHAvRXZlbnQSDmV2ZW50cy97ZXZlbnR9KgZldmVudHMyBWV2ZW50IkcKD0dldEV2ZW50UmVxdWVzdBI0CgRuYW1lGAEgASgJQibiQQEC+kEYChZkYXNoYm9hcmRpZnkuYXBwL0V2ZW50ukgEcgIQASJmChFMaXN0RXZlbnRzUmVxdWVzdBIhCglwYWdlX3NpemUYASABKAVCDuJBAQG6SAcaBRjoBygAEhgKCnBhZ2VfdG9rZW4YAiABKAlCBOJBAQESFAoGZmlsdGVyGAMgASgJQgTiQQEBIlUKEkxpc3RFdmVudHNSZXNwb25zZRImCgZldmVudHMYASADKAsyFi5kYXNoYm9hcmRpZnkudjEuRXZlbnQSFwoPbmV4dF9wYWdlX3Rva2VuGAIgASgJImgKEkNyZWF0ZUV2ZW50UmVxdWVzdBIxCgVldmVudBgBIAEoCzIWLmRhc2hib2FyZGlmeS52MS5FdmVudEIK4kEBArpIA8gBARIfCgpyZXF1ZXN0X2lkGAIgASgJQgviQQEBukgEcgIYZCJ+ChJVcGRhdGVFdmVudFJlcXVlc3QSMQoFZXZlbnQYASABKAsyFi5kYXNoYm9hcmRpZnkudjEuRXZlbnRCCuJBAQK6SAPIAQESNQoLdXBkYXRlX21hc2sYAiABKAsyGi5nb29nbGUucHJvdG9idWYuRmllbGRNYXNrQgTiQQEBIl4KEkRlbGV0ZUV2ZW50UmVxdWVzdBI0CgRuYW1lGAEgASgJQibiQQEC+kEYChZkYXNoYm9hcmRpZnkuYXBwL0V2ZW50ukgEcgIQARISCgRldGFnGAIgASgJQgTiQQEBMs0ECgxFdmVudFNlcnZpY2USaAoIR2V0RXZlbnQSIC5kYXNoYm9hcmRpZnkudjEuR2V0RXZlbnRSZXF1ZXN0GhYuZGFzaGJvYXJkaWZ5LnYxLkV2ZW50IiLaQQRuYW1lgtPkkwIVEhMvdjEve25hbWU9ZXZlbnRzLyp9EmkKCkxpc3RFdmVudHMSIi5kYXNoYm9hcmRpZnkudjEuTGlzdEV2ZW50c1JlcXVlc3QaIy5kYXNoYm9hcmRpZnkudjEuTGlzdEV2ZW50c1Jlc3BvbnNlIhKC0+STAgwSCi92MS9ldmVudHMSbQoLQ3JlYXRlRXZlbnQSIy5kYXNoYm9hcmRpZnkudjEuQ3JlYXRlRXZlbnRSZXF1ZXN0GhYuZGFzaGJvYXJkaWZ5LnYxLkV2ZW50IiHaQQVldmVudILT5JMCEzoFZXZlbnQiCi92MS9ldmVudHMSiAEKC1VwZGF0ZUV2ZW50EiMuZGFzaGJvYXJkaWZ5LnYxLlVwZGF0ZUV2ZW50UmVxdWVzdBoWLmRhc2hib2FyZGlmeS52MS5FdmVudCI82kERZXZlbnQsdXBkYXRlX21hc2uC0+STAiI6BWV2ZW50MhkvdjEve2V2ZW50Lm5hbWU9ZXZlbnRzLyp9Em4KC0RlbGV0ZUV2ZW50EiMuZGFzaGJvYXJkaWZ5LnYxLkRlbGV0ZUV2ZW50UmVxdWVzdBoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eSIi2kEEbmFtZYLT5JMCFSoTL3YxL3tuYW1lPWV2ZW50cy8qfWIGcHJvdG8z", [file_buf_validate_validate, file_dashboardify_v1_place, file_google_api_annotations, file_google_api_client, file_google_api_field_behavior, file_google_api_resource, file_google_protobuf_empty, file_google_protobuf_field_mask, file_google_protobuf_timestamp]);
 
 /**
  * One occurrence of a calendar event.
@@ -129,6 +131,15 @@ export type Event = Message<"dashboardify.v1.Event"> & {
    * @generated from field: string etag = 15;
    */
   etag: string;
+
+  /**
+   * A real place for the location. Setting it writes `location` as its name and address, with
+   * coordinates Apple Calendar uses for its map and travel time; changing `location` alone drops
+   * it.
+   *
+   * @generated from field: dashboardify.v1.Place place = 16;
+   */
+  place?: Place | undefined;
 };
 
 /**
@@ -265,7 +276,7 @@ export type UpdateEventRequest = Message<"dashboardify.v1.UpdateEventRequest"> &
   event?: Event | undefined;
 
   /**
-   * `title`, `location`, `notes`, `url`, `start_time` and/or `end_time`.
+   * `title`, `location`, `place`, `notes`, `url`, `start_time` and/or `end_time`.
    *
    * @generated from field: google.protobuf.FieldMask update_mask = 2;
    */
@@ -346,7 +357,7 @@ export const EventService: GenService<{
     output: typeof EventSchema;
   },
   /**
-   * Changes title, location, notes, start or end. Not the calendar; not recurring events.
+   * Changes title, location, place, notes, start or end. Not the calendar; not recurring events.
    *
    * @generated from rpc dashboardify.v1.EventService.UpdateEvent
    */

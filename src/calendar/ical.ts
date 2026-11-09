@@ -4,6 +4,7 @@
 
 import ICAL from "ical.js";
 import { instantAt, offsetMinutes, type WallClock, wallClock } from "../capture/zone";
+import type { Place } from "../places/place";
 
 /** One occurrence of an event, as the cache stores it. */
 export interface Occurrence {
@@ -177,6 +178,8 @@ export interface NewEvent {
   end: Date;
   timeZone: string;
   location?: string;
+  /** A real place: written as its name and address, with coordinates for Apple's map. */
+  place?: Place;
   notes?: string;
   url?: string;
   /** DTSTAMP and CREATED. */
@@ -197,8 +200,11 @@ export function writeEvent(event: NewEvent): string {
   vevent.addPropertyWithValue("summary", event.title);
   vevent.addProperty(zonedProperty("dtstart", event.start, event.timeZone));
   vevent.addProperty(zonedProperty("dtend", event.end, event.timeZone));
+  if (event.place) {
+    setPlace(vevent, event.place);
+  }
   for (const [name, value] of [
-    ["location", event.location],
+    ["location", event.place ? undefined : event.location],
     ["description", event.notes],
     ["url", event.url],
   ] as const) {
@@ -214,6 +220,8 @@ export function writeEvent(event: NewEvent): string {
 export interface EventChange {
   title?: string;
   location?: string;
+  /** A real place for the location; null clears it. Changing `location` alone drops it. */
+  place?: Place | null;
   notes?: string;
   url?: string;
   start?: Date;
@@ -245,7 +253,15 @@ export function editEvent(ics: string, change: EventChange): string {
     );
   }
   setText(vevent, "summary", change.title);
+  if (change.location !== undefined || change.place !== undefined) {
+    // The coordinates are of the old place: drop them with it.
+    vevent.removeAllProperties("x-apple-structured-location");
+    vevent.removeAllProperties("geo");
+  }
   setText(vevent, "location", change.location);
+  if (change.place) {
+    setPlace(vevent, change.place);
+  }
   setText(vevent, "description", change.notes);
   setText(vevent, "url", change.url);
   if (change.start || change.end) {
@@ -258,6 +274,32 @@ export function editEvent(ics: string, change: EventChange): string {
     Number(vevent.getFirstPropertyValue("sequence") ?? 0) + 1,
   );
   return calendar.toString();
+}
+
+/**
+ * LOCATION as Apple writes it (the name, then the address on the next line), plus GEO and
+ * X-APPLE-STRUCTURED-LOCATION, which Apple Calendar uses for the map and travel time.
+ */
+function setPlace(vevent: ICAL.Component, place: Place): void {
+  vevent.updatePropertyWithValue(
+    "location",
+    place.address ? `${place.name}\n${place.address}` : place.name,
+  );
+  // Parameter values can't hold a double quote.
+  const name = place.name.replaceAll('"', "");
+  const address = place.address.replaceAll('"', "");
+  vevent.removeAllProperties("x-apple-structured-location");
+  vevent.removeAllProperties("geo");
+  const structured = new ICAL.Property("x-apple-structured-location");
+  structured.resetType("uri");
+  if (address) {
+    structured.setParameter("x-address", address);
+  }
+  structured.setParameter("x-apple-radius", "70");
+  structured.setParameter("x-title", name);
+  structured.setValue(`geo:${place.latitude},${place.longitude}`);
+  vevent.addProperty(structured);
+  vevent.addPropertyWithValue("geo", [place.latitude, place.longitude]);
 }
 
 function setText(vevent: ICAL.Component, name: string, value: string | undefined): void {

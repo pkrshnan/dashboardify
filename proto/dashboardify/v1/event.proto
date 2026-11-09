@@ -3,6 +3,7 @@ syntax = "proto3";
 package dashboardify.v1;
 
 import "buf/validate/validate.proto";
+import "dashboardify/v1/place.proto";
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
@@ -35,7 +36,7 @@ service EventService {
     option (google.api.method_signature) = "event";
   }
 
-  // Changes title, location, notes, start or end. Not the calendar; not recurring events.
+  // Changes title, location, place, notes, start or end. Not the calendar; not recurring events.
   rpc UpdateEvent(UpdateEventRequest) returns (Event) {
     option (google.api.http) = {
       patch: "/v1/{event.name=events/*}"
@@ -116,6 +117,11 @@ message Event {
 
   // The server's version. Updates and deletes with a stale etag are rejected.
   string etag = 15 [(google.api.field_behavior) = OPTIONAL];
+
+  // A real place for the location. Setting it writes `location` as its name and address, with
+  // coordinates Apple Calendar uses for its map and travel time; changing `location` alone drops
+  // it.
+  Place place = 16 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Request for GetEvent.
@@ -179,7 +185,7 @@ message UpdateEventRequest {
     (buf.validate.field).required = true
   ];
 
-  // `title`, `location`, `notes`, `url`, `start_time` and/or `end_time`.
+  // `title`, `location`, `place`, `notes`, `url`, `start_time` and/or `end_time`.
   google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = OPTIONAL];
 }
 

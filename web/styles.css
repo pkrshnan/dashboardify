@@ -295,9 +295,34 @@ h2 {
   outline-offset: 2px;
 }
 
-.mark-who {
+.mark-who,
+.mark-where {
   text-decoration: underline dotted var(--text-3);
   text-underline-offset: 5px;
+}
+
+.mark-where {
+  text-decoration-style: solid;
+}
+
+/* The place "at …" was found as, under the preview line. */
+.capture-place {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 13px;
+}
+
+.capture-place-name {
+  flex: none;
+  max-width: 50%;
+  color: var(--text);
+}
+
+.capture-pin {
+  flex: none;
+  color: var(--text-2);
 }
 
 .capture-kind {

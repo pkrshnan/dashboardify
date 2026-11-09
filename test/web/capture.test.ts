@@ -2,7 +2,9 @@ import { describe, expect, test } from "bun:test";
 import { parseCapture } from "../../src/capture/parse";
 import type { HomeView } from "../../src/home/types";
 import {
+  chosenPlace,
   nextCalendar,
+  nextPlace,
   pendingEvent,
   preview,
   segments,
@@ -126,6 +128,42 @@ describe("calendar choice", () => {
 
   test("a reminder has no calendar", () => {
     expect(preview({ text: "Call dentist Fri 10:00" }, withCalendar)?.calendar).toBeUndefined();
+  });
+});
+
+describe("place choice", () => {
+  const place = (displayName: string) => ({
+    displayName,
+    address: "London",
+    location: { latitude: 51.5, longitude: -0.1 },
+    mapsUri: "",
+  });
+  const found = [place("Dishoom Shoreditch"), place("Dishoom Soho")];
+
+  test("the best match shows first, and the picker steps through the rest", () => {
+    const first = chosenPlace({ text: "" }, "Dishoom", found);
+    const stepped = nextPlace({ text: "" }, "Dishoom", first.index, found.length);
+
+    expect(first.place?.displayName).toBe("Dishoom Shoreditch");
+    expect(chosenPlace(stepped, "Dishoom", found).place?.displayName).toBe("Dishoom Soho");
+    expect(nextPlace(stepped, "Dishoom", 1, found.length).place?.index).toBe(0);
+  });
+
+  test("a pick is forgotten once the typed place changes", () => {
+    const picked = nextPlace({ text: "" }, "Dishoom", 0, 2);
+
+    expect(chosenPlace(picked, "Barbican", found).index).toBe(0);
+    expect(chosenPlace(picked, undefined, found).place).toBeUndefined();
+  });
+
+  test("the preview carries the typed place for events", () => {
+    const shown = preview({ text: "Dinner at Dishoom Fri 7pm" }, withCalendar);
+
+    expect(shown?.parse.place).toBe("Dishoom");
+    expect(segments("Dinner at Dishoom Fri 7pm", shown?.parse)).toContainEqual({
+      text: "at Dishoom",
+      kind: "where",
+    });
   });
 });
 
