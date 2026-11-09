@@ -49,6 +49,8 @@ jobs:
       - run: bun install --frozen-lockfile
 
       - name: Start the demo
+        env:
+          DEMO_DEV: "0"
         run: |
           nohup bun run demo > demo.log 2>&1 &
           curl -sf --retry 30 --retry-delay 1 --retry-all-errors "http://localhost:$PORT/healthz"
@@ -64,8 +66,9 @@ jobs:
             sleep 1
           done
           if [ -z "$url" ]; then cat tunnel.log; exit 1; fi
-          # The new hostname can take a few seconds to resolve.
-          curl -sf --retry 30 --retry-delay 2 --retry-all-errors "$url/healthz"
+          # The new hostname can take a few seconds to resolve. Fetch the page, not just the API,
+          # so a page the browser can't load fails here.
+          curl -sf --retry 30 --retry-delay 2 --retry-all-errors -o /dev/null "$url/"
           echo "URL=$url" >> "$GITHUB_ENV"
 
       - name: Share the link
