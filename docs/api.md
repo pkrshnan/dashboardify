@@ -253,6 +253,12 @@ an event becomes a reminder; an explicit `CAPTURE_KIND_EVENT` then returns `fail
 The response's `message` is a sentence such as "Added Lunch with Sam to Personal, Wed 4 Nov
 12:30–13:30."
 
+An event's place comes from "at Dishoom" (a capital after "at", so "at 3pm" stays a time) or
+"@Dishoom". The parse returns it as `location`. On Capture the server looks it up with place search
+and saves the best match, or the `place` the client showed, as the event's location with
+coordinates (see Events). If nothing is found the typed text is the location; a capture never
+fails over a place. A reminder keeps "at …" in its title.
+
 ## Events
 
 | Method | Path | Operation |
@@ -262,6 +268,10 @@ The response's `message` is a sentence such as "Added Lunch with Sam to Personal
 | POST | `/v1/events?requestId=…` | Create a single event on a writable calendar |
 | PATCH | `/v1/events/{id}?updateMask=title,startTime` | Change title, location, notes, url, start or end |
 | DELETE | `/v1/events/{id}` | Delete it |
+
+An event's `place` (a Place from `/v1/places:search`) is written as `location` (name, then the
+address on the next line) plus `GEO` and `X-APPLE-STRUCTURED-LOCATION`, which Apple Calendar uses
+for its map and travel time. Changing `location` without `place` drops the coordinates.
 
 Reads never wait on iCloud. Writes go to iCloud before returning, then that calendar is synced.
 `requestId` becomes the event's UID, so a retried create returns the same event. The filter takes

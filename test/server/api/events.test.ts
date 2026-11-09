@@ -112,6 +112,26 @@ describe("events API", () => {
     expect(server.event("home", "r1.ics")?.ics).toContain("SEQUENCE:1");
   });
 
+  test("a place is written with coordinates, and updating the location drops them", async () => {
+    const place = {
+      displayName: "Dishoom",
+      address: "7 Boundary Street, London",
+      location: { latitude: 51.5245, longitude: -0.0773 },
+    };
+    const created = await api.call("/v1/events?requestId=r1", "POST", { ...lunch, place });
+    const placed = server.event("home", "r1.ics")?.ics ?? "";
+
+    const updated = await api.call(`/v1/${created.body.name}?updateMask=location`, "PATCH", {
+      location: "Sam's flat",
+    });
+    const typed = server.event("home", "r1.ics")?.ics ?? "";
+
+    expect(created.body.location).toBe("Dishoom\n7 Boundary Street, London");
+    expect(placed).toContain("GEO:51.5245;-0.0773");
+    expect(updated.body.location).toBe("Sam's flat");
+    expect(typed).not.toContain("GEO");
+  });
+
   test("an update after a change in Apple Calendar is ABORTED", async () => {
     const created = await api.call("/v1/events?requestId=r1", "POST", lunch);
     const changed =

@@ -194,7 +194,14 @@ export interface CaptureResult {
  */
 export async function capture(
   token: Token,
-  request: { text: string; requestId: string; kind?: "event" | "reminder"; calendar?: string },
+  request: {
+    text: string;
+    requestId: string;
+    kind?: "event" | "reminder";
+    calendar?: string;
+    /** The place the box showed for the line's "at …". */
+    place?: PlaceView;
+  },
 ): Promise<CaptureResult> {
   const kind =
     request.kind &&

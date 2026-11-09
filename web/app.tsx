@@ -186,6 +186,7 @@ function HomeCapture(props: {
   const { token, reload, onPending } = props;
   return (
     <Capture
+      token={token}
       timeZone={props.timeZone}
       hints={props.hints}
       isPhone={props.isPhone}
@@ -201,6 +202,7 @@ function HomeCapture(props: {
             requestId,
             kind: box.override,
             calendar: box.calendar,
+            place: shown.place,
           });
           await reload();
           return result;

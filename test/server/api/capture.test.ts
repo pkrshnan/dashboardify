@@ -1,14 +1,17 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import { FakeCalDav } from "../../calendar/fake-caldav";
+import { DISHOOM, FakePhoton } from "../../places/fake-photon";
 import { useApi } from "./helpers";
 
 // The helper's clock: Tuesday 3 November 2026, 12:00 UTC, and the server's zone is UTC.
 let server: FakeCalDav;
+let photon: FakePhoton;
 
 describe("capture API with a calendar", () => {
-  const api = useApi({ calDav: () => server });
+  const api = useApi({ calDav: () => server, photon: () => photon });
 
   beforeEach(async () => {
+    photon = new FakePhoton();
     server = new FakeCalDav([
       { id: "home", displayName: "Personal" },
       { id: "work", displayName: "Work" },
@@ -41,6 +44,54 @@ describe("capture API with a calendar", () => {
     expect(body.event.name).toMatch(/^events\//);
     expect(body.message).toBe("Added Lunch with Sam to Personal, Wed 4 Nov 12:30–13:30.");
     expect(server.event("home", "c1.ics")?.ics).toContain("SUMMARY:Lunch with Sam");
+  });
+
+  test("at a place, the event gets the best match with its coordinates", async () => {
+    const { body } = await api.call("/v1/captures", "POST", {
+      text: "Lunch with Sam at Dishoom tomorrow 1pm",
+      requestId: "p1",
+    });
+    const ics = server.event("home", "p1.ics")?.ics.replace(/\r\n /g, "") ?? "";
+
+    expect(body.parse).toMatchObject({
+      title: "Lunch with Sam",
+      location: "Dishoom",
+      place: { displayName: "Dishoom", location: { latitude: DISHOOM.lat } },
+    });
+    expect(body.message).toBe(
+      "Added Lunch with Sam to Personal, Wed 4 Nov 13:00–14:00, at Dishoom.",
+    );
+    expect(ics).toContain("LOCATION:Dishoom\\n7 Boundary Street\\, London\\, United Kingdom");
+    expect(ics).toContain("GEO:51.5245;-0.0773");
+  });
+
+  test("the place the box showed wins over a new search", async () => {
+    await api.call("/v1/captures", "POST", {
+      text: "Coffee @Barbican Thu 3pm",
+      requestId: "p2",
+      place: {
+        displayName: "Barbican Centre",
+        address: "Silk Street, London",
+        location: { latitude: 51.52, longitude: -0.09 },
+      },
+    });
+
+    expect(photon.requests).toHaveLength(0);
+    expect(server.event("home", "p2.ics")?.ics).toContain("GEO:51.52;-0.09");
+  });
+
+  test("a place search that fails or finds nothing keeps the typed location", async () => {
+    photon.status = 502;
+
+    const { status } = await api.call("/v1/captures", "POST", {
+      text: "Dinner at Nowhere Special Fri 7-9pm",
+      requestId: "p3",
+    });
+    const ics = server.event("home", "p3.ics")?.ics ?? "";
+
+    expect(status).toBe(200);
+    expect(ics).toContain("LOCATION:Nowhere Special");
+    expect(ics).not.toContain("GEO");
   });
 
   test("a reminder becomes a task in the inbox", async () => {

@@ -12,6 +12,7 @@ import type { ConnectCalDav } from "./calendar-accounts";
 import { ApiError, failedPrecondition, invalidArgument } from "./errors";
 import { filterItems } from "./filter";
 import { paginate } from "./pagination";
+import { type PlaceInput, placeFromInput } from "./places";
 import { requestedFields } from "./update-mask";
 
 const DAY_MS = 86_400_000;
@@ -33,6 +34,7 @@ interface EventInput {
   endTime?: string;
   timeZone?: string;
   location?: string;
+  place?: PlaceInput;
   notes?: string;
   url?: string;
   etag?: string;
@@ -81,6 +83,7 @@ export class EventsService {
       end,
       timeZone: input.timeZone || this.deps.timeZone,
       location: input.location,
+      place: placeFromInput(input.place, "event.place"),
       notes: input.notes,
       url: input.url,
       now: this.now(),
@@ -291,7 +294,7 @@ export class EventsService {
   }
 }
 
-const EDITABLE = ["title", "location", "notes", "url", "startTime", "endTime"];
+const EDITABLE = ["title", "location", "place", "notes", "url", "startTime", "endTime"];
 
 /** The edit for the masked fields; times are checked together, so an end can't pass the start. */
 function changeFrom(fields: string[], input: EventInput, event: CachedEvent) {
@@ -304,6 +307,9 @@ function changeFrom(fields: string[], input: EventInput, event: CachedEvent) {
     if (has(field)) {
       change[field] = input[field] ?? "";
     }
+  }
+  if (has("place")) {
+    change.place = placeFromInput(input.place, "event.place") ?? null;
   }
   if (has("startTime") || has("endTime")) {
     [change.start, change.end] = newTimes(has, input, event);

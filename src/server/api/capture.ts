@@ -7,8 +7,10 @@ import { type CaptureKind, type CaptureParse, parseCapture } from "../../capture
 import { taskFields } from "../../capture/task-fields";
 import { hhmm, isoDate, wallClock } from "../../capture/zone";
 import type { CalendarSource, CaptureHints } from "../../home/calendar";
+import type { Place } from "../../places/place";
 import { toDateParts, toTimeParts } from "./date-time";
 import { failedPrecondition, invalidArgument } from "./errors";
+import { type PlaceInput, placeFromInput, placeView } from "./places";
 
 const KINDS: Record<string, CaptureKind | undefined> = {
   CAPTURE_KIND_EVENT: "event",
@@ -28,6 +30,8 @@ export interface CaptureTargets {
       startTime: string;
       endTime: string;
       timeZone: string;
+      location?: string;
+      place?: PlaceInput;
     };
     requestId?: string;
   }) => Promise<{ name?: string }>;
@@ -38,7 +42,11 @@ interface Request {
   kind?: string;
   calendar?: string;
   requestId?: string;
+  place?: PlaceInput;
 }
+
+/** Place search for the line's "at …", already biased to Settings' places_near. */
+export type FindPlaces = (query: string) => Promise<Place[]>;
 
 export class CaptureService {
   constructor(
@@ -46,6 +54,7 @@ export class CaptureService {
     private readonly calendar: CalendarSource,
     private readonly timeZone: string,
     private readonly now: () => Date,
+    private readonly findPlaces?: FindPlaces,
   ) {}
 
   parseCapture = async (request: Request) => this.parseView(this.read(request));
@@ -67,6 +76,7 @@ export class CaptureService {
     if (!read.calendar) {
       failedPrecondition("Connect a calendar in Settings to add events.");
     }
+    const place = parse.place ? await this.place(parse.place, request.place) : undefined;
     const event = await this.targets.createEvent({
       event: {
         calendar: read.calendar.calendar,
@@ -74,16 +84,35 @@ export class CaptureService {
         startTime: parse.start?.toISOString() ?? "",
         endTime: parse.end?.toISOString() ?? "",
         timeZone: this.timeZone,
+        location: parse.place,
+        ...(place && { place: placeView(place) }),
       },
       requestId: request.requestId,
     });
     const where = read.calendar.displayName;
+    const at = parse.place ? `, at ${place?.name ?? parse.place}` : "";
     return {
-      parse: this.parseView(read),
+      parse: { ...this.parseView(read), ...(place && { place: placeView(place) }) },
       event,
-      message: `Added ${parse.title} to ${where}${this.when(parse)}.`,
+      message: `Added ${parse.title} to ${where}${this.when(parse)}${at}.`,
     };
   };
+
+  /**
+   * The place the client showed, else the best match from place search. A search that fails or
+   * finds nothing leaves the typed text as the location: a capture never fails over a place.
+   */
+  private async place(typed: string, shown: PlaceInput | undefined): Promise<Place | undefined> {
+    const picked = placeFromInput(shown, "place");
+    if (picked || !this.findPlaces) {
+      return picked;
+    }
+    try {
+      return (await this.findPlaces(typed))[0];
+    } catch {
+      return undefined;
+    }
+  }
 
   private read(request: Request) {
     const hints = this.calendar.hints?.(this.now().getTime());
@@ -111,6 +140,7 @@ export class CaptureService {
       ...(parse.dueDate && { dueDate: toDateParts(parse.dueDate) }),
       ...(parse.dueTime && { dueTime: toTimeParts(parse.dueTime) }),
       ...(parse.recurrence && { recurrence: parse.recurrence }),
+      ...(parse.place && { location: parse.place }),
       ...(calendar && { calendar: calendar.calendar, calendarReason: calendar.reason }),
     };
   }

@@ -104,6 +104,7 @@ export function v1Services(
     home.calendar,
     vault.timeZone,
     now,
+    findPlaces(settings),
   );
   return [
     { schema: TaskSchema, implementation: taskService },
@@ -142,6 +143,14 @@ function settingsServices(settings: SettingsDeps, now: () => Date): ServiceRegis
         ]
       : []),
   ];
+}
+
+/** Place search near Settings' places_near, for the capture box's "at …". */
+function findPlaces(settings: SettingsDeps | undefined) {
+  const { places, general } = settings ?? {};
+  return places && general
+    ? (query: string) => places.search(query, general.get().placesNear)
+    : undefined;
 }
 
 /** Events need the cache and the sync loop as well as the accounts. */

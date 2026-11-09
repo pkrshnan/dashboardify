@@ -11,7 +11,7 @@ export type CaptureKind = "event" | "reminder";
 export interface CaptureSpan {
   start: number;
   end: number;
-  kind: "when" | "who";
+  kind: "when" | "who" | "where";
 }
 
 export interface CaptureParse {
@@ -28,6 +28,8 @@ export interface CaptureParse {
   dueDate?: string;
   dueTime?: string;
   recurrence?: string;
+  /** Events only: where, as typed ("Dishoom" from "at Dishoom" or "@Dishoom"). */
+  place?: string;
   spans: CaptureSpan[];
 }
 
@@ -81,6 +83,15 @@ const DURATION =
 
 const UNITS = ["day", "weekday", "week", "month", "year"];
 
+/**
+ * "@Dishoom", "@ 10 Downing St", "at Dishoom", "at the Barbican": "at" needs a capital after it,
+ * so "at 3pm" and "at noon" stay times.
+ */
+const PLACE = /(?:^|\s)(@\s*(?=\S)|at\s+(?=(?:the\s+)?\p{Lu}))/gu;
+
+/** A place ends at the next highlighted phrase, or at one of these. */
+const PLACE_END = /[,;.!?]|\s(?:on|from|by|to|until)\s*$/u;
+
 const RECURRENCE =
   /\bevery\s+(day|weekday|week|month|year|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i;
 
@@ -114,6 +125,7 @@ interface Found {
   length?: number;
   recurrence?: string;
   who: boolean;
+  place?: string;
   spans: CaptureSpan[];
 }
 
@@ -132,7 +144,17 @@ export function parseCapture(text: string, options: CaptureOptions): CapturePars
   const [autoKind, autoReason] = classify(text, found);
   const kind = options.kind ?? autoKind;
   const reason = kind === autoKind ? autoReason : switchedReason(autoKind);
-  const base = { kind, autoKind, reason, title: titleOf(text, found.spans), spans: found.spans };
+  // A reminder has nowhere to put a place, so it stays in the title.
+  const spans = kind === "event" ? found.spans : found.spans.filter((s) => s.kind !== "where");
+  const place = kind === "event" ? found.place : undefined;
+  const base = {
+    kind,
+    autoKind,
+    reason,
+    title: titleOf(text, spans),
+    spans,
+    ...(place && { place }),
+  };
   return kind === "event"
     ? { ...base, ...eventTimes(found, options) }
     : { ...base, ...reminderDue(found, options) };
@@ -154,7 +176,40 @@ function findParts(text: string, options: CaptureOptions): Found {
   }
   readTimes(maskSpans(text, hidden), options, found);
   found.spans = mergeSpans(found.spans);
+  const place = findPlace(text, found.spans);
+  if (place) {
+    found.place = place.text;
+    found.spans = [...found.spans, place.span].sort((a, b) => a.start - b.start);
+  }
   return found;
+}
+
+/** The first "at Place" or "@Place" outside the other phrases. Its span includes the "at". */
+function findPlace(text: string, spans: CaptureSpan[]) {
+  for (const match of text.matchAll(PLACE)) {
+    const marker = match[1] ?? "";
+    const start = (match.index ?? 0) + match[0].length - marker.length;
+    const from = start + marker.length;
+    if (!spans.some((s) => s.start <= from && from < s.end)) {
+      const place = placeText(text, from, spans);
+      if (place) {
+        return {
+          text: place.replace(/^the\s+/i, ""),
+          span: { start, end: from + place.length, kind: "where" as const },
+        };
+      }
+    }
+  }
+  return undefined;
+}
+
+/** From `from` to the next phrase or stop word, or nothing if that's empty or too long. */
+function placeText(text: string, from: number, spans: CaptureSpan[]): string | undefined {
+  const next = spans.find((s) => s.start >= from)?.start ?? text.length;
+  const rest = text.slice(from, next);
+  const stop = PLACE_END.exec(rest);
+  const place = (stop ? rest.slice(0, stop.index) : rest).trimEnd();
+  return place && place.length <= 100 ? place : undefined;
 }
 
 /**
@@ -286,6 +341,10 @@ const RULES: [CaptureKind, Rule][] = [
   ],
   [
     "event",
+    (found) => timed(found) && found.place && "It's at a place, so it's an event. It gets an hour.",
+  ],
+  [
+    "event",
     (found, _, text) => {
       const word = APPOINTMENT.exec(text)?.[0];
       return (
@@ -391,16 +450,23 @@ function reminderDue(
   return { dueDate: isoDate(day), dueTime, recurrence: found.recurrence };
 }
 
-/** The text with its time phrases (and an "at", "on", "from" or "by" before them) taken out. */
+/**
+ * The text with its time phrases (and an "at", "on", "from" or "by" before them) and its place
+ * taken out.
+ */
 function titleOf(text: string, spans: CaptureSpan[]): string {
   let title = text;
   for (const span of [...spans].reverse()) {
-    if (span.kind !== "when") {
+    if (span.kind === "who") {
       continue;
     }
     const before = title.slice(0, span.start).replace(/(^|\s)(?:at|on|from|by)\s*$/i, "$1");
     title = `${before} ${title.slice(span.end)}`;
   }
-  title = title.replace(/\s+/g, " ").trim();
+  // A comma left behind by a removed phrase ("Coffee at the Barbican, Thu 3pm") goes too.
+  title = title
+    .replace(/\s+/g, " ")
+    .replace(/\s+([,;])/g, "$1")
+    .replace(/^[\s,;]+|[\s,;]+$/g, "");
   return title.charAt(0).toUpperCase() + title.slice(1);
 }
