@@ -236,6 +236,8 @@ describe("summaries", () => {
     const day = dayMetrics({
       heartRate: heartRate(T0, T0 + HOUR, () => 120),
       steps: [],
+      motion: [],
+      sleep: null,
       restingHr: 55,
       profile: { ageYears: null, sex: null, maxHrMeasured: null },
     });
@@ -247,6 +249,8 @@ describe("summaries", () => {
     const day = dayMetrics({
       heartRate: heartRate(T0, T0 + HOUR, () => 150),
       steps: [],
+      motion: [],
+      sleep: null,
       restingHr: 55,
       profile: { ageYears: 30, sex: "male", maxHrMeasured: 190 },
     });

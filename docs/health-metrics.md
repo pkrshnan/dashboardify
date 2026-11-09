@@ -24,6 +24,13 @@ flowchart LR
   HR --> ST[strain, zones]
   R --> ST
   STP[steps] --> STEPS[steps]
+  HR --> W[workouts]
+  R --> W
+  STP --> W
+  MOT[motion] --> W
+  S --> W
+  STP --> WK[walks]
+  W --> WK
 ```
 
 Everything that compares you with "normal" uses your own history, never population averages.
@@ -169,6 +176,62 @@ The strap's counter is cumulative and 16-bit, so it wraps at 65,536 and resets w
 restarts. We add up the increases, treat a drop from near the top as a wrap and any other drop as
 a reset, and ignore jumps of more than 5 steps a second. healthstrap inferred this field's meaning,
 so treat steps as provisional.
+
+## Workouts (`workouts.ts`)
+
+**Why it works.** A workout is effort you keep up: heart rate stays well above resting for a while,
+with breaks no longer than a rest between sets or games. What kind of workout it is shows in how you
+step and move. Running is a steady fast stride. Volleyball is stop-and-go: short shuffles, bursts
+of hard movement, breaks between rallies. Lifting is standing in place.
+
+The strap only gives a step counter and a motion intensity about once a second. That is enough to
+name a whole session, but not to count reps or tell a spike from a block. Published rep counting
+(RecoFit, Morris et al. 2014) and volleyball action recognition (Kautz et al. 2017) use raw
+accelerometer and gyroscope data at 25–100 Hz.
+
+**How.**
+
+1. **Find efforts.** A minute is active at 35% or more of heart-rate reserve (strain's 30% floor
+   plus a margin, because ordinary days hover near it). Active minutes join across rests of up to
+   5 minutes. Last night's sleep doesn't count.
+2. **Trim to the effort.** Heart rate lags effort both ways: it takes a minute or two to climb, and
+   many more to settle afterwards, often while you walk away. So the workout runs from its first to
+   its last minute of real effort, at 50% of reserve or more or a burst of motion (below). The one
+   confirmed session, volleyball on 2 November, ended at 21:15; untrimmed, the recovery stretched
+   it to 21:28.
+3. **Keep real workouts.** At least 15 minutes, at least 5 of them at 50% of reserve or more, and a
+   median motion of 0.02 or more. A strap that isn't moving can't be exercising: high HR from a
+   still strap is an optical glitch.
+4. **Name it**, checking in this order, per minute of the workout:
+   - **Running:** half the minutes at 140+ steps a minute. Running is rarely slower.
+   - **Walking:** half the minutes at 90+ steps a minute (brisk walking is 100–130, Tudor-Locke
+     2018).
+   - **Volleyball:** 30%+ of minutes at 20–89 steps a minute, and 20%+ with motion of 0.35 or
+     more, a burst of play. Brisk walking reads 0.25–0.33 on the bicep.
+   - **Lifting:** 60%+ of minutes under 20 steps a minute, and under 20% bursts.
+   - Anything else is **workout**.
+5. Each workout gets its own TRIMP and strain, the same way as the day's.
+
+The thresholds come from two sessions in the first weeks of data: volleyball on 2 November (bursts
+at 140–179 bpm and 40–90 steps a minute, with 5-minute breaks; confirmed) and a lifting-like
+afternoon on 14 October (115–150 bpm, almost no steps, low motion; not confirmed). No run has been recorded yet, so the running rule rests on
+published cadences alone. Treat the names as provisional until they have been checked against more
+sessions.
+
+## Walks (`walks.ts`)
+
+**Why it works.** Walking is light effort, so it rarely lifts heart rate enough to be a workout, but
+it shows plainly in the step counter: a minute after minute of steady stepping.
+
+**How**, from the step counter alone, so it works without a profile:
+
+1. A minute is walking at 60+ steps. Slower than that is pottering around the house.
+2. Walking minutes join across stops of up to 3 minutes, such as crossings and traffic lights.
+3. A walk lasts at least 10 minutes, the classic activity bout.
+4. Time in a workout or asleep isn't a walk, so walking to the court is a walk and the game isn't.
+
+Each walk has its steps (stops included), its median cadence, and its **brisk minutes**: minutes at
+100+ steps, which is moderate intensity, about 3 METs (Tudor-Locke et al. 2018, CADENCE-Adults).
 
 ## Recovery (`recovery.ts`)
 

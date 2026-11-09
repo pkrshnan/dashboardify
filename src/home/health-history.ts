@@ -3,7 +3,7 @@
 // the metrics job has rewritten since.
 
 import { stat } from "node:fs/promises";
-import type { DerivedRow, DerivedStore, Table } from "../health/derived-store";
+import type { DailyTable, DerivedRow, DerivedStore, Table } from "../health/derived-store";
 import { type MetricDef, trend } from "./trends";
 import type { MetricTrend } from "./types";
 
@@ -11,7 +11,7 @@ import type { MetricTrend } from "./types";
 export const HISTORY_DAYS = 371;
 
 interface MetricSource extends MetricDef {
-  table: Table;
+  table: DailyTable;
   read: (row: DerivedRow) => number | null;
 }
 
@@ -67,7 +67,7 @@ function metric(
   name: string,
   unit: string,
   group: MetricDef["group"],
-  table: Table,
+  table: DailyTable,
   read: MetricSource["read"],
   options: Partial<MetricDef>,
 ): MetricSource {
