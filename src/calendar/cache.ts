@@ -121,6 +121,21 @@ export class EventCache {
     return new Map(rows.map((row) => [row.href, row.etag]));
   }
 
+  /** One stored resource: its etag and text, for editing it. */
+  resource(
+    accountId: string,
+    calendarId: string,
+    href: string,
+  ): { etag: string; ics: string } | undefined {
+    return (
+      this.db
+        .query<{ etag: string; ics: string }, [string, string, string]>(
+          "SELECT etag, ics FROM resources WHERE account_id = ? AND calendar_id = ? AND href = ?",
+        )
+        .get(accountId, calendarId, href) ?? undefined
+    );
+  }
+
   /** Every stored resource, for expanding again into a new window. */
   resources(): {
     accountId: string;

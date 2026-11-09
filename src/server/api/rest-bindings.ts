@@ -120,6 +120,20 @@ export const restBindings: Record<string, RestBinding> = {
     bodyField: "calendar",
     resource: { field: "calendar.name", prefix: "calendarAccounts/", nested: "calendars" },
   },
+  getEvent: { method: "GET", path: "/events/:id", resource: { field: "name", prefix: "events/" } },
+  listEvents: { method: "GET", path: "/events" },
+  createEvent: { method: "POST", path: "/events", bodyField: "event" },
+  updateEvent: {
+    method: "PATCH",
+    path: "/events/:id",
+    bodyField: "event",
+    resource: { field: "event.name", prefix: "events/" },
+  },
+  deleteEvent: {
+    method: "DELETE",
+    path: "/events/:id",
+    resource: { field: "name", prefix: "events/" },
+  },
   getCalendarSettings: {
     method: "GET",
     path: "/calendarSettings",
