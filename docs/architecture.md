@@ -4,7 +4,7 @@ dashboardify is a personal command center. It pulls health, calendar, tasks, jou
 
 ## Principles
 
-- **Files are the source of truth.** Everything lives in a Markdown vault (Obsidian-compatible), with YAML frontmatter for structured fields and CSV for time series. Nothing depends on a database you can't open in a text editor.
+- **Files are the source of truth.** Everything lives in a Markdown vault (Obsidian-compatible), with YAML frontmatter for structured fields and CSV for time series. The one exception is the server's own settings (devices, calendar accounts, time zone), which live in SQLite under `DATA_PATH`, outside the vault, because they hold secrets that must never sync to every device. `bun run settings export` gives a readable copy without secrets.
 - **Derived data is disposable.** The search index and embeddings live in one SQLite file inside the vault (`.cc/`, git-ignored) and can be rebuilt from the files at any time.
 - **No platform lock-in.** The server runs on Linux. Apple-only data (Health, Messages) comes in through iOS Shortcuts posting JSON, so Apple is a source, not a dependency.
 - **Swappable models.** Every model call goes through one provider interface: Anthropic (Claude) or any OpenAI-compatible endpoint (Ollama, llama.cpp, vLLM).

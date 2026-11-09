@@ -1,3 +1,4 @@
+import { rmSync } from "node:fs";
 import homepage from "../web/index.html";
 import { CalendarAccounts } from "./calendar/accounts";
 import { EventCache } from "./calendar/cache";
@@ -10,6 +11,7 @@ import { SummaryScheduler } from "./health/scheduler";
 import { connectICloud } from "./server/api/calendar-accounts";
 import { createApp } from "./server/app";
 import { type Config, loadStartup } from "./server/config";
+import { lockPath } from "./settings/rotate";
 import { openSettings } from "./settings/startup";
 import { localDate } from "./vault/time";
 import { Vault } from "./vault/vault";
@@ -31,8 +33,21 @@ function startHealthSummaries(config: Config, vault: Vault): SummaryScheduler {
   return scheduler;
 }
 
+/** server.lock holds our pid while we run, so `bun run settings rotate-key` refuses. */
+async function holdLock(dataPath: string): Promise<void> {
+  const path = lockPath(dataPath);
+  await Bun.write(path, String(process.pid));
+  const release = () => {
+    rmSync(path, { force: true });
+    process.exit(0);
+  };
+  process.on("SIGINT", release);
+  process.on("SIGTERM", release);
+}
+
 if (import.meta.main) {
   const opened = await openSettings(loadStartup(), process.env);
+  await holdLock(opened.config.dataPath);
   const { config, devices, general, tailnet, overrides, envChange } = opened;
   const accounts = new CalendarAccounts(opened.store);
   // The home screen reads the cache; syncing rebuilds it if it is missing.

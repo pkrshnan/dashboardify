@@ -117,9 +117,9 @@ Done when the Anthropic key can be removed and everything still works.
 
 ## Security
 
-- Every API call needs a per-device bearer token, compared in constant time.
+- Every API call needs a per-device bearer token. Only a SHA-256 hash of each is stored, compared in constant time.
 - The server is reachable only over Tailscale, never the public internet.
-- Secrets stay in environment variables, never in the vault or the repo.
+- Secrets (calendar passwords, link URLs) are sealed with AES-256-GCM in `settings.db`, never in the vault or the repo. The key is `secret.key` beside it, left out of backups and kept in a password manager; `bun run settings rotate-key` replaces it. See [settings-plan.md](settings-plan.md).
 - File paths are built only from validated dates and fixed folder names.
 - The ask agent only gets read tools plus one tool for writing answers.
 

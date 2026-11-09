@@ -40,5 +40,18 @@ start imports them from `INGEST_TOKENS`. Behind Tailscale Serve, configure `TAIL
 without `secret.key`, and keep the key in a password manager: a backup that holds both can open
 every secret.
 
+### Settings from the terminal
+
+`bun run settings` opens the same `settings.db` as the server (`DATA_PATH`, default `./data`):
+
+| Command | Does |
+| --- | --- |
+| `export [--out file]` | Settings, devices and calendars as TOML; secrets are `"<set>"` |
+| `devices add <name>` | Adds a device and prints its token, the only time it is shown |
+| `devices list` | Device ids, names, when added and last used |
+| `devices revoke <id>` | Its token stops working on the server's next request |
+| `key show` | The key as base64, for your password manager |
+| `rotate-key` | A new key; every secret is re-sealed. Refuses while the server runs (`server.lock`) |
+
 The repository's `Dockerfile` is built by the home server's compose project in the private
 `pkrshnan/homeserver` repository. Its deployment configuration lives there.
