@@ -2,8 +2,9 @@
 // group. The range switch changes only the charts, never the numbers.
 
 import { useState } from "preact/hooks";
+import { LOW_BATTERY_PCT } from "../../src/health/battery";
 import { lag, shortDuration } from "../../src/health/sync";
-import type { HealthGroup, HealthSyncView, MetricTrend } from "../../src/home/types";
+import type { BatteryView, HealthGroup, HealthSyncView, MetricTrend } from "../../src/home/types";
 import { chartShape, type Range, rangeLabel, WIDTH } from "../lib/chart";
 import { nowIn } from "../lib/clock";
 import { HEALTH, STATUS, toneColor } from "../lib/colors";
@@ -57,6 +58,7 @@ export function Health({
           <div class="range-label">
             {rangeLabel(date, range)}
             {sync && <Synced sync={sync} timeZone={timeZone} />}
+            {sync?.battery && <Battery battery={sync.battery} timeZone={timeZone} />}
           </div>
         </div>
         <Segmented label="Trend range" segments={RANGES} value={range} onChange={setRange} />
@@ -86,6 +88,22 @@ function Synced({ sync, timeZone }: { sync: HealthSyncView; timeZone: string }) 
       style={behind === null ? undefined : { color: STATUS.warn }}
     >
       {behind === null ? `Synced ${when}` : `Synced ${shortDuration(behind)} ago`}
+    </span>
+  );
+}
+
+/** "Strap 64%", with a bolt while charging; orange once it runs low off the charger. */
+function Battery({ battery, timeZone }: { battery: BatteryView; timeZone: string }) {
+  const percent = Math.round(battery.percent);
+  const low = !battery.charging && battery.percent <= LOW_BATTERY_PCT;
+  const at = nowIn(timeZone, new Date(battery.at));
+  return (
+    <span
+      class="battery"
+      title={`Battery reported ${at.date} ${at.time}`}
+      style={low ? { color: STATUS.warn } : undefined}
+    >
+      {battery.charging ? `Strap ${percent}% ⚡` : `Strap ${percent}%`}
     </span>
   );
 }

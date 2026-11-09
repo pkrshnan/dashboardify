@@ -28,6 +28,25 @@ describe("home API", () => {
     expect(after.body.healthSync.latestSampleTime).toBe("2026-11-03T00:01:00Z");
     expect(after.body.healthSync.uploadTime).toBeString();
   });
+
+  test("reports the strap's latest battery", async () => {
+    await api.call("/v1/streams/battery:mergeSamples", "POST", {
+      day: { year: 2026, month: 11, day: 3 },
+      timestamps: ["1793664000000", "1793667600000"],
+      columns: [
+        { name: "pct", numbers: { values: [24.3, 23.7] } },
+        { name: "charging", missingRows: [0], numbers: { values: [0, 1] } },
+      ],
+    });
+
+    const response = await api.call("/v1/home");
+
+    expect(response.body.healthSync.battery).toEqual({
+      percent: 23.7,
+      charging: true,
+      reportTime: "2026-11-03T01:00:00Z",
+    });
+  });
 });
 
 describe("home API with a calendar", () => {

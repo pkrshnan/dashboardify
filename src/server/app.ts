@@ -1,11 +1,13 @@
 // The HTTP API. Each area lives in its own file under routes/; this file only wires them up.
 
 import { Hono } from "hono";
+import { BATTERY_LOOKBACK_MS, latestBattery } from "../health/battery";
 import { DailySummary } from "../health/daily-summary";
 import { DerivedStore } from "../health/derived-store";
 import { RawStore } from "../health/raw-store";
 import { type CalendarSource, noCalendar } from "../home/calendar";
 import { HealthHistory } from "../home/health-history";
+import type { HomeDeps } from "../home/home";
 import type { DeviceMatcher } from "../settings/devices";
 import type { SetupCode } from "../settings/setup-code";
 import { TaskStore } from "../vault/task-store";
@@ -54,13 +56,7 @@ export function createApp(config: Config, deps: AppDeps): Hono<AuthEnv> {
     general ? () => envInbox ?? general.get().tasksInbox : config.tasksInbox,
   );
   const { raw, derived, activity } = healthStores(config, deps, vault);
-  const home = {
-    tasks,
-    health: new HealthHistory(derived),
-    calendar: deps.calendar ?? noCalendar,
-    sync: () => raw.readSync(),
-    timeZone: config.timeZone,
-  };
+  const home = homeDeps(config, deps, tasks, raw, derived);
 
   const tailnet = deps.tailnet ?? (() => config.tailnet ?? null);
   const api = new Hono<AuthEnv>();
@@ -106,4 +102,22 @@ function healthStores(config: Config, deps: AppDeps, vault: Vault) {
     recompute: deps.recompute ?? ((date: string) => summary.run(date)),
   };
   return { raw, derived, activity };
+}
+
+function homeDeps(
+  config: Config,
+  deps: AppDeps,
+  tasks: TaskStore,
+  raw: RawStore,
+  derived: DerivedStore,
+): HomeDeps {
+  return {
+    tasks,
+    health: new HealthHistory(derived),
+    calendar: deps.calendar ?? noCalendar,
+    sync: () => raw.readSync(),
+    battery: async (now) =>
+      latestBattery(await raw.readRange("battery", now - BATTERY_LOOKBACK_MS, now + 1)),
+    timeZone: config.timeZone,
+  };
 }

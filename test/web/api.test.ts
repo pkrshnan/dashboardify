@@ -30,6 +30,26 @@ describe("home UI API adapter", () => {
     expect(modern).toEqual(legacy);
   });
 
+  test("home UI adapter keeps the strap battery", async () => {
+    await api.call("/v1/streams/battery:mergeSamples", "POST", {
+      day: { year: 2026, month: 11, day: 3 },
+      timestamps: ["1793664000000"],
+      columns: [
+        { name: "pct", numbers: { values: [6.4] } },
+        { name: "charging", missingRows: [0], numbers: { values: [0] } },
+      ],
+    });
+
+    const { modern, legacy } = await compare();
+
+    expect(modern.healthSync?.battery).toEqual({
+      percent: 6.4,
+      charging: false,
+      at: "2026-11-03T00:00:00.000Z",
+    });
+    expect(modern).toEqual(legacy);
+  });
+
   test("home UI adapter preserves the presentation model", async () => {
     const { modern, legacy } = await compare();
 
