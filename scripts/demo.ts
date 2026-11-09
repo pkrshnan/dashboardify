@@ -83,7 +83,14 @@ const app = createApp(config, {
     places: demoPlaces(),
   },
 });
-Bun.serve({ port: config.port, routes: { "/": homepage }, fetch: app.fetch, development: true });
+// DEMO_DEV=0 serves the app without hot reload. Bun's dev server refuses hosts other than
+// localhost, so the demo behind a tunnel on CI needs it.
+Bun.serve({
+  port: config.port,
+  routes: { "/": homepage },
+  fetch: app.fetch,
+  development: process.env.DEMO_DEV !== "0",
+});
 console.log(`demo on http://localhost:${config.port}, token ${TOKEN}`);
 
 /**
