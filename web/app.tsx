@@ -26,6 +26,8 @@ import { SignIn } from "./components/sign-in";
 import { TaskList } from "./components/task-list";
 import { type Pending, pendingEvent, withPending } from "./lib/capture";
 import { type Now, nowIn } from "./lib/clock";
+import { sectionFromHash } from "./settings/sections";
+import { Settings } from "./settings/settings";
 
 const REFRESH_MS = 5 * 60_000;
 const TICK_MS = 15_000;
@@ -57,7 +59,17 @@ function App() {
     }
     setToken(null);
   };
-  return <Home token={token} onUnauthorized={unauthorized} />;
+  return <Routes token={token} onUnauthorized={unauthorized} />;
+}
+
+/** `#settings…` shows Settings; anything else, the home screen. */
+function Routes(props: { token: Token; onUnauthorized: (setup: boolean) => void }) {
+  const hash = useHash();
+  const isPhone = useMedia(PHONE_QUERY);
+  if (hash.startsWith("#settings")) {
+    return <Settings {...props} section={sectionFromHash(hash)} isPhone={isPhone} />;
+  }
+  return <Home {...props} />;
 }
 
 /** Loads the home view, then shows the home screen or, at #activity, the Activity page. */
