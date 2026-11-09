@@ -120,10 +120,46 @@ async function demoCalendars() {
     calendarAccount: { username: server.username, password: server.password },
   });
   const cache = await EventCache.open(config.dataPath);
-  const sync = new CalendarSync({ accounts, cache, connect, timeZone: TIME_ZONE });
+  const sync = new CalendarSync({ accounts, cache, connect, feedFetch, timeZone: TIME_ZONE });
   await sync.tick();
   sync.start(30_000);
-  return { accounts, connect, cache, sync };
+  return { accounts, connect, cache, sync, feedFetch };
+}
+
+/**
+ * Calendar links in the demo: any https://calendar.example.com/… link is a small work
+ * calendar, so "Add calendar link" can be tried without the network. Anything else is refused.
+ */
+async function feedFetch(request: Request): Promise<Response> {
+  if (new URL(request.url).host !== "calendar.example.com") {
+    return new Response("The demo only fetches https://calendar.example.com/ links.", {
+      status: 404,
+    });
+  }
+  const events = [
+    writeEvent({
+      uid: "feed-1",
+      title: "Quarterly planning",
+      start: new Date(at(1, 14)),
+      end: new Date(at(1, 15.5)),
+      timeZone: TIME_ZONE,
+      now: new Date(),
+    }),
+    writeEvent({
+      uid: "feed-2",
+      title: "All hands",
+      start: new Date(at(3, 11)),
+      end: new Date(at(3, 12)),
+      timeZone: TIME_ZONE,
+      now: new Date(),
+    }),
+  ];
+  // Join the two VCALENDARs' events into one feed, as a published calendar sends them.
+  const vevents = events.map((ics) => /BEGIN:VEVENT[\s\S]*END:VEVENT\r\n/.exec(ics)?.[0] ?? "");
+  const head = events[0]?.split("BEGIN:VEVENT")[0] ?? "";
+  return new Response(
+    `${head.replace("VERSION:2.0", "VERSION:2.0\r\nX-WR-CALNAME:Acme work")}${vevents.join("")}END:VCALENDAR\r\n`,
+  );
 }
 
 function seedServer(): FakeCalDav {

@@ -56,6 +56,8 @@ export interface SettingsDeps {
     connect?: ConnectCalDav;
     cache?: EventCache;
     sync?: Pick<CalendarSync, "syncCalendar">;
+    /** How calendar links are fetched; tests pass a fake server. */
+    feedFetch?: (request: Request) => Promise<Response>;
   };
 }
 
@@ -125,6 +127,8 @@ function settingsServices(settings: SettingsDeps, now: () => Date): ServiceRegis
             implementation: new CalendarAccountService(
               calendars.accounts,
               calendars.connect ?? connectICloud,
+              calendars.feedFetch,
+              now,
             ),
           },
         ]

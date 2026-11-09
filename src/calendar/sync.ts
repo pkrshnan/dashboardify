@@ -8,6 +8,7 @@ import type { Account, CalendarAccounts, StoredCalendar } from "./accounts";
 import { calendarId } from "./accounts";
 import type { EventCache } from "./cache";
 import { type CalDavCalendar, type CalDavClient, type ResourceRef, Unauthorized } from "./caldav";
+import { FeedGone, fetchFeed } from "./feed";
 import { readOccurrences } from "./ical";
 
 const DAY_MS = 86_400_000;
@@ -26,7 +27,14 @@ export interface SyncDeps {
   log?: (message: string) => void;
   /** Called after every pass, e.g. to rewrite the daily note's agenda block. */
   onPass?: () => Promise<unknown>;
+  /** How calendar links are fetched; tests pass a fake server. */
+  feedFetch?: (request: Request) => Promise<Response>;
 }
+
+/** Calendar links are fetched this often… */
+const LINK_EVERY_MS = 15 * 60_000;
+/** …and once an hour after one stops working. */
+const LINK_GONE_MS = 60 * 60_000;
 
 /** Occurrences are expanded from this far back (for the calendar guess's history)… */
 export const WINDOW_BACK_MS = 180 * DAY_MS;
@@ -38,6 +46,8 @@ export class CalendarSync {
   private readonly log: (message: string) => void;
   /** Per account: when to try next after a failure, and how long the last wait was. */
   private readonly backoff = new Map<string, { until: number; wait: number }>();
+  /** Per link: when it was last fetched. */
+  private readonly fetched = new Map<string, number>();
   private timer?: ReturnType<typeof setInterval>;
   private running?: Promise<void>;
   private expandedDay = "";
@@ -89,6 +99,9 @@ export class CalendarSync {
   }
 
   private async syncAccount(account: Account): Promise<void> {
+    if (account.kind === "ics") {
+      return this.syncLink(account);
+    }
     // A refused password stops polling until it is replaced, which sets the status back to ok.
     if (account.status === "auth_failed" || !account.homeUrl) {
       return;
@@ -114,6 +127,38 @@ export class CalendarSync {
       this.succeeded(account);
     } catch (error) {
       this.failed(account, error);
+    }
+  }
+
+  /** A calendar link: a conditional GET; a new copy replaces the calendar's events. */
+  private async syncLink(account: Account): Promise<void> {
+    const now = this.now().getTime();
+    const wait = this.backoff.get(account.id);
+    if ((wait && now < wait.until) || now - (this.fetched.get(account.id) ?? 0) < LINK_EVERY_MS) {
+      return;
+    }
+    const { accounts } = this.deps;
+    try {
+      const cache = accounts.httpCache(account.id);
+      const result = await fetchFeed(accounts.feedUrl(account.id), cache, this.deps.feedFetch);
+      if (result.kind === "ok") {
+        this.store(account.id, "feed", "feed", result.etag ?? "", result.ics);
+      }
+      accounts.linkFetched(account.id, result.kind === "ok" ? result : cache);
+      this.fetched.set(account.id, now);
+      this.backoff.delete(account.id);
+    } catch (error) {
+      if (!(error instanceof FeedGone)) {
+        this.failed(account, error);
+        return;
+      }
+      const at = new Date(now).toISOString().slice(11, 16);
+      accounts.setStatus(
+        account.id,
+        "unreachable",
+        `Link stopped working at ${at}. It was unpublished or changed.`,
+      );
+      this.backoff.set(account.id, { until: now + LINK_GONE_MS, wait: LINK_GONE_MS });
     }
   }
 

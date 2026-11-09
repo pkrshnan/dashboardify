@@ -11,7 +11,8 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 
-// Calendar accounts (one iCloud account), their calendars, and where new events go.
+// Calendar accounts (one iCloud account, and any number of read-only calendar links), their
+// calendars, and where new events go.
 service CalendarAccountService {
   // Lists accounts.
   rpc ListCalendarAccounts(ListCalendarAccountsRequest) returns (ListCalendarAccountsResponse) {
@@ -104,6 +105,8 @@ message CalendarAccount {
     KIND_UNSPECIFIED = 0;
     // CalDAV, read and write. Only one CalDAV account is allowed.
     KIND_CALDAV = 1;
+    // A calendar link (an ICS URL), read-only, with one calendar.
+    KIND_ICS = 2;
   }
 
   // Whether the last request worked.
@@ -145,6 +148,13 @@ message CalendarAccount {
   // Whether a password is stored.
   bool password_set = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // Links: the https:// or webcal:// URL. Written only; never returned, since anyone with it can
+  // read the calendar.
+  string feed_url = 9 [(google.api.field_behavior) = INPUT_ONLY];
+
+  // Links: whether a URL is stored.
+  bool feed_url_set = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+
   // When the server last accepted the password.
   google.protobuf.Timestamp last_used_time = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
 
@@ -160,8 +170,14 @@ message CalendarAccount {
   // Changes on every update.
   string etag = 15 [(google.api.field_behavior) = OPTIONAL];
 
+  // Links: the URL's host, such as `outlook.office365.com`, the only part of it shown.
+  string feed_host = 16 [(google.api.field_behavior) = OUTPUT_ONLY];
+
   // The calendars found, returned by CreateCalendarAccount (including `validate_only`).
   repeated Calendar calendars = 17 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Links, with `validate_only`: how many events the feed has in the next 60 days.
+  int32 event_count = 18 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // One calendar in an account.
@@ -258,13 +274,14 @@ message GetCalendarAccountRequest {
 
 // Request for CreateCalendarAccount.
 message CreateCalendarAccountRequest {
-  // The account: kind, provider, username and password.
+  // iCloud: kind, username and password. A link: kind KIND_ICS, feed_url, and optionally
+  // display_name (else the feed's own name).
   CalendarAccount calendar_account = 1 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true
   ];
 
-  // The account id; `icloud` when empty.
+  // The account id; `icloud` for iCloud, from the name for a link, when empty.
   string calendar_account_id = 2 [(google.api.field_behavior) = OPTIONAL];
 
   // Sign in and list calendars without saving anything.
@@ -279,7 +296,7 @@ message UpdateCalendarAccountRequest {
     (buf.validate.field).required = true
   ];
 
-  // `password` and/or `display_name`.
+  // `password`, `feed_url` and/or `display_name`.
   google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = OPTIONAL];
 }
 

@@ -188,6 +188,13 @@ One iCloud account, read and write, over CalDAV with an app-specific password.
 | PATCH | `/v1/calendarAccounts/{id}/calendars/{calendar}` | Change `category`, `enabled` or `forceReadOnly` |
 | GET, PATCH | `/v1/calendarSettings` | The default calendar and keyword rules |
 
+**Calendar links** are accounts too: `{"kind": "KIND_ICS", "feedUrl": "webcal://…"}`, any number
+of them, each with one read-only calendar (`…/calendars/feed`). `validateOnly` fetches the feed once
+and returns its own name and `eventCount`. Only `https:` and `webcal:` links are accepted, and every
+redirect must stay on `https:`. The URL is sealed like a password and never returned; responses
+carry `feedUrlSet` and `feedHost`. Links are fetched every 15 minutes with a conditional GET; one
+that stops working shows `STATUS_UNREACHABLE` with "Link stopped working…".
+
 The password is stored sealed and never returned. A password iCloud refuses returns `400` with
 code `failed_precondition` and a hint to use an app-specific password. A second iCloud account
 returns `409` `already_exists`. The default calendar and keyword rule targets must be writable.
