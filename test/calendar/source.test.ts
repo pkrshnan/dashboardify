@@ -160,22 +160,19 @@ describe("cacheSource.events", () => {
 });
 
 describe("cacheSource.status", () => {
-  test("is the oldest sync across shown calendars, and flags accounts in trouble", () => {
-    cache.setState("icloud", "home", { lastSyncTime: "2026-11-10T07:58:00Z" });
-    cache.setState("icloud", "work", { lastSyncTime: "2026-11-10T07:50:00Z" });
-    cache.setState("icloud", "dinners", { lastSyncTime: "2026-11-10T07:59:00Z" });
+  test("is when the server was last checked, and flags accounts in trouble", () => {
+    const at = new CalendarAccounts(store, () => new Date("2026-11-10T07:58:00Z"));
+    at.synced("icloud");
 
     const ok = cacheSource(cache, accounts).status?.();
     accounts.setStatus("icloud", "auth_failed");
     const failed = cacheSource(cache, accounts).status?.();
 
-    expect(ok).toEqual({ lastSyncTime: "2026-11-10T07:50:00Z", hasErrors: false });
+    expect(ok).toEqual({ lastSyncTime: "2026-11-10T07:58:00.000Z", hasErrors: false });
     expect(failed?.hasErrors).toBe(true);
   });
 
-  test("has no sync time until every shown calendar has synced once", () => {
-    cache.setState("icloud", "home", { lastSyncTime: "2026-11-10T07:58:00Z" });
-
+  test("has no sync time until the server has been checked once", () => {
     expect(cacheSource(cache, accounts).status?.()?.lastSyncTime).toBeUndefined();
   });
 
