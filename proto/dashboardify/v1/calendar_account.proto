@@ -198,7 +198,7 @@ message Calendar {
   // Its colour in Apple Calendar, such as `#FF2968FF`. Shown in Settings only.
   string server_color = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // How it is drawn on the home screen: `work`, `fitness`, `personal` or `focus`.
+  // How it is drawn on the home screen: `work`, `fitness`, `personal`, `relationships`, `family` or `focus`.
   string category = 4 [
     (google.api.field_behavior) = OPTIONAL,
     (buf.validate.field).string = {
@@ -207,6 +207,8 @@ message Calendar {
         "work",
         "fitness",
         "personal",
+        "relationships",
+        "family",
         "focus"
       ]
     }

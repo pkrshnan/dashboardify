@@ -74,6 +74,14 @@ describe("parseCapture: events", () => {
       spans: ["when:4pm"],
       reason: "“Haircut” at a time reads as an appointment. It gets an hour.",
     },
+    {
+      text: "Volleyball Thu 8pm",
+      title: "Volleyball",
+      start: "2026-11-12T20:00:00.000Z",
+      end: "2026-11-12T21:00:00.000Z",
+      spans: ["when:Thu 8pm"],
+      reason: "“Volleyball” at a time reads as an appointment. It gets an hour.",
+    },
   ])("$text", ({ text, ...expected }) => {
     expect(read(text)).toMatchObject({ kind: "event", ...expected });
   });

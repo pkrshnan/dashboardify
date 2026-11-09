@@ -6,6 +6,8 @@ export interface WritableCalendar {
   /** Resource name, e.g. "calendarAccounts/icloud/calendars/fitness". */
   name: string;
   displayName: string;
+  /** "fitness" lets sport words find it without a rule. */
+  category?: string;
 }
 
 /** How often past events with this title were on a calendar. */
@@ -36,6 +38,9 @@ export interface CalendarGuess {
   reason: string;
 }
 
+/** Sports that go on a Fitness calendar when no rule or past title says otherwise. */
+const FITNESS_WORDS = ["volleyball", "gym", "run", "swim", "yoga", "workout"];
+
 /** Lower-case words only, so "Physio 10:00!" and "physio" match. */
 export function titleKey(title: string): string {
   return title
@@ -47,7 +52,7 @@ export function titleKey(title: string): string {
 
 /**
  * The calendar used most for a similar past title, else the first keyword rule that matches,
- * else the default calendar, else the first writable one. Undefined when nothing is writable.
+ * else a Fitness calendar for a sport, else the default calendar, else the first writable one. Undefined when nothing is writable.
  */
 export function chooseCalendar(title: string, hints: CalendarHints): CalendarGuess | undefined {
   const writable = new Map(hints.calendars.map((calendar) => [calendar.name, calendar]));
@@ -65,6 +70,13 @@ export function chooseCalendar(title: string, hints: CalendarHints): CalendarGue
     return {
       calendar: rule.calendar,
       reason: `Your rule “${rule.word}” puts it on ${displayName(rule.calendar)}.`,
+    };
+  }
+  const sport = fromSportWords(title, hints.calendars);
+  if (sport) {
+    return {
+      calendar: sport.calendar.name,
+      reason: `${capitalize(sport.word)} goes on ${sport.calendar.displayName}.`,
     };
   }
   if (hints.defaultCalendar && writable.has(hints.defaultCalendar)) {
@@ -129,6 +141,16 @@ function fromRules(
     }
   }
   return undefined;
+}
+
+function fromSportWords(
+  title: string,
+  calendars: WritableCalendar[],
+): { calendar: WritableCalendar; word: string } | undefined {
+  const calendar = calendars.find((c) => c.category === "fitness");
+  const words = titleKey(title).split(" ");
+  const word = FITNESS_WORDS.find((w) => words.includes(w));
+  return calendar && word ? { calendar, word } : undefined;
 }
 
 function capitalize(text: string): string {

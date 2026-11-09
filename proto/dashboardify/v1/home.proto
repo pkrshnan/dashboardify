@@ -107,7 +107,7 @@ message AgendaEvent {
   // Location or notes.
   string detail = 6;
 
-  // work, fitness, personal or focus.
+  // work, fitness, personal, relationships, family or focus.
   string category = 7;
 
   // Join link, if any.
@@ -304,7 +304,7 @@ message WritableCalendar {
   // Its name in Apple Calendar.
   string display_name = 2;
 
-  // `work`, `fitness`, `personal` or `focus`.
+  // `work`, `fitness`, `personal`, `relationships`, `family` or `focus`.
   string category = 3;
 }
 

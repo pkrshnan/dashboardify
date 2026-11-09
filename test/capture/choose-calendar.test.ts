@@ -92,6 +92,32 @@ describe("chooseCalendar", () => {
     expect(chooseCalendar("Dinner", hints({ rules }))?.calendar).toBe(personal);
   });
 
+  test("then a sport goes on the calendar whose category is fitness", () => {
+    const calendars = [
+      { name: personal, displayName: "Personal", category: "personal" },
+      { name: shared, displayName: "Training", category: "fitness" },
+    ];
+
+    expect(chooseCalendar("Volleyball at the park", hints({ calendars, rules: [] }))).toEqual({
+      calendar: shared,
+      reason: "Volleyball goes on Training.",
+    });
+  });
+
+  test("your own rule beats the built-in sports", () => {
+    const calendars = [
+      { name: personal, displayName: "Personal", category: "personal" },
+      { name: fitness, displayName: "Fitness", category: "fitness" },
+    ];
+    const rules = [{ words: ["volleyball"], calendar: personal }];
+
+    expect(chooseCalendar("Volleyball", hints({ calendars, rules }))?.calendar).toBe(personal);
+  });
+
+  test("a sport with no fitness calendar goes on the default", () => {
+    expect(chooseCalendar("Volleyball", hints({ rules: [] }))?.calendar).toBe(personal);
+  });
+
   test("with no default, the first writable calendar", () => {
     expect(chooseCalendar("Dentist", hints({ defaultCalendar: undefined }))).toEqual({
       calendar: personal,

@@ -74,7 +74,7 @@ const VERBS = new Set([
 ]);
 
 const APPOINTMENT =
-  /\b(lunch|dinner|breakfast|brunch|coffee|drinks|meeting|standup|stand-up|sync|interview|appointment|dentist|doctor|physio|haircut|gym|run|swim|yoga|class|flight|party|concert|review|workshop)\b/i;
+  /\b(lunch|dinner|breakfast|brunch|coffee|drinks|meeting|standup|stand-up|sync|interview|appointment|dentist|doctor|physio|haircut|gym|run|swim|yoga|volleyball|class|flight|party|concert|review|workshop)\b/i;
 
 const WHO = /\bwith\s+\p{Lu}[\p{L}'-]*(?:\s+(?:and|&)\s+\p{Lu}[\p{L}'-]*)?/u;
 

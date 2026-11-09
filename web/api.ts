@@ -366,7 +366,13 @@ export function deleteDevice(token: Token, name: string): Promise<unknown> {
   });
 }
 
-export type CalendarCategory = "work" | "fitness" | "personal" | "focus";
+export type CalendarCategory =
+  | "work"
+  | "fitness"
+  | "personal"
+  | "relationships"
+  | "family"
+  | "focus";
 
 export interface CalendarAccountView {
   /** "calendarAccounts/{id}" */

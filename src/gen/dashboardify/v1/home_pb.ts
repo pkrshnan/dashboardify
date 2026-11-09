@@ -198,7 +198,7 @@ export type AgendaEvent = Message<"dashboardify.v1.AgendaEvent"> & {
   detail: string;
 
   /**
-   * work, fitness, personal or focus.
+   * work, fitness, personal, relationships, family or focus.
    *
    * @generated from field: string category = 7;
    */
@@ -724,7 +724,7 @@ export type WritableCalendar = Message<"dashboardify.v1.WritableCalendar"> & {
   displayName: string;
 
   /**
-   * `work`, `fitness`, `personal` or `focus`.
+   * `work`, `fitness`, `personal`, `relationships`, `family` or `focus`.
    *
    * @generated from field: string category = 3;
    */

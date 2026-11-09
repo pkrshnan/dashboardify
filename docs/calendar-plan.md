@@ -38,7 +38,7 @@ plan are used here as they are.
 | Links | Calendar links are added by URL. `webcal://` is read as `https://`; plain `http://` is refused. The URL is sealed like a password, because anyone with it can read the calendar. |
 | Credentials | iCloud app-specific password and link URLs, sealed with `SecretBox`. |
 | Writable | Taken from the server's `current-user-privilege-set`. A calendar can be forced read-only in Settings. In iCloud, calendars shared with you as view-only and subscribed calendars are read-only. |
-| Categories | Each calendar maps to work, fitness, personal or focus. Default: personal. |
+| Categories | Each calendar maps to work, fitness, personal, relationships, family or focus. Default: personal. |
 | Sync | Poll. CalDAV every 2 minutes with ctag and sync-token, so a quiet poll is one small request per calendar. One extra sync right after each write. Links every 15 minutes with a conditional GET. |
 | Event cache | `$DATA_PATH/calendar-cache.db`, derived and disposable. Deleting it triggers a full resync. Kept apart from `settings.db` so exports and backups stay small. |
 | Creates | `PUT {calendar}/{uid}.ics` with `If-None-Match: *`, where `uid` comes from the client's `request_id`. A retry becomes the same PUT and returns 412, which is read as success. |

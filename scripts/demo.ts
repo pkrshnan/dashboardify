@@ -33,6 +33,8 @@ const CALENDAR_FOR: Record<Category, string> = {
   focus: "work",
   fitness: "fitness",
   personal: "home",
+  relationships: "home",
+  family: "home",
 };
 
 const TOKEN = "demo-token-0123456789";

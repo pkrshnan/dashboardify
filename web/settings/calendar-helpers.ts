@@ -6,6 +6,8 @@ export const CATEGORIES: { value: CalendarCategory; label: string }[] = [
   { value: "personal", label: "Personal" },
   { value: "work", label: "Work" },
   { value: "fitness", label: "Fitness" },
+  { value: "relationships", label: "Relationships" },
+  { value: "family", label: "Family" },
   { value: "focus", label: "Focus" },
 ];
 
