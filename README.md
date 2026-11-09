@@ -55,6 +55,12 @@ bun run dev
 Open [localhost:8787](http://localhost:8787) and enter your device token. Without `INGEST_TOKENS`, the first start prints a one-time setup code instead ("No devices yet. Open … and enter setup code 4KQ7-MZ2D"); enter it on the "Set up this device" screen to add this browser. Add more devices later with `bun run settings devices add <name>`. Your vault and `.env`
 are git-ignored. See [development notes](docs/development.md) for checks, demo options, and hosting.
 
+### Connect a calendar
+
+Open Settings (the gear beside the date) › Calendars › **Connect iCloud**, and enter your Apple
+ID with an app-specific password from account.apple.com › Sign-In and Security. Your calendars
+show on the home screen within a couple of minutes, and the capture box can add events to them.
+
 ## How it works
 
 The server exposes authenticated v1 REST and Connect APIs, with shared protobuf validation.

@@ -40,6 +40,15 @@ start imports them from `INGEST_TOKENS`. Behind Tailscale Serve, configure `TAIL
 without `secret.key`, and keep the key in a password manager: a backup that holds both can open
 every secret.
 
+### Calendars in the demo and tests
+
+The demo and the tests talk to `test/calendar/fake-caldav.ts`, an in-memory server shaped like
+iCloud (discovery on `caldav.icloud.com`, calendars on a `pNN-caldav` host, ctags, sync tokens,
+etags and preconditions). The demo seeds it with Personal, Work, Fitness and a read-only shared
+calendar, connects the account and syncs every 30 seconds, so the capture box can add, show and
+undo events. To check the real client against iCloud, run
+`APPLE_ID=you@icloud.com bun scripts/caldav-check.ts`; it lists your calendars and saves nothing.
+
 ### Settings from the terminal
 
 `bun run settings` opens the same `settings.db` as the server (`DATA_PATH`, default `./data`):

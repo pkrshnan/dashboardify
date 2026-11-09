@@ -254,4 +254,25 @@ describe("CalendarSync", () => {
 
     expect(cache.resources()).toEqual([]);
   });
+
+  test("calls onPass after every pass, so the agenda block can follow", async () => {
+    let passes = 0;
+    const counted = new CalendarSync({
+      accounts,
+      cache,
+      timeZone: "Europe/London",
+      now: () => now,
+      log: () => undefined,
+      connect: (account) =>
+        new CalDavClient({ ...account, allowedDomains: ["icloud.com"] }, server.fetch),
+      onPass: async () => {
+        passes++;
+      },
+    });
+
+    await counted.tick();
+    await counted.tick();
+
+    expect(passes).toBe(2);
+  });
 });

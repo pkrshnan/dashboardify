@@ -13,7 +13,6 @@ This is the build plan for dashboardify. [architecture.md](architecture.md) desc
 
 - Multiple users or sharing.
 - A native iOS or macOS app. The web app installs as a PWA, and Siri covers voice.
-- Two-way sync with Apple apps. Calendar stays the place you edit events, and tasks live in the vault.
 - Writing back to mail or messages, for example sending replies.
 
 ## Decisions
@@ -26,7 +25,7 @@ This is the build plan for dashboardify. [architecture.md](architecture.md) desc
 | Vault sync | Obsidian Self-hosted LiveSync, with CouchDB on the Arch server, so Obsidian mobile works for quick capture. `livesync-bridge` mirrors the CouchDB database to a plain folder on the server, and that folder is the vault the command center reads and writes. There is no git in the vault. Backups are restic snapshots, and recent edits can be recovered from LiveSync's revision history and Obsidian's File recovery. |
 | Primary interface | Siri Shortcuts calling the server's HTTP API, with the web app for browsing |
 | Privacy | Journal and messages are `local-only` and only ever reach a model running on the server |
-| Calendar | Read from CalDAV and ICS. Not mirrored into Markdown files. |
+| Calendar | Read and write one iCloud account over CalDAV; accounts in Settings. Events are cached in `calendar-cache.db`, not mirrored into Markdown; the daily note gets an agenda block. See [calendar-plan.md](calendar-plan.md). |
 | Tasks | Obsidian Tasks lines in the vault are the only task list. Siri adds, reads and completes them through the server. Apple Reminders isn't used. |
 | Mail | Read by the server over IMAP |
 | Health | Raw data read straight off the Whoop 5.0 strap by healthstrap, not the Whoop API. We compute strain, recovery, HRV, sleep, VO2max and biological age ourselves. Apple Health adds steps and workouts. A Whoop CSV export can backfill history. |
@@ -80,7 +79,7 @@ Done when the dashboard replaces opening four apps in the morning.
 
 8. **Strap data and metrics:** the raw samples endpoint that healthstrap posts to, Parquet storage in `health-raw/`, and the metrics job that computes strain, recovery, HRV, sleep, VO2max and biological age into the health CSVs and the daily note. Done so far: sleep, resting HR, HRV, breathing rate, skin temperature, strain, zones, steps, recovery, workouts and walks ([how they work](health-metrics.md)). Still to do: sleep stages, calories, training load, VO2max and biological age. An importer for the Whoop CSV export backfills older history.
 9. **Apple Health Shortcut:** a recipe for steps, workouts, VO2max and sleep.
-10. **Calendar source:** CalDAV and ICS reader, today's agenda block in the daily note, and events kept in memory for the API.
+10. **Calendar source:** two-way iCloud sync, the capture box and the agenda block. Planned and built in [calendar-plan.md](calendar-plan.md) (C1–C12).
 11. **Today API:** one endpoint that returns everything the dashboard shows. Done as `GET /api/home`; calendar events arrive with step 10.
 12. **Web Today screen:** the approved design on desktop and phone, installable as a PWA. Done in `web/`, dark mode only for now ([design](design/README.md)).
 

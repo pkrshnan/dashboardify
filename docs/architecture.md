@@ -49,7 +49,7 @@ flowchart TD
 | Health metrics | Computed on the server from the raw streams | Strain, recovery, HRV, sleep, VO2max and biological age, using our own documented algorithms. Results are rebuildable tables, and daily values go into the daily note. |
 | Whoop export | Optional one-off import of the Whoop app's CSV export | Backfills history before the strap was read directly, seeds baselines and checks our numbers against Whoop's on overlapping days. Kept separate from our own values. |
 | Apple Health | Daily Shortcut automation posts metrics | Steps, workouts with routes, VO2max and sleep. Shortcuts can only read Health while the phone is unlocked. |
-| Calendar | Server reads CalDAV (iCloud app password) and ICS feeds | Not written to Markdown files. Events live in the index, and each daily note gets a short agenda block. |
+| Calendar | Server reads and writes one iCloud account over CalDAV (app-specific password, sealed in `settings.db`); a sync loop polls every 2 minutes | Not written to Markdown files. Events live in `$DATA_PATH/calendar-cache.db`, which is derived: deleting it makes the next sync fetch everything again. Each daily note gets a `<!-- cc:agenda -->` block, and the capture box creates events through `CaptureService`. |
 | Tasks | Siri Shortcuts call `/api/tasks`; you can also write tasks anywhere in Obsidian | Obsidian Tasks format. New tasks go to the inbox file (`TASKS_INBOX`, default `Inbox.md`). |
 | Journal | Written in the daily note, or dictated through Siri | Local-only. |
 | Mail | Server reads IMAP directly | Only messages that need you get a note. |

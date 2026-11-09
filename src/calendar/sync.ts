@@ -24,6 +24,8 @@ export interface SyncDeps {
   timeZone: string;
   now?: () => Date;
   log?: (message: string) => void;
+  /** Called after every pass, e.g. to rewrite the daily note's agenda block. */
+  onPass?: () => Promise<unknown>;
 }
 
 /** Occurrences are expanded from this far back (for the calendar guess's history)… */
@@ -77,6 +79,7 @@ export class CalendarSync {
     for (const account of accounts) {
       await this.syncAccount(account);
     }
+    await this.deps.onPass?.().catch((error) => this.log(`After sync: ${String(error)}`));
     const known = new Set(accounts.map((account) => account.id));
     for (const { accountId } of this.deps.cache.resources()) {
       if (!known.has(accountId)) {
