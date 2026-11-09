@@ -35,6 +35,7 @@
     "hono": "4.13.16",
     "hyparquet": "1.32.0",
     "hyparquet-writer": "0.18.0",
+    "ical.js": "2.2.1",
     "papaparse": "5.5.3",
     "preact": "10.27.2",
     "yaml": "2.9.1"

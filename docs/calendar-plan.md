@@ -611,8 +611,8 @@ SecretBox, S3 general settings (time zone), S4 the Settings API patterns, S7 the
 | --- | --- | --- |
 | C1 | Capture parser, shared | No |
 | C2 | Capture box in the web app, reminders only | No |
-| C3 | iCalendar model and fake CalDAV server | No |
-| C4 | CalDAV client | No |
+| C3 | iCalendar model | No |
+| C4 | CalDAV client and fake server | No |
 | C5 | Calendar accounts and CalendarAccountService | S1, S4 |
 | C6 | Event cache and sync loop | S1 (via C5) |
 | C7 | Events on the home screen, read-only | via C6 |
@@ -646,21 +646,23 @@ as S1 and S4 merge; it does not wait for S5–S8.
 - Docs: design/README.md "Calendar and tasks" section.
 - Done when typing in the box on desktop and phone matches the Main and Phone artboards.
 
-### C3: iCalendar model and fake CalDAV server
+### C3: iCalendar model
 
-- Scope: add `ical.js`. `src/calendar/ical.ts`: VEVENT ↔ `CachedEvent`, expansion into a window,
-  writing a single VEVENT with `VTIMEZONE`. `test/calendar/fake-caldav.ts`: an in-memory Hono app
-  that answers PROPFIND, `calendar-query`, `sync-collection`, `calendar-multiget`, PUT and DELETE
-  with ctags, sync-tokens, etags, `If-Match`/`If-None-Match`, privileges, a redirect like iCloud's
-  and 401s on bad passwords.
-- Tests: fixtures copied from real iCloud responses (scrubbed): time zones, all-day,
-  overridden instances, EXDATE, floating times, events over midnight.
-- Done when every fixture round-trips and expands as expected.
+- Scope: add `ical.js`. `src/calendar/ical.ts`: a calendar object → its occurrences in a window
+  (recurrences expanded, EXDATEs and moved instances applied), and writing a single VEVENT with
+  the VTIMEZONE it uses.
+- Tests: fixtures in the shapes iCloud and Outlook write (hand-written, no real data): time
+  zones, all-day, a moved instance, EXDATE, a DST change mid-series, floating times, an event over
+  midnight, a Windows zone name.
+- Done when every fixture expands as expected and a written event reads back the same.
 
-### C4: CalDAV client
+### C4: CalDAV client and fake server
 
 - Scope: add `fast-xml-parser`. `src/calendar/caldav.ts` with discovery, listing, incremental
   sync with fallback, multiget, create/update/delete with preconditions, the redirect host check.
+  `test/calendar/fake-caldav.ts`: an in-memory Hono app that answers PROPFIND, `calendar-query`,
+  `sync-collection`, `calendar-multiget`, PUT and DELETE with ctags, sync-tokens, etags,
+  `If-Match`/`If-None-Match`, privileges, a redirect like iCloud's and 401s on bad passwords.
 - Tests: against the fake server: discovery through the redirect, token expiry fallback, 412 on
   stale etag, 412-on-retry treated as success, redirect to a foreign host refused, 401 surfaced.
 - Done when the client passes against the fake server and one manual run against iCloud lists
