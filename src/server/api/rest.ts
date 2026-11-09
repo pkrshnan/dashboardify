@@ -53,7 +53,8 @@ function bindResourceName(
     return;
   }
   let name = resource.prefix;
-  if (name !== "home") {
+  // A path with no parameter names a singleton, such as `home` or `settings`.
+  if (binding.path.includes("/:")) {
     name += context.req.param("id")?.split(":")[0] ?? context.req.param("day");
   }
   name += resource.suffix ?? "";

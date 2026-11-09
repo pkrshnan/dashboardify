@@ -10,7 +10,7 @@ import {
   tailnetFrom,
 } from "../server/config";
 import type { TailnetAuth } from "../server/tailnet";
-import { GeneralSettings } from "./core";
+import { GeneralSettings, type SettingsChange } from "./core";
 import { DeviceStore } from "./devices";
 import { fromEnv, importEnvSettings, importEnvTokens, warnOverrides } from "./env-import";
 import { loadKey } from "./key";
@@ -26,8 +26,9 @@ export interface Opened {
   config: Config;
   /** Tailnet sign-in as Settings say now, for each request. */
   tailnet: () => TailnetAuth | null;
-  /** Variables still set in the environment, which win over Settings. */
+  /** Variables still set in the environment, which win over Settings, and their values. */
   overrides: string[];
+  envChange: SettingsChange;
 }
 
 export async function openSettings(
@@ -49,7 +50,8 @@ export async function openSettings(
   if (devices.list().length === 0 && !config.tailnet) {
     log("No devices in Settings and no tailnet sign-in: every API request will be rejected.");
   }
-  return { store, devices, general, config, tailnet: liveTailnet(inForce), overrides };
+  const tailnet = liveTailnet(inForce);
+  return { store, devices, general, config, tailnet, overrides, envChange: change };
 }
 
 /** Re-reads tailnet sign-in only when its settings change ("gateway" reads /proc each time). */

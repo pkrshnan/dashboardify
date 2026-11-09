@@ -1,6 +1,7 @@
 import type { Context, MiddlewareHandler } from "hono";
 import { getConnInfo } from "hono/bun";
 import type { DeviceMatcher } from "../settings/devices";
+import { withDevice } from "./request-context";
 import { LOGIN_HEADER, type TailnetAuth, tailnetUser } from "./tailnet";
 
 /** Hono context type for authenticated routes: the matched device id is available. */
@@ -25,7 +26,7 @@ export function bearerAuth(
       return c.json({ error: "unauthorized" }, 401);
     }
     c.set("device", device);
-    await next();
+    await withDevice(device, () => next());
   };
 }
 

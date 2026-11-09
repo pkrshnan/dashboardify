@@ -1,0 +1,99 @@
+syntax = "proto3";
+
+package dashboardify.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+
+// The server's settings, which used to live in .env.
+service SettingsService {
+  // Returns the settings.
+  rpc GetSettings(GetSettingsRequest) returns (Settings) {
+    option (google.api.http) = {get: "/v1/{name=settings}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  // Changes the fields in the update mask, or every field that is set.
+  rpc UpdateSettings(UpdateSettingsRequest) returns (Settings) {
+    option (google.api.http) = {
+      patch: "/v1/{settings.name=settings}"
+      body: "settings"
+    };
+    option (google.api.method_signature) = "settings,update_mask";
+  }
+}
+
+// The one settings resource.
+message Settings {
+  option (google.api.resource) = {
+    type: "dashboardify.app/Settings"
+    pattern: "settings"
+    singular: "settings"
+    plural: "settings"
+  };
+
+  // Always `settings`.
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+
+  // IANA time zone, such as `Europe/London`. Empty means the server's own zone.
+  string time_zone = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Vault-relative file that new tasks are appended to.
+  string tasks_inbox = 3 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).string.max_len = 500
+  ];
+
+  // Sign-in through Tailscale Serve.
+  Tailnet tailnet = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // When the settings last changed.
+  google.protobuf.Timestamp update_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Changes on every update. Updates with a stale etag are rejected.
+  string etag = 6 [(google.api.field_behavior) = OPTIONAL];
+
+  // Fields still set from the environment, which win until removed from .env, such as
+  // `time_zone`.
+  repeated string env_overrides = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Fields changed by this update that apply only after a restart.
+  repeated string restart_required = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// Sign-in through Tailscale Serve, without a device token.
+message Tailnet {
+  // The address Tailscale Serve's requests come from: an IP address, or `gateway` for the
+  // Docker bridge. Empty turns tailnet sign-in off.
+  string proxy = 1 [(google.api.field_behavior) = OPTIONAL];
+
+  // Tailnet logins allowed in, such as `you@github`.
+  repeated string allowed_logins = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request for GetSettings.
+message GetSettingsRequest {
+  // Always `settings`.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/Settings",
+    (buf.validate.field).string.const = "settings"
+  ];
+}
+
+// Request for UpdateSettings.
+message UpdateSettingsRequest {
+  // The new values; `name` must be `settings`.
+  Settings settings = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // The fields to change, such as `time_zone` or `tailnet`.
+  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = OPTIONAL];
+}

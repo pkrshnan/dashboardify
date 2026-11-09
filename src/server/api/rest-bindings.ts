@@ -69,4 +69,22 @@ export const restBindings: Record<string, RestBinding> = {
     resource: { field: "stream", prefix: "streams/" },
   },
   getHome: { method: "GET", path: "/home", resource: { field: "name", prefix: "home" } },
+  getSettings: {
+    method: "GET",
+    path: "/settings",
+    resource: { field: "name", prefix: "settings" },
+  },
+  updateSettings: {
+    method: "PATCH",
+    path: "/settings",
+    bodyField: "settings",
+    resource: { field: "settings.name", prefix: "settings" },
+  },
+  createDevice: { method: "POST", path: "/devices", bodyField: "device" },
+  listDevices: { method: "GET", path: "/devices" },
+  deleteDevice: {
+    method: "DELETE",
+    path: "/devices/:id",
+    resource: { field: "name", prefix: "devices/" },
+  },
 };
