@@ -58,7 +58,8 @@ async function call<T>(token: Token, path: string, init: RequestInit = {}): Prom
     throw new Unauthorized(body.setup === true);
   }
   if (!response.ok) {
-    throw new Error(`${path}: ${response.status}`);
+    const body = (await response.json().catch(() => ({}))) as { message?: string };
+    throw new ServiceError(body.message || `${path}: ${response.status}`);
   }
   return (await response.json()) as T;
 }
@@ -226,6 +227,61 @@ export function deleteTask(token: Token, name: string): Promise<unknown> {
     body: JSON.stringify({ name }),
   });
 }
+
+/** The server's settings, as the Settings page shows them. */
+export interface SettingsView {
+  timeZone: string;
+  tasksInbox: string;
+  tailnet: { proxy: string; allowedLogins: string[] };
+  etag: string;
+  /** Fields still set in .env, such as "time_zone". */
+  envOverrides: string[];
+  /** Fields the last change needs a restart for. */
+  restartRequired: string[];
+}
+
+type SettingsJson = Partial<Omit<SettingsView, "tailnet">> & {
+  tailnet?: { proxy?: string; allowedLogins?: string[] };
+};
+
+function settingsView(json: SettingsJson): SettingsView {
+  return {
+    timeZone: json.timeZone ?? "",
+    tasksInbox: json.tasksInbox ?? "",
+    tailnet: { proxy: json.tailnet?.proxy ?? "", allowedLogins: json.tailnet?.allowedLogins ?? [] },
+    etag: json.etag ?? "",
+    envOverrides: json.envOverrides ?? [],
+    restartRequired: json.restartRequired ?? [],
+  };
+}
+
+export async function getSettings(token: Token): Promise<SettingsView> {
+  return settingsView(
+    await call<SettingsJson>(token, "/dashboardify.v1.SettingsService/GetSettings", {
+      method: "POST",
+      body: JSON.stringify({ name: "settings" }),
+    }),
+  );
+}
+
+/** Changes the given fields only, e.g. `{ timeZone: "Europe/London" }`. */
+export async function updateSettings(
+  token: Token,
+  change: Partial<Pick<SettingsView, "timeZone" | "tasksInbox" | "tailnet">>,
+): Promise<SettingsView> {
+  return settingsView(
+    await call<SettingsJson>(token, "/dashboardify.v1.SettingsService/UpdateSettings", {
+      method: "POST",
+      body: JSON.stringify({
+        settings: { name: "settings", ...change },
+        updateMask: Object.keys(change).join(","),
+      }),
+    }),
+  );
+}
+
+/** The error a service sent ("time_zone is set by TZ_NAME in .env…"), to show beside a field. */
+export class ServiceError extends Error {}
 
 /**
  * First run: adds this device using the setup code the server printed, and returns the new
