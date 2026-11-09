@@ -916,11 +916,13 @@ button.link {
   color: var(--text-3);
 }
 
-.synced {
+.synced,
+.battery {
   white-space: nowrap;
 }
 
-.synced::before {
+.synced::before,
+.battery::before {
   content: " · ";
 }
 

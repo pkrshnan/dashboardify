@@ -80,6 +80,15 @@ await Bun.write(
   join(config.healthRawPath, "sync.json"),
   JSON.stringify({ latestSampleTs: syncAt, uploadTs: syncAt + 60_000 }),
 );
+// DEMO_BATTERY=12 sets the strap's last battery report (default 64), to see it run low.
+await new RawStore(config.healthRawPath).store(
+  "battery",
+  new Date(syncAt).toISOString().slice(0, 10),
+  {
+    header: ["ts", "pct", "charging"],
+    samples: [{ ts: syncAt, values: [Number(process.env.DEMO_BATTERY ?? 64), 0] }],
+  },
+);
 const settings = await SettingsStore.open(
   config.dataPath,
   new SecretBox(await loadKey({ dataPath: config.dataPath })),

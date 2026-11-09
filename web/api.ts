@@ -11,9 +11,10 @@ import {
 } from "../src/gen/dashboardify/v1/activity_pb";
 import {
   type AgendaEvent as AgendaEventMessage,
+  type HealthSync,
   HomeSchema,
 } from "../src/gen/dashboardify/v1/home_pb";
-import type { AgendaEvent, HomeView } from "../src/home/types";
+import type { AgendaEvent, HealthSyncView, HomeView } from "../src/home/types";
 import type { ActivityDayView, WorkoutDetail, WorkoutView } from "./lib/activity";
 
 const TOKEN_KEY = "dashboardify.token";
@@ -62,6 +63,20 @@ async function call<T>(token: Token, path: string, init: RequestInit = {}): Prom
     throw new ServiceError(body.message || `${path}: ${response.status}`);
   }
   return (await response.json()) as T;
+}
+
+function healthSyncView(s: HealthSync): HealthSyncView {
+  return {
+    latestSample: isoTime(s.latestSampleTime),
+    upload: isoTime(s.uploadTime),
+    battery: s.battery
+      ? {
+          percent: s.battery.percent,
+          charging: s.battery.charging,
+          at: isoTime(s.battery.reportTime),
+        }
+      : null,
+  };
 }
 
 // biome-ignore lint/complexity/noExcessiveLinesPerFunction: explicit conversion from protobuf dates, times and enums into the existing presentation model
@@ -118,12 +133,7 @@ export async function fetchHome(token: Token): Promise<HomeView> {
       values: m.dailyValues.map((v, i) => (m.missingDays.includes(i) ? null : v)),
       lastDate: date(m.lastDate),
     })),
-    healthSync: v.healthSync
-      ? {
-          latestSample: isoTime(v.healthSync.latestSampleTime),
-          upload: isoTime(v.healthSync.uploadTime),
-        }
-      : null,
+    healthSync: v.healthSync ? healthSyncView(v.healthSync) : null,
     calendarSync: v.calendarSync
       ? {
           lastSync: v.calendarSync.lastSyncTime ? isoTime(v.calendarSync.lastSyncTime) : null,

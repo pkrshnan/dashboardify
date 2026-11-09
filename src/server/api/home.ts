@@ -37,6 +37,13 @@ export class HomeService {
         ? {
             latestSampleTime: view.healthSync.latestSample,
             uploadTime: view.healthSync.upload,
+            battery: view.healthSync.battery
+              ? {
+                  percent: view.healthSync.battery.percent,
+                  charging: view.healthSync.battery.charging,
+                  reportTime: view.healthSync.battery.at,
+                }
+              : undefined,
           }
         : undefined,
       calendarSync: view.calendarSync

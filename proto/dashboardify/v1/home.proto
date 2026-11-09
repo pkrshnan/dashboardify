@@ -73,6 +73,21 @@ message HealthSync {
 
   // When the last upload landed.
   google.protobuf.Timestamp upload_time = 2;
+
+  // The strap's latest battery report. Unset before it reports one.
+  StrapBattery battery = 3;
+}
+
+// The strap's battery as of its latest report.
+message StrapBattery {
+  // State of charge, 0 to 100.
+  double percent = 1;
+
+  // Whether it was on the charger. False until the strap reports a charger change.
+  bool charging = 2;
+
+  // When the strap reported it.
+  google.protobuf.Timestamp report_time = 3;
 }
 
 // How a change reads against baseline.

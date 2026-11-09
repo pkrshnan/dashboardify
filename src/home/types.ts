@@ -38,6 +38,17 @@ export interface HealthSyncView {
   latestSample: string;
   /** ISO time the last upload landed. */
   upload: string;
+  /** The strap's latest battery report, or null before it sends one. */
+  battery: BatteryView | null;
+}
+
+export interface BatteryView {
+  /** 0 to 100. */
+  percent: number;
+  /** False until the strap reports a charger change. */
+  charging: boolean;
+  /** ISO time of the report. */
+  at: string;
 }
 
 export interface AgendaEvent {
