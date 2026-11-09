@@ -25,6 +25,15 @@ See the [code style guide](style.md) and [formatting and test layout guide](../S
 for conventions. `bun run format:check` checks formatting without changing files. GitHub Actions runs checks on every pull
 request using `.github/workflows/ci.yml`.
 
+### Trying a pull request in the browser
+
+Add the `demo` label to a pull request to run `bun run demo` from its branch on GitHub Actions.
+The run opens a temporary `trycloudflare.com` URL and comments it on the PR with the demo token.
+It stays up for 30 minutes, and each push to the labelled PR restarts it with the new code.
+Remove the label or cancel the run to stop it. You can also start it from the Actions tab
+(Demo › Run workflow) on any branch, for up to 60 minutes. The URL is public while it runs, but
+the demo only holds made-up data.
+
 ## Configuration and hosting
 
 [`.env.example`](../.env.example) lists the configuration options, including vault and health
