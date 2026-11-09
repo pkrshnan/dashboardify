@@ -130,16 +130,28 @@ export function completeTask(token: Token, id: string): Promise<unknown> {
   });
 }
 
-/** The voice capture method also parses dates in typed text. */
-export function addTask(token: Token, text: string): Promise<{ message: string }> {
-  return call(token, "/dashboardify.v1.VoiceService/AddTask", {
+/** Fields already parsed by the capture box. The same request id always gives one task. */
+export function createTask(
+  token: Token,
+  task: Record<string, unknown>,
+  requestId: string,
+): Promise<{ name: string }> {
+  return call(token, "/dashboardify.v1.TaskService/CreateTask", {
     method: "POST",
-    body: JSON.stringify({ requestId: randomKey(), text }),
+    body: JSON.stringify({ task, requestId }),
+  });
+}
+
+/** Undo for a task the capture box just added. `name` is "tasks/{id}". */
+export function deleteTask(token: Token, name: string): Promise<unknown> {
+  return call(token, "/dashboardify.v1.TaskService/DeleteTask", {
+    method: "POST",
+    body: JSON.stringify({ name }),
   });
 }
 
 /** randomUUID needs HTTPS; over plain HTTP on the tailnet fall back to random bytes. */
-function randomKey(): string {
+export function randomKey(): string {
   if (typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
   }

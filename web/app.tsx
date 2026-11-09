@@ -5,19 +5,23 @@ import { render } from "preact";
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 import type { HomeView } from "../src/home/types";
 import {
-  addTask,
   completeTask,
+  createTask,
+  deleteTask,
   fetchHome,
+  randomKey,
   savedToken,
   saveToken,
   type Token,
   Unauthorized,
 } from "./api";
 import { Calendar } from "./components/calendar";
+import { Capture } from "./components/capture";
 import { Focus } from "./components/focus";
 import { Health } from "./components/health";
 import { SignIn } from "./components/sign-in";
 import { TaskList } from "./components/task-list";
+import { taskFields } from "./lib/capture";
 import { type Now, nowIn } from "./lib/clock";
 
 const REFRESH_MS = 5 * 60_000;
@@ -61,12 +65,10 @@ function Home({ token, onUnauthorized }: { token: Token; onUnauthorized: () => v
     setDone((d) => new Set(d).add(id));
     completeTask(token, id).then(load, load);
   };
-  const add = async (text: string) => {
-    const result = await addTask(token, text);
-    await load();
-    return result.message;
-  };
-  const tasks = <TaskList groups={view.tasks} done={done} onComplete={complete} onAdd={add} />;
+  const capture = (
+    <HomeCapture token={token} timeZone={view.timeZone} isPhone={isPhone} reload={load} />
+  );
+  const tasks = <TaskList groups={view.tasks} done={done} onComplete={complete} />;
   return (
     <main class="home">
       <Focus view={view} now={now} />
@@ -75,6 +77,7 @@ function Home({ token, onUnauthorized }: { token: Token; onUnauthorized: () => v
         nowMin={now.minutes}
         isPhone={isPhone}
         onComplete={complete}
+        capture={capture}
         aside={isPhone ? undefined : tasks}
       />
       {isPhone && (
@@ -93,6 +96,32 @@ function Home({ token, onUnauthorized }: { token: Token; onUnauthorized: () => v
         isPhone={isPhone}
       />
     </main>
+  );
+}
+
+/** The capture box, saving reminders as tasks. Undo deletes the task again. */
+function HomeCapture(props: {
+  token: Token;
+  timeZone: string;
+  isPhone: boolean;
+  reload: () => Promise<void>;
+}) {
+  const { token, reload } = props;
+  return (
+    <Capture
+      timeZone={props.timeZone}
+      isPhone={props.isPhone}
+      newRequestId={randomKey}
+      onAdd={async (parse, requestId) => {
+        const task = await createTask(token, taskFields(parse), requestId);
+        reload();
+        return task.name;
+      }}
+      onUndo={async (name) => {
+        await deleteTask(token, name);
+        await reload();
+      }}
+    />
   );
 }
 
