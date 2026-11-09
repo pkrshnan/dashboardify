@@ -1115,6 +1115,149 @@ button.link {
   width: 200px;
 }
 
+.settings-pane-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.device-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 20px;
+  align-items: center;
+  min-height: 64px;
+  border-bottom: 1px solid var(--line-2);
+}
+
+.device-main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.device-name {
+  font-size: 15px;
+}
+
+.device-tag {
+  margin-left: 10px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--fill);
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.device-revoke {
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--line-3);
+  border-radius: 18px;
+  background: transparent;
+  color: var(--bad);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.device-revoke.strong {
+  height: 44px;
+  padding: 0 18px;
+  border: 0;
+  background: var(--bad);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.device-revoke:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 12vh 16px 16px;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.dialog {
+  width: 100%;
+  max-width: 480px;
+  border-radius: 16px;
+  background: var(--fill);
+}
+
+.dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 28px;
+  border-radius: 16px;
+}
+
+.dialog-body.danger {
+  border: 1px solid var(--bad);
+}
+
+.dialog-body h2 {
+  font-size: 22px;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.device-qr {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.device-qr-code {
+  flex: none;
+  width: 160px;
+  height: 160px;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--text);
+}
+
+.device-token {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 8px 8px 14px;
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.device-token code {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 13px;
+}
+
+.device-understood {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 15px;
+}
+
 .settings-foot {
   margin: 0;
   font-size: 13px;

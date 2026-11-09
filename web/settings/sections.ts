@@ -6,7 +6,10 @@ export interface SettingsSection {
   title: string;
 }
 
-export const SECTIONS: SettingsSection[] = [{ id: "general", title: "General" }];
+export const SECTIONS: SettingsSection[] = [
+  { id: "general", title: "General" },
+  { id: "devices", title: "Devices" },
+];
 
 /** "#settings", "#settings/general" → the section to show, or undefined for the list (phone). */
 export function sectionFromHash(hash: string): string | undefined {
