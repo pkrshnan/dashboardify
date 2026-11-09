@@ -605,6 +605,18 @@ button.link {
   padding: 3px 10px;
 }
 
+/* A calendar event that opens the event panel. */
+.event[role="button"],
+.all-day-event[role="button"] {
+  cursor: pointer;
+}
+
+.event[role="button"]:focus-visible,
+.all-day-event[role="button"]:focus-visible {
+  outline: 2px solid var(--control);
+  outline-offset: 1px;
+}
+
 .event-title {
   font-weight: 600;
 }
@@ -1311,6 +1323,37 @@ button.link {
   margin-top: 6px;
 }
 
+/* Pushes the buttons after it to the right, as Delete sits apart on the left. */
+.dialog-spacer {
+  flex: 1;
+}
+
+.event-when {
+  font-size: 15px;
+  color: var(--text-2);
+}
+
+.event-text {
+  font-size: 15px;
+  line-height: 21px;
+  white-space: pre-line;
+}
+
+/* One above the other: side by side, a datetime input is too narrow for "10:30 PM". */
+.event-times {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Delete, as tall as the buttons beside it. */
+.dialog-actions .device-revoke {
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 22px;
+  font-size: 15px;
+}
+
 .device-qr {
   display: flex;
   gap: 16px;
@@ -1543,7 +1586,8 @@ button.link {
 }
 
 .setup-field input,
-.setup-field select {
+.setup-field select,
+.setup-field textarea {
   height: 48px;
   padding: 0 14px;
   border: 1px solid var(--line-3);
@@ -1554,7 +1598,16 @@ button.link {
   outline: none;
 }
 
-.setup-field input:focus {
+.setup-field textarea {
+  height: auto;
+  padding: 12px 14px;
+  font: inherit;
+  font-size: 17px;
+  resize: vertical;
+}
+
+.setup-field input:focus,
+.setup-field textarea:focus {
   border-color: var(--control);
 }
 

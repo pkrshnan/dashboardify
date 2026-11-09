@@ -529,7 +529,7 @@ changes today.
 | `web/components/capture.tsx` (new) | The box from the Main artboard: mirror overlay for highlights, Event/Reminder switch with a hand-switched mark, preview line with calendar picker (writable only), Return to add, "added · Undo" line, error and Retry. Keyboard: `N` focuses it on desktop. |
 | `web/components/task-list.tsx` | Remove `QuickAdd`. |
 | `web/app.tsx` | Place `Capture` under the Calendar heading, above the timeline and task list (Desktop and Phone artboards). Hold pending items and merge them into the view until the next refresh. |
-| `web/components/day-timeline.tsx` | Pending style (stronger fill, ring, "Saving to iCloud…" detail), error style, a brief highlight on the item just added. Read-only events open read-only. |
+| `web/components/day-timeline.tsx` | Pending style (stronger fill, ring, "Saving to iCloud…" detail), error style, a brief highlight on the item just added. Tapping an event opens the event panel (`event-panel.tsx`) to edit or delete it; read-only events open read-only. |
 | `web/components/week.tsx` | All-day events as hollow markers with an event glyph in the dated row. Pending items. |
 | `web/components/calendar.tsx` | "Calendar synced 09:10" next to the heading; orange when stale or failing, like Health's synced label. |
 | `web/components/settings/calendars.tsx` (new) | The Calendars section in the Settings shell (below). |

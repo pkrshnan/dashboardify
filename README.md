@@ -86,6 +86,14 @@ reminder and why. You can switch the kind by hand. Return adds the line, and Und
 Press `N` to jump to the box. The [Add to command center](shortcuts/add-to-command-center.md)
 Siri Shortcut sends lines to the same API from your phone.
 
+## Changing events
+
+Tap an event on the Day view to see it. **Edit** changes its title, times, location and notes;
+moving the start moves the end with it. **Delete** removes it from iCloud after a confirmation.
+If the event changed in Apple Calendar since the page loaded, the save is refused rather than
+overwriting it. Repeating events, all-day dates and events on read-only calendars or calendar
+links can't be changed here; the panel says why, and Apple Calendar can change them.
+
 ## How it works
 
 The server exposes authenticated v1 REST and Connect APIs, with shared protobuf validation.

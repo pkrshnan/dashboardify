@@ -1,6 +1,7 @@
 // The Day view: all-day events in a row on top, then hour lines from an hour before now to 22:00,
 // event blocks on the left, timed tasks as dashed pills in a lane on the right, and a red line for
-// now. An event the capture box is still saving has a stronger fill and a ring.
+// now. An event the capture box is still saving has a stronger fill and a ring. Tapping a
+// calendar event opens it.
 
 import type { AgendaEvent, DayAgenda } from "../../src/home/types";
 import { alpha, CATEGORY, TEXT, TEXT_2, TEXT_3 } from "../lib/colors";
@@ -12,9 +13,11 @@ interface Props {
   nowMin: number;
   isPhone: boolean;
   onComplete: (id: string) => void;
+  /** Opens the event panel for "events/{id}". */
+  onOpen?: (event: string) => void;
 }
 
-export function DayTimeline({ day, nowMin, isPhone, onComplete }: Props) {
+export function DayTimeline({ day, nowMin, isPhone, onComplete, onOpen }: Props) {
   const hourPx = isPhone ? 56 : 52;
   const range = hourRange(nowMin, day.events, day.reminders);
   const hours = Array.from(
@@ -27,7 +30,7 @@ export function DayTimeline({ day, nowMin, isPhone, onComplete }: Props) {
   const eventWidth = isPhone ? 52 : 62;
   return (
     <>
-      <AllDayRow events={day.allDay} />
+      <AllDayRow events={day.allDay} onOpen={onOpen} />
       <div class="timeline" style={{ height: `${(range.endHour - range.startHour) * hourPx}px` }}>
         {hours.map((h) => (
           <div key={h}>
@@ -46,6 +49,7 @@ export function DayTimeline({ day, nowMin, isPhone, onComplete }: Props) {
             block={b}
             width={eventWidth}
             isPhone={isPhone}
+            onOpen={onOpen}
           />
         ))}
         {pills.map((p) => (
@@ -61,7 +65,8 @@ export function DayTimeline({ day, nowMin, isPhone, onComplete }: Props) {
 }
 
 /** All-day events above the hours: one bar each in its calendar's colour, never on the timeline. */
-function AllDayRow({ events }: { events: AgendaEvent[] }) {
+function AllDayRow(props: { events: AgendaEvent[]; onOpen?: (event: string) => void }) {
+  const { events } = props;
   if (events.length === 0) {
     return null;
   }
@@ -74,6 +79,7 @@ function AllDayRow({ events }: { events: AgendaEvent[] }) {
             key={e.event ?? e.title}
             class="all-day-event"
             style={{ background: alpha(color, 0.15), borderLeft: `3px solid ${color}` }}
+            {...opener(e, props.onOpen)}
           >
             <span class="ell event-title">{e.title}</span>
             <span class="muted">All day</span>
@@ -82,6 +88,34 @@ function AllDayRow({ events }: { events: AgendaEvent[] }) {
       })}
     </ul>
   );
+}
+
+interface Opener {
+  role: "button";
+  tabIndex: number;
+  "aria-label": string;
+  onClick: () => void;
+  onKeyDown: (e: KeyboardEvent) => void;
+}
+
+/** Makes an event's block open the panel, for a calendar event that has finished saving. */
+function opener(event: AgendaEvent, onOpen?: (event: string) => void): Partial<Opener> {
+  const name = event.event;
+  if (!(name && onOpen) || event.pending) {
+    return {};
+  }
+  return {
+    role: "button",
+    tabIndex: 0,
+    "aria-label": `Open ${event.title}`,
+    onClick: () => onOpen(name),
+    onKeyDown: (e: KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        onOpen(name);
+      }
+    },
+  };
 }
 
 function blockStyle(block: Block, laneWidth: number, color: string, fill: number) {
@@ -98,7 +132,13 @@ function blockStyle(block: Block, laneWidth: number, color: string, fill: number
   };
 }
 
-function EventBlock({ block, width, isPhone }: { block: Block; width: number; isPhone: boolean }) {
+function EventBlock(props: {
+  block: Block;
+  width: number;
+  isPhone: boolean;
+  onOpen?: (event: string) => void;
+}) {
+  const { block, width, isPhone } = props;
   const { event } = block;
   const color = CATEGORY[event.category];
   const laneWidth = width / block.lanes;
@@ -116,6 +156,7 @@ function EventBlock({ block, width, isPhone }: { block: Block; width: number; is
     <div
       class={`event${block.oneLine ? " one-line" : ""}${event.pending ? " pending" : ""}`}
       style={blockStyle(block, laneWidth, color, fill)}
+      {...opener(event, props.onOpen)}
     >
       {block.oneLine || isPhone ? (
         <div class="ell">
@@ -149,7 +190,13 @@ function Located({ event }: { event: AgendaEvent }) {
     return <>{event.detail}</>;
   }
   return (
-    <a class="event-place" href={event.mapsUrl} target="_blank" rel="noreferrer">
+    <a
+      class="event-place"
+      href={event.mapsUrl}
+      target="_blank"
+      rel="noreferrer"
+      onClick={(e) => e.stopPropagation()}
+    >
       {event.detail}
     </a>
   );
