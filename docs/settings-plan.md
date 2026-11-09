@@ -29,7 +29,7 @@ the store, the secret box and the Settings page described here.
 | Settings store | `$DATA_PATH/settings.db`, `bun:sqlite`, WAL mode | Built into Bun, no new dependency. Safe for the server and the CLI to use at once. |
 | Where | Outside the vault | The vault syncs to every device through LiveSync, and secrets must never be in the vault. |
 | Feature tables | A migration registry: each module registers numbered migrations under its own name | The calendar and mail modules own their schema and don't edit a central migration list. |
-| Encrypted secrets | AES-256-GCM through WebCrypto, one random nonce per value, AAD names the row and field | Built into Bun. The AAD stops a sealed value being copied into another row or field. |
+| Encrypted secrets | AES-256-GCM through `node:crypto`, one random nonce per value, AAD names the row and field | Built into Bun and synchronous, unlike WebCrypto, so reads stay simple. The AAD stops a sealed value being copied into another row or field. |
 | Key | 32 random bytes in `$DATA_PATH/secret.key`, mode 0600, made on first run. `SECRET_KEY_FILE` can point at a Docker or systemd secret instead. | No setup step, and it works with container secrets. |
 | Device tokens | SHA-256 hash only, compared in constant time. The token is shown once, when the device is added. | The server never needs a token back, so it never stores one. |
 | API | `SettingsService` (a singleton `settings`) and `DeviceService` (`devices/{device}`), in the existing AIP style | Same transports, validation and tests as the other v1 services. |
@@ -154,8 +154,8 @@ class SecretBox {
 - `version()` reads `PRAGMA data_version`, so the server notices CLI writes without polling the
   tables.
 
-Neither WebCrypto nor `bun:sqlite` is used elsewhere in the repo yet, so this PR also gives them a
-small, well-tested home.
+Neither `node:crypto` ciphers nor `bun:sqlite` are used elsewhere in the repo yet, so this PR also
+gives them a small, well-tested home.
 
 ## API
 
