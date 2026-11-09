@@ -18,13 +18,16 @@ interface Props {
   nowMin: number;
   isPhone: boolean;
   onComplete: (id: string) => void;
+  /** Opens the event panel for "events/{id}". */
+  onOpenEvent?: (event: string) => void;
   /** The capture box, under the heading. */
   capture?: ComponentChildren;
   /** The task list, beside the calendar on desktop. */
   aside?: ComponentChildren;
 }
 
-export function Calendar({ view, nowMin, isPhone, onComplete, capture, aside }: Props) {
+export function Calendar(props: Props) {
+  const { view, nowMin, isPhone, onComplete, capture, aside } = props;
   const [mode, setMode] = useState<View>("day");
   const today = view.days[0];
   const last = view.days.at(-1);
@@ -54,7 +57,13 @@ export function Calendar({ view, nowMin, isPhone, onComplete, capture, aside }: 
       <div class="calendar-grid">
         <div>
           {mode === "day" && today && (
-            <DayTimeline day={today} nowMin={nowMin} isPhone={isPhone} onComplete={onComplete} />
+            <DayTimeline
+              day={today}
+              nowMin={nowMin}
+              isPhone={isPhone}
+              onComplete={onComplete}
+              onOpen={props.onOpenEvent}
+            />
           )}
           {mode === "week" && !isPhone && <WeekColumns days={view.days} nowMin={nowMin} />}
           {mode === "week" && isPhone && <WeekStrip days={view.days} />}

@@ -20,6 +20,7 @@ import {
 import { Activity } from "./components/activity";
 import { Calendar } from "./components/calendar";
 import { Capture } from "./components/capture";
+import { EventPanel } from "./components/event-panel";
 import { Focus } from "./components/focus";
 import { Health } from "./components/health";
 import { SignIn } from "./components/sign-in";
@@ -126,6 +127,7 @@ function HomeScreen(props: {
   const { view, now, isPhone, token, load } = props;
   const [done, setDone] = useState(new Set<string>());
   const [pending, setPending] = useState<Pending[]>([]);
+  const [panel, openEvent] = useEventPanel(token, view.timeZone, load);
   const complete = (id: string) => {
     setDone((d) => new Set(d).add(id));
     completeTask(token, id).then(load, load);
@@ -149,6 +151,7 @@ function HomeScreen(props: {
         nowMin={now.minutes}
         isPhone={isPhone}
         onComplete={complete}
+        onOpenEvent={openEvent}
         capture={capture}
         aside={isPhone ? undefined : tasks}
       />
@@ -167,8 +170,24 @@ function HomeScreen(props: {
         timeZone={view.timeZone}
         isPhone={isPhone}
       />
+      {panel}
     </main>
   );
+}
+
+/** The event panel for the event last tapped, and the function that opens one. */
+function useEventPanel(token: Token, timeZone: string, load: () => Promise<void>) {
+  const [opened, setOpened] = useState<string | null>(null);
+  const panel = opened && (
+    <EventPanel
+      token={token}
+      name={opened}
+      timeZone={timeZone}
+      onClose={() => setOpened(null)}
+      onChanged={load}
+    />
+  );
+  return [panel, setOpened] as const;
 }
 
 /**

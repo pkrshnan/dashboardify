@@ -221,11 +221,73 @@ export async function capture(
     : { name: result.task?.name ?? "", kind: "reminder", message: result.message };
 }
 
-/** Undo for an event the capture box just added. `name` is "events/{id}". */
-export function deleteEvent(token: Token, name: string): Promise<unknown> {
+/** One event as the event panel shows and edits it. */
+export interface EventDetail {
+  /** "events/{id}". */
+  name: string;
+  title: string;
+  /** ISO times. */
+  startTime: string;
+  endTime: string;
+  allDay: boolean;
+  location: string;
+  notes: string;
+  writable: boolean;
+  recurring: boolean;
+  etag: string;
+}
+
+type EventJson = Partial<EventDetail> & { name: string };
+
+function eventDetail(json: EventJson): EventDetail {
+  return {
+    name: json.name,
+    title: json.title ?? "",
+    startTime: json.startTime ?? "",
+    endTime: json.endTime ?? "",
+    allDay: json.allDay ?? false,
+    location: json.location ?? "",
+    notes: json.notes ?? "",
+    writable: json.writable ?? false,
+    recurring: json.recurring ?? false,
+    etag: json.etag ?? "",
+  };
+}
+
+export async function getEvent(token: Token, name: string): Promise<EventDetail> {
+  return eventDetail(
+    await call<EventJson>(token, "/dashboardify.v1.EventService/GetEvent", {
+      method: "POST",
+      body: JSON.stringify({ name }),
+    }),
+  );
+}
+
+/** Changes only the fields in `change`, and only if the event is still at `etag`. */
+export async function updateEvent(
+  token: Token,
+  event: { name: string; etag: string },
+  change: Partial<Pick<EventDetail, "title" | "startTime" | "endTime" | "location" | "notes">>,
+): Promise<EventDetail> {
+  return eventDetail(
+    await call<EventJson>(token, "/dashboardify.v1.EventService/UpdateEvent", {
+      method: "POST",
+      body: JSON.stringify({
+        event: { ...change, name: event.name, etag: event.etag },
+        updateMask: Object.keys(change).join(","),
+      }),
+    }),
+  );
+}
+
+/**
+ * Deletes an event: Undo for one the capture box just added, or Delete in the event panel.
+ * `name` is "events/{id}"; with `etag`, only if it hasn't changed since.
+ */
+export function deleteEvent(token: Token, name: string, etag?: string): Promise<unknown> {
   return call(token, "/dashboardify.v1.EventService/DeleteEvent", {
     method: "POST",
-    body: JSON.stringify({ name }),
+    body: JSON.stringify({ name, etag }),
   });
 }
 
