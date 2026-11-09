@@ -66,7 +66,7 @@ steps: 8412
 ```
 
 - The night is the one that ended that morning. Strain, zones, workouts and steps cover the calendar day.
-- Each workout is a line: running, walking, volleyball, lifting, or plain workout when it fits none. Workouts need resting and max HR, like strain. Walks are 10+ minutes of steady stepping outside workouts, and need only the step counter.
+- Each workout is a line: running, walking, volleyball, lifting, or plain workout when it fits none. A workout the strap isn't sure of ends its name with a question mark, such as `- Lifting? 18:07–18:31`: lifting with no lifting log that day, or a workout of unknown kind. Review it on the Activity page. Workouts need resting and max HR, like strain. Walks are 10+ minutes of steady stepping outside workouts, and need only the step counter.
 - Recovery shows "calibrating" until there are 14 nights of history.
 - Synced is the newest strap sample, on today's note only, refreshed hourly. Once it is over two
   hours old it reads `- Synced 1 Nov 21:40 · **14h behind**`, and today gets the block even before
@@ -103,6 +103,25 @@ Write what you lifted under `## Workouts`, one bullet per exercise in the order 
 - Any other indented line is a note to yourself and is skipped.
 - A first line lighter than the exercise's heaviest counts as a warm-up.
 - The Health block gets `- Lifting log · 3 exercises · 12 sets · 4,650 lb`, ending `· sets matched 18:02–19:05` once each set is lined up with the strap's heart rate, or `· not matched to the strap` until then. Each set is also a row in `health-derived/sets/`.
+
+## Workout reviews in the daily note
+
+When you say what a workout was on the Activity page, the answer goes into the frontmatter, where
+you can also edit it:
+
+```yaml
+workout_reviews:
+  - start: "18:07"
+    end: "18:31"
+    kind: none
+```
+
+- `start` and `end` are the workout's local times as it was found. A review applies to the workout
+  it overlaps by at least half, so a small change in how a workout is found doesn't lose it.
+- `kind` is `running`, `walking`, `volleyball`, `lifting` or `workout`, or `none` when it wasn't a
+  workout. A dismissed workout is left out of the Health block and the day's workout minutes, but
+  kept in `health-derived/workouts/` with `status: dismissed`, so it can be taken back.
+- Malformed entries are skipped. Removing the key takes every review back.
 
 ## Health: `health/YYYY/YYYY-MM.csv`
 

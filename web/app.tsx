@@ -15,6 +15,7 @@ import {
   type Token,
   Unauthorized,
 } from "./api";
+import { Activity } from "./components/activity";
 import { Calendar } from "./components/calendar";
 import { Capture } from "./components/capture";
 import { Focus } from "./components/focus";
@@ -52,15 +53,38 @@ function App() {
   return <Home token={token} onUnauthorized={unauthorized} />;
 }
 
+/** Loads the home view, then shows the home screen or, at #activity, the Activity page. */
 function Home({ token, onUnauthorized }: { token: Token; onUnauthorized: () => void }) {
   const { view, error, load } = useHome(token, onUnauthorized);
-  const [done, setDone] = useState(new Set<string>());
   const now = useNow(view?.timeZone);
   const isPhone = useMedia(PHONE_QUERY);
+  const hash = useHash();
 
   if (!(view && now)) {
     return <p class="sign-in muted">{error ? "Can't reach the server." : ""}</p>;
   }
+  if (hash === "#activity") {
+    return (
+      <Activity
+        token={token}
+        timeZone={view.timeZone}
+        today={view.date}
+        onUnauthorized={onUnauthorized}
+      />
+    );
+  }
+  return <HomeScreen view={view} now={now} isPhone={isPhone} token={token} load={load} />;
+}
+
+function HomeScreen(props: {
+  view: HomeView;
+  now: Now;
+  isPhone: boolean;
+  token: Token;
+  load: () => Promise<void>;
+}) {
+  const { view, now, isPhone, token, load } = props;
+  const [done, setDone] = useState(new Set<string>());
   const complete = (id: string) => {
     setDone((d) => new Set(d).add(id));
     completeTask(token, id).then(load, load);
@@ -185,6 +209,20 @@ function useNow(timeZone: string | undefined): Now | null {
     return () => clearInterval(timer);
   }, []);
   return timeZone ? nowIn(timeZone, at) : null;
+}
+
+/** The page's #hash, so the Activity page has its own address and the back button works. */
+function useHash(): string {
+  const [hash, setHash] = useState(() => window.location.hash);
+  useEffect(() => {
+    const onChange = () => {
+      setHash(window.location.hash);
+      window.scrollTo(0, 0);
+    };
+    window.addEventListener("hashchange", onChange);
+    return () => window.removeEventListener("hashchange", onChange);
+  }, []);
+  return hash;
 }
 
 function useMedia(query: string): boolean {

@@ -84,6 +84,9 @@ export interface ApiRequests {
   listStreams: PageRequest;
   mergeSamples: SampleUpload;
   getHome: NamedRequest;
+  listActivityDays: { startDate: DateParts; endDate: DateParts };
+  getWorkout: NamedRequest;
+  reviewWorkout: NamedRequest & { kind: string };
   addTask: { text: string; requestId?: string };
   log: { text: string };
   checkIn: { feel?: string; rpe?: string; tags?: string };

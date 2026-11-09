@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { CalendarAccounts } from "../../../src/calendar/accounts";
 import { CalDavClient } from "../../../src/calendar/caldav";
 import type { ConnectCalDav } from "../../../src/server/api/calendar-accounts";
-import { createApp } from "../../../src/server/app";
+import { type AppDeps, createApp } from "../../../src/server/app";
 import { GeneralSettings, type SettingsChange } from "../../../src/settings/core";
 import { DeviceStore } from "../../../src/settings/devices";
 import { SecretBox } from "../../../src/settings/secret-box";
@@ -26,10 +26,16 @@ function fakeConnect(server: (() => FakeCalDav) | undefined): ConnectCalDav {
 
 /**
  * Call inside a describe block to give each test an isolated vault, sample store and
- * settings.db, with one device ("test", token "secret").
+ * settings.db, with one device ("test", token "secret"). `recompute` is passed to the app, e.g. to
+ * watch what it recomputes.
  */
 export function useApi(
-  options: { envChange?: SettingsChange; envNames?: string[]; calDav?: () => FakeCalDav } = {},
+  options: {
+    envChange?: SettingsChange;
+    envNames?: string[];
+    calDav?: () => FakeCalDav;
+    recompute?: AppDeps["recompute"];
+  } = {},
 ) {
   let dir: string;
   let app: ReturnType<typeof createApp>;
@@ -63,6 +69,7 @@ export function useApi(
             connect: fakeConnect(options.calDav),
           },
         },
+        recompute: options.recompute,
         now: () => new Date("2026-11-03T12:00:00Z"),
       },
     );
@@ -76,6 +83,10 @@ export function useApi(
   return {
     get app() {
       return app;
+    },
+    /** The test's temporary directory: vault/, raw/ and derived/ live under it. */
+    get dir() {
+      return dir;
     },
     get settings() {
       return settings;

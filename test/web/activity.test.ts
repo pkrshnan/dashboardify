@@ -1,0 +1,93 @@
+import { describe, expect, test } from "bun:test";
+import {
+  type ActivityDayView,
+  calendarWeeks,
+  duration,
+  heartRateLines,
+  rangeDates,
+  totals,
+  type WorkoutView,
+  weeklyMinutes,
+  workoutName,
+} from "../../web/lib/activity";
+
+const workout = (status: WorkoutView["status"], minutes: number): WorkoutView => ({
+  name: "days/2026-11-08/workouts/1806",
+  kind: "lifting",
+  status,
+  start: 0,
+  end: minutes * 60_000,
+  minutes,
+  avgHr: 102,
+  maxHr: 136,
+  strain: 2.7,
+});
+
+const day = (date: string, workouts: WorkoutView[], walkMin = 0): ActivityDayView => ({
+  date,
+  steps: 5000,
+  wornMin: 1400,
+  workouts,
+  walks: walkMin
+    ? [{ start: 0, end: 0, minutes: walkMin, steps: 2000, cadence: 105, briskMin: 10 }]
+    : [],
+  lifting: null,
+});
+
+describe("activity page", () => {
+  test("ranges end today: a week, 30 days, or the 13 weeks to this one", () => {
+    expect(rangeDates("2026-11-08", "week")).toEqual({ start: "2026-11-02", end: "2026-11-08" });
+    expect(rangeDates("2026-11-08", "month")).toEqual({ start: "2026-10-10", end: "2026-11-08" });
+    // 8 Nov is a Sunday; its week starts Monday 2 Nov, and 12 weeks before that is 10 Aug.
+    expect(rangeDates("2026-11-08", "3m")).toEqual({ start: "2026-08-10", end: "2026-11-08" });
+  });
+
+  test("totals leave out dismissed workouts and count the ones to confirm", () => {
+    const t = totals([
+      day("2026-11-04", [workout("dismissed", 24)]),
+      day("2026-11-08", [workout("confirmed", 45), workout("possible", 20)], 41),
+    ]);
+
+    expect(t).toMatchObject({ workouts: 2, workoutMin: 65, toConfirm: 1, walks: 1, walkMin: 41 });
+    expect(t.steps).toBe(10_000);
+  });
+
+  test("the month calendar is Monday-first, with days outside the range left empty", () => {
+    const weeks = calendarWeeks("2026-10-10", "2026-11-08");
+
+    expect(weeks).toHaveLength(5);
+    expect(weeks[0]).toEqual([null, null, null, null, null, "2026-10-10", "2026-10-11"]);
+    expect(weeks[4]?.[6]).toBe("2026-11-08");
+  });
+
+  test("weekly minutes say which weeks had no strap data", () => {
+    const weeks = weeklyMinutes(
+      [day("2026-11-02", [workout("detected", 45)], 20)],
+      "2026-10-26",
+      "2026-11-08",
+    );
+
+    expect(weeks).toEqual([
+      { start: "2026-10-26", workoutMin: 0, walkMin: 0, hasData: false },
+      { start: "2026-11-02", workoutMin: 45, walkMin: 20, hasData: true },
+    ]);
+  });
+
+  test("names and durations read as the design writes them", () => {
+    expect(workoutName({ kind: "lifting", status: "possible" })).toBe("Lifting?");
+    expect(workoutName({ kind: "volleyball", status: "confirmed" })).toBe("Volleyball");
+    expect([duration(45), duration(65), duration(206)]).toEqual(["45m", "1h 05m", "3h 26m"]);
+  });
+
+  test("heart rate lines break where the strap had nothing", () => {
+    const lines = heartRateLines(
+      [100, 110, 0, 120, 0, 130, 140],
+      0,
+      (ms) => ms / 1000,
+      (b) => b,
+    );
+
+    // The lone 120 between gaps can't make a line, so it is left out.
+    expect(lines).toEqual(["7.5,100.0 22.5,110.0", "82.5,130.0 97.5,140.0"]);
+  });
+});

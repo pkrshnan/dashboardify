@@ -1,6 +1,7 @@
 // The HTTP API. Each area lives in its own file under routes/; this file only wires them up.
 
 import { Hono } from "hono";
+import { DailySummary } from "../health/daily-summary";
 import { DerivedStore } from "../health/derived-store";
 import { RawStore } from "../health/raw-store";
 import { type CalendarSource, noCalendar } from "../home/calendar";
@@ -8,6 +9,7 @@ import { HealthHistory } from "../home/health-history";
 import type { DeviceMatcher } from "../settings/devices";
 import { TaskStore } from "../vault/task-store";
 import { Vault } from "../vault/vault";
+import type { ActivityDeps } from "./api/activity";
 import { type AuthEnv, bearerAuth } from "./auth";
 import type { Config } from "./config";
 import { healthRoutes } from "./routes/health";
@@ -33,6 +35,8 @@ export interface AppDeps {
   /** Told about every stored strap upload, e.g. to recompute health summaries. */
   onSamples?: (stream: string, day: string) => void;
   calendar?: CalendarSource;
+  /** Recomputes a day's health summary after a workout review; defaults to running it now. */
+  recompute?: (date: string) => Promise<unknown>;
   /** The clock for the home screen; tests pin it. */
   now?: () => Date;
 }
@@ -46,10 +50,10 @@ export function createApp(config: Config, deps: AppDeps): Hono<AuthEnv> {
     vault,
     general ? () => envInbox ?? general.get().tasksInbox : config.tasksInbox,
   );
-  const raw = new RawStore(config.healthRawPath);
+  const { raw, derived, activity } = healthStores(config, deps, vault);
   const home = {
     tasks,
-    health: new HealthHistory(new DerivedStore(config.healthDerivedPath)),
+    health: new HealthHistory(derived),
     calendar: deps.calendar ?? noCalendar,
     sync: () => raw.readSync(),
     timeZone: config.timeZone,
@@ -70,7 +74,7 @@ export function createApp(config: Config, deps: AppDeps): Hono<AuthEnv> {
   app.get("/healthz", (c) => c.json({ ok: true }));
   app.route("/api", api);
   const v1 = v1Transport(
-    v1Services(vault, tasks, raw, home, deps.now, deps.onSamples, deps.settings),
+    v1Services(vault, tasks, raw, home, activity, deps.now, deps.onSamples, deps.settings),
   );
   const modern = new Hono<AuthEnv>();
   modern.use("*", bearerAuth(deps.devices, tailnet));
@@ -83,4 +87,20 @@ export function createApp(config: Config, deps: AppDeps): Hono<AuthEnv> {
     return c.json({ error: "internal error" }, 500);
   });
   return app;
+}
+
+/** The strap's stores, and the Activity service on them. A review recomputes the day with the daily
+ * summary unless deps set another way. */
+function healthStores(config: Config, deps: AppDeps, vault: Vault) {
+  const raw = new RawStore(config.healthRawPath);
+  const derived = new DerivedStore(config.healthDerivedPath);
+  const summary = new DailySummary(raw, derived, vault, config.timeZone);
+  const activity: ActivityDeps = {
+    derived,
+    raw,
+    vault,
+    timeZone: config.timeZone,
+    recompute: deps.recompute ?? ((date: string) => summary.run(date)),
+  };
+  return { raw, derived, activity };
 }

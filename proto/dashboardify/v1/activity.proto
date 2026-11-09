@@ -1,0 +1,237 @@
+syntax = "proto3";
+
+package dashboardify.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/timestamp.proto";
+import "google/type/date.proto";
+
+// Workouts and walks found in the strap data, and your reviews of them.
+service ActivityService {
+  // Lists each day's workouts, walks and lifting log over a range of up to 92 days.
+  rpc ListActivityDays(ListActivityDaysRequest) returns (ListActivityDaysResponse) {
+    option (google.api.http) = {get: "/v1/activityDays"};
+  }
+
+  // Gets one workout with its heart rate and, for lifting, its sets.
+  rpc GetWorkout(GetWorkoutRequest) returns (Workout) {
+    option (google.api.http) = {get: "/v1/{name=days/*/workouts/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  // Says what a workout was, or that it wasn't one. Kept in the daily note's frontmatter, and the
+  // day's summary is recomputed.
+  rpc ReviewWorkout(ReviewWorkoutRequest) returns (Workout) {
+    option (google.api.http) = {
+      post: "/v1/{name=days/*/workouts/*}:review"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name,kind";
+  }
+}
+
+// How sure the workout's name is.
+enum WorkoutStatus {
+  // Not set.
+  WORKOUT_STATUS_UNSPECIFIED = 0;
+  // Named from the strap data alone.
+  WORKOUT_STATUS_DETECTED = 1;
+  // The strap data isn't sure: worth asking what it was.
+  WORKOUT_STATUS_POSSIBLE = 2;
+  // You said what it was, or the daily note's lifting log matched it.
+  WORKOUT_STATUS_CONFIRMED = 3;
+  // You said it wasn't a workout. Left out of totals and the daily note.
+  WORKOUT_STATUS_DISMISSED = 4;
+}
+
+// One day's activity.
+message ActivityDay {
+  // The local date.
+  google.type.Date date = 1;
+
+  // Steps over the whole day.
+  int32 steps = 2;
+
+  // Minutes the strap was worn.
+  int32 worn_minutes = 3;
+
+  // Workouts, oldest first, dismissed ones included.
+  repeated Workout workouts = 4;
+
+  // Walks, oldest first.
+  repeated Walk walks = 5;
+
+  // The daily note's lifting log, when it has one.
+  optional LiftingLog lifting = 6;
+}
+
+// A workout found in the strap data.
+message Workout {
+  option (google.api.resource) = {
+    type: "dashboardify.app/Workout"
+    pattern: "days/{day}/workouts/{workout}"
+    singular: "workout"
+    plural: "workouts"
+  };
+
+  // `days/{day}/workouts/{HHMM}`, the local start time.
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+
+  // "running", "walking", "volleyball", "lifting", or "workout" when it fits none.
+  string kind = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // How sure that name is.
+  WorkoutStatus status = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Start of the workout.
+  google.protobuf.Timestamp start_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // End of the workout.
+  google.protobuf.Timestamp end_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Length in minutes.
+  double duration_minutes = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Mean of the minute heart rates.
+  double average_heart_rate = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Highest minute heart rate.
+  double max_heart_rate = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Median steps a minute.
+  double cadence = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Strain on the 0–21 scale.
+  double strain = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // GetWorkout only: heart rate every 15 seconds from `heart_rate_start_time`, from 5 minutes
+  // before the start to 5 after the end. 0 where the strap had nothing.
+  repeated float heart_rate = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // GetWorkout only: when `heart_rate` starts.
+  google.protobuf.Timestamp heart_rate_start_time = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // GetWorkout only, for lifting: the logged sets, in order.
+  repeated LiftingSet sets = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// A walk: steady stepping outside workouts.
+message Walk {
+  // Start of the walk.
+  google.protobuf.Timestamp start_time = 1;
+
+  // End of the walk.
+  google.protobuf.Timestamp end_time = 2;
+
+  // Length in minutes.
+  double duration_minutes = 3;
+
+  // Every step in the walk, stops included.
+  int32 steps = 4;
+
+  // Median steps a minute while walking.
+  double cadence = 5;
+
+  // Minutes at 100+ steps a minute.
+  int32 brisk_minutes = 6;
+
+  // Mean heart rate, when the strap had it.
+  optional double average_heart_rate = 7;
+}
+
+// The lifting log from a daily note.
+message LiftingLog {
+  // Exercises logged.
+  int32 exercises = 1;
+
+  // Sets logged.
+  int32 sets = 2;
+
+  // Weight × reps over every set, in pounds.
+  double volume_pounds = 3;
+
+  // Whether every set was matched to a heart-rate climb.
+  bool matched = 4;
+}
+
+// One logged set.
+message LiftingSet {
+  // The exercise as written.
+  string exercise = 1;
+
+  // 0-based position of the exercise in the log.
+  int32 exercise_index = 2;
+
+  // Weight, absent for bodyweight.
+  optional double weight = 3;
+
+  // "lb" or "kg", empty for bodyweight.
+  string unit = 4;
+
+  // Reps.
+  int32 reps = 5;
+
+  // A lighter first set.
+  bool warm_up = 6;
+
+  // When the matched climb started, about when the set began.
+  optional google.protobuf.Timestamp start_time = 7;
+
+  // When the matched climb peaked, about when the set ended.
+  optional google.protobuf.Timestamp peak_time = 8;
+
+  // Heart rate at the peak.
+  optional double peak_heart_rate = 9;
+}
+
+// Request for ListActivityDays.
+message ListActivityDaysRequest {
+  // First day, inclusive.
+  google.type.Date start_date = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // Last day, inclusive. At most 91 days after the first.
+  google.type.Date end_date = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+}
+
+// Response for ListActivityDays.
+message ListActivityDaysResponse {
+  // Days with any strap summary, oldest first.
+  repeated ActivityDay days = 1;
+}
+
+// Request for GetWorkout.
+message GetWorkoutRequest {
+  // The workout to get.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/Workout",
+    (buf.validate.field).string.pattern = "^days/[0-9]{4}-[0-9]{2}-[0-9]{2}/workouts/[0-9]{4}$"
+  ];
+}
+
+// Request for ReviewWorkout.
+message ReviewWorkoutRequest {
+  // The workout to review.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/Workout",
+    (buf.validate.field).string.pattern = "^days/[0-9]{4}-[0-9]{2}-[0-9]{2}/workouts/[0-9]{4}$"
+  ];
+
+  // What it was: "running", "walking", "volleyball", "lifting" or "workout"; "none" if it
+  // wasn't a workout; or empty to take back an earlier review.
+  string kind = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.pattern = "^(running|walking|volleyball|lifting|workout|none|)$"
+  ];
+}

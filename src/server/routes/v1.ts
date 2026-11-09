@@ -1,5 +1,6 @@
 import type { DescService } from "@bufbuild/protobuf";
 import type { CalendarAccounts } from "../../calendar/accounts";
+import { ActivityService as ActivitySchema } from "../../gen/dashboardify/v1/activity_pb";
 import { CalendarAccountService as CalendarAccountSchema } from "../../gen/dashboardify/v1/calendar_account_pb";
 import { DayService as DaySchema } from "../../gen/dashboardify/v1/day_pb";
 import { DeviceService as DeviceSchema } from "../../gen/dashboardify/v1/device_pb";
@@ -16,6 +17,7 @@ import type { GeneralSettings, SettingsChange } from "../../settings/core";
 import type { DeviceStore } from "../../settings/devices";
 import type { TaskStore } from "../../vault/task-store";
 import type { Vault } from "../../vault/vault";
+import { type ActivityDeps, ActivityService } from "../api/activity";
 import { CalendarAccountService, type ConnectCalDav } from "../api/calendar-accounts";
 import { DaysService } from "../api/days";
 import { DevicesService } from "../api/devices";
@@ -49,6 +51,7 @@ export function v1Services(
   tasks: TaskStore,
   raw: RawStore,
   home: HomeDeps,
+  activity: ActivityDeps,
   now = () => new Date(),
   onSamples: (stream: string, day: string) => void = () => undefined,
   settings?: SettingsDeps,
@@ -71,6 +74,7 @@ export function v1Services(
     { schema: MessageSchema, implementation: new MessagesService(vault) },
     { schema: SampleSchema, implementation: new SamplesService(raw, onSamples) },
     { schema: HomeSchema, implementation: new HomeService(home, now) },
+    { schema: ActivitySchema, implementation: new ActivityService(activity) },
     { schema: VoiceSchema, implementation: voiceService },
     ...(settings ? settingsServices(settings, now) : []),
   ];

@@ -7,6 +7,7 @@
 import { parseLiftingLog } from "../vault/lifting";
 import { localDate, localTime } from "../vault/time";
 import type { Vault } from "../vault/vault";
+import { readReviews } from "../vault/workout-reviews";
 import type { DerivedRow, DerivedStore } from "./derived-store";
 import { type LiftingSet, liftingDay } from "./lifting";
 import {
@@ -19,17 +20,26 @@ import {
 import { DEFAULT_NEED_MIN, type PastNight } from "./metrics/sleep-score";
 import { median } from "./metrics/stats";
 import { stepsPerMinute } from "./metrics/steps";
-import { dayMetrics, type NightMetrics, nightMetrics } from "./metrics/summary";
-import type { Accel, HeartRate, Motion, RrInterval, SkinTemp, StepCounter } from "./metrics/types";
+import { type DayMetrics, dayMetrics, type NightMetrics, nightMetrics } from "./metrics/summary";
+import type {
+  Accel,
+  HeartRate,
+  Motion,
+  RrInterval,
+  SkinTemp,
+  Span,
+  StepCounter,
+} from "./metrics/types";
 import type { Walk } from "./metrics/walks";
-import { movingInPlace, type Workout } from "./metrics/workouts";
+import { movingInPlace } from "./metrics/workouts";
 import { ParamsStore } from "./params";
 import { parseProfile } from "./profile";
 import type { RawStore, Row } from "./raw-store";
 import { type DaySummary, frontmatter, healthBlock, syncLine } from "./render";
+import { counted, type ReviewedWorkout, reviewFor, reviewWorkouts } from "./reviews";
 
 /** Bump when a calculation changes, so old rows can be told apart and rebuilt. */
-export const ALGO_VERSION = "2";
+export const ALGO_VERSION = "3";
 
 export class DailySummary {
   private readonly params: ParamsStore;
@@ -83,21 +93,49 @@ export class DailySummary {
     return {
       night,
       day,
+      ...(await this.reviewed(date, day, { heartRate, steps, motion, sleep })),
       recovery: signals ? recovery(signals, history, params.recovery) : null,
       paramsVersion: params.version,
       baselineNights: history.filter((n) => n.lnRmssd !== null).length,
       tempDevC: tempDeviation(signals?.skinTemp ?? null, history),
-      lifting: liftingDay(
-        parseLiftingLog((await this.vault.readDaily(date))?.body ?? ""),
-        day.workouts,
-        movingInPlace(motion, stepsPerMinute(steps), [
-          ...(sleep ? [sleep] : []),
-          ...day.workouts,
-          ...day.walks,
-        ]),
-        heartRate,
-      ),
     };
+  }
+
+  /** The day's workouts with your reviews applied, and the note's lifting log joined to them. */
+  private async reviewed(
+    date: string,
+    day: DayMetrics,
+    strap: { heartRate: HeartRate[]; steps: StepCounter[]; motion: Motion[]; sleep: Span | null },
+  ): Promise<Pick<DaySummary, "workouts" | "lifting">> {
+    const note = await this.vault.readDaily(date);
+    const reviews = readReviews(note?.frontmatter).map((r) => ({
+      span: { start: this.at(date, r.start), end: this.at(date, r.end) },
+      kind: r.kind,
+    }));
+    // A workout you dismissed can't take the day's lifting log.
+    const kept = day.workouts.filter((w) => reviewFor(w, reviews)?.kind !== "none");
+    const lifting = liftingDay(
+      parseLiftingLog(note?.body ?? ""),
+      kept,
+      movingInPlace(strap.motion, stepsPerMinute(strap.steps), [
+        ...(strap.sleep ? [strap.sleep] : []),
+        ...kept,
+        ...day.walks,
+      ]),
+      strap.heartRate,
+    );
+    const workouts = reviewWorkouts(day.workouts, reviews, {
+      session: lifting?.found === "workout" ? lifting.session : null,
+      logged: lifting !== null,
+    });
+    return { workouts, lifting };
+  }
+
+  /** A local HH:MM on `date` as epoch ms. */
+  private at(date: string, time: string): number {
+    return Temporal.PlainDate.from(date)
+      .toPlainDateTime(Temporal.PlainTime.from(time))
+      .toZonedDateTime(this.timeZone).epochMilliseconds;
   }
 
   private async night(
@@ -176,7 +214,7 @@ export class DailySummary {
     await this.derived.writeAll(
       "workouts",
       date,
-      summary.day.workouts.map((w) => ({ ...stamp, ...workoutRow(w) })),
+      summary.workouts.map((w) => ({ ...stamp, ...workoutRow(w) })),
     );
     await this.derived.writeAll(
       "sets",
@@ -286,15 +324,16 @@ function dayRow(s: DaySummary): DerivedRow {
     max_hr: s.day.maxHr,
     steps: s.day.steps,
     temp_dev_c: s.tempDevC,
-    workout_min: s.day.workouts.reduce((sum, w) => sum + w.minutes, 0),
+    workout_min: counted(s.workouts).reduce((sum, w) => sum + w.minutes, 0),
     walk_min: s.day.walks.reduce((sum, w) => sum + w.minutes, 0),
     walk_steps: s.day.walks.reduce((sum, w) => sum + w.steps, 0),
     ...Object.fromEntries([0, 1, 2, 3, 4].map((i) => [`zone${i + 1}_min`, zones[i] ?? null])),
   };
 }
 
-function workoutRow(w: Workout): DerivedRow {
+function workoutRow(w: ReviewedWorkout): DerivedRow {
   return {
+    status: w.status,
     start_ts: w.start,
     end_ts: w.end,
     kind: w.kind,

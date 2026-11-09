@@ -51,6 +51,9 @@ export function Health({
       <div class="section-head">
         <div class="health-title">
           <h2>Health</h2>
+          <a class="section-link" href="#activity">
+            Activity ›
+          </a>
           <div class="range-label">
             {rangeLabel(date, range)}
             {sync && <Synced sync={sync} timeZone={timeZone} />}

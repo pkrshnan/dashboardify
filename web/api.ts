@@ -3,8 +3,15 @@
 // sign-in screen asks for a device token, which is kept in localStorage.
 
 import { fromJson, type JsonValue } from "@bufbuild/protobuf";
+import {
+  ListActivityDaysResponseSchema,
+  type Workout,
+  WorkoutSchema,
+  WorkoutStatus,
+} from "../src/gen/dashboardify/v1/activity_pb";
 import { HomeSchema } from "../src/gen/dashboardify/v1/home_pb";
 import type { HomeView } from "../src/home/types";
+import type { ActivityDayView, WorkoutDetail, WorkoutView } from "./lib/activity";
 
 const TOKEN_KEY = "dashboardify.token";
 
@@ -157,4 +164,108 @@ export function randomKey(): string {
   }
   const bytes = crypto.getRandomValues(new Uint8Array(16));
   return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/** Each day's workouts and walks from `start` to `end` (YYYY-MM-DD, inclusive). */
+export async function fetchActivity(
+  token: Token,
+  start: string,
+  end: string,
+): Promise<ActivityDayView[]> {
+  const query = [dateQuery("startDate", start), dateQuery("endDate", end)].join("&");
+  const v = fromJson(
+    ListActivityDaysResponseSchema,
+    await call<JsonValue>(token, `/v1/activityDays?${query}`),
+  );
+  return v.days.map((d) => ({
+    date: `${d.date?.year}-${pad(d.date?.month)}-${pad(d.date?.day)}`,
+    steps: d.steps,
+    wornMin: d.wornMinutes,
+    workouts: d.workouts.map(workoutView),
+    walks: d.walks.map((w) => ({
+      start: ms(w.startTime),
+      end: ms(w.endTime),
+      minutes: w.durationMinutes,
+      steps: w.steps,
+      cadence: w.cadence,
+      briskMin: w.briskMinutes,
+    })),
+    lifting: d.lifting
+      ? {
+          exercises: d.lifting.exercises,
+          sets: d.lifting.sets,
+          volumeLb: d.lifting.volumePounds,
+          matched: d.lifting.matched,
+        }
+      : null,
+  }));
+}
+
+/** One workout with its heart rate and, for lifting, its sets. */
+export async function fetchWorkout(token: Token, name: string): Promise<WorkoutDetail> {
+  return workoutDetail(fromJson(WorkoutSchema, await call<JsonValue>(token, `/v1/${name}`)));
+}
+
+/** Say what a workout was: a kind, "none" for not a workout, or "" to take it back. */
+export async function reviewWorkout(
+  token: Token,
+  name: string,
+  kind: string,
+): Promise<WorkoutDetail> {
+  const body = JSON.stringify({ kind });
+  const v = await call<JsonValue>(token, `/v1/${name}:review`, { method: "POST", body });
+  return workoutDetail(fromJson(WorkoutSchema, v));
+}
+
+const STATUSES = {
+  [WorkoutStatus.DETECTED]: "detected",
+  [WorkoutStatus.POSSIBLE]: "possible",
+  [WorkoutStatus.CONFIRMED]: "confirmed",
+  [WorkoutStatus.DISMISSED]: "dismissed",
+} as const;
+
+function workoutView(w: Workout): WorkoutView {
+  return {
+    name: w.name,
+    kind: w.kind,
+    status: STATUSES[w.status as keyof typeof STATUSES] ?? "detected",
+    start: ms(w.startTime),
+    end: ms(w.endTime),
+    minutes: w.durationMinutes,
+    avgHr: w.averageHeartRate,
+    maxHr: w.maxHeartRate,
+    strain: w.strain,
+  };
+}
+
+function workoutDetail(w: Workout): WorkoutDetail {
+  return {
+    ...workoutView(w),
+    heartRate: w.heartRate,
+    heartRateStart: ms(w.heartRateStartTime),
+    sets: w.sets.map((s) => ({
+      exercise: s.exercise,
+      exerciseIndex: s.exerciseIndex,
+      weight: s.weight ?? null,
+      unit: s.unit,
+      reps: s.reps,
+      warmUp: s.warmUp,
+      start: s.startTime ? ms(s.startTime) : null,
+      peak: s.peakTime ? ms(s.peakTime) : null,
+      peakHr: s.peakHeartRate ?? null,
+    })),
+  };
+}
+
+function dateQuery(field: string, date: string): string {
+  const [year, month, day] = date.split("-").map(Number);
+  return `${field}.year=${year}&${field}.month=${month}&${field}.day=${day}`;
+}
+
+function pad(n: number | undefined): string {
+  return String(n ?? 0).padStart(2, "0");
+}
+
+function ms(t: { seconds: bigint; nanos: number } | undefined): number {
+  return Number(t?.seconds ?? 0n) * 1000 + Math.floor((t?.nanos ?? 0) / 1e6);
 }
