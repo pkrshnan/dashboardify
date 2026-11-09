@@ -51,14 +51,22 @@ export function layoutBlocks(
   const endMin = range.endHour * 60;
   const visible = events.filter((e) => e.endMin > startMin && e.startMin < endMin);
   const nextEvent = events.find((e) => e.endMin > nowMin);
-  const lanes = assignLanes(visible);
-  return visible.map((event, i) => {
+  const spans = visible.map((event) => {
     const from = Math.max(event.startMin, startMin);
     const to = Math.min(event.endMin, endMin);
+    const top = ((from - startMin) / 60) * hourPx;
     const height = Math.max(MIN_BLOCK_PX, ((to - from) / 60) * hourPx - 2);
+    return { start: top, end: top + height };
+  });
+  // Lanes come from the drawn blocks, so a short event stretched to MIN_BLOCK_PX gets its own lane
+  // instead of covering the one after it.
+  const lanes = assignLanes(spans);
+  return visible.map((event, i) => {
+    const { start: top, end } = spans[i] ?? { start: 0, end: 0 };
+    const height = end - top;
     return {
       event,
-      top: ((from - startMin) / 60) * hourPx,
+      top,
       height,
       lane: lanes[i]?.lane ?? 0,
       lanes: lanes[i]?.lanes ?? 1,
@@ -69,8 +77,10 @@ export function layoutBlocks(
   });
 }
 
-/** Greedy lanes per cluster of overlapping events (events sorted by start). */
-export function assignLanes(events: AgendaEvent[]): { lane: number; lanes: number }[] {
+/** Greedy lanes per cluster of overlapping spans (spans sorted by start). */
+export function assignLanes(
+  spans: { start: number; end: number }[],
+): { lane: number; lanes: number }[] {
   const result: { lane: number; lanes: number }[] = [];
   let cluster: number[] = [];
   let laneEnds: number[] = [];
@@ -85,14 +95,14 @@ export function assignLanes(events: AgendaEvent[]): { lane: number; lanes: numbe
     cluster = [];
     laneEnds = [];
   };
-  events.forEach((e, index) => {
-    if (e.startMin >= clusterEnd) {
+  spans.forEach((s, index) => {
+    if (s.start >= clusterEnd) {
       closeCluster();
     }
-    const free = laneEnds.findIndex((end) => end <= e.startMin);
+    const free = laneEnds.findIndex((end) => end <= s.start);
     const lane = free === -1 ? laneEnds.length : free;
-    laneEnds[lane] = e.endMin;
-    clusterEnd = Math.max(clusterEnd, e.endMin);
+    laneEnds[lane] = s.end;
+    clusterEnd = Math.max(clusterEnd, s.end);
     cluster.push(index);
     result.push({ lane, lanes: 1 });
   });
