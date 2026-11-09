@@ -280,6 +280,50 @@ export async function updateSettings(
   );
 }
 
+export interface DeviceView {
+  /** "devices/{id}" */
+  name: string;
+  displayName: string;
+  createTime: string;
+  lastUsedTime?: string;
+  /** The device making this request. */
+  current: boolean;
+}
+
+export async function listDevices(token: Token): Promise<DeviceView[]> {
+  const { devices } = await call<{ devices?: Partial<DeviceView>[] }>(
+    token,
+    "/dashboardify.v1.DeviceService/ListDevices",
+    { method: "POST", body: "{}" },
+  );
+  return (devices ?? []).map((d) => ({
+    name: d.name ?? "",
+    displayName: d.displayName ?? "",
+    createTime: d.createTime ?? "",
+    lastUsedTime: d.lastUsedTime,
+    current: d.current ?? false,
+  }));
+}
+
+/** Adds a device; the response's token is the only time it is shown. */
+export async function createDevice(
+  token: Token,
+  displayName: string,
+  requestId: string,
+): Promise<{ name: string; displayName: string; token: string }> {
+  return call(token, "/dashboardify.v1.DeviceService/CreateDevice", {
+    method: "POST",
+    body: JSON.stringify({ device: { displayName }, requestId }),
+  });
+}
+
+export function deleteDevice(token: Token, name: string): Promise<unknown> {
+  return call(token, "/dashboardify.v1.DeviceService/DeleteDevice", {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+}
+
 /** The error a service sent ("time_zone is set by TZ_NAME in .env…"), to show beside a field. */
 export class ServiceError extends Error {}
 

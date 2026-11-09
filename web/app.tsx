@@ -28,6 +28,7 @@ import { type Pending, pendingEvent, withPending } from "./lib/capture";
 import { type Now, nowIn } from "./lib/clock";
 import { sectionFromHash } from "./settings/sections";
 import { Settings } from "./settings/settings";
+import { tokenFromHash } from "./settings/sign-in-link";
 
 const REFRESH_MS = 5 * 60_000;
 const TICK_MS = 15_000;
@@ -35,7 +36,7 @@ const PHONE_QUERY = "(max-width: 899px)";
 
 /** Straight to the home screen; the sign-in screen only when the server wants a token. */
 function App() {
-  const [token, setToken] = useState<Token>(savedToken);
+  const [token, setToken] = useState<Token>(tokenFromLink);
   const [signIn, setSignIn] = useState<"no" | "ask" | "failed" | "setup">("no");
   if (signIn !== "no") {
     return (
@@ -60,6 +61,20 @@ function App() {
     setToken(null);
   };
   return <Routes token={token} onUnauthorized={unauthorized} />;
+}
+
+/**
+ * The saved token, or a new one from an Add device sign-in link (#token=…), which is saved and
+ * then removed from the address bar so it doesn't stay in history.
+ */
+function tokenFromLink(): Token {
+  const linked = tokenFromHash(window.location.hash);
+  if (!linked) {
+    return savedToken();
+  }
+  saveToken(linked);
+  history.replaceState(null, "", window.location.pathname);
+  return linked;
 }
 
 /** `#settings…` shows Settings; anything else, the home screen. */
