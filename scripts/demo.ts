@@ -239,20 +239,28 @@ function seedServer(): FakeCalDav {
     });
     server.putEvent(CALENDAR_FOR[category], `demo-${i}.ics`, ics);
   });
-  // A shared, read-only calendar, a birthday today and a long weekend away as all-day events.
-  server.putEvent("dinners", "dinner.ics", ics("dinner", "Dinner with Sam", at(0, 19), at(0, 21)));
+  // A shared, read-only calendar with a dinner at a located place (so it links to Apple Maps), a
+  // birthday today and a long weekend away as all-day events.
+  server.putEvent("dinners", "dinner.ics", dinnerAtDishoom());
   server.putEvent("home", "birthday.ics", allDay("birthday", "Mum's birthday", day(0), day(1)));
   server.putEvent("home", "lisbon.ics", allDay("lisbon", "Lisbon", day(4), day(7)));
   return server;
 }
 
-function ics(uid: string, title: string, start: number, end: number): string {
+/** Tonight's dinner, at a place with coordinates, as Apple Calendar would write it. */
+function dinnerAtDishoom(): string {
   return writeEvent({
-    uid,
-    title,
-    start: new Date(start),
-    end: new Date(end),
+    uid: "dinner",
+    title: "Dinner with Sam",
+    start: new Date(at(0, 19)),
+    end: new Date(at(0, 21)),
     timeZone: TIME_ZONE,
+    place: {
+      name: "Dishoom",
+      address: "7 Boundary Street, London",
+      latitude: DISHOOM.lat,
+      longitude: DISHOOM.lon,
+    },
     now: new Date(),
   });
 }

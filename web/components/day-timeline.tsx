@@ -105,7 +105,13 @@ function EventBlock({ block, width, isPhone }: { block: Block; width: number; is
   const fill = blockFill(block);
   const titleColor = block.past ? TEXT_2 : TEXT;
   const detailColor = block.past ? TEXT_3 : TEXT_2;
-  const detail = [event.start, event.detail].filter((p) => p !== "").join(" · ");
+  const detail = (
+    <>
+      {event.start}
+      {event.start && event.detail && " · "}
+      <Located event={event} />
+    </>
+  );
   return (
     <div
       class={`event${block.oneLine ? " one-line" : ""}${event.pending ? " pending" : ""}`}
@@ -124,7 +130,7 @@ function EventBlock({ block, width, isPhone }: { block: Block; width: number; is
             {event.title} <span style={{ fontWeight: 400, color: detailColor }}>{event.start}</span>
           </div>
           <div class="ell" style={{ color: detailColor }}>
-            {event.detail}
+            <Located event={event} />
           </div>
         </>
       )}
@@ -134,6 +140,18 @@ function EventBlock({ block, width, isPhone }: { block: Block; width: number; is
         </div>
       )}
     </div>
+  );
+}
+
+/** The location, as a link to Apple Maps when it is a located place. */
+function Located({ event }: { event: AgendaEvent }) {
+  if (!event.mapsUrl) {
+    return <>{event.detail}</>;
+  }
+  return (
+    <a class="event-place" href={event.mapsUrl} target="_blank" rel="noreferrer">
+      {event.detail}
+    </a>
   );
 }
 

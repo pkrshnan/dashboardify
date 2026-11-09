@@ -609,6 +609,13 @@ button.link {
   font-weight: 600;
 }
 
+/* A located place in an event block: a link to Apple Maps, in the block's own text colour. */
+.event-place {
+  color: inherit;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
 .reminder {
   position: absolute;
   left: 64%;

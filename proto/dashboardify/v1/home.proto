@@ -124,6 +124,9 @@ message AgendaEvent {
 
   // Whether it lasts whole days. All-day events are in `all_day_events`, never in `events`.
   bool all_day = 12;
+
+  // An Apple Maps link to its location. Set only when the location has coordinates.
+  string maps_uri = 13;
 }
 
 // The event on now or next.
@@ -142,6 +145,9 @@ message NextEvent {
 
   // Join link, if any.
   string url = 5;
+
+  // An Apple Maps link to its location. Set only when the location has coordinates.
+  string maps_uri = 6;
 }
 
 // A timed task, drawn on the timeline.

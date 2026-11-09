@@ -82,6 +82,7 @@ describe("GET /api/home", () => {
       detail: "Video call",
       inMin: 48,
       url: "https://meet.example.com/x",
+      mapsUrl: null,
     });
     expect(view.days[0]?.reminders.map((r) => r.text)).toEqual(["Call Mum"]);
     expect(view.tasks.map((g) => g.name)).toEqual(["Overdue"]);

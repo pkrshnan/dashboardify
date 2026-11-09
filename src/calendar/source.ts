@@ -3,6 +3,7 @@
 
 import type { CalendarEvent, CalendarSource, CaptureHints } from "../home/calendar";
 import type { Category } from "../home/types";
+import { mapsUrl } from "../places/place";
 import type { CalendarAccounts } from "./accounts";
 import type { CachedEvent, CalendarInfo, EventCache } from "./cache";
 
@@ -109,6 +110,10 @@ function toCalendarEvent(event: CachedEvent, known: Map<string, Calendar>): Cale
     start: event.start.getTime(),
     end: event.end.getTime(),
     detail: event.location.split("\n")[0] || undefined,
+    // Only a located place gets a Maps link: a search for "Room 4B" helps no one.
+    mapsUrl: event.geo
+      ? mapsUrl(event.location.split("\n")[0] || event.title, event.geo)
+      : undefined,
     category: calendar?.category ?? "personal",
     url: event.url.startsWith("https:") ? event.url : undefined,
     event: `events/${event.eventId}`,

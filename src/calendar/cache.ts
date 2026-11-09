@@ -10,7 +10,7 @@ import { titleKey } from "../capture/choose-calendar";
 import type { Occurrence } from "./ical";
 
 /** Bump when the tables change; an older file is dropped and rebuilt by the next sync. */
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 export interface SyncState {
   ctag?: string;
@@ -39,6 +39,8 @@ interface OccurrenceRow {
   recurrence_id: string | null;
   title: string;
   location: string;
+  latitude: number | null;
+  longitude: number | null;
   notes: string;
   url: string;
   start_ms: number;
@@ -175,8 +177,9 @@ export class EventCache {
       this.deleteOccurrences(accountId, calendarId, href);
       const insert = this.db.query(
         `INSERT OR REPLACE INTO occurrences (event_id, account_id, calendar_id, href, uid, recurrence_id,
-           title, title_key, location, notes, url, start_ms, end_ms, all_day, start_date, end_date, recurring, tzid)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           title, title_key, location, latitude, longitude, notes, url, start_ms, end_ms, all_day, start_date,
+           end_date, recurring, tzid)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       );
       for (const o of occurrences) {
         insert.run(
@@ -189,6 +192,8 @@ export class EventCache {
           o.title,
           titleKey(o.title),
           o.location,
+          o.geo?.latitude ?? null,
+          o.geo?.longitude ?? null,
           o.notes,
           o.url,
           o.start.getTime(),
@@ -337,6 +342,8 @@ function toEvent(row: OccurrenceRow): CachedEvent {
     recurrenceId: row.recurrence_id ?? undefined,
     title: row.title,
     location: row.location,
+    ...(row.latitude !== null &&
+      row.longitude !== null && { geo: { latitude: row.latitude, longitude: row.longitude } }),
     notes: row.notes,
     url: row.url,
     start: new Date(row.start_ms),
@@ -361,7 +368,8 @@ function createTables(db: Database): void {
       PRIMARY KEY (account_id, calendar_id, href))`);
     db.run(`CREATE TABLE occurrences (event_id TEXT PRIMARY KEY, account_id TEXT NOT NULL,
       calendar_id TEXT NOT NULL, href TEXT NOT NULL, uid TEXT NOT NULL, recurrence_id TEXT,
-      title TEXT NOT NULL, title_key TEXT NOT NULL, location TEXT NOT NULL, notes TEXT NOT NULL,
+      title TEXT NOT NULL, title_key TEXT NOT NULL, location TEXT NOT NULL, latitude REAL,
+      longitude REAL, notes TEXT NOT NULL,
       url TEXT NOT NULL, start_ms INTEGER NOT NULL, end_ms INTEGER NOT NULL, all_day INTEGER NOT NULL,
       start_date TEXT, end_date TEXT, recurring INTEGER NOT NULL, tzid TEXT)`);
     db.run("CREATE INDEX occurrences_time ON occurrences (start_ms, end_ms)");

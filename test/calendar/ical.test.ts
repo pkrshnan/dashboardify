@@ -252,6 +252,14 @@ describe("writeEvent", () => {
       /X-APPLE-STRUCTURED-LOCATION;X-ADDRESS="7 Boundary Street, London";X-APPLE-RADIUS=70;X-TITLE=Dishoom;VALUE=URI:geo:51.5245,-0.0773/,
     );
     expect(readOccurrences(ics, window)[0]?.location).toBe("Dishoom\n7 Boundary Street, London");
+    expect(readOccurrences(ics, window)[0]?.geo).toEqual({ latitude: 51.5245, longitude: -0.0773 });
+  });
+
+  test("reads coordinates from Apple's structured location when there's no GEO", () => {
+    const ics = writeEvent({ ...event, place: DISHOOM }).replace(/^GEO:.*\r\n/m, "");
+
+    expect(readOccurrences(ics, window)[0]?.geo).toEqual({ latitude: 51.5245, longitude: -0.0773 });
+    expect(readOccurrences(writeEvent(event), window)[0]?.geo).toBeUndefined();
   });
 
   test("leaves out empty optional fields", () => {

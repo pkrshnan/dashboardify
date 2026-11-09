@@ -23,9 +23,9 @@ The screenshots are rendered from the `.dc.html` files with sample data.
 1. **Focus.** Sized to its content so the calendar starts on the first screen.
    - Date and time, then one sentence. The sentence gives judgement and the next action ("Standup at 10:00. Recovery is below your usual, so keep today easy.") and does not repeat the numbers.
    - Four snapshot numbers: recovery, sleep score, HRV and resting HR. Each shows its change from baseline right next to its name.
-   - The next event, with a Join button. No free-time list: the gaps are visible on the timeline.
+   - The next event, with a Join button for a call and a Map button for a located place. No free-time list: the gaps are visible on the timeline.
 2. **Calendar and tasks.** A Day/Week toggle.
-   - Day: a timeline from an hour before now to 22:00, with a red line for now. Events are blocks; the next event is a little brighter. Events under about 50 minutes take one line: title, start time and detail, cut with an ellipsis. Timed tasks (`⏰ HH:MM`) are reminders, drawn as dashed pills at their time in a lane to the right of the events.
+   - Day: a timeline from an hour before now to 22:00, with a red line for now. Events are blocks; the next event is a little brighter. Events under about 50 minutes take one line: title, start time and detail, cut with an ellipsis. A located place in the detail is underlined with dots and opens Apple Maps. Timed tasks (`⏰ HH:MM`) are reminders, drawn as dashed pills at their time in a lane to the right of the events.
    - All-day events sit in a row above the Day timeline, one slim bar each in their calendar's colour with "All day" on the right, never on the timeline itself. In the Week view they are hollow squares in their calendar's colour at the top of each day they cover; on the phone they head the day's agenda as "All day".
    - "Calendar synced 09:10" sits beside the heading once a calendar is connected, in orange when it is over 15 minutes old or an account needs attention in Settings.
    - Week: a rolling week from today. On desktop it has seven columns, with dated tasks at the top of each column. On the phone it is a strip of tappable days, then the agenda for the chosen day. Reminders have hollow markers and events have filled ones.

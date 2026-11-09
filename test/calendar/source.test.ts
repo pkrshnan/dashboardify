@@ -143,6 +143,20 @@ describe("cacheSource.events", () => {
 
     expect(links).toEqual({ call: "https://meet.example.com/x", prank: undefined });
   });
+
+  test("a location with coordinates links to Apple Maps, and one without doesn't", async () => {
+    const geo = { latitude: 51.5245, longitude: -0.0773 };
+    put("home", "a", [occurrence({ uid: "a", title: "lunch", location: "Dishoom\nLondon", geo })]);
+    put("home", "b", [occurrence({ uid: "b", title: "review", location: "Room 4B" })]);
+
+    const events = await cacheSource(cache, accounts).events(now, now + 86_400_000);
+    const links = Object.fromEntries(events.map((e) => [e.title, e.mapsUrl]));
+
+    expect(links).toEqual({
+      lunch: "https://maps.apple.com/?q=Dishoom&ll=51.5245%2C-0.0773",
+      review: undefined,
+    });
+  });
 });
 
 describe("cacheSource.status", () => {

@@ -57,6 +57,7 @@ function nextEventResource(event: NextEvent) {
     detail: event.detail,
     minutesUntil: event.inMin,
     url: event.url ?? "",
+    mapsUri: event.mapsUrl ?? "",
   };
 }
 
@@ -70,6 +71,7 @@ function eventResource(event: AgendaEvent) {
     detail: event.detail,
     category: event.category,
     url: event.url ?? "",
+    mapsUri: event.mapsUrl ?? "",
     event: event.event ?? "",
     calendar: event.calendar ?? "",
     writable: event.writable,

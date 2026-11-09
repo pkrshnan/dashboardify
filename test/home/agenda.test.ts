@@ -96,6 +96,7 @@ describe("buildDays", () => {
         detail: "Room 4B",
         category: "work",
         url: null,
+        mapsUrl: null,
         event: null,
         calendar: null,
         writable: false,
@@ -156,7 +157,7 @@ describe("daySentence", () => {
 
   test("next event, a judgement on recovery, and at most one overdue mention", () => {
     const sentence = daySentence({
-      next: { title: "Standup", start: "10:00", detail: "", inMin: 48, url: null },
+      next: { title: "Standup", start: "10:00", detail: "", inMin: 48, url: null, mapsUrl: null },
       health: [recovery(62, "bad")],
       tasks: groupTasks(tasks("- [ ] Renew lease 📅 2026-10-31"), TODAY),
     });
