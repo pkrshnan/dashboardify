@@ -1,6 +1,7 @@
 import homepage from "../web/index.html";
 import { CalendarAccounts } from "./calendar/accounts";
 import { EventCache } from "./calendar/cache";
+import { cacheSource } from "./calendar/source";
 import { CalendarSync } from "./calendar/sync";
 import { DailySummary } from "./health/daily-summary";
 import { DerivedStore } from "./health/derived-store";
@@ -34,10 +35,11 @@ if (import.meta.main) {
   const opened = await openSettings(loadStartup(), process.env);
   const { config, devices, general, tailnet, overrides, envChange } = opened;
   const accounts = new CalendarAccounts(opened.store);
-  // The cache is rebuilt by syncing if it is missing; the home screen reads it from C7 on.
+  // The home screen reads the cache; syncing rebuilds it if it is missing.
+  const cache = await EventCache.open(config.dataPath);
   const calendarSync = new CalendarSync({
     accounts,
-    cache: await EventCache.open(config.dataPath),
+    cache,
     connect: connectICloud,
     timeZone: config.timeZone,
   });
@@ -47,6 +49,7 @@ if (import.meta.main) {
   const app = createApp(config, {
     devices,
     tailnet,
+    calendar: cacheSource(cache, accounts),
     settings: {
       general,
       devices,

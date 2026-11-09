@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { CalendarAccounts } from "../../../src/calendar/accounts";
 import { CalDavClient } from "../../../src/calendar/caldav";
+import type { CalendarSource } from "../../../src/home/calendar";
 import type { ConnectCalDav } from "../../../src/server/api/calendar-accounts";
 import { type AppDeps, createApp } from "../../../src/server/app";
 import { GeneralSettings, type SettingsChange } from "../../../src/settings/core";
@@ -35,6 +36,7 @@ export function useApi(
     envNames?: string[];
     calDav?: () => FakeCalDav;
     recompute?: AppDeps["recompute"];
+    calendar?: CalendarSource;
   } = {},
 ) {
   let dir: string;
@@ -59,6 +61,7 @@ export function useApi(
       },
       {
         devices,
+        calendar: options.calendar,
         settings: {
           general: new GeneralSettings(settings),
           devices,

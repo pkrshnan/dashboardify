@@ -9,8 +9,11 @@ import {
   WorkoutSchema,
   WorkoutStatus,
 } from "../src/gen/dashboardify/v1/activity_pb";
-import { HomeSchema } from "../src/gen/dashboardify/v1/home_pb";
-import type { HomeView } from "../src/home/types";
+import {
+  type AgendaEvent as AgendaEventMessage,
+  HomeSchema,
+} from "../src/gen/dashboardify/v1/home_pb";
+import type { AgendaEvent, HomeView } from "../src/home/types";
 import type { ActivityDayView, WorkoutDetail, WorkoutView } from "./lib/activity";
 
 const TOKEN_KEY = "dashboardify.token";
@@ -77,16 +80,8 @@ export async function fetchHome(token: Token): Promise<HomeView> {
       : null,
     days: v.days.map((d) => ({
       date: date(d.date),
-      events: d.events.map((e) => ({
-        title: e.title,
-        start: time(e.startTime),
-        end: time(e.endTime),
-        startMin: e.startMinute,
-        endMin: e.endMinute,
-        detail: e.detail,
-        category: e.category as HomeView["days"][number]["events"][number]["category"],
-        url: e.url || null,
-      })),
+      events: d.events.map((e) => agendaEvent(e, time)),
+      allDay: d.allDayEvents.map((e) => agendaEvent(e, time)),
       reminders: d.reminders.map((r) => ({
         id: r.task.slice(6),
         text: r.text,
@@ -121,6 +116,48 @@ export async function fetchHome(token: Token): Promise<HomeView> {
           upload: isoTime(v.healthSync.uploadTime),
         }
       : null,
+    calendarSync: v.calendarSync
+      ? {
+          lastSync: v.calendarSync.lastSyncTime ? isoTime(v.calendarSync.lastSyncTime) : null,
+          hasErrors: v.calendarSync.hasErrors,
+        }
+      : null,
+    captureHints: v.captureHints
+      ? {
+          calendars: v.captureHints.calendars.map((c) => ({
+            name: c.name,
+            displayName: c.displayName,
+            category: c.category as AgendaEvent["category"],
+          })),
+          defaultCalendar: v.captureHints.defaultCalendar || undefined,
+          rules: v.captureHints.rules.map((r) => ({ words: r.words, calendar: r.calendar })),
+          titles: v.captureHints.titles.map((t) => ({
+            titleKey: t.titleKey,
+            calendar: t.calendar,
+            count: t.count,
+            lastTime: isoTime(t.lastTime),
+          })),
+        }
+      : null,
+  };
+}
+
+type Time = (t: { hours: number; minutes: number } | undefined) => string;
+
+function agendaEvent(e: AgendaEventMessage, time: Time): AgendaEvent {
+  return {
+    title: e.title,
+    start: time(e.startTime),
+    end: time(e.endTime),
+    startMin: e.startMinute,
+    endMin: e.endMinute,
+    detail: e.detail,
+    category: e.category as AgendaEvent["category"],
+    url: e.url || null,
+    event: e.event || null,
+    calendar: e.calendar || null,
+    writable: e.writable,
+    allDay: e.allDay,
   };
 }
 

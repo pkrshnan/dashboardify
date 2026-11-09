@@ -44,6 +44,11 @@ export function buildDays(
       dated: tasks
         .filter((t) => !t.task.done && t.task.due === iso && !t.task.time)
         .map((t) => t.task.description),
+      allDay: events
+        .filter(
+          (e) => e.allDay && e.startDate && e.endDate && e.startDate <= iso && iso < e.endDate,
+        )
+        .map((e) => agendaEvent(e, midnight, timeZone)),
     };
   });
 }
@@ -51,18 +56,26 @@ export function buildDays(
 function eventsOn(events: CalendarEvent[], midnight: number, timeZone: string): AgendaEvent[] {
   const nextMidnight = midnight + DAY_MIN * 60_000;
   return events
-    .filter((e) => e.start < nextMidnight && e.end > midnight)
+    .filter((e) => !e.allDay && e.start < nextMidnight && e.end > midnight)
     .sort((a, b) => a.start - b.start)
-    .map((e) => ({
-      title: e.title,
-      start: clock(e.start, timeZone),
-      end: clock(e.end, timeZone),
-      startMin: Math.max(0, Math.round((e.start - midnight) / 60_000)),
-      endMin: Math.round((e.end - midnight) / 60_000),
-      detail: e.detail ?? "",
-      category: e.category,
-      url: e.url ?? null,
-    }));
+    .map((e) => agendaEvent(e, midnight, timeZone));
+}
+
+function agendaEvent(e: CalendarEvent, midnight: number, timeZone: string): AgendaEvent {
+  return {
+    title: e.title,
+    start: clock(e.start, timeZone),
+    end: clock(e.end, timeZone),
+    startMin: Math.max(0, Math.round((e.start - midnight) / 60_000)),
+    endMin: Math.round((e.end - midnight) / 60_000),
+    detail: e.detail ?? "",
+    category: e.category,
+    url: e.url ?? null,
+    event: e.event ?? null,
+    calendar: e.calendar ?? null,
+    writable: e.writable ?? false,
+    allDay: e.allDay ?? false,
+  };
 }
 
 /** The event on now, or else the next one today. */

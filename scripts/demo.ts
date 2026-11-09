@@ -105,8 +105,23 @@ function fakeCalendar(): CalendarSource {
     detail,
     url,
   }));
+  // A long weekend away, as an all-day event: a Week marker on each day.
+  const trip: CalendarEvent = {
+    title: "Lisbon",
+    start: at(4, 0),
+    end: at(7, 0),
+    category: "personal",
+    allDay: true,
+    startDate: day(4),
+    endDate: day(7),
+  };
+  const all: CalendarEvent[] = [...events, trip];
   return {
-    events: (from, to) => Promise.resolve(events.filter((e) => e.start < to && e.end > from)),
+    events: (from, to) => Promise.resolve(all.filter((e) => e.start < to && e.end > from)),
+    status: () => ({
+      lastSyncTime: new Date(Date.now() - 2 * 60_000).toISOString(),
+      hasErrors: false,
+    }),
   };
 }
 

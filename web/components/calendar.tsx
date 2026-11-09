@@ -3,7 +3,9 @@
 
 import type { ComponentChildren } from "preact";
 import { useState } from "preact/hooks";
-import type { HomeView } from "../../src/home/types";
+import type { CalendarSyncView, HomeView } from "../../src/home/types";
+import { nowIn } from "../lib/clock";
+import { STATUS } from "../lib/colors";
 import { dateSpan, shortDate } from "../lib/format";
 import { DayTimeline } from "./day-timeline";
 import { Segmented } from "./segmented";
@@ -30,7 +32,14 @@ export function Calendar({ view, nowMin, isPhone, onComplete, capture, aside }: 
   return (
     <section class="section">
       <div class="section-head">
-        <h2>{title}</h2>
+        <div class="health-title">
+          <h2>{title}</h2>
+          {view.calendarSync && (
+            <div class="range-label">
+              <CalendarSynced sync={view.calendarSync} timeZone={view.timeZone} />
+            </div>
+          )}
+        </div>
         <Segmented
           label="Calendar range"
           segments={[
@@ -53,5 +62,24 @@ export function Calendar({ view, nowMin, isPhone, onComplete, capture, aside }: 
         {aside && <aside>{aside}</aside>}
       </div>
     </section>
+  );
+}
+
+/** Calendars older than this are shown in orange. */
+const STALE_MS = 15 * 60_000;
+
+/** "Calendar synced 09:10"; orange when it's behind or an account needs attention. */
+function CalendarSynced({ sync, timeZone }: { sync: CalendarSyncView; timeZone: string }) {
+  if (sync.hasErrors) {
+    return <span style={{ color: STATUS.warn }}>Calendar needs attention in Settings</span>;
+  }
+  if (!sync.lastSync) {
+    return <span>Calendar syncing…</span>;
+  }
+  const stale = Date.now() - new Date(sync.lastSync).getTime() > STALE_MS;
+  return (
+    <span style={stale ? { color: STATUS.warn } : undefined}>
+      Calendar synced {nowIn(timeZone, new Date(sync.lastSync)).time}
+    </span>
   );
 }

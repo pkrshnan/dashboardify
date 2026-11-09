@@ -234,6 +234,31 @@ export class EventCache {
     return [...best.values()].sort((a, b) => a.start_ms - b.start_ms).map(toEvent);
   }
 
+  /** How often each title was on each calendar in [since, until), most frequent first. */
+  titleCounts(
+    since: Date,
+    until: Date,
+    limit: number,
+  ): { titleKey: string; accountId: string; calendarId: string; count: number; lastMs: number }[] {
+    return this.db
+      .query<
+        { title_key: string; account_id: string; calendar_id: string; n: number; last_ms: number },
+        [number, number, number]
+      >(
+        `SELECT title_key, account_id, calendar_id, count(*) AS n, max(start_ms) AS last_ms
+         FROM occurrences WHERE start_ms >= ? AND start_ms < ? AND title_key != ''
+         GROUP BY title_key, account_id, calendar_id ORDER BY n DESC, last_ms DESC LIMIT ?`,
+      )
+      .all(since.getTime(), until.getTime(), limit)
+      .map((row) => ({
+        titleKey: row.title_key,
+        accountId: row.account_id,
+        calendarId: row.calendar_id,
+        count: row.n,
+        lastMs: row.last_ms,
+      }));
+  }
+
   get(eventIdValue: string): CachedEvent | undefined {
     const row = this.db
       .query<OccurrenceRow, [string]>("SELECT * FROM occurrences WHERE event_id = ?")

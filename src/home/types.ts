@@ -1,3 +1,4 @@
+import type { CaptureHints } from "./calendar";
 // The shape of GET /api/home: everything the home screen shows, already worked out on the server
 // so the web app only lays it out. The web app imports these types directly.
 
@@ -20,6 +21,16 @@ export interface HomeView {
   health: MetricTrend[];
   /** When strap data last arrived, or null before the first upload. */
   healthSync: HealthSyncView | null;
+  /** When calendars last synced, or null with no calendar connected. */
+  calendarSync: CalendarSyncView | null;
+  /** For the capture box's calendar guess, or null with no writable calendar. */
+  captureHints: CaptureHints | null;
+}
+
+export interface CalendarSyncView {
+  /** ISO time, or null before the first sync finishes. */
+  lastSync: string | null;
+  hasErrors: boolean;
 }
 
 export interface HealthSyncView {
@@ -40,6 +51,12 @@ export interface AgendaEvent {
   detail: string;
   category: Category;
   url: string | null;
+  /** `events/{id}`, or null for events not from a calendar resource. */
+  event: string | null;
+  /** `calendarAccounts/{a}/calendars/{c}`, or null. */
+  calendar: string | null;
+  writable: boolean;
+  allDay: boolean;
 }
 
 export interface NextEvent {
@@ -66,6 +83,8 @@ export interface DayAgenda {
   reminders: Reminder[];
   /** Untimed tasks due that day, shown as hollow markers in the week view. */
   dated: string[];
+  /** All-day events that day: Week view markers only, never on the Day timeline. */
+  allDay: AgendaEvent[];
 }
 
 export interface TaskItem {

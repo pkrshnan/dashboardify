@@ -39,6 +39,13 @@ export class HomeService {
             uploadTime: view.healthSync.upload,
           }
         : undefined,
+      calendarSync: view.calendarSync
+        ? {
+            lastSyncTime: view.calendarSync.lastSync ?? undefined,
+            hasErrors: view.calendarSync.hasErrors,
+          }
+        : undefined,
+      captureHints: view.captureHints ?? undefined,
     };
   };
 }
@@ -63,6 +70,10 @@ function eventResource(event: AgendaEvent) {
     detail: event.detail,
     category: event.category,
     url: event.url ?? "",
+    event: event.event ?? "",
+    calendar: event.calendar ?? "",
+    writable: event.writable,
+    allDay: event.allDay,
   };
 }
 
@@ -82,6 +93,7 @@ function dayResource(day: DayAgenda) {
     events: day.events.map(eventResource),
     reminders: day.reminders.map(reminderResource),
     datedTasks: day.dated,
+    allDayEvents: day.allDay.map(eventResource),
   };
 }
 
