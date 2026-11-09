@@ -2,7 +2,7 @@
 // /v1/activityDays. A day, week or workout opens beside the list (below it on the phone).
 // Workouts the strap wasn't sure of ask what they were, and the answer goes into the daily note.
 
-import { useCallback, useEffect, useState } from "preact/hooks";
+import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 import { fetchActivity, fetchWorkout, reviewWorkout, type Token, Unauthorized } from "../api";
 import {
   type ActivityDayView,
@@ -11,6 +11,7 @@ import {
   datesFrom,
   duration,
   heartRateLines,
+  heartRateTicks,
   kindLabel,
   monday,
   type Range,
@@ -49,6 +50,8 @@ export function Activity({ token, timeZone, today, onUnauthorized }: Props) {
   const [range, setRange] = useState<Range>("week");
   const [days, setDays] = useState<ActivityDayView[] | null>(null);
   const [selected, setSelected] = useState<Selection>({ day: today });
+  const side = useRef<HTMLElement>(null);
+  const revealing = useRef(false);
   const { start, end } = rangeDates(today, range);
 
   const load = useCallback(async () => {
@@ -73,7 +76,17 @@ export function Activity({ token, timeZone, today, onUnauthorized }: Props) {
     setRange(r);
     setSelected(r === "3m" ? { week: monday(today) } : { day: today });
   };
-  const ctx = { days: days ?? [], clock, review, select: setSelected, selected };
+  const select = (s: Selection) => {
+    revealing.current = true;
+    setSelected(s);
+  };
+  const shown = () => {
+    if (revealing.current) {
+      revealing.current = false;
+      reveal(side.current);
+    }
+  };
+  const ctx = { days: days ?? [], clock, review, select, selected };
 
   return (
     <main class="activity">
@@ -100,12 +113,23 @@ export function Activity({ token, timeZone, today, onUnauthorized }: Props) {
           {range === "month" && <MonthGrid {...ctx} start={start} end={end} today={today} />}
           {range === "3m" && <QuarterBars {...ctx} start={start} end={end} />}
         </div>
-        <aside class="activity-side" aria-live="polite">
-          <Side {...ctx} token={token} today={today} onShowDay={setSelected} />
+        <aside class="activity-side" aria-live="polite" ref={side}>
+          <Side {...ctx} token={token} today={today} onShowDay={select} onShown={shown} />
         </aside>
       </section>
     </main>
   );
+}
+
+/**
+ * Scrolls to what was picked when it opened out of sight, as it does below the list on a phone.
+ * Called once the panel has its content, so the page is long enough to bring it to the top.
+ */
+function reveal(el: HTMLElement | null) {
+  const top = el?.getBoundingClientRect().top ?? 0;
+  if (el && (top < 0 || top > window.innerHeight * 0.6)) {
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 }
 
 interface Ctx {
@@ -191,6 +215,7 @@ function MonthGrid(props: Ctx & { start: string; end: string; today: string }) {
           )}
         </div>
       ))}
+      <Legend />
       <p class="muted note">Striped days have no strap data. Small numbers are the day's steps.</p>
     </div>
   );
@@ -218,16 +243,18 @@ function MonthDay(props: {
         <span>{dayOfMonth(props.date)}</span>
         {day && <span class="muted">{day.steps.toLocaleString("en-US")}</span>}
       </span>
-      {workouts.map((w) => (
-        <span key={w.name} class={`chip${w.status === "possible" ? " unsure" : ""}`}>
-          {workoutName(w)} · {duration(w.minutes)}
-        </span>
-      ))}
-      {walkMin > 0 && (
-        <span class="chip walk">
-          {day?.walks.length === 1 ? "Walk" : `${day?.walks.length} walks`} · {duration(walkMin)}
-        </span>
-      )}
+      <span class="month-day-marks">
+        {workouts.map((w) => (
+          <span key={w.name} class={`chip${w.status === "possible" ? " unsure" : ""}`}>
+            {workoutName(w)} · {duration(w.minutes)}
+          </span>
+        ))}
+        {walkMin > 0 && (
+          <span class="chip walk">
+            {day?.walks.length === 1 ? "Walk" : `${day?.walks.length} walks`} · {duration(walkMin)}
+          </span>
+        )}
+      </span>
     </button>
   );
 }
@@ -260,20 +287,39 @@ function QuarterBars(props: Ctx & { start: string; end: string }) {
           <span key={w.start}>{i % 4 === 0 ? dayMonth(w.start) : ""}</span>
         ))}
       </div>
-      <div class="legend muted">
-        <span>
-          <i class="swatch" /> Workouts
-        </span>
-        <span>
-          <i class="swatch walk" /> Walks
-        </span>
-      </div>
+      <Legend />
     </figure>
   );
 }
 
-function Side(props: Ctx & { token: Token; today: string; onShowDay: (s: Selection) => void }) {
+function Legend() {
+  return (
+    <div class="legend muted">
+      <span>
+        <i class="swatch" /> Workouts
+      </span>
+      <span>
+        <i class="swatch walk" /> Walks
+      </span>
+    </div>
+  );
+}
+
+interface SideProps extends Ctx {
+  token: Token;
+  today: string;
+  onShowDay: (s: Selection) => void;
+  /** After each render with content: a workout's comes once it has loaded. */
+  onShown: () => void;
+}
+
+function Side(props: SideProps) {
   const s = props.selected;
+  useEffect(() => {
+    if (!("workout" in s)) {
+      props.onShown();
+    }
+  });
   if ("workout" in s) {
     return <WorkoutPanel {...props} name={s.workout} />;
   }
@@ -441,9 +487,7 @@ function Review(props: {
   );
 }
 
-function WorkoutPanel(
-  props: Ctx & { token: Token; name: string; onShowDay: (s: Selection) => void },
-) {
+function WorkoutPanel(props: SideProps & { name: string }) {
   const [detail, setDetail] = useState<WorkoutDetail | null>(null);
   const date = props.name.slice(5, 15);
   const day = props.days.find((d) => d.date === date);
@@ -451,6 +495,11 @@ function WorkoutPanel(
   useEffect(() => {
     fetchWorkout(props.token, props.name).then(setDetail, () => setDetail(null));
   }, [props.token, props.name, listed?.status, listed?.kind]);
+  useEffect(() => {
+    if (detail) {
+      props.onShown();
+    }
+  });
 
   if (!(detail && day && listed)) {
     return <p class="muted">Loading…</p>;
@@ -483,7 +532,10 @@ function WorkoutPanel(
   );
 }
 
-/** HR every 15 seconds, with the session shaded and each matched set as a band. */
+/**
+ * HR every 15 seconds, with the session shaded and each matched set as a band. The SVG stretches
+ * to the figure's width, so the bpm scale and times are HTML and stay readable on a phone.
+ */
 function HeartRateChart({
   detail,
   clock,
@@ -500,44 +552,65 @@ function HeartRateChart({
   const hi = Math.max(...known, 120) + 5;
   const y = (bpm: number) => H - ((bpm - lo) / (hi - lo)) * H;
   const lines = heartRateLines(detail.heartRate, detail.heartRateStart, x, y);
+  const ticks = heartRateTicks(lo, hi);
   return (
     <figure class="hr-chart">
-      <svg
-        viewBox={`0 0 ${W} ${H + 18}`}
-        role="img"
-        aria-label={`Heart rate from ${clock(detail.heartRateStart)} to ${clock(detail.heartRateStart + span)}, peaking at ${Math.max(...known, 0)} bpm`}
-      >
-        <rect
-          x={x(detail.start)}
-          y={0}
-          width={x(detail.end) - x(detail.start)}
-          height={H}
-          class="session-shade"
-        />
-        {detail.sets.map((s, i) =>
-          s.start && s.peak ? (
-            <rect
-              key={`${s.exercise}${i}`}
-              x={x(s.start)}
-              y={0}
-              width={Math.max(2, x(s.peak) - x(s.start))}
-              height={H}
-              fill={EXERCISE_COLORS[s.exerciseIndex % EXERCISE_COLORS.length]}
-              fill-opacity={s.warmUp ? 0.14 : 0.3}
-            />
-          ) : null,
-        )}
-        {lines.map((points) => (
-          <polyline key={points} points={points} class="hr-line" />
+      <div class="hr-plot">
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          preserveAspectRatio="none"
+          role="img"
+          aria-label={`Heart rate from ${clock(detail.heartRateStart)} to ${clock(detail.heartRateStart + span)}, peaking at ${Math.max(...known, 0)} bpm`}
+        >
+          <rect
+            x={x(detail.start)}
+            y={0}
+            width={x(detail.end) - x(detail.start)}
+            height={H}
+            class="session-shade"
+          />
+          <SetBands sets={detail.sets} x={x} height={H} />
+          {ticks.map((bpm) => (
+            <line key={bpm} x1={0} x2={W} y1={y(bpm)} y2={y(bpm)} class="hr-grid" />
+          ))}
+          {lines.map((points) => (
+            <polyline key={points} points={points} class="hr-line" />
+          ))}
+        </svg>
+        {ticks.map((bpm) => (
+          <span key={bpm} class="hr-tick" style={{ top: `${(y(bpm) / H) * 100}%` }} aria-hidden>
+            {bpm}
+          </span>
         ))}
-        <text x={0} y={H + 14} class="axis">
-          {clock(detail.heartRateStart)}
-        </text>
-        <text x={W} y={H + 14} class="axis" text-anchor="end">
-          {clock(detail.heartRateStart + span)}
-        </text>
-      </svg>
+      </div>
+      <div class="hr-times muted" aria-hidden>
+        <span>bpm</span>
+        <span>{clock(detail.heartRateStart)}</span>
+        <span>{clock(detail.heartRateStart + span)}</span>
+      </div>
     </figure>
+  );
+}
+
+/** Each matched set as a band from its start to its HR peak, in its exercise's colour. */
+function SetBands(props: {
+  sets: WorkoutDetail["sets"];
+  x: (ms: number) => number;
+  height: number;
+}) {
+  const { x } = props;
+  return props.sets.map((s, i) =>
+    s.start && s.peak ? (
+      <rect
+        key={`${s.exercise}${i}`}
+        x={x(s.start)}
+        y={0}
+        width={Math.max(2, x(s.peak) - x(s.start))}
+        height={props.height}
+        fill={EXERCISE_COLORS[s.exerciseIndex % EXERCISE_COLORS.length]}
+        fill-opacity={s.warmUp ? 0.14 : 0.3}
+      />
+    ) : null,
   );
 }
 

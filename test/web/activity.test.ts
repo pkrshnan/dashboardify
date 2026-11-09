@@ -4,6 +4,7 @@ import {
   calendarWeeks,
   duration,
   heartRateLines,
+  heartRateTicks,
   rangeDates,
   totals,
   type WorkoutView,
@@ -89,5 +90,11 @@ describe("activity page", () => {
 
     // The lone 120 between gaps can't make a line, so it is left out.
     expect(lines).toEqual(["7.5,100.0 22.5,110.0", "82.5,130.0 97.5,140.0"]);
+  });
+
+  test("heart rate ticks are round numbers inside the chart, wider apart on a tall chart", () => {
+    expect(heartRateTicks(55, 125)).toEqual([60, 80, 100, 120]);
+    expect(heartRateTicks(55, 105)).toEqual([60, 70, 80, 90, 100]);
+    expect(heartRateTicks(60, 200)).toEqual([80, 120, 160]);
   });
 });
