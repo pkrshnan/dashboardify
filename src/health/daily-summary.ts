@@ -4,9 +4,11 @@
 // A date's summary covers the night that ended that morning (searched from 6 pm the evening
 // before to 2 pm) and the activity of the calendar day itself, midnight to midnight.
 
+import { parseLiftingLog } from "../vault/lifting";
 import { localDate, localTime } from "../vault/time";
 import type { Vault } from "../vault/vault";
 import type { DerivedRow, DerivedStore } from "./derived-store";
+import { type LiftingSet, liftingDay } from "./lifting";
 import {
   BASELINE_NIGHTS,
   MIN_BASELINE_NIGHTS,
@@ -16,10 +18,11 @@ import {
 } from "./metrics/recovery";
 import { DEFAULT_NEED_MIN, type PastNight } from "./metrics/sleep-score";
 import { median } from "./metrics/stats";
+import { stepsPerMinute } from "./metrics/steps";
 import { dayMetrics, type NightMetrics, nightMetrics } from "./metrics/summary";
 import type { Accel, HeartRate, Motion, RrInterval, SkinTemp, StepCounter } from "./metrics/types";
 import type { Walk } from "./metrics/walks";
-import type { Workout } from "./metrics/workouts";
+import { movingInPlace, type Workout } from "./metrics/workouts";
 import { ParamsStore } from "./params";
 import { parseProfile } from "./profile";
 import type { RawStore, Row } from "./raw-store";
@@ -65,11 +68,15 @@ export class DailySummary {
     const history = rows.map(fromNightRow);
     const night = await this.night(date, rows, needMinutes(profileFields));
     const signals = night ? toSignals(night) : null;
+    const heartRate = await this.load(date, "heart_rate", 0, 24, toHeartRate);
+    const steps = await this.load(date, "steps", 0, 24, toSteps);
+    const motion = await this.load(date, "motion", 0, 24, toMotion);
+    const sleep = night ? { start: night.bed, end: night.wake } : null;
     const day = dayMetrics({
-      heartRate: await this.load(date, "heart_rate", 0, 24, toHeartRate),
-      steps: await this.load(date, "steps", 0, 24, toSteps),
-      motion: await this.load(date, "motion", 0, 24, toMotion),
-      sleep: night ? { start: night.bed, end: night.wake } : null,
+      heartRate,
+      steps,
+      motion,
+      sleep,
       restingHr: night?.restingHr ?? median(recentRestingHrs(history)),
       profile: parseProfile(profileFields, date),
     });
@@ -80,6 +87,16 @@ export class DailySummary {
       paramsVersion: params.version,
       baselineNights: history.filter((n) => n.lnRmssd !== null).length,
       tempDevC: tempDeviation(signals?.skinTemp ?? null, history),
+      lifting: liftingDay(
+        parseLiftingLog((await this.vault.readDaily(date))?.body ?? ""),
+        day.workouts,
+        movingInPlace(motion, stepsPerMinute(steps), [
+          ...(sleep ? [sleep] : []),
+          ...day.workouts,
+          ...day.walks,
+        ]),
+        heartRate,
+      ),
     };
   }
 
@@ -160,6 +177,11 @@ export class DailySummary {
       "workouts",
       date,
       summary.day.workouts.map((w) => ({ ...stamp, ...workoutRow(w) })),
+    );
+    await this.derived.writeAll(
+      "sets",
+      date,
+      (summary.lifting?.sets ?? []).map((set, i) => ({ ...stamp, ...setRow(set, i) })),
     );
     await this.derived.writeAll(
       "walks",
@@ -282,6 +304,21 @@ function workoutRow(w: Workout): DerivedRow {
     cadence_spm: w.cadence,
     trimp: w.trimp,
     strain: w.strain,
+  };
+}
+
+function setRow(set: LiftingSet, index: number): DerivedRow {
+  return {
+    set_index: index,
+    exercise: set.exercise,
+    exercise_index: set.exerciseIndex,
+    weight: set.weight,
+    unit: set.unit,
+    reps: set.reps,
+    warm_up: set.warmUp ? 1 : 0,
+    start_ts: set.climb?.start ?? null,
+    peak_ts: set.climb?.peak ?? null,
+    peak_hr: set.climb?.peakHr ?? null,
   };
 }
 

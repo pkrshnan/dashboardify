@@ -127,6 +127,15 @@ export function appendToSection(body: string, heading: string, line: string): st
   return lines.join("\n");
 }
 
+/** The lines under `## heading`, up to the next heading of the same or higher level; null if missing. */
+export function sectionLines(body: string, heading: string): string[] | null {
+  const lines = body.split("\n");
+  const headingIndex = lines.findIndex((l) => l.trim() === `## ${heading}`);
+  return headingIndex === -1
+    ? null
+    : lines.slice(headingIndex + 1, sectionEnd(lines, headingIndex));
+}
+
 /** Index of the next `#` or `##` heading after `headingIndex`, or the end of the lines. */
 function sectionEnd(lines: string[], headingIndex: number): number {
   const next = lines.findIndex((l, i) => i > headingIndex && /^#{1,2} /.test(l));

@@ -179,10 +179,13 @@ so treat steps as provisional.
 
 ## Workouts (`workouts.ts`)
 
-**Why it works.** A workout is effort you keep up: heart rate stays well above resting for a while,
-with breaks no longer than a rest between sets or games. What kind of workout it is shows in how you
-step and move. Running is a steady fast stride. Volleyball is stop-and-go: short shuffles, bursts
-of hard movement, breaks between rallies. Lifting is standing in place.
+**Why it works.** A workout is effort you keep up: heart rate well above your own normal for a
+while, or up while you move, with breaks no longer than a rest between sets or games. Cardio gets
+hard. Lifting usually doesn't: on 8 November it passed half of heart-rate reserve for one minute.
+What lifting has instead is a rhythm: HR spikes with each set and calms in the rest after it, again
+and again. What kind of workout it is shows in how you step and move. Running is a steady fast
+stride. Volleyball is stop-and-go: short shuffles, bursts of hard movement, breaks between rallies.
+Lifting is standing in place, spiking and calming.
 
 The strap only gives a step counter and a motion intensity about once a second. That is enough to
 name a whole session, but not to count reps or tell a spike from a block. Published rep counting
@@ -191,32 +194,70 @@ accelerometer and gyroscope data at 25–100 Hz.
 
 **How.**
 
-1. **Find efforts.** A minute is active at 35% or more of heart-rate reserve (strain's 30% floor
-   plus a margin, because ordinary days hover near it). Active minutes join across rests of up to
-   5 minutes. Last night's sleep doesn't count.
-2. **Trim to the effort.** Heart rate lags effort both ways: it takes a minute or two to climb, and
-   many more to settle afterwards, often while you walk away. So the workout runs from its first to
-   its last minute of real effort, at 50% of reserve or more or a burst of motion (below). The one
-   confirmed session, volleyball on 2 November, ended at 21:15; untrimmed, the recovery stretched
-   it to 21:28.
-3. **Keep real workouts.** At least 15 minutes, at least 5 of them at 50% of reserve or more, and a
-   median motion of 0.02 or more. A strap that isn't moving can't be exercising: high HR from a
-   still strap is an optical glitch.
-4. **Name it**, checking in this order, per minute of the workout:
+1. **Your baseline.** The 25th percentile of the day's awake minutes, mostly sitting even on an
+   active day: 76 bpm on 8 November. Not a fixed level, and not a share of reserve.
+2. **Find efforts.** A minute is active 20 bpm above the baseline, or 8 above it with motion of
+   0.08 or more, or when a big HR climb (below) peaks in it. Active minutes join across rests of up
+   to 5 minutes. Last night's sleep doesn't count.
+3. **Big climbs.** Once-a-second HR, averaged per 5 seconds and smoothed over 15. Each peak's climb
+   is its rise from the lowest point in the 90 seconds before; peaks within a minute keep the
+   bigger. A big climb is 25 bpm or more. Sitting still has climbs of 10 bpm several times every
+   10 minutes from ordinary swings, but rarely of 25; a lifting set is 30–58.
+4. **Keep real workouts**, of at least 15 minutes with a median motion of 0.02 or more (a strap
+   that isn't moving can't be exercising: high HR from a still strap is an optical glitch), that
+   are either:
+   - **hard:** 5+ minutes at 50% of heart-rate reserve. HR lags effort both ways, taking a minute
+     or two to climb and many more to settle, often while you walk away, so a hard workout runs
+     from its first to its last hard minute or burst of motion (below). A spike in the warm-up or
+     the recovery doesn't stretch it. Untrimmed, the slow recovery stretched the confirmed 2
+     November volleyball from 21:15 to 21:28.
+   - or **spiking and calming:** failing that, trimmed to its big climbs as well, with at least 6
+     of them and at least 2 every 10 minutes.
+5. **Name it**, checking in this order, per minute of the workout:
    - **Running:** half the minutes at 140+ steps a minute. Running is rarely slower.
    - **Walking:** half the minutes at 90+ steps a minute (brisk walking is 100–130, Tudor-Locke
      2018).
    - **Volleyball:** 30%+ of minutes at 20–89 steps a minute, and 20%+ with motion of 0.35 or
      more, a burst of play. Brisk walking reads 0.25–0.33 on the bicep.
-   - **Lifting:** 60%+ of minutes under 20 steps a minute, and under 20% bursts.
+   - **Lifting:** spiking and calming, with 60%+ of minutes under 20 steps a minute and under 20%
+     bursts.
    - Anything else is **workout**.
-5. Each workout gets its own TRIMP and strain, the same way as the day's.
+6. Each workout gets its own TRIMP and strain, the same way as the day's.
 
-The thresholds come from two sessions in the first weeks of data: volleyball on 2 November (bursts
-at 140–179 bpm and 40–90 steps a minute, with 5-minute breaks; confirmed) and a lifting-like
-afternoon on 14 October (115–150 bpm, almost no steps, low motion; not confirmed). No run has been recorded yet, so the running rule rests on
-published cadences alone. Treat the names as provisional until they have been checked against more
-sessions.
+Checked on the first weeks of data: volleyball on 2 November, 20:30–21:15 (confirmed), and lifting
+on 8 November, 18:06–18:51 (matching the note's log), with no other sessions except an unnamed
+hard afternoon on 14 October and a possible lifting session on 4 November, 18:07–18:31, neither
+confirmed. No run has been recorded yet, so the running rule rests on published cadences alone.
+Treat the names as provisional until they have been checked against more sessions.
+
+## Lifting sets (`sets.ts`, `lifting.ts`)
+
+**Why it works.** A set lifts heart rate for 30–60 seconds, and the rest after it lets it fall,
+so each set is a climb. You rest between sets, not between exercises, so moving to the next exercise
+looks like any other rest. The log in the daily note says how many sets there were and in what
+order, which is everything else that's needed: no times.
+
+**How.**
+
+1. Read the log (see [vault format](vault-format.md)) and expand it into sets, in order.
+2. Find the day's lifting session: the longest workout named lifting, or else the longest unnamed
+   one. Failing both, it is the longest stretch of **moving in place**: minutes with motion of 0.06
+   or more and under 20 steps, joined across rests of up to 5 minutes, at least 15 minutes long,
+   outside sleep, workouts and walks.
+3. In that session, average the once-a-second HR per 5 seconds and smooth it over 15. Minute
+   averages, which the workout search uses, blur a 45-second set away.
+4. Every peak's climb is its rise from the lowest point in the 90 seconds before it. Climbs under
+   6 bpm are noise.
+5. Take the N clearest climbs at least a minute apart, where N is the number of logged sets, and
+   give them to the sets in order. With fewer than N clear climbs nothing is matched, rather than
+   pinning a set to a moment the data can't support. The log is still counted.
+
+On 8 November (4 exercises, 15 sets, logged without times) the session was found as lifting,
+18:06–18:51, and the 15 clearest climbs ran from the first warm-up at 18:06 to 18:50, a minute
+before the last set was written down. There were about 20 set-like climbs, so which ones are the
+sets in the middle is the clearest-first guess; more logged sessions will show how good it is.
+
+Volume is weight × reps over every set, in pounds (kg × 2.20462).
 
 ## Walks (`walks.ts`)
 
