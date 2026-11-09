@@ -1780,9 +1780,14 @@ button.link {
   --walk-fill: #1e3b3a;
 }
 
+.activity > .section:first-child {
+  padding-top: calc(32px + env(safe-area-inset-top));
+}
+
 .activity-title {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 6px;
 }
 
@@ -1802,6 +1807,13 @@ button.link {
   padding: 0;
   cursor: pointer;
   text-align: left;
+}
+
+.activity-title .back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 17px;
 }
 
 .activity-range {
@@ -1862,6 +1874,7 @@ button.link {
 .activity-side {
   flex: 1 1 340px;
   min-width: 0;
+  scroll-margin-top: calc(16px + env(safe-area-inset-top));
 }
 
 .panel-head {
@@ -2045,6 +2058,13 @@ button.link {
   font-size: 11px;
 }
 
+.month-day-marks {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
 .chip {
   font-size: 11px;
   padding: 3px 6px;
@@ -2145,14 +2165,48 @@ button.link {
   background: #2e6e6a;
 }
 
+/* The month's chips name themselves; the phone's dots need the legend. */
+.month .legend {
+  display: none;
+}
+
 .hr-chart {
+  --hr-gutter: 32px;
   margin: 8px 0 16px;
 }
 
-.hr-chart svg {
+.hr-plot {
+  position: relative;
+  height: 180px;
+  margin-left: var(--hr-gutter);
+}
+
+.hr-plot svg {
   width: 100%;
-  height: auto;
+  height: 100%;
   display: block;
+}
+
+.hr-grid {
+  stroke: var(--line-2);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.hr-tick {
+  position: absolute;
+  right: 100%;
+  padding-right: 8px;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+.hr-times {
+  display: grid;
+  grid-template-columns: var(--hr-gutter) minmax(0, 1fr) auto;
+  margin-top: 6px;
+  font-size: 11px;
 }
 
 .session-shade {
@@ -2165,11 +2219,7 @@ button.link {
   stroke: #ff7eb6;
   stroke-width: 1.75;
   stroke-linejoin: round;
-}
-
-.axis {
-  fill: var(--text-3);
-  font-size: 11px;
+  vector-effect: non-scaling-stroke;
 }
 
 .set {
@@ -2216,9 +2266,32 @@ button.link {
     align-items: center;
   }
 
-  .month-day-head .muted,
-  .month-day .chip {
+  .month-day-head .muted {
     display: none;
+  }
+
+  /* Too narrow for names: each workout or walk is a dot, styled like its row in the list. */
+  .month-day-marks {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 3px;
+  }
+
+  .month-day .chip {
+    width: 7px;
+    height: 7px;
+    padding: 0;
+    border-radius: 4px;
+    font-size: 0;
+  }
+
+  .month-day .chip.walk {
+    background: #2e6e6a;
+  }
+
+  .month .legend {
+    display: flex;
   }
 
   .quarter-bars {

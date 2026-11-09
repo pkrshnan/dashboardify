@@ -211,3 +211,13 @@ export function heartRateLines(
   });
   return lines.filter((l) => l.length > 1).map((l) => l.join(" "));
 }
+
+/** Round heart rates for the chart's scale, strictly inside lo–hi: every 10, 20 or 40 bpm. */
+export function heartRateTicks(lo: number, hi: number): number[] {
+  const step = [10, 20].find((s) => hi - lo <= s * 6) ?? 40;
+  const ticks: number[] = [];
+  for (let bpm = Math.floor(lo / step) * step + step; bpm < hi; bpm += step) {
+    ticks.push(bpm);
+  }
+  return ticks;
+}
