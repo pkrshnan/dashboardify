@@ -72,7 +72,7 @@ export class DeviceStore implements DeviceMatcher {
   list(): Device[] {
     return this.store.db
       .query<Row, []>(
-        "SELECT id, display_name, create_time, last_used_time FROM devices ORDER BY create_time, id",
+        "SELECT id, display_name, create_time, last_used_time FROM devices ORDER BY create_time, rowid",
       )
       .all()
       .map((row) => ({

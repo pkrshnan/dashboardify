@@ -30,7 +30,10 @@ describe("SettingsStore.open", () => {
   test("creates settings.db with the core tables, readable only by the owner", async () => {
     const store = await SettingsStore.open(dir, box());
 
-    expect(tables(store)).toEqual(["meta", "schema_migrations", "settings"]);
+    // Other modules' tables are here too when their migrations are registered.
+    expect(tables(store)).toEqual(
+      expect.arrayContaining(["meta", "schema_migrations", "settings"]),
+    );
     expect(store.db.query("SELECT tasks_inbox FROM settings").get()).toEqual({
       tasks_inbox: "Inbox.md",
     });

@@ -10,7 +10,7 @@ import { Code, ConnectError, createConnectRouter } from "@connectrpc/connect";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { defined } from "../../defined";
-import { ApiError } from "../api/errors";
+import { type ApiCode, ApiError } from "../api/errors";
 import { validateMessage } from "../api/protobuf-validation";
 import { registerRest } from "../api/rest";
 import { restBindings } from "../api/rest-bindings";
@@ -31,17 +31,40 @@ function errorStatus(error: Error) {
   return ({ NOT_FOUND: 404, ABORTED: 409 } as Record<string, number>)[error.message] ?? 500;
 }
 
+const CONNECT_CODES: Record<ApiCode, Code> = {
+  invalid_argument: Code.InvalidArgument,
+  failed_precondition: Code.FailedPrecondition,
+  not_found: Code.NotFound,
+  already_exists: Code.AlreadyExists,
+  aborted: Code.Aborted,
+  permission_denied: Code.PermissionDenied,
+  unavailable: Code.Unavailable,
+};
+
+const STATUS_CODES: Record<number, ApiCode> = {
+  400: "invalid_argument",
+  403: "permission_denied",
+  404: "not_found",
+  409: "aborted",
+  503: "unavailable",
+};
+
+/** The AIP code for a failure: the error's own, or the one its status implies. */
+function errorCode(error: Error, status: number): ApiCode | undefined {
+  if (error instanceof ApiError && error.code) {
+    return error.code;
+  }
+  return STATUS_CODES[status];
+}
+
 function connectFailure(error: unknown) {
   const failure = error instanceof Error ? error : new Error(String(error));
   const status = errorStatus(failure);
-  if (failure.message === "message already exists") {
-    return new ConnectError(failure.message, Code.AlreadyExists);
-  }
-  const code =
-    ({ 400: Code.InvalidArgument, 404: Code.NotFound, 409: Code.Aborted } as Record<number, Code>)[
-      status
-    ] ?? Code.Internal;
-  return new ConnectError(status === 500 ? "internal error" : failure.message, code);
+  const code = errorCode(failure, status);
+  return new ConnectError(
+    status === 500 ? "internal error" : failure.message,
+    code ? CONNECT_CODES[code] : Code.Internal,
+  );
 }
 
 function executor(method: DescMethod, handler: Handler): Execute {
@@ -95,10 +118,7 @@ export function v1Transport(registrations: ServiceRegistration[]) {
     if (status === 500) {
       console.error(error);
     }
-    const code =
-      ({ 400: "invalid_argument", 404: "not_found", 409: "aborted" } as Record<number, string>)[
-        status
-      ] ?? "internal";
+    const code = errorCode(error, status) ?? "internal";
     return c.json(
       { code, message: status === 500 ? "internal error" : error.message },
       status as 400,

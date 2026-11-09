@@ -1,4 +1,5 @@
 import homepage from "../web/index.html";
+import { CalendarAccounts } from "./calendar/accounts";
 import { DailySummary } from "./health/daily-summary";
 import { DerivedStore } from "./health/derived-store";
 import { RawStore } from "./health/raw-store";
@@ -34,7 +35,13 @@ if (import.meta.main) {
   const app = createApp(config, {
     devices,
     tailnet,
-    settings: { general, devices, envChange, envNames: overrides },
+    settings: {
+      general,
+      devices,
+      envChange,
+      envNames: overrides,
+      calendars: { accounts: new CalendarAccounts(opened.store) },
+    },
     vault,
     onSamples: (_stream, day) => scheduler.touchUtcDay(day),
   });

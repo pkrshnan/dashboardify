@@ -1,4 +1,6 @@
 import type { DescService } from "@bufbuild/protobuf";
+import type { CalendarAccounts } from "../../calendar/accounts";
+import { CalendarAccountService as CalendarAccountSchema } from "../../gen/dashboardify/v1/calendar_account_pb";
 import { DayService as DaySchema } from "../../gen/dashboardify/v1/day_pb";
 import { DeviceService as DeviceSchema } from "../../gen/dashboardify/v1/device_pb";
 import { HomeService as HomeSchema } from "../../gen/dashboardify/v1/home_pb";
@@ -14,6 +16,7 @@ import type { GeneralSettings, SettingsChange } from "../../settings/core";
 import type { DeviceStore } from "../../settings/devices";
 import type { TaskStore } from "../../vault/task-store";
 import type { Vault } from "../../vault/vault";
+import { CalendarAccountService, type ConnectCalDav } from "../api/calendar-accounts";
 import { DaysService } from "../api/days";
 import { DevicesService } from "../api/devices";
 import { HomeService } from "../api/home";
@@ -31,6 +34,8 @@ export interface SettingsDeps {
   /** The environment's values and the variables that set them, which win over Settings. */
   envChange: SettingsChange;
   envNames: string[];
+  /** Calendar accounts, and how to reach their server (the fake one in tests). */
+  calendars?: { accounts: CalendarAccounts; connect?: ConnectCalDav };
 }
 
 export interface ServiceRegistration {
@@ -72,9 +77,17 @@ export function v1Services(
 }
 
 function settingsServices(settings: SettingsDeps, now: () => Date): ServiceRegistration[] {
-  const { general, devices, envChange, envNames } = settings;
+  const { general, devices, envChange, envNames, calendars } = settings;
   return [
     { schema: SettingsSchema, implementation: new SettingsService(general, envChange, envNames) },
     { schema: DeviceSchema, implementation: new DevicesService(devices, now) },
+    ...(calendars
+      ? [
+          {
+            schema: CalendarAccountSchema,
+            implementation: new CalendarAccountService(calendars.accounts, calendars.connect),
+          },
+        ]
+      : []),
   ];
 }
