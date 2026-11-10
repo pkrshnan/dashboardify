@@ -1,12 +1,10 @@
-# Home screen design
+# Design
 
-The chosen design for the command center home screen, after five rounds of prototypes and two independent design reviews.
-All rounds live on the design canvas: https://claude.ai/artifact/UfZhR2WaR4YVkhaPHHsVv3
-
-- `home-desktop.dc.html`: desktop, 1440 wide
-- `home-phone.dc.html`: phone, 390 wide
-
-The data in both files is made up.
+The home screen, Activity page and the rules every screen follows. Canvases: home
+https://claude.ai/artifact/UfZhR2WaR4YVkhaPHHsVv3, capture and Settings
+https://claude.ai/artifact/YNnwtKHE7AAzjLswS4JnSc, Activity
+https://claude.ai/artifact/Dm3mFqJPttBWpS9VxeYPUD. `home-desktop.dc.html` (1440 wide) and
+`home-phone.dc.html` (390 wide) here are references with made-up data, not shipped code.
 
 | Desktop, Day | Desktop, Week |
 |---|---|
@@ -16,129 +14,101 @@ The data in both files is made up.
 |---|---|
 | ![Phone, Day view](images/phone-day.png) | ![Phone, Week view](images/phone-week.png) |
 
-The screenshots are rendered from the `.dc.html` files with sample data.
+## Home screen, top to bottom
 
-## Layout, top to bottom
-
-1. **Focus.** Sized to its content so the calendar starts on the first screen.
-   - Date and time, then one sentence. The sentence gives judgement and the next action ("Standup at 10:00. Recovery is below your usual, so keep today easy.") and does not repeat the numbers.
-   - Four snapshot numbers: recovery, sleep score, HRV and resting HR. Each shows its change from baseline right next to its name.
-   - The next event, with a Join button for a call and a Map button for a located place. No free-time list: the gaps are visible on the timeline.
-2. **Calendar and tasks.** A Day/Week toggle.
-   - Day: a timeline from an hour before now to 22:00, with a red line for now. Events are blocks; the next event is a little brighter. Events under about 50 minutes take one line: title, start time and detail, cut with an ellipsis. A located place in the detail is underlined with dots and opens Apple Maps. Timed tasks (`⏰ HH:MM`) are reminders, drawn as dashed pills at their time in a lane to the right of the events.
-   - Tapping an event (or an all-day bar) opens the event panel, a dialog like Settings' ones: title, "Mon 9 Nov · 22:00–22:30", location and notes, with Delete on the left and Close and Edit on the right. Edit swaps in a form with Title, Starts, Ends (one above the other), Location and Notes; Save and Cancel. Delete asks once, in the red-bordered dialog. A repeating event or one on a read-only calendar opens with a note saying why, and only Close.
-   - All-day events sit in a row above the Day timeline, one slim bar each in their calendar's colour with "All day" on the right, never on the timeline itself. In the Week view they are hollow squares in their calendar's colour at the top of each day they cover; on the phone they head the day's agenda as "All day".
-   - "Calendar synced 09:10" sits beside the heading once a calendar is connected, in orange when it is over 15 minutes old or an account needs attention in Settings.
-   - Week: a rolling week from today. On desktop it has seven columns, with dated tasks at the top of each column. On the phone it is a strip of tappable days, then the agenda for the chosen day. Reminders have hollow markers and events have filled ones.
-   - The capture box, under the heading: one line for events and reminders. As you type it highlights the time (and a "with Sam" or "at Dishoom"), shows Event or Reminder with the reason, and a preview line with the title, the day and time, and where it will go. For an event at a place, a line under it shows the place it was found as, with a pin, its address and "1 of 5" to step to the next match; a place that isn't found is saved as typed. A switch overrides the kind until the box is cleared. Return adds it; the line just added shows under the box with Undo. `N` focuses it on desktop. On the phone the switch sits under the text with an Add button. An event takes its calendar's colour (border, highlight, icon), and the preview line has a calendar button that cycles through writable calendars; its tooltip says why that one was chosen ("Physio is usually on Fitness."). While it saves, the event is already on the timeline with a stronger fill, a ring and "Saving to iCloud…". Until a calendar is connected, Event is off and everything becomes a reminder in the inbox.
-   - Task list, grouped into Overdue, Today, This week and Someday. It is a side column on desktop and its own section on the phone.
-3. **Health trends.** A 2W/1M/3M/1Y range switch, with the date range shown once next to the heading, then "Synced 14:02" (the newest strap sample). Past two hours it reads "Synced 5h ago" in orange; on the phone it takes its own line.
+1. **Focus.** Date, time and one sentence that judges and names the next action without
+   repeating numbers. Recovery, sleep score, HRV and resting HR with their change. The next event,
+   with Join for a call and Map for a located place. A gear opens Settings.
+2. **Calendar and tasks.** Day/Week toggle; "Calendar synced 09:10" (orange past 15 min or on an
+   account error).
+   - **Day:** a timeline from an hour before now to 22:00 with a red now line. Short events take
+     one line. Overlapping events sit side by side. Timed reminders (`⏰`) are dashed pills in a
+     lane to the right. All-day events are slim bars in a row above the timeline. Tapping an event
+     opens the event panel (view, Edit, Delete with one confirm); repeating and read-only events
+     show why they can't be changed.
+   - **Week:** desktop has seven columns with dated tasks on top; the phone has a day strip and
+     that day's agenda. Events are filled markers, reminders hollow, all-day events hollow
+     squares.
+   - **Capture box** under the heading: highlights the time, person and place as you type, shows
+     Event or Reminder with the reason and a preview line (title, when, calendar button). A place
+     line shows the match with "1 of 5". Return adds; the added line has Undo; `N` focuses it. A
+     saving event is already on the timeline with a ring and "Saving to iCloud…".
+   - **Tasks:** Overdue, Today, This week, Later, Someday; a side column on desktop, its own
+     section on the phone.
+3. **Health trends.** 2W/1M/3M/1Y; "Synced 14:02" and the strap's battery, orange past two hours.
 
 ## One home per item
 
-- Anything with a time today lives on the timeline only.
-- Anything without a time lives in the task list only. All-day events are not tasks: they have their own row above the Day timeline.
-- Overdue items appear in the task list, plus at most one mention in the sentence.
-- The week view shows dated tasks as hollow markers that cannot be ticked. Ticking happens in the task list.
+- A time today → the timeline only. No time → the task list only. All-day events are not tasks.
+- Overdue items: the task list, plus at most one mention in the sentence.
+- Week shows dated tasks as hollow markers you can't tick; ticking is in the task list.
 
 ## Health numbers
 
-- **Time basis.** Snapshot metrics (recovery, HRV, resting HR, sleep, breathing rate, skin temperature) show this morning's value. Cumulative metrics (strain, steps, zone 2+) show today's running total, with yesterday's completed total beside the change ("+4% · 9,840 yesterday"). Today's partial totals never feed a comparison or the chart's rolling line.
-- **Change.** The 7-day mean against a baseline: the 60 days before those 7. It is shown as a percentage, except skin temperature, which is shown in °C because a percentage of a temperature means nothing. The range switch changes only the chart, never the number. The focus row and the Health section read the same value.
-- **Colour of the change.** Green when it is good for you and red when it is bad. Up is good for recovery, HRV, sleep score, time asleep, steps and zone 2+, and down is good for resting HR. It is grey when the change is under half a standard deviation of the baseline, so normal day-to-day noise stays grey. It is always grey for strain, breathing rate and skin temperature.
-- **Charts.** Each metric has a fixed y-range of baseline ± 3 SD, so a small drift looks small. A shaded band shows the normal range (baseline ± 1 SD). The line is the 7-day rolling mean and each day is a faint dot. 1Y shows weekly means. Every chart ends in a solid dot at today's value.
-- **Order.** Heart (recovery, HRV, resting HR), sleep (sleep score, time asleep), activity (strain, steps, zone 2+), vitals (breathing rate, skin temperature). Groups are separated by extra space, not labels.
-
-## Look
-
-Dark mode only for now (`color-scheme: dark`). Colours are Apple's dark-mode system colours.
-
-**Neutrals**
-
-| Token | Hex | Use |
-|---|---|---|
-| background | `#0C0C0E` | page |
-| text | `#F5F5F7` | primary text |
-| text-2 | `#A1A1A6` | labels, past event titles |
-| text-3 | `#8E8E93` | dimmest text allowed (about 6:1 on the background) |
-| fill | `#1C1C1E` | segmented control track, capture box, buttons |
-| line-2 | `#2C2C2E` | dividers and hour lines |
-| line-3 | `#3A3A3C` | button outlines, reminder guide lines |
-| control | `#636366` | selected segment, checkbox rings, reminder outlines; never text |
-
-Past items are dimmed by switching to text-2 and text-3 and lowering the fill alpha, never with opacity.
-
-**Status.** These colours carry meaning and are never used for categories.
-
-| Token | Hex | Use |
-|---|---|---|
-| good | `#30D158` | recovery 67 to 100, good change |
-| caution | `#FFD60A` | recovery 34 to 66 |
-| bad | `#FF453A` | recovery 0 to 33, bad change |
-| warn | `#FF9F0A` | overdue tasks |
-| now | `#FF453A` | the current-time line (same as Apple Calendar) |
-
-Recovery is coloured by band only in the focus row, and its number is always shown next to the colour. The sentence is plain text with no colour.
-
-**Calendar categories.** None of these hues are status colours.
-
-| Token | Hex | Use |
-|---|---|---|
-| work | `#0A84FF` | work events |
-| fitness | `#40C8E0` | gym, runs, physio |
-| personal | `#BF5AF2` | social and personal events |
-| relationships | `#FF375F` | dates and time with a partner |
-| family | `#5E5CE6` | family events |
-| focus | `#8E8E93` | focus blocks |
-
-**Health categories.** One line colour per group, the way Apple Health does it.
-
-| Token | Hex | Metrics |
-|---|---|---|
-| heart | `#FF7EB6` | recovery, HRV, resting HR |
-| sleep | `#7D7AFF` | sleep score, time asleep |
-| activity | `#64D2FF` | strain, steps, zone 2+ |
-| vitals | `#AC8E68` | breathing rate, skin temperature |
-
-**Controls**
-
-- Segmented controls: `#1C1C1E` track, `#636366` selected segment with white text.
-- Checkboxes: 1.5 px `#636366` rings that fill when done. A done item always shows a filled ring, not only a strike-through.
-- Touch targets are at least 44 px on the phone. Rows in the task list are the hit area.
-
-**Type and formats**
-
-- System font (SF Pro on Apple). Weight 200 only at 48 px and above, 300 for 24 to 40 px. Tabular figures throughout.
-- Secondary sizes: 11, 13, 15 and 17 px.
-- Day-month dates ("3 Nov"), 24-hour times, durations as "7h 12m", lateness as "3d late".
-- No cards or boxes on the main sections. Hairline dividers and spacing do the grouping. No explanatory labels.
-
-## Calendar capture and Settings
-
-The capture box, Settings and Settings › Calendars are on a second canvas:
-https://claude.ai/artifact/YNnwtKHE7AAzjLswS4JnSc. How they work is in
-[settings.md](../settings.md) and [calendar.md](../calendar.md).
+- **Time basis:** snapshot metrics show this morning's value; cumulative ones (strain, steps,
+  zone 2+) show today so far with yesterday's total beside the change. Partial days never feed a
+  comparison.
+- **Change:** the 7-day mean against the 60 days before, as a percentage (skin temperature in
+  °C). The range switch changes only the chart.
+- **Colour:** green good, red bad, grey under half a standard deviation. Up is good for recovery,
+  HRV, sleep, steps and zone 2+; down for resting HR; strain, breathing and skin temperature are
+  always grey.
+- **Charts:** fixed y-range of baseline ± 3 SD, a band at ± 1 SD, the 7-day rolling mean, faint
+  daily dots, weekly means for 1Y, a solid dot at today.
+- **Order:** heart, sleep, activity, vitals, separated by space, not labels.
 
 ## Activity page
 
-Workouts and walks over a week, a month or three months, at `#activity` from the Health
-heading. Design canvas: https://claude.ai/artifact/Dm3mFqJPttBWpS9VxeYPUD
+`#activity`, from the Health heading. Week lists each day's sessions, Month is a calendar with a
+chip per session, 3M is active minutes per week. A day, week or workout opens beside the list
+(below it on the phone). Workouts are activity cyan, walks teal `#66D4CF`; an unsure workout has a
+dashed outline and `?`, and only its detail asks "What was this?" ("It was lifting" or "Not a
+workout"; others have "Not right?"). Dismissed ones stay greyed with Undo. The detail shows HR
+every 15 s; for lifting each set is a band in its exercise's colour (paler for warm-ups).
 
-- The same tokens as the home screen. Workouts are the activity cyan `#64D2FF`, walks a teal
-  `#66D4CF`. A workout the strap isn't sure of has a dashed outline and a question mark.
-- Week lists each day's sessions; Month is a calendar with a chip per session; 3M is active minutes
-  per week. A day, week or workout opens beside the list, below it on the phone.
-- In a workout's detail, an unsure one asks "What was this?": "It was lifting" or "Not a workout".
-  Any other has "Not right?". The day list only marks them. A dismissed one stays in the list,
-  greyed, and its detail has Undo.
-- A workout shows its heart rate every 15 seconds. For lifting, each matched set is a band in its
-  exercise's colour (paler for warm-ups), with the sets listed by exercise.
+## Look
+
+Dark mode only (`color-scheme: dark`), Apple's dark system colours. Past items dim by colour and
+fill alpha, never opacity. No cards on the main sections: hairlines and space do the grouping.
+No explanatory labels.
+
+| Neutral | Hex | Use |
+|---|---|---|
+| background | `#0C0C0E` | page |
+| text | `#F5F5F7` | primary text |
+| text-2 | `#A1A1A6` | labels, past titles |
+| text-3 | `#8E8E93` | dimmest text allowed |
+| fill | `#1C1C1E` | segmented track, capture box, buttons |
+| line-2 | `#2C2C2E` | dividers, hour lines |
+| line-3 | `#3A3A3C` | button outlines, reminder guides |
+| control | `#636366` | selected segment, checkbox rings; never text |
+
+| Status (never a category) | Hex | Use |
+|---|---|---|
+| good | `#30D158` | recovery 67–100, good change |
+| caution | `#FFD60A` | recovery 34–66 |
+| bad | `#FF453A` | recovery 0–33, bad change, the now line |
+| warn | `#FF9F0A` | overdue, stale sync |
+
+| Calendar category | Hex | | Health group | Hex |
+|---|---|---|---|---|
+| work | `#0A84FF` | | heart | `#FF7EB6` |
+| fitness | `#40C8E0` | | sleep | `#7D7AFF` |
+| personal | `#BF5AF2` | | activity | `#64D2FF` |
+| relationships | `#FF375F` | | vitals | `#AC8E68` |
+| family | `#5E5CE6` | | | |
+| focus | `#8E8E93` | | | |
+
+Recovery's band colour shows only in the focus row, always beside its number. The sentence has no
+colour.
+
+**Controls:** segmented controls on `fill` with a `control` selected segment; checkboxes are
+1.5 px `control` rings that fill when done; touch targets 44 px on the phone; task rows are the
+hit area.
+
+**Type:** the system font, tabular figures. Weight 200 only at 48 px+, 300 for 24–40 px. Sizes 11,
+13, 15, 17. Formats: "3 Nov", 24-hour times, "7h 12m", "3d late".
 
 ## Not done yet
 
-- Sorting health rows so that metrics outside their normal band come first.
-- A strain target for the day, based on recovery, in place of strain so far.
-
-## Files
-
-These are Claude Design components (`.dc.html`). Each renders on the canvas and has the layout and the sample data in one file, so they are a reference for building the real UI rather than code to ship.
+Health rows outside their band first; a strain target from recovery; light mode.
