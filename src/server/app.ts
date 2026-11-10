@@ -1,13 +1,12 @@
-// The HTTP API. Each area lives in its own file under routes/; this file only wires them up.
+// The HTTP app: the web app's files, /healthz, and the v1 services behind sign-in. Each service
+// lives in its own file under api/; this file only wires them up.
 
 import { Hono } from "hono";
-import { BATTERY_LOOKBACK_MS, latestBattery } from "../health/battery";
 import { DailySummary } from "../health/daily-summary";
 import { DerivedStore } from "../health/derived-store";
 import { RawStore } from "../health/raw-store";
 import { type CalendarSource, noCalendar } from "../home/calendar";
-import { HealthHistory } from "../home/health-history";
-import type { HomeDeps } from "../home/home";
+import { storeHomeDeps } from "../home/home";
 import type { DeviceMatcher } from "../settings/devices";
 import type { SetupCode } from "../settings/setup-code";
 import { TaskStore } from "../vault/task-store";
@@ -15,13 +14,6 @@ import { Vault } from "../vault/vault";
 import type { ActivityDeps } from "./api/activity";
 import { type AuthEnv, bearerAuth } from "./auth";
 import type { Config } from "./config";
-import { healthRoutes } from "./routes/health";
-import { homeRoutes } from "./routes/home";
-import { journalRoutes } from "./routes/journal";
-import { messageRoutes } from "./routes/messages";
-import { sampleRoutes } from "./routes/samples";
-import { taskRoutes } from "./routes/tasks";
-import { todayRoutes } from "./routes/today";
 import { type SettingsDeps, v1Services } from "./routes/v1";
 import { v1Transport } from "./routes/v1-transport";
 import { webRoutes } from "./routes/web";
@@ -49,37 +41,28 @@ export interface AppDeps {
 export function createApp(config: Config, deps: AppDeps): Hono<AuthEnv> {
   const vault = deps.vault ?? new Vault(config.vaultPath, config.timeZone);
   const general = deps.settings?.general;
-  const envInbox = deps.settings?.envChange.tasksInbox;
-  // The inbox in Settings applies to the next new task, unless .env still sets it.
-  const tasks = new TaskStore(
-    vault,
-    general ? () => envInbox ?? general.get().tasksInbox : config.tasksInbox,
-  );
+  // The inbox in Settings applies to the next new task.
+  const tasks = new TaskStore(vault, general ? () => general.get().tasksInbox : config.tasksInbox);
   const { raw, derived, activity } = healthStores(config, deps, vault);
-  const home = homeDeps(config, deps, tasks, raw, derived);
+  const home = storeHomeDeps({
+    tasks,
+    raw,
+    derived,
+    calendar: deps.calendar ?? noCalendar,
+    timeZone: config.timeZone,
+  });
 
   const tailnet = deps.tailnet ?? (() => config.tailnet ?? null);
-  const api = new Hono<AuthEnv>();
-  api.use("*", bearerAuth(deps.devices, tailnet, deps.setupCode));
-  api.route("/ingest/journal", journalRoutes(vault));
-  api.route("/ingest/messages", messageRoutes(vault));
-  api.route("/ingest/samples", sampleRoutes(raw, deps.onSamples));
-  api.route("/today", todayRoutes(vault, config));
-  api.route("/health", healthRoutes(vault, config));
-  api.route("/tasks", taskRoutes(tasks, config));
-  api.route("/home", homeRoutes(home, deps.now));
-
   const app = new Hono<AuthEnv>();
   app.get("/healthz", (c) => c.json({ ok: true }));
-  app.route("/api", api);
   const v1 = v1Transport(
     v1Services(vault, tasks, raw, home, activity, deps.now, deps.onSamples, deps.settings),
   );
-  const modern = new Hono<AuthEnv>();
-  modern.use("*", bearerAuth(deps.devices, tailnet, deps.setupCode));
-  modern.route("/", v1);
+  const api = new Hono<AuthEnv>();
+  api.use("*", bearerAuth(deps.devices, tailnet, deps.setupCode));
+  api.route("/", v1);
   app.route("/", webRoutes());
-  app.route("/", modern);
+  app.route("/", api);
   app.notFound((c) => c.json({ error: "not found" }, 404));
   app.onError((err, c) => {
     console.error(err);
@@ -102,22 +85,4 @@ function healthStores(config: Config, deps: AppDeps, vault: Vault) {
     recompute: deps.recompute ?? ((date: string) => summary.run(date)),
   };
   return { raw, derived, activity };
-}
-
-function homeDeps(
-  config: Config,
-  deps: AppDeps,
-  tasks: TaskStore,
-  raw: RawStore,
-  derived: DerivedStore,
-): HomeDeps {
-  return {
-    tasks,
-    health: new HealthHistory(derived),
-    calendar: deps.calendar ?? noCalendar,
-    sync: () => raw.readSync(),
-    battery: async (now) =>
-      latestBattery(await raw.readRange("battery", now - BATTERY_LOOKBACK_MS, now + 1)),
-    timeZone: config.timeZone,
-  };
 }

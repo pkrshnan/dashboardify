@@ -16,7 +16,7 @@ export interface TailnetAuth {
 export const LOGIN_HEADER = "tailscale-user-login";
 
 /**
- * TAILSCALE_PROXY (an IP, or "gateway") and TAILNET_USERS (comma-separated logins). Both are
+ * Settings' tailnet proxy (an IP, or "gateway") and allowed logins (comma-separated). Both are
  * needed; without them only tokens work.
  */
 export function parseTailnet(

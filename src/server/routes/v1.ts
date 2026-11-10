@@ -19,7 +19,7 @@ import { VoiceService as VoiceSchema } from "../../gen/dashboardify/v1/voice_pb"
 import type { RawStore } from "../../health/raw-store";
 import type { HomeDeps } from "../../home/home";
 import type { PlaceSearch } from "../../places/place";
-import type { GeneralSettings, SettingsChange } from "../../settings/core";
+import type { GeneralSettings } from "../../settings/core";
 import type { DeviceStore } from "../../settings/devices";
 import type { TaskStore } from "../../vault/task-store";
 import type { Vault } from "../../vault/vault";
@@ -47,9 +47,6 @@ import { VoiceService } from "../api/voice";
 export interface SettingsDeps {
   general: GeneralSettings;
   devices: DeviceStore;
-  /** The environment's values and the variables that set them, which win over Settings. */
-  envChange: SettingsChange;
-  envNames: string[];
   /**
    * Calendar accounts, and how to reach their server (the fake one in tests). With the cache
    * and the sync loop, events can be read and written too.
@@ -122,9 +119,9 @@ export function v1Services(
 }
 
 function settingsServices(settings: SettingsDeps, now: () => Date): ServiceRegistration[] {
-  const { general, devices, envChange, envNames, calendars, places } = settings;
+  const { general, devices, calendars, places } = settings;
   return [
-    { schema: SettingsSchema, implementation: new SettingsService(general, envChange, envNames) },
+    { schema: SettingsSchema, implementation: new SettingsService(general) },
     { schema: DeviceSchema, implementation: new DevicesService(devices, now) },
     ...(places
       ? [{ schema: PlaceSchema, implementation: new PlacesService(places, general) }]

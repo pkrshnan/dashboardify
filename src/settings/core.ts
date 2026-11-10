@@ -1,5 +1,5 @@
-// The core settings: one row of values that used to live in .env (time zone, tasks inbox,
-// tailnet sign-in), and where place searches look first. GeneralSettings reads it through a cache that reloads when the database
+// The core settings: one row with the time zone, tasks inbox, tailnet sign-in and where place
+// searches look first. GeneralSettings reads it through a cache that reloads when the database
 // changes, so a write from the CLI or the API is seen on the next request.
 
 import type { Place } from "../places/place";
@@ -109,7 +109,7 @@ export class GeneralSettings {
   }
 }
 
-/** Throws with where the bad value came from, e.g. "TZ_NAME in .env". */
+/** Throws with where the bad value came from, e.g. "Settings time zone". */
 export function checkTimeZone(timeZone: string, source: string): void {
   try {
     new Intl.DateTimeFormat("en-US", { timeZone });

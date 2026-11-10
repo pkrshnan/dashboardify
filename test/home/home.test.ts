@@ -3,29 +3,20 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DerivedStore } from "../../src/health/derived-store";
+import { RawStore } from "../../src/health/raw-store";
+import { type CalendarSource, noCalendar } from "../../src/home/calendar";
+import { type HomeDeps, homeView, storeHomeDeps } from "../../src/home/home";
 import type { HomeView } from "../../src/home/types";
-import { createApp } from "../../src/server/app";
-import type { Config } from "../../src/server/config";
-import { tokenDevices } from "./devices";
+import { TaskStore } from "../../src/vault/task-store";
+import { Vault } from "../../src/vault/vault";
 
-const TOKEN = "test-token-0123456789";
 const TZ = "Europe/London";
 let dir: string;
-let config: Config;
 
 beforeEach(async () => {
   dir = await mkdtemp(join(tmpdir(), "home-"));
-  config = {
-    vaultPath: join(dir, "vault"),
-    port: 0,
-    timeZone: TZ,
-    healthRawPath: join(dir, "raw"),
-    healthDerivedPath: join(dir, "derived"),
-    tasksInbox: "Inbox.md",
-    dataPath: join(dir, "data"),
-  };
   await Bun.write(
-    join(config.vaultPath, "Inbox.md"),
+    join(dir, "vault", "Inbox.md"),
     "- [ ] Renew lease 📅 2026-10-31\n- [ ] Call Mum ⏰ 18:30 📅 2026-11-03\n",
   );
 });
@@ -34,20 +25,22 @@ afterEach(() => rm(dir, { recursive: true, force: true }));
 const NOW = new Date("2026-11-03T09:12:00Z");
 const ninePastNine = () => NOW;
 
-async function getHome(app: ReturnType<typeof createApp>): Promise<HomeView> {
-  const res = await app.request("/api/home", { headers: { authorization: `Bearer ${TOKEN}` } });
-  expect(res.status).toBe(200);
-  return (await res.json()) as HomeView;
+/** The home screen's sources over this test's vault and stores. */
+function deps(calendar: CalendarSource = noCalendar): HomeDeps {
+  return storeHomeDeps({
+    tasks: new TaskStore(new Vault(join(dir, "vault"), TZ), "Inbox.md"),
+    raw: new RawStore(join(dir, "raw")),
+    derived: new DerivedStore(join(dir, "derived")),
+    calendar,
+    timeZone: TZ,
+  });
 }
 
-describe("GET /api/home", () => {
-  test("needs a token", async () => {
-    const app = createApp(config, { devices: tokenDevices({ mac: TOKEN }), now: ninePastNine });
-    expect((await app.request("/api/home")).status).toBe(401);
-  });
+const getHome = (from: HomeDeps): Promise<HomeView> => homeView(from, ninePastNine());
 
+describe("homeView", () => {
   test("gathers the sentence, next event, days, tasks and health", async () => {
-    const derived = new DerivedStore(config.healthDerivedPath);
+    const derived = new DerivedStore(join(dir, "derived"));
     for (let back = 70; back >= 0; back--) {
       const date = Temporal.PlainDate.from("2026-11-03").subtract({ days: back }).toString();
       const recent = back < 7;
@@ -68,9 +61,7 @@ describe("GET /api/home", () => {
           },
         ]),
     };
-    const view = await getHome(
-      createApp(config, { devices: tokenDevices({ mac: TOKEN }), now: ninePastNine, calendar }),
-    );
+    const view = await getHome(deps(calendar));
 
     expect(view.date).toBe("2026-11-03");
     expect(view.sentence).toBe(
@@ -107,31 +98,19 @@ describe("GET /api/home", () => {
   });
 
   test("works with no health data and no calendar", async () => {
-    const view = await getHome(
-      createApp(config, { devices: tokenDevices({ mac: TOKEN }), now: ninePastNine }),
-    );
+    const view = await getHome(deps());
     expect(view.next).toBeNull();
     expect(view.health.every((m) => m.value === null)).toBe(true);
     expect(view.days).toHaveLength(7);
   });
 
   test("picks up a rewritten day without a restart", async () => {
-    const app = createApp(config, { devices: tokenDevices({ mac: TOKEN }), now: ninePastNine });
-    const derived = new DerivedStore(config.healthDerivedPath);
+    const home = deps();
+    const derived = new DerivedStore(join(dir, "derived"));
     await derived.write("days", "2026-11-03", { recovery_pct: 50 });
-    expect((await getHome(app)).health[0]?.value).toBe("50");
+    expect((await getHome(home)).health[0]?.value).toBe("50");
     await Bun.sleep(5);
     await derived.write("days", "2026-11-03", { recovery_pct: 70 });
-    expect((await getHome(app)).health[0]?.value).toBe("70");
-  });
-});
-
-describe("web files", () => {
-  test("serves the manifest's icons without a token", async () => {
-    const res = await createApp(config, { devices: tokenDevices({ mac: TOKEN }) }).request(
-      "/icon.svg",
-    );
-    expect(res.status).toBe(200);
-    expect(res.headers.get("content-type")).toBe("image/svg+xml");
+    expect((await getHome(home)).health[0]?.value).toBe("70");
   });
 });

@@ -120,9 +120,8 @@ default photon.komoot.io), cached for an hour; `503` if unreachable.
 | GET | `/v1/devices` | List, with `current` on the caller |
 | DELETE | `/v1/devices/{id}` | Revoke at once |
 
-A time zone change applies after a restart (`restartRequired`). `envOverrides` lists fields still
-set in `.env`; changing one is `400`. A lost token can't be shown again: add a device and revoke
-the old one.
+A time zone change applies after a restart (`restartRequired`). A lost token can't be shown again:
+add a device and revoke the old one.
 
 ## Calendar accounts
 

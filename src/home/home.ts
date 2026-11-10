@@ -1,11 +1,13 @@
 // Gathers everything the home screen shows into one HomeView.
 
-import type { StrapBattery } from "../health/battery";
+import { BATTERY_LOOKBACK_MS, latestBattery, type StrapBattery } from "../health/battery";
+import type { DerivedStore } from "../health/derived-store";
+import type { RawStore } from "../health/raw-store";
 import type { HealthSync } from "../health/sync";
 import type { TaskStore } from "../vault/task-store";
 import { buildDays, groupTasks, nextEvent, WEEK_DAYS } from "./agenda";
 import type { CalendarSource, CalendarStatus } from "./calendar";
-import type { HealthHistory } from "./health-history";
+import { HealthHistory } from "./health-history";
 import { daySentence } from "./sentence";
 import type { CalendarSyncView, HomeView } from "./types";
 
@@ -18,6 +20,26 @@ export interface HomeDeps {
   /** The strap's latest battery report. */
   battery: (now: number) => Promise<StrapBattery | null>;
   timeZone: string;
+}
+
+/** The home screen's sources, read from the server's stores. */
+export function storeHomeDeps(stores: {
+  tasks: TaskStore;
+  raw: RawStore;
+  derived: DerivedStore;
+  calendar: CalendarSource;
+  timeZone: string;
+}): HomeDeps {
+  const { tasks, raw, derived, calendar, timeZone } = stores;
+  return {
+    tasks,
+    health: new HealthHistory(derived),
+    calendar,
+    sync: () => raw.readSync(),
+    battery: async (now) =>
+      latestBattery(await raw.readRange("battery", now - BATTERY_LOOKBACK_MS, now + 1)),
+    timeZone,
+  };
 }
 
 function calendarSyncView(status: CalendarStatus | undefined): CalendarSyncView | null {

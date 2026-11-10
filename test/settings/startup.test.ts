@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadStartup } from "../../src/server/config";
 import { GeneralSettings } from "../../src/settings/core";
-import { type Opened, openSettings } from "../../src/settings/startup";
+import { configFromSettings, type Opened, openSettings } from "../../src/settings/startup";
 import { SettingsStore } from "../../src/settings/store";
 
 let dir: string;
@@ -40,35 +40,28 @@ describe("openSettings", () => {
     expect(config.tailnet).toBeNull();
   });
 
-  test("imports TZ_NAME and TASKS_INBOX once; later starts read them from Settings", async () => {
-    await start({ TZ_NAME: "Europe/London", TASKS_INBOX: "Tasks.md" });
-    log = [];
+  test("the time zone and inbox come from Settings", async () => {
+    const first = await start();
+    first.general.update({ timeZone: "Europe/London", tasksInbox: "Tasks.md" });
 
-    const { config, overrides } = await start();
+    const { config } = await start();
 
     expect(config).toMatchObject({ timeZone: "Europe/London", tasksInbox: "Tasks.md" });
-    expect(overrides).toEqual([]);
-    expect(log.filter((line) => line.startsWith("Imported"))).toEqual([]);
   });
 
-  test("a variable still in the environment wins, and warns once", async () => {
+  test("a retired variable in the environment is ignored, with a warning", async () => {
     const first = await start();
     first.general.update({ timeZone: "Europe/London" });
     log = [];
 
-    const { config, overrides } = await start({ TZ_NAME: "Asia/Tokyo" });
+    const { config, devices } = await start({
+      TZ_NAME: "Asia/Tokyo",
+      INGEST_TOKENS: "mac:abcdefghijklmnopqrstuvwxyz",
+    });
 
-    expect(config.timeZone).toBe("Asia/Tokyo");
-    expect(overrides).toEqual(["TZ_NAME"]);
-    expect(log.filter((line) => line.includes("overrides Settings"))).toEqual([
-      "TZ_NAME is set in the environment and overrides Settings. Remove it from .env.",
-    ]);
-  });
-
-  test("a bad time zone in the environment stops startup and says where it came from", async () => {
-    await expect(start({ TZ_NAME: "Mars/Olympus" })).rejects.toThrow(
-      'TZ_NAME in the environment: "Mars/Olympus" is not a time zone',
-    );
+    expect(config.timeZone).toBe("Europe/London");
+    expect(devices.list()).toEqual([]);
+    expect(log.filter((line) => line.includes("no longer read"))).toHaveLength(2);
   });
 
   test("a bad time zone in Settings stops startup too", async () => {
@@ -104,7 +97,9 @@ describe("openSettings", () => {
     fresh.devices.add("Mac");
     log = [];
     const later = await start();
-    const tailnet = await start({ TAILSCALE_PROXY: "100.64.0.1", TAILNET_USERS: "you@github" });
+    fresh.devices.revoke(fresh.devices.list()[0]?.id ?? "");
+    fresh.general.update({ tailnetProxy: "100.64.0.1", tailnetLogins: ["you@github"] });
+    const tailnet = await start();
 
     expect(printed).toMatch(
       /^No devices yet\. Open http:\/\/localhost:8787 and enter setup code [2-9A-Z]{4}-[2-9A-Z]{4} \(valid 15 minutes\)\.$/,
@@ -113,5 +108,24 @@ describe("openSettings", () => {
     expect(log.some((line) => line.includes("setup code"))).toBe(false);
     expect(later.setupCode.active()).toBe(false);
     expect(tailnet.setupCode.active()).toBe(false);
+  });
+});
+
+describe("configFromSettings", () => {
+  const startup = () =>
+    loadStartup({ VAULT_PATH: join(dir, "vault"), DATA_PATH: join(dir, "data") });
+
+  test("reads the time zone the server uses from Settings", async () => {
+    const server = await start();
+    server.general.update({ timeZone: "Asia/Tokyo" });
+
+    expect((await configFromSettings(startup())).timeZone).toBe("Asia/Tokyo");
+  });
+
+  test("uses the defaults before the first start, without creating anything", async () => {
+    const config = await configFromSettings(startup());
+
+    expect(config.tasksInbox).toBe("Inbox.md");
+    expect(await Bun.file(join(dir, "data", "secret.key")).exists()).toBe(false);
   });
 });

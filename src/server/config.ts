@@ -1,6 +1,5 @@
 import { dirname, join, resolve } from "node:path";
 import { checkTimeZone, type StoredSettings } from "../settings/core";
-import { withEnvOverrides } from "../settings/env-import";
 import { parseTailnet, type TailnetAuth } from "./tailnet";
 
 export interface Config {
@@ -27,7 +26,7 @@ export type Startup = Pick<
   "vaultPath" | "port" | "healthRawPath" | "healthDerivedPath" | "dataPath" | "keyFile"
 >;
 
-/** The settings in force: from settings.db, with any variable still in .env on top. */
+/** The settings the config is built from, as stored in settings.db. */
 export type InForce = Pick<
   StoredSettings,
   "timeZone" | "tasksInbox" | "tailnetProxy" | "tailnetLogins"
@@ -66,8 +65,5 @@ export function tailnetFrom(settings: InForce): TailnetAuth | null {
   return parseTailnet(settings.tailnetProxy, settings.tailnetLogins.join(","));
 }
 
-/** Config from the environment alone, as before Settings: for tests and the demo. */
-export function loadConfig(env: Record<string, string | undefined> = process.env): Config {
-  const defaults = { tasksInbox: "Inbox.md", tailnetLogins: [], updateTime: "" };
-  return buildConfig(loadStartup(env), withEnvOverrides(defaults, env).settings);
-}
+/** Settings before anything is stored: the server's own zone, Inbox.md, no tailnet sign-in. */
+export const DEFAULT_SETTINGS: InForce = { tasksInbox: "Inbox.md", tailnetLogins: [] };

@@ -28,88 +28,96 @@ beforeEach(async () => {
 afterEach(() => rm(dir, { recursive: true, force: true }));
 
 const post = (path: string, body: unknown, token = TOKEN) =>
-  app.request(`/api${path}`, {
+  app.request(path, {
     method: "POST",
     headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
     body: typeof body === "string" ? body : JSON.stringify(body),
   });
+const get = (path: string, token = TOKEN) =>
+  app.request(path, { headers: { authorization: `Bearer ${token}` } });
 const file = (rel: string) => readFile(join(dir, rel), "utf8");
+const JOURNAL = "/v1/days/2026-11-01/journalEntries";
 
 describe("auth", () => {
   test("rejects missing, wrong and differently-sized tokens", async () => {
-    expect((await post("/ingest/journal", { text: "hi" }, "nope")).status).toBe(401);
-    expect((await post("/ingest/journal", { text: "hi" }, `${TOKEN}x`)).status).toBe(401);
-    expect((await app.request("/api/today")).status).toBe(401);
+    expect((await get("/v1/days/2026-11-02", "nope")).status).toBe(401);
+    expect((await get("/v1/days/2026-11-02", `${TOKEN}x`)).status).toBe(401);
+    expect((await app.request("/v1/days/2026-11-02")).status).toBe(401);
   });
 
   test("accepts any configured device", async () => {
-    expect((await post("/ingest/journal", { text: "hi" }, "another-token-abcdefgh")).status).toBe(
-      201,
-    );
+    expect((await get("/v1/days/2026-11-02", "another-token-abcdefgh")).status).toBe(200);
   });
 
   test("healthz is public", async () => {
     expect((await app.request("/healthz")).status).toBe(200);
   });
+
+  test("the old /api routes are gone", async () => {
+    expect((await get("/api/home")).status).toBe(404);
+  });
 });
 
-describe("POST /api/ingest/journal", () => {
-  test("writes to the local day", async () => {
-    const res = await post("/ingest/journal", { text: "Long walk.", at: "2026-11-02T02:30:00Z" });
-    expect(res.status).toBe(201);
-    expect(await res.json()).toEqual({ path: "daily/2026/2026-11-01.md" });
+describe("journal entries", () => {
+  test("land on the local day", async () => {
+    const res = await post(JOURNAL, { text: "Long walk.", entryTime: "2026-11-02T02:30:00Z" });
+
+    expect(res.status).toBe(200);
     expect(await file("daily/2026/2026-11-01.md")).toContain("- 18:30 Long walk.");
   });
 
-  test("validates input", async () => {
-    expect((await post("/ingest/journal", { text: "  " })).status).toBe(400);
-    expect((await post("/ingest/journal", { text: "x", at: "yesterday" })).status).toBe(400);
-    expect((await post("/ingest/journal", { text: "x".repeat(20_001) })).status).toBe(400);
-    expect((await post("/ingest/journal", "{not json")).status).toBe(400);
+  test("validate input", async () => {
+    expect((await post(JOURNAL, { text: "  " })).status).toBe(400);
+    expect((await post(JOURNAL, { text: "x", entryTime: "2026-11-03T02:30:00Z" })).status).toBe(
+      400,
+    );
+    expect((await post(JOURNAL, { text: "x".repeat(20_001) })).status).toBe(400);
+    expect((await post(JOURNAL, "{not json")).status).toBe(400);
   });
 });
 
-describe("POST /api/ingest/messages", () => {
-  test("appends and reports duplicates", async () => {
-    const msg = {
-      id: "m1",
-      sender: "Sam",
-      text: "Dinner at 19:00",
-      received_at: "2026-11-02T20:05:00Z",
-    };
-    expect(await (await post("/ingest/messages", msg)).json()).toEqual({
-      path: "inbox/messages/2026-11-02.md",
-      duplicate: false,
-    });
-    const again = (await (await post("/ingest/messages", msg)).json()) as { duplicate: boolean };
-    expect(again.duplicate).toBe(true);
+describe("messages", () => {
+  test("append to the day's note and refuse a repeated id", async () => {
+    const msg = { sender: "Sam", text: "Dinner at 19:00", receiveTime: "2026-11-02T20:05:00Z" };
+
+    expect((await post("/v1/messages?messageId=m1", msg)).status).toBe(200);
+    expect((await post("/v1/messages?messageId=m1", msg)).status).toBe(409);
+    expect(await file("inbox/messages/2026-11-02.md")).toContain("**Sam**: Dinner at 19:00");
   });
 
-  test("validates input", async () => {
-    expect((await post("/ingest/messages", { text: "x" })).status).toBe(400);
-    expect((await post("/ingest/messages", { sender: "a" })).status).toBe(400);
-    expect(
-      (await post("/ingest/messages", { sender: "a", text: "x", received_at: 5 })).status,
-    ).toBe(400);
+  test("validate input", async () => {
+    expect((await post("/v1/messages", { text: "x" })).status).toBe(400);
+    expect((await post("/v1/messages", { sender: "a", text: "x", receiveTime: 5 })).status).toBe(
+      400,
+    );
   });
 });
 
-describe("GET /api/today", () => {
-  test("returns the daily note, or an empty shell", async () => {
+describe("days", () => {
+  test("return the daily note, or an empty one", async () => {
     await mkdir(join(dir, "daily/2026"), { recursive: true });
     await writeFile(join(dir, "daily/2026/2026-11-02.md"), "---\nsleep_h: 7.1\n---\n");
-    const auth = { headers: { authorization: `Bearer ${TOKEN}` } };
-    const found = (await (await app.request("/api/today?date=2026-11-02", auth)).json()) as {
+
+    const found = (await (await get("/v1/days/2026-11-02")).json()) as {
       frontmatter: Record<string, unknown>;
     };
+    const empty = await (await get("/v1/days/2026-11-03")).json();
+
     expect(found.frontmatter.sleep_h).toBe(7.1);
-    const empty = await (await app.request("/api/today?date=2026-11-03", auth)).json();
     expect(empty).toEqual({
-      date: "2026-11-03",
+      name: "days/2026-11-03",
       path: "daily/2026/2026-11-03.md",
       frontmatter: {},
-      body: null,
     });
-    expect((await app.request("/api/today?date=nope", auth)).status).toBe(400);
+    expect((await get("/v1/days/nope")).status).toBe(400);
+  });
+});
+
+describe("web files", () => {
+  test("serves the manifest's icons without a token", async () => {
+    const res = await app.request("/icon.svg");
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("image/svg+xml");
   });
 });

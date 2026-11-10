@@ -47,4 +47,5 @@ both opens every secret.
 ## Hosting
 
 The `Dockerfile` is built by the compose project in the private `pkrshnan/homeserver` repo, which
-holds the deployment configuration.
+holds the deployment configuration. The settings CLI is in the image:
+`docker compose exec dashboardify bun run settings devices add healthstrap`.

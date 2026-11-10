@@ -1,20 +1,21 @@
 // Opening Settings at startup, in the order docs/settings.md gives: load the key, open
-// settings.db and migrate, import .env once, apply variables still in the environment on top,
-// then build the Config the rest of the server uses.
+// settings.db and migrate, warn about retired .env variables, then build the Config the rest of
+// the server uses.
 
 import { join } from "node:path";
 import {
   buildConfig,
   type Config,
+  DEFAULT_SETTINGS,
   type InForce,
   type Startup,
   tailnetFrom,
 } from "../server/config";
 import type { TailnetAuth } from "../server/tailnet";
-import { GeneralSettings, type SettingsChange } from "./core";
+import { GeneralSettings } from "./core";
 import { DeviceStore } from "./devices";
-import { fromEnv, importEnvSettings, importEnvTokens, warnOverrides } from "./env-import";
 import { loadKey } from "./key";
+import { warnRetiredEnv } from "./retired-env";
 import { SecretBox } from "./secret-box";
 import { SetupCode } from "./setup-code";
 import { KeyMismatch, SettingsStore } from "./store";
@@ -28,9 +29,6 @@ export interface Opened {
   config: Config;
   /** Tailnet sign-in as Settings say now, for each request. */
   tailnet: () => TailnetAuth | null;
-  /** Variables still set in the environment, which win over Settings, and their values. */
-  overrides: string[];
-  envChange: SettingsChange;
   /** Issued only on a fresh install; inactive otherwise. */
   setupCode: SetupCode;
 }
@@ -44,13 +42,9 @@ export async function openSettings(
   const store = await openStore(startup, key);
   const devices = new DeviceStore(store);
   const general = new GeneralSettings(store);
-  importEnvTokens(store, devices, env.INGEST_TOKENS, log);
-  importEnvSettings(store, general, env, log);
+  warnRetiredEnv(env, log);
 
-  const { change, names: overrides } = fromEnv(env);
-  warnOverrides(overrides, log);
-  const inForce = (): InForce => ({ ...general.get(), ...change });
-  const config = buildConfig(startup, inForce());
+  const config = buildConfig(startup, general.get());
   const setupCode = new SetupCode();
   if (devices.list().length === 0 && !config.tailnet) {
     const code = setupCode.issue();
@@ -58,8 +52,26 @@ export async function openSettings(
       `No devices yet. Open http://localhost:${config.port} and enter setup code ${code} (valid 15 minutes).`,
     );
   }
-  const tailnet = liveTailnet(inForce);
-  return { store, devices, general, config, tailnet, overrides, envChange: change, setupCode };
+  const tailnet = liveTailnet(() => general.get());
+  return { store, devices, general, config, tailnet, setupCode };
+}
+
+/**
+ * The config the server runs with, for command-line tools such as summarize.ts: the time zone and
+ * inbox come from Settings, so a tool files data under the same days as the server. Before the
+ * first start there is no settings.db, and the defaults apply.
+ */
+export async function configFromSettings(startup: Startup): Promise<Config> {
+  if (!(await Bun.file(join(startup.dataPath, "settings.db")).exists())) {
+    return buildConfig(startup, DEFAULT_SETTINGS);
+  }
+  const key = await loadKey({ dataPath: startup.dataPath, keyFile: startup.keyFile });
+  const store = await openStore(startup, key);
+  try {
+    return buildConfig(startup, new GeneralSettings(store).get());
+  } finally {
+    store.close();
+  }
 }
 
 /** Opens settings.db, saying what to do if a rotate-key stopped before renaming the new key. */

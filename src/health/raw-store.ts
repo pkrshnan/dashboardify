@@ -8,7 +8,7 @@ import { dirname, join } from "node:path";
 import { Mutex } from "async-mutex";
 import { parquetReadObjects } from "hyparquet";
 import { parquetWriteBuffer } from "hyparquet-writer";
-import { ok, type Parsed } from "../server/validate";
+import { ok, type Parsed } from "../parsed";
 import {
   type Cell,
   type Column,

@@ -6,7 +6,7 @@
 
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { isObject } from "../server/validate";
+import { isObject } from "../parsed";
 
 /** How much each overnight signal counts toward recovery. Only their ratios matter. */
 export interface RecoveryWeights {
