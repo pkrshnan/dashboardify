@@ -1,7 +1,7 @@
 # Health: the rest
 
 Plan for the health numbers still missing: training load, calories, VO2max, fitness and
-biological age, and sleep stages. Status: H1–H5 done, H6–H11 planned; H11 waits for artboards. As each PR
+biological age, and sleep stages. Status: H1–H6 done, H7–H11 planned; H11 waits for artboards. As each PR
 lands, its section moves into [health-metrics.md](health-metrics.md). This file goes when the
 last one does.
 
@@ -27,11 +27,9 @@ Not goals: SpO2 from the raw `ppg` stream, runs with pace and route (roadmap #6)
 | Versions | Each PR that changes rows bumps `ALGO_VERSION`; rebuild with `summarize.ts` |
 | UI | Note and API first. Home rows, Activity calories and a sleep view wait for artboards (H11). |
 
-## Fitness age and biological age (`age.ts`)
+## Biological age (`age.ts`)
 
-- **Fitness age** (Nes 2013, HUNT): the age at which a healthy person of your sex has your VO2max.
-  Key: `fitness_age`.
-- **Biological age**: your age plus the years each factor adds or takes off. Each factor's hazard
+- Your age plus the years each factor adds or takes off. Each factor's hazard
   ratio for all-cause mortality comes from a published meta-analysis; a hazard ratio becomes years
   through the Gompertz law (adult mortality doubles about every 8 years, so
   `years = ln(HR) ÷ ln 2 × 8`). Factors, each over the last 30 days:
@@ -80,7 +78,7 @@ Light, deep and REM for each asleep epoch; awake stays as `sleep-epochs.ts` scor
 | H3 | Calories | Done; now in [health-metrics.md](health-metrics.md#calories-caloriests) |
 | H4 | Workout calories | Done; now in [health-metrics.md](health-metrics.md#calories-caloriests) |
 | H5 | VO2max | Done; now in [health-metrics.md](health-metrics.md#vo2max-vo2maxts) |
-| H6 | Fitness age | `age.ts`, Nes constants |
+| H6 | Fitness age | Done; now in [health-metrics.md](health-metrics.md#fitness-age-agets) |
 | H7 | Biological age | factors, hazard ratios, Gompertz years; per-factor columns |
 | H8 | Epoch features | per-epoch HR, RMSSD, breathing regularity, movement; pure, tested |
 | H9 | Sleep stages | HMM and Viterbi; `stages/`, `nights/` columns, note line |

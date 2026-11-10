@@ -145,7 +145,7 @@ describe("DailySummary", () => {
     expect(note?.body.indexOf("## Health")).toBeLessThan(note?.body.indexOf("## Journal") ?? 0);
 
     expect((await derived.read("nights", DATE))?.rhr_bpm).toBeCloseTo(52, 0);
-    expect((await derived.read("days", DATE))?.algo_version).toBe("9");
+    expect((await derived.read("days", DATE))?.algo_version).toBe("10");
     // No earlier days, so no training load yet.
     expect(note?.body).not.toContain("- Load");
     expect(note?.frontmatter.load_ratio).toBeUndefined();
@@ -210,7 +210,7 @@ describe("DailySummary", () => {
     expect((await derived.read("days", DATE))?.load_ratio).toBeCloseTo(ratio, 6);
   });
 
-  test("VO2max appears after the calories line with a measured max and two weeks of nights", async () => {
+  test("VO2max and fitness age appear after the calories line with a measured max and two weeks of nights", async () => {
     await putNight();
     await writeProfile("weight_kg: 75\nheight_cm: 180\nhr_max_measured: 205\n");
     // 13 stored nights at 58, then last night's 52: median 58 of 14.
@@ -224,9 +224,16 @@ describe("DailySummary", () => {
     const expected = (15.3 * 205) / 58;
     expect(result?.vo2max).toBeCloseTo(expected, 6);
     const note = await vault.readDaily(DATE);
+    // 54.1 is a sixteenth of the way from the men's 20s mean (54.4) to their 30s (49.1).
+    expect(result?.fitnessAge).toBe(26);
     expect(note?.frontmatter.vo2max).toBe(54);
-    expect(note?.body).toMatch(/- Calories [\d,]+ · [\d,]+ active\n- VO2max 54 \(estimate\)\n/);
-    expect((await derived.read("days", DATE))?.vo2max).toBe(Math.round(expected * 10) / 10);
+    expect(note?.frontmatter.fitness_age).toBe(26);
+    expect(note?.body).toMatch(
+      /- Calories [\d,]+ · [\d,]+ active\n- VO2max 54 \(estimate\) · fitness age 26\n/,
+    );
+    const row = await derived.read("days", DATE);
+    expect(row?.vo2max).toBe(Math.round(expected * 10) / 10);
+    expect(row?.fitness_age).toBe(26);
   });
 
   test("no VO2max with too few nights or only a predicted max", async () => {
@@ -246,7 +253,10 @@ describe("DailySummary", () => {
     const note = await vault.readDaily(DATE);
     expect(note?.body).not.toContain("- VO2max");
     expect(note?.frontmatter.vo2max).toBeUndefined();
-    expect((await derived.read("days", DATE))?.vo2max).toBeNull();
+    expect(note?.frontmatter.fitness_age).toBeUndefined();
+    const row = await derived.read("days", DATE);
+    expect(row?.vo2max).toBeNull();
+    expect(row?.fitness_age).toBeNull();
   });
 
   test("recovery appears once there are two weeks of nights", async () => {

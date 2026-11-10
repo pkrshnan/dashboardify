@@ -10,6 +10,7 @@ import type { Vault } from "../vault/vault";
 import { readReviews } from "../vault/workout-reviews";
 import type { DerivedRow, DerivedStore } from "./derived-store";
 import { type LiftingSet, liftingDay } from "./lifting";
+import { fitnessAge } from "./metrics/age";
 import { LOOKBACK_DAYS, type Load, type LoadDay, trainingLoad } from "./metrics/load";
 import {
   BASELINE_NIGHTS,
@@ -47,7 +48,7 @@ import { type DaySummary, frontmatter, healthBlock, syncLine } from "./render";
 import { counted, type ReviewedWorkout, reviewFor, reviewWorkouts } from "./reviews";
 
 /** Bump when a calculation changes, so old rows can be told apart and rebuilt. */
-export const ALGO_VERSION = "9";
+export const ALGO_VERSION = "10";
 
 /** How far either way to look for a night with resting HR when there is no recent one. */
 const NEAREST_NIGHT_DAYS = 7;
@@ -108,7 +109,7 @@ export class DailySummary {
       day,
       ...(await this.reviewed(date, day, { heartRate, steps, motion, sleep })),
       load: await this.trainingLoad(date, day),
-      vo2max: await this.vo2max(date, night, profile),
+      ...(await this.fitness(date, night, profile)),
       recovery: signals ? recovery(signals, history, params.recovery) : null,
       paramsVersion: params.version,
       baselineNights: history.filter((n) => n.lnRmssd !== null).length,
@@ -159,12 +160,15 @@ export class DailySummary {
     return trainingLoad([...past, { trimp: day.trimp, wornMin: day.wornMin }], today);
   }
 
-  /** VO2max on the last 30 nights' resting HR: the stored nights before, then last night's. */
-  private async vo2max(
+  /**
+   * VO2max on the last 30 nights' resting HR (the stored nights before, then last night's), and
+   * the fitness age it gives.
+   */
+  private async fitness(
     date: string,
     night: NightMetrics | null,
     profile: Profile,
-  ): Promise<number | null> {
+  ): Promise<Pick<DaySummary, "vo2max" | "fitnessAge">> {
     const start = Temporal.PlainDate.from(date);
     const restingHrs: (number | null)[] = [];
     for (let back = RESTING_NIGHTS - 1; back >= 1; back--) {
@@ -172,7 +176,8 @@ export class DailySummary {
       restingHrs.push(typeof row?.rhr_bpm === "number" ? row.rhr_bpm : null);
     }
     restingHrs.push(night?.restingHr ?? null);
-    return vo2max({ maxHrMeasured: profile.maxHrMeasured, sex: profile.sex, restingHrs });
+    const value = vo2max({ maxHrMeasured: profile.maxHrMeasured, sex: profile.sex, restingHrs });
+    return { vo2max: value, fitnessAge: fitnessAge(value, profile.sex) };
   }
 
   /** Midnight to midnight on `date`, or to now for today: calories are a running total. */
@@ -419,6 +424,7 @@ function dayRow(s: DaySummary): DerivedRow {
     kcal: roundOrNull(s.day.calories?.kcal),
     active_kcal: roundOrNull(s.day.calories?.activeKcal),
     vo2max: round(s.vo2max, 1),
+    fitness_age: s.fitnessAge,
     ...Object.fromEntries([0, 1, 2, 3, 4].map((i) => [`zone${i + 1}_min`, zones[i] ?? null])),
   };
 }

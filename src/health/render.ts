@@ -26,6 +26,8 @@ export interface DaySummary {
   load: Load;
   /** ml/kg/min; null without a measured max HR or enough nights. */
   vo2max: number | null;
+  /** Whole years; null without a VO2max. */
+  fitnessAge: number | null;
 }
 
 type Fields = Record<string, number | null | undefined>;
@@ -41,6 +43,7 @@ export function frontmatter(s: DaySummary): Record<string, number> {
     kcal: round(s.day.calories?.kcal, 0),
     active_kcal: round(s.day.calories?.activeKcal, 0),
     vo2max: round(s.vo2max, 0),
+    fitness_age: round(s.fitnessAge, 0),
     sleep_score: round(s.night?.sleep.score, 0),
     sleep_performance_pct: round(s.night?.sleep.sufficiency, 0),
     tst_min: round(s.night?.asleepMin, 0),
@@ -83,7 +86,7 @@ export function healthBlock(
         strainLine(s.day),
         loadLine(s.load),
         caloriesLine(s.day),
-        vo2maxLine(s.vo2max),
+        vo2maxLine(s.vo2max, s.fitnessAge),
         ...counted(s.workouts).map((w) => workoutLine(w, clock)),
         ...s.day.walks.map((w) => walkLine(w, clock)),
         s.lifting ? liftingLine(s.lifting, clock) : null,
@@ -148,9 +151,13 @@ function caloriesLine(day: DayMetrics): string | null {
   return `- Calories ${kcal(day.calories.kcal)} · ${kcal(day.calories.activeKcal)} active`;
 }
 
-/** "- VO2max 57 (estimate)". Its error is ±10–15%, so a decimal would claim too much. */
-function vo2maxLine(vo2max: number | null): string | null {
-  return vo2max === null ? null : `- VO2max ${Math.round(vo2max)} (estimate)`;
+/** "- VO2max 57 (estimate) · fitness age 27". Its error is ±10–15%, so no decimal. */
+function vo2maxLine(vo2max: number | null, fitnessAge: number | null): string | null {
+  if (vo2max === null) {
+    return null;
+  }
+  const age = fitnessAge === null ? "" : ` · fitness age ${fitnessAge}`;
+  return `- VO2max ${Math.round(vo2max)} (estimate)${age}`;
 }
 
 const KIND_NAMES: Record<Workout["kind"], string> = {

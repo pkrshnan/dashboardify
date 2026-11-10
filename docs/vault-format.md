@@ -27,6 +27,7 @@ load_ratio: 1.08
 kcal: 2640
 active_kcal: 610
 vo2max: 57
+fitness_age: 27
 sleep_score: 84
 tst_min: 432
 rhr_bpm: 52
@@ -48,7 +49,7 @@ workout_reviews:
 - Strain **11.4** · Zones 42 / 18 / 6 / 0 / 0 min
 - Load steady · 1.08 (7 d vs 28 d)
 - Calories 2,640 · 610 active
-- VO2max 57 (estimate)
+- VO2max 57 (estimate) · fitness age 27
 - Volleyball 20:30–21:15 · 45 min · 138 avg / 179 max · strain 8.3 · 410 kcal
 - Lifting log · 3 exercises · 12 sets · 4,650 lb · sets matched 18:02–19:05
 - Synced 07:58
@@ -79,7 +80,7 @@ workout_reviews:
   the last 28's and needs four weeks of days. Calories (`kcal`, `active_kcal`) need weight, height,
   birth date and sex in `profile.md`, and are a running total today; a workout line
   ends with its own. VO2max (`vo2max`, whole ml/kg/min) needs `hr_max_measured`, `sex` and 14 of
-  the last 30 nights. An unsure workout ends with `?` (`Lifting?`) until
+  the last 30 nights; fitness age (`fitness_age`, years) follows it. An unsure workout ends with `?` (`Lifting?`) until
   reviewed. "Synced" is on today only and turns into `**14h behind**` past two hours.
 - **Agenda** is today's events, rewritten after each calendar sync that changes them.
 - **Journal** entries are `- HH:MM text`, continuation lines indented two spaces.

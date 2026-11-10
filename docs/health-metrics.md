@@ -3,8 +3,8 @@
 How raw strap data becomes the numbers in the daily note. Code: `src/health/metrics/`, one file
 per idea; each constant has a comment citing its source. Longer explanations with worked
 examples: https://claude.ai/artifact/7nYauS8aMi84xLQfXFXxbu. Everything that compares you with
-"normal" uses your own history, never population averages; VO2max is the exception, since it is
-a comparison with other people by definition.
+"normal" uses your own history, never population averages; VO2max and fitness age are the
+exception, since they are comparisons with other people by definition.
 
 ```mermaid
 flowchart LR
@@ -17,7 +17,7 @@ flowchart LR
   R --> ST & W
   ST --> L[load]
   HR & R & S --> CAL[calories]
-  R --> V[VO2max]
+  R --> V[VO2max] --> FA[fitness age]
   STP[steps] --> STEPS[steps] & W & WK[walks] & CAL
   MOT[motion] --> W
   W --> WK
@@ -136,6 +136,15 @@ No correction is applied: none is general.
 Later, with runs or reliable walking speed: extrapolate submaximal HR against speed to max HR,
 as watches do.
 
+## Fitness age (`age.ts`)
+
+The age at which a healthy person of your sex has your VO2max, read off the HUNT3 means by decade
+(Loe 2013: 3,816 healthy Norwegians aged 20–90). Each mean sits at its decade's midpoint, with
+straight lines between and the end slopes past them, held to 20–90, the study's range. Whole
+years; none without VO2max. NTNU's own fitness age (Nes 2014) uses the same cohort, but its curve
+isn't published anywhere we could read. It inherits VO2max's ±10–15%, and the means fall only
+2–5 ml/kg/min a decade, so read it as a decade or more either way.
+
 ## Steps (`steps.ts`)
 
 The counter is cumulative and 16-bit: sum increases, treat a drop from near 65,536 as a wrap and
@@ -191,5 +200,5 @@ Garmin do). The weights are versioned params tuned against check-ins
 
 ## Still to build
 
-Fitness and biological age, and sleep stages: planned in
+Biological age and sleep stages: planned in
 [health-extended.md](health-extended.md).
