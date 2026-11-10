@@ -1,0 +1,243 @@
+syntax = "proto3";
+
+package dashboardify.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+
+// Checklists kept as notes in the vault's Lists/ folder: `##` headings are sections, `- [ ]` lines
+// are items. Every edit changes only the lines it names (docs/lists.md).
+service ListService {
+  // Every list, by title, with how many items are still open. Sections are left out.
+  rpc ListLists(ListListsRequest) returns (ListListsResponse) {
+    option (google.api.http) = {get: "/v1/lists"};
+  }
+
+  // One list, with its sections and items.
+  rpc GetList(GetListRequest) returns (List) {
+    option (google.api.http) = {get: "/v1/{name=lists/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  // Makes Lists/<title>.md. A list with the same name already there is returned as it is.
+  rpc CreateList(CreateListRequest) returns (List) {
+    option (google.api.http) = {
+      post: "/v1/lists"
+      body: "list"
+    };
+    option (google.api.method_signature) = "list";
+  }
+
+  // Adds items; a text with commas is several. One already open is left alone, and one ticked is
+  // unticked where it is.
+  rpc AddListItems(AddListItemsRequest) returns (AddListItemsResponse) {
+    option (google.api.http) = {
+      post: "/v1/{parent=lists/*}/items"
+      body: "*"
+    };
+    option (google.api.method_signature) = "parent,texts";
+  }
+
+  // Ticks, unticks or renames one item.
+  rpc UpdateListItem(UpdateListItemRequest) returns (ListItem) {
+    option (google.api.http) = {
+      patch: "/v1/{item.name=lists/*/items/*}"
+      body: "item"
+    };
+    option (google.api.method_signature) = "item,update_mask";
+  }
+
+  // Removes one item's line.
+  rpc DeleteListItem(DeleteListItemRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=lists/*/items/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  // Removes every ticked item's line.
+  rpc ClearDoneItems(ClearDoneItemsRequest) returns (List) {
+    option (google.api.http) = {
+      post: "/v1/{name=lists/*}:clearDone"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name";
+  }
+}
+
+// A list, such as Shopping.
+message List {
+  option (google.api.resource) = {
+    type: "dashboardify.app/List"
+    pattern: "lists/{list}"
+    singular: "list"
+    plural: "lists"
+  };
+
+  // `lists/{list}`, the file name's slug: Lists/Gift ideas.md is `lists/gift-ideas`.
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+
+  // The file name, such as `Gift ideas`. No slashes, no leading dot.
+  string title = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string = {
+      min_len: 1
+      max_len: 80
+    }
+  ];
+
+  // The note in the vault, such as `Lists/Gift ideas.md`.
+  string path = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // How many items aren't ticked.
+  int32 open_count = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Sections in note order; set by GetList and the writes, empty in ListLists.
+  repeated ListSection sections = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The note's version. A write that sends an older one is refused.
+  string etag = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// The items under one `##` heading.
+message ListSection {
+  // The heading; empty for the items before the first one.
+  string title = 1;
+
+  // Its items, in note order.
+  repeated ListItem items = 2;
+}
+
+// One `- [ ]` line.
+message ListItem {
+  option (google.api.resource) = {
+    type: "dashboardify.app/ListItem"
+    pattern: "lists/{list}/items/{item}"
+    singular: "listItem"
+    plural: "listItems"
+  };
+
+  // `lists/{list}/items/{item}`. Stable while its section and text stay the same.
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+
+  // What it is, such as `Spinach`.
+  string text = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.max_len = 500
+  ];
+
+  // The line's trailing `(…)`, such as `2 bags`.
+  string note = 3 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).string.max_len = 200
+  ];
+
+  // Ticked.
+  bool done = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // The `##` heading it sits under; empty before the first one.
+  string section = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// Request for ListLists.
+message ListListsRequest {}
+
+// Response for ListLists.
+message ListListsResponse {
+  // By title, without sections.
+  repeated List lists = 1;
+}
+
+// Request for GetList.
+message GetListRequest {
+  // The list.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/List",
+    (buf.validate.field).string.min_len = 1
+  ];
+}
+
+// Request for CreateList.
+message CreateListRequest {
+  // Only the title is read.
+  List list = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+}
+
+// Request for AddListItems.
+message AddListItemsRequest {
+  // The list.
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/List",
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // What to add, such as `oat milk` or `eggs, bread`; a trailing `(…)` is the item's note.
+  repeated string texts = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).repeated = {
+      min_items: 1
+      max_items: 50
+      items: {
+        string: {max_len: 2000}
+      }
+    }
+  ];
+
+  // Add only if the list is still at this version.
+  string etag = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for AddListItems.
+message AddListItemsResponse {
+  // Each item added or unticked, in the order given; one already open is included as it is.
+  repeated ListItem items = 1;
+}
+
+// Request for UpdateListItem.
+message UpdateListItemRequest {
+  // The item with the new values.
+  ListItem item = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // `text`, `note` and/or `done`.
+  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Change only if the list is still at this version.
+  string etag = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request for DeleteListItem.
+message DeleteListItemRequest {
+  // The item.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/ListItem",
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // Delete only if the list is still at this version.
+  string etag = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request for ClearDoneItems.
+message ClearDoneItemsRequest {
+  // The list.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/List",
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // Clear only if the list is still at this version.
+  string etag = 2 [(google.api.field_behavior) = OPTIONAL];
+}

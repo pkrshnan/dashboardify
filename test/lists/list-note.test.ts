@@ -110,6 +110,12 @@ describe("addItems", () => {
     expect(addItems("# Packing\n", ["Passport"]).text).toBe("# Packing\n\n- [ ] Passport\n");
   });
 
+  test("a note that starts with a section gets a blank line before it", () => {
+    expect(addItems("## Produce\n- [ ] Kale\n", ["Tea"]).text).toBe(
+      "- [ ] Tea\n\n## Produce\n- [ ] Kale\n",
+    );
+  });
+
   test("a list without sections takes new items at the end", () => {
     expect(addItems("- [ ] Dune\n", ["Arrival"]).text).toBe("- [ ] Dune\n- [ ] Arrival\n");
   });
