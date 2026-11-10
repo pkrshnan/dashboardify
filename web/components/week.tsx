@@ -14,6 +14,8 @@ import { opener } from "./day-timeline";
 const FIRST_HOUR = 7;
 const LAST_HOUR = 22;
 const HOUR_PX = 36;
+/** Two 14px lines and the padding: shorter blocks show the title only, not half a location. */
+const TWO_LINES_PX = 34;
 
 /** Opens the event panel for "events/{id}". */
 type OnOpen = (event: string) => void;
@@ -100,7 +102,9 @@ function WeekEvents(props: { day: DayAgenda; y: (min: number) => number; onOpen?
             {...opener(e, props.onOpen)}
           >
             <div class="ell">{e.title}</div>
-            {e.detail && <div class="ell week-event-detail">{e.detail}</div>}
+            {e.detail && span.end - span.start >= TWO_LINES_PX && (
+              <div class="ell week-event-detail">{e.detail}</div>
+            )}
           </div>
         );
       })}

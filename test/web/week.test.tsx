@@ -169,6 +169,15 @@ describe("WeekColumns", () => {
     expect(b?.querySelector("a")).toBeNull();
   });
 
+  test("a block too short for two lines shows the location only in its tooltip", () => {
+    const { blocks } = columns(
+      week({ events: [event("Lunch", 12 * 60, 12 * 60 + 45, { detail: "Café on Albert St" })] }),
+    );
+    const [b] = blocks(0);
+    expect(text(b)).toBe("Lunch");
+    expect(b?.title).toBe("Lunch, Café on Albert St");
+  });
+
   test("tapping a calendar event or all-day event opens it", () => {
     const opened: string[] = [];
     const { blocks, cols } = columns(
