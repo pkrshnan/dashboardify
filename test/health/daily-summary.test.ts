@@ -145,7 +145,7 @@ describe("DailySummary", () => {
     expect(note?.body.indexOf("## Health")).toBeLessThan(note?.body.indexOf("## Journal") ?? 0);
 
     expect((await derived.read("nights", DATE))?.rhr_bpm).toBeCloseTo(52, 0);
-    expect((await derived.read("days", DATE))?.algo_version).toBe("7");
+    expect((await derived.read("days", DATE))?.algo_version).toBe("8");
     // No earlier days, so no training load yet.
     expect(note?.body).not.toContain("- Load");
     expect(note?.frontmatter.load_ratio).toBeUndefined();
@@ -240,9 +240,30 @@ describe("DailySummary", () => {
     const rows = await derived.readAll("workouts", DATE);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ kind: "running", status: "detected", duration_min: 40 });
+    // No weight or height in the profile, so no calories on the line or the row.
+    expect(note?.body).not.toContain("kcal");
+    expect(rows[0]?.kcal).toBeNull();
     expect((await derived.read("days", DATE))?.workout_min).toBe(40);
     // The run is fast stepping, but it is a workout, so it isn't also a walk.
     expect(await derived.readAll("walks", DATE)).toEqual([]);
+  });
+
+  test("a run's calories go on its line and its row", async () => {
+    await putNight();
+    await writeProfile("weight_kg: 75\nheight_cm: 180\n");
+    await putRun();
+
+    const result = await summary.run(DATE);
+
+    const kcal = result?.day.workouts[0]?.kcal ?? 0;
+    // 40 minutes at 165 bpm, full Keytel: about 15 kcal a minute for this profile.
+    expect(kcal).toBeGreaterThan(400);
+    expect(kcal).toBeLessThan(result?.day.calories?.activeKcal ?? 0);
+    const note = await vault.readDaily(DATE);
+    expect(note?.body).toMatch(
+      new RegExp(`- Running 18:00–18:40 · .* · strain [\\d.]+ · ${Math.round(kcal)} kcal\n`),
+    );
+    expect((await derived.readAll("workouts", DATE))[0]?.kcal).toBe(Math.round(kcal));
   });
 
   test("a day with no night before borrows the closest night's resting HR", async () => {

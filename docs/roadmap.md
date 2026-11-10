@@ -55,7 +55,7 @@ Apple Reminders.
 | 2 | Tasks page and reminder editing (the API already does it all); starts with N7's task panel | Needs a plan |
 | 3 | Lists (shopping). A `- [ ]` line anywhere in the vault is read as a task, so lists need a folder tasks skip, or another format. | Needs a plan |
 | 4 | Journal page: the day's journal and check-in | Needs a plan |
-| 5 | The rest of health: training load, calories, VO2max, fitness and biological age, sleep stages | Training load and calories built (H1–H3); the rest planned in [health-extended.md](health-extended.md) (H4–H11) |
+| 5 | The rest of health: training load, calories, VO2max, fitness and biological age, sleep stages | Training load and calories built, workouts included (H1–H4); the rest planned in [health-extended.md](health-extended.md) (H5–H11) |
 | 6 | Runs: distance, pace and route. Apple Health through a Shortcut, or the Strava API. | Open question |
 | 7 | "Log journal" Shortcut recipe | Not started |
 | 8 | Home screen: unusual health rows first, a strain target from recovery, light mode | Not started |

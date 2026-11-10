@@ -16,6 +16,7 @@ const workout = (kind: Workout["kind"], minutes: number): Workout => ({
   cadence: 0,
   trimp: 10,
   strain: 3,
+  kcal: null,
 });
 
 /** Two climbs: 100 → 125 bpm at 1 and 4 minutes, back to 100 between. */

@@ -33,6 +33,7 @@ describe("activity API", () => {
         cadence_spm: 0,
         trimp: 3,
         strain: 1.5,
+        kcal: 210,
       },
     ]);
     await derived.writeAll("walks", DAY, [
@@ -69,6 +70,7 @@ describe("activity API", () => {
           kind: "lifting",
           status: "WORKOUT_STATUS_POSSIBLE",
           durationMinutes: 24,
+          calories: 210,
         },
       ],
       walks: [{ steps: 2100, briskMinutes: 14 }],
@@ -85,6 +87,19 @@ describe("activity API", () => {
     // 5 minutes either side of 24: 34 minutes of 15-second steps.
     expect(body.heartRate).toHaveLength(136);
     expect(body.heartRate.slice(19, 25)).toEqual([0, 100, 100, 100, 100, 0]);
+  });
+
+  test("a workout without calories leaves the field out", async () => {
+    await seed();
+    const derived = new DerivedStore(join(api.dir, "derived"));
+    const [row] = await derived.readAll("workouts", DAY);
+    await derived.writeAll("workouts", DAY, [{ ...row, kcal: null }]);
+
+    const { status, body } = await api.call("/v1/days/2026-11-04/workouts/1807");
+
+    expect(status).toBe(200);
+    expect(body.strain).toBe(1.5);
+    expect(body).not.toHaveProperty("calories");
   });
 
   test("a review goes into the daily note and recomputes the day", async () => {

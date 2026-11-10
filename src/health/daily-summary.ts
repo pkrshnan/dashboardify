@@ -40,7 +40,7 @@ import { type DaySummary, frontmatter, healthBlock, syncLine } from "./render";
 import { counted, type ReviewedWorkout, reviewFor, reviewWorkouts } from "./reviews";
 
 /** Bump when a calculation changes, so old rows can be told apart and rebuilt. */
-export const ALGO_VERSION = "7";
+export const ALGO_VERSION = "8";
 
 /** How far either way to look for a night with resting HR when there is no recent one. */
 const NEAREST_NIGHT_DAYS = 7;
@@ -413,6 +413,7 @@ function workoutRow(w: ReviewedWorkout): DerivedRow {
     cadence_spm: w.cadence,
     trimp: w.trimp,
     strain: w.strain,
+    kcal: w.kcal === null ? null : Math.round(w.kcal),
   };
 }
 

@@ -2,7 +2,7 @@
 // day. Still pure: the caller loads the samples and decides what to do with the results.
 
 import { breathingRate } from "./breathing";
-import { type Body, type Calories, dayCalories } from "./calories";
+import { type Body, type CalorieInput, type Calories, dayCalories, spanKcal } from "./calories";
 import { type MinuteHr, minuteHr, predictedMaxHr, restingHr, zoneMinutes } from "./heart-rate";
 import { cleanRr, goodWindows, nightHrv } from "./hrv";
 import { climbs, type SetClimb } from "./sets";
@@ -135,13 +135,16 @@ export function dayMetrics(input: DayInput): DayMetrics {
   const perMinute = stepsPerMinute(input.steps);
   const sleep = input.sleep ? [input.sleep] : [];
   const effort = effortMetrics(input, minutes, perMinute, sleep);
+  const burn = calorieInput(input, minutes, perMinute);
   return {
     wornMin: minutes.length,
     avgHr: bpms.length > 0 ? bpms.reduce((s, b) => s + b, 0) / bpms.length : null,
     maxHr: bpms.length > 0 ? Math.max(...bpms) : null,
     steps: stepsTaken(input.steps),
     ...effort,
-    calories: calories(input, minutes, perMinute),
+    // Each workout's own total, from the same minutes as the day's.
+    workouts: effort.workouts.map((w) => ({ ...w, kcal: burn ? spanKcal(w, burn) : null })),
+    calories: burn ? dayCalories({ ...burn, day: input.day }) : null,
     // A walk can't be inside a workout: walking to the court is a walk, the game isn't.
     walks: walks(perMinute, minutes, [...sleep, ...effort.workouts]),
   };
@@ -184,25 +187,17 @@ function effortMetrics(
  * Calories need resting and max HR as strain does. Without them every awake minute would get the
  * sitting rate, a total that reads like a real day but leaves out all exercise.
  */
-function calories(
+function calorieInput(
   input: DayInput,
   minutes: MinuteHr[],
   steps: Map<number, number>,
-): Calories | null {
+): Omit<CalorieInput, "day"> | null {
   const body = profileBody(input.profile);
   const maxHr = profileMaxHr(input.profile);
   if (!body || maxHr === null || input.restingHr === null || maxHr <= input.restingHr) {
     return null;
   }
-  return dayCalories({
-    minutes,
-    steps,
-    day: input.day,
-    sleep: input.sleep,
-    restingHr: input.restingHr,
-    maxHr,
-    body,
-  });
+  return { minutes, steps, sleep: input.sleep, restingHr: input.restingHr, maxHr, body };
 }
 
 function profileBody(profile: Profile): Body | null {

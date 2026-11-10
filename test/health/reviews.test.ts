@@ -15,6 +15,7 @@ const workout = (kind: Workout["kind"], startMin: number, minutes: number): Work
   cadence: 0,
   trimp: 5,
   strain: 2,
+  kcal: null,
 });
 
 const noLog = { session: null, logged: false };

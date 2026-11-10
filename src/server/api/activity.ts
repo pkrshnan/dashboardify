@@ -106,6 +106,7 @@ export class ActivityService {
       maxHeartRate: num(row.max_hr),
       cadence: num(row.cadence_spm),
       strain: num(row.strain),
+      calories: typeof row.kcal === "number" ? row.kcal : undefined,
     };
   }
 
