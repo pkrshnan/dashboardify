@@ -65,8 +65,10 @@ export function Calendar(props: Props) {
               onOpen={props.onOpenEvent}
             />
           )}
-          {mode === "week" && !isPhone && <WeekColumns days={view.days} nowMin={nowMin} />}
-          {mode === "week" && isPhone && <WeekStrip days={view.days} />}
+          {mode === "week" && !isPhone && (
+            <WeekColumns days={view.days} nowMin={nowMin} onOpen={props.onOpenEvent} />
+          )}
+          {mode === "week" && isPhone && <WeekStrip days={view.days} onOpen={props.onOpenEvent} />}
         </div>
         {aside && <aside>{aside}</aside>}
       </div>

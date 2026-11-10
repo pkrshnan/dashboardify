@@ -607,12 +607,18 @@ button.link {
 
 /* A calendar event that opens the event panel. */
 .event[role="button"],
-.all-day-event[role="button"] {
+.all-day-event[role="button"],
+.week-event[role="button"],
+.week-dated [role="button"],
+.agenda-row[role="button"] {
   cursor: pointer;
 }
 
 .event[role="button"]:focus-visible,
-.all-day-event[role="button"]:focus-visible {
+.all-day-event[role="button"]:focus-visible,
+.week-event[role="button"]:focus-visible,
+.week-dated [role="button"]:focus-visible,
+.agenda-row[role="button"]:focus-visible {
   outline: 2px solid var(--control);
   outline-offset: 1px;
 }
@@ -738,6 +744,11 @@ button.link {
   padding: 3px 6px;
   font-size: 11px;
   line-height: 14px;
+  overflow: hidden;
+}
+
+.week-event-detail {
+  color: var(--text-2);
 }
 
 .week-reminder {
@@ -823,6 +834,17 @@ button.link {
   font-size: 13px;
   color: var(--text-3);
   flex: none;
+}
+
+.agenda-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.agenda-detail {
+  font-size: 13px;
+  color: var(--text-3);
 }
 
 .agenda-marker {

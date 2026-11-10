@@ -1,18 +1,25 @@
 // The Week view: a rolling week from today. Desktop shows seven columns with dated tasks at the
 // top of each; the phone shows a strip of days and the agenda for the chosen one. Reminders have
-// hollow markers, events filled ones, and all-day events hollow squares in their colour. Nothing here can be ticked: that happens in the task list.
+// hollow markers, events filled ones, and all-day events hollow squares in their colour. Events show
+// their location and open the event panel, as on the Day view. Nothing here can be ticked: that
+// happens in the task list.
 
 import { useState } from "preact/hooks";
-import type { DayAgenda } from "../../src/home/types";
+import type { AgendaEvent, DayAgenda } from "../../src/home/types";
 import { alpha, CATEGORY, TEXT_3 } from "../lib/colors";
 import { dayLabel, dayOfMonth, hourLabel, weekday } from "../lib/format";
 import { assignLanes } from "../lib/timeline";
+import { opener } from "./day-timeline";
 
 const FIRST_HOUR = 7;
 const LAST_HOUR = 22;
 const HOUR_PX = 36;
 
-export function WeekColumns({ days, nowMin }: { days: DayAgenda[]; nowMin: number }) {
+/** Opens the event panel for "events/{id}". */
+type OnOpen = (event: string) => void;
+
+export function WeekColumns(props: { days: DayAgenda[]; nowMin: number; onOpen?: OnOpen }) {
+  const { days, nowMin, onOpen } = props;
   const height = (LAST_HOUR - FIRST_HOUR) * HOUR_PX;
   const y = (min: number) =>
     ((Math.min(Math.max(min, FIRST_HOUR * 60), LAST_HOUR * 60) - FIRST_HOUR * 60) / 60) * HOUR_PX;
@@ -38,7 +45,7 @@ export function WeekColumns({ days, nowMin }: { days: DayAgenda[]; nowMin: numbe
         {days.map((d, i) => (
           <div key={d.date} class="week-col">
             <div class={`week-day${i === 0 ? " today" : ""}`}>{dayLabel(d.date)}</div>
-            <WeekDated day={d} />
+            <WeekDated day={d} onOpen={onOpen} />
             <div
               class="week-body"
               style={{
@@ -46,7 +53,7 @@ export function WeekColumns({ days, nowMin }: { days: DayAgenda[]; nowMin: numbe
                 backgroundImage: `repeating-linear-gradient(to bottom, var(--line-2) 0, var(--line-2) 1px, transparent 1px, transparent ${HOUR_PX * 2}px)`,
               }}
             >
-              <WeekEvents day={d} y={y} />
+              <WeekEvents day={d} y={y} onOpen={onOpen} />
               {d.reminders.map((r) => (
                 <div key={r.id} class="week-reminder ell" style={{ top: `${y(r.minutes)}px` }}>
                   <span class="hollow" />
@@ -65,7 +72,8 @@ export function WeekColumns({ days, nowMin }: { days: DayAgenda[]; nowMin: numbe
 }
 
 /** A column's event blocks, with overlapping ones side by side as on the Day timeline. */
-function WeekEvents({ day, y }: { day: DayAgenda; y: (min: number) => number }) {
+function WeekEvents(props: { day: DayAgenda; y: (min: number) => number; onOpen?: OnOpen }) {
+  const { day, y } = props;
   const spans = day.events.map((e) => {
     const top = y(e.startMin);
     return { start: top, end: top + Math.max(20, y(e.endMin) - top - 2) };
@@ -79,8 +87,8 @@ function WeekEvents({ day, y }: { day: DayAgenda; y: (min: number) => number }) 
         return (
           <div
             key={`${e.start}${e.title}-${i}`}
-            class="week-event ell"
-            title={e.title}
+            class="week-event"
+            title={e.detail ? `${e.title}, ${e.detail}` : e.title}
             style={{
               left: `calc(${(lane * 100) / count}% + 2px)`,
               width: `calc(${100 / count}% - 4px)`,
@@ -89,8 +97,10 @@ function WeekEvents({ day, y }: { day: DayAgenda; y: (min: number) => number }) 
               background: alpha(CATEGORY[e.category], 0.15),
               borderLeft: `2px solid ${CATEGORY[e.category]}`,
             }}
+            {...opener(e, props.onOpen)}
           >
-            {e.title}
+            <div class="ell">{e.title}</div>
+            {e.detail && <div class="ell week-event-detail">{e.detail}</div>}
           </div>
         );
       })}
@@ -99,11 +109,11 @@ function WeekEvents({ day, y }: { day: DayAgenda; y: (min: number) => number }) 
 }
 
 /** The top of a Week column: all-day events, then tasks due that day with no time. */
-function WeekDated({ day }: { day: DayAgenda }) {
+function WeekDated({ day, onOpen }: { day: DayAgenda; onOpen?: OnOpen }) {
   return (
     <div class="week-dated">
       {day.allDay.map((e) => (
-        <div key={`a${e.event ?? e.title}`} title={`${e.title}, all day`}>
+        <div key={`a${e.event ?? e.title}`} title={`${e.title}, all day`} {...opener(e, onOpen)}>
           <span class="hollow all-day" style={{ borderColor: CATEGORY[e.category] }} />
           <span class="ell">{e.title}</span>
         </div>
@@ -122,13 +132,17 @@ interface AgendaItem {
   key: string;
   time: string;
   text: string;
+  /** An event's location, under its title. */
+  detail?: string;
+  /** The calendar event the row opens. */
+  event?: AgendaEvent;
   color: string;
   filled: boolean;
   /** All-day events: a square marker, so they read as events and not tasks. */
   square?: boolean;
 }
 
-export function WeekStrip({ days }: { days: DayAgenda[] }) {
+export function WeekStrip({ days, onOpen }: { days: DayAgenda[]; onOpen?: OnOpen }) {
   const [selected, setSelected] = useState(0);
   const day = days[selected] ?? days[0];
   return (
@@ -153,7 +167,11 @@ export function WeekStrip({ days }: { days: DayAgenda[] }) {
       <div class="agenda">
         {day &&
           agendaOf(day).map((item) => (
-            <div key={item.key} class="agenda-row">
+            <div
+              key={item.key}
+              class="agenda-row"
+              {...(item.event ? opener(item.event, onOpen) : {})}
+            >
               <span class="agenda-time">{item.time}</span>
               <span
                 class={`agenda-marker${item.square ? " all-day" : ""}`}
@@ -162,7 +180,10 @@ export function WeekStrip({ days }: { days: DayAgenda[] }) {
                   background: item.filled ? item.color : "transparent",
                 }}
               />
-              <span class="ell">{item.text}</span>
+              <span class="agenda-text">
+                <span class="ell">{item.text}</span>
+                {item.detail && <span class="ell agenda-detail">{item.detail}</span>}
+              </span>
             </div>
           ))}
         {day && agendaOf(day).length === 0 && <div class="agenda-row muted">Nothing planned.</div>}
@@ -184,6 +205,8 @@ function agendaOf(day: DayAgenda): AgendaItem[] {
         key: `e${e.start}${e.title}${e.event ?? ""}`,
         time: e.start,
         text: e.title,
+        detail: e.detail,
+        event: e,
         color: CATEGORY[e.category],
         filled: true,
       },
@@ -197,6 +220,8 @@ function agendaOf(day: DayAgenda): AgendaItem[] {
     key: `a${e.event ?? e.title}`,
     time: "All day",
     text: e.title,
+    detail: e.detail,
+    event: e,
     color: CATEGORY[e.category],
     filled: false,
     square: true,

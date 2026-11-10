@@ -40,7 +40,7 @@ Apple Reminders.
 | API | 14 v1 services; etags, update masks, `requestId` retries, pagination |
 | Tasks | Full API (create, edit, delete, complete with recurrence, reopen, search) and Siri. On screen: a grouped list you can tick. |
 | Capture | One box: a line becomes an event or a reminder, with the calendar guessed and the place looked up; Undo; Siri "Add to command center" |
-| Calendar | iCloud sync every 2 min, ICS links every 15; Day and Week, all-day row, overlap layout; event panel edits and deletes; agenda block in the daily note |
+| Calendar | iCloud sync every 2 min, ICS links every 15; Day and Week, all-day row, overlap layout; event panel edits and deletes from Day or Week; Week shows locations; agenda block in the daily note |
 | Settings | `settings.db`, hashed devices, sealed secrets, setup code, `bun run settings`, Settings page (General, Devices, Calendars) |
 | Health | Sleep, sleep score, resting HR, HRV, breathing, skin temperature, strain, zones, steps, recovery, workouts, walks, lifting sets, battery; daily summary in the note; recovery tuning |
 | Activity page | Workouts and walks by week, month and 3 months; detail with HR and sets; reviews |
