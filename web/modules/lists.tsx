@@ -245,6 +245,39 @@ function withoutKey(map: Map<string, boolean>, key: string): Map<string, boolean
 const NEW_SECTION = "\nnew";
 const NO_SECTION = "\nnone";
 
+/** What's typed in the add box and where it goes; `submit` sends it. */
+function useAddItems(slug: string, onAdded: () => Promise<void>, focusBox: () => void) {
+  const { token } = useApp();
+  const [text, setText] = useState("");
+  const [section, setSection] = useState("");
+  const [newSection, setNewSection] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const target = section === NEW_SECTION ? newSection.trim() : section;
+  const submit = async (event: Event) => {
+    event.preventDefault();
+    if (text.trim() === "") {
+      // Return in the section's name: next, what goes in it.
+      focusBox();
+      return;
+    }
+    if (section === NEW_SECTION && target === "") {
+      setError("Name the new section first.");
+      return;
+    }
+    try {
+      await addListItems(token, slug, text, target);
+      setText("");
+      setError(null);
+      setSection(target);
+      setNewSection("");
+      await onAdded();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  };
+  return { text, setText, section, setSection, newSection, setNewSection, target, error, submit };
+}
+
 /**
  * The add box: Return adds what's typed (commas add several) and clears it. Beside it, the
  * section to add to; a new one gets its heading with the first item.
@@ -255,33 +288,16 @@ function AddItems(props: {
   sections: string[];
   onAdded: () => Promise<void>;
 }) {
-  const { token, isPhone } = useApp();
-  const [text, setText] = useState("");
-  const [section, setSection] = useState("");
-  const [newSection, setNewSection] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const target = section === NEW_SECTION ? newSection.trim() : section;
-  const submit = async (event: Event) => {
-    event.preventDefault();
-    if (text.trim() === "") {
-      return;
-    }
-    try {
-      await addListItems(token, props.slug, text, target);
-      setText("");
-      setError(null);
-      setSection(target);
-      setNewSection("");
-      await props.onAdded();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    }
-  };
+  const { isPhone } = useApp();
+  const box = useRef<HTMLInputElement>(null);
+  const add = useAddItems(props.slug, props.onAdded, () => box.current?.focus());
+  const { text, setText, section, setSection, newSection, setNewSection, target, error } = add;
   const into = target || props.title;
   return (
-    <form class="list-add" onSubmit={submit}>
+    <form class="list-add" onSubmit={add.submit}>
       <div class="list-add-row">
         <input
+          ref={box}
           class="list-input"
           aria-label={`Add to ${props.title}`}
           placeholder={isPhone ? `Add to ${into}` : `Add to ${into}. Commas add several`}
@@ -300,6 +316,10 @@ function AddItems(props: {
         />
       )}
       {error && <p class="list-error">{error}</p>}
+      {/* With two boxes, Return submits only if the form has a submit button. */}
+      <button type="submit" class="visually-hidden" tabIndex={-1}>
+        Add
+      </button>
     </form>
   );
 }
