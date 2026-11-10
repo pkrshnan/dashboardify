@@ -168,3 +168,4 @@ RPC only, for Siri. Each response has a `message` to speak.
 | `…/CheckIn` | `feel`, `rpe`, `tags` (strings) | Record scores, merge tags |
 | `…/ListDue` | `window`: `today`, `overdue`, `week` | Summarise open tasks |
 | `…/CompleteByText` | `text` | Complete the closest open task |
+| `…/AddToList` | `list`, `text` | Add to the list with that spoken name; commas and "and" separate items |
