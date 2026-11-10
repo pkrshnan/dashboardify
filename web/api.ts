@@ -193,6 +193,13 @@ export function completeTask(token: Token, id: string): Promise<unknown> {
   });
 }
 
+export function reopenTask(token: Token, id: string): Promise<unknown> {
+  return call(token, `/v1/tasks/${encodeURIComponent(id)}:reopen`, {
+    method: "POST",
+    body: "{}",
+  });
+}
+
 export interface CaptureResult {
   /** "events/{id}" or "tasks/{id}", for Undo. */
   name: string;

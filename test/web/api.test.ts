@@ -7,7 +7,7 @@ import { homeView, storeHomeDeps } from "../../src/home/home";
 import { SetupCode } from "../../src/settings/setup-code";
 import { TaskStore } from "../../src/vault/task-store";
 import { Vault } from "../../src/vault/vault";
-import { fetchHome, setUpDevice, Unauthorized } from "../../web/api";
+import { completeTask, fetchHome, reopenTask, setUpDevice, Unauthorized } from "../../web/api";
 import { useApi } from "../server/api/helpers";
 
 describe("home UI API adapter", () => {
@@ -74,6 +74,25 @@ describe("home UI API adapter", () => {
     const { modern, server } = await compare();
 
     expect(modern).toEqual(server);
+  });
+
+  test("a ticked task can be unticked", async () => {
+    const created = await api.call("/v1/tasks", "POST", { description: "Call bank" });
+    const id = created.body.name.slice("tasks/".length);
+    const original = globalThis.fetch;
+    globalThis.fetch = ((url: string, init?: RequestInit) =>
+      api.app.request(url, init)) as typeof fetch;
+    try {
+      await completeTask("secret", id);
+      await reopenTask("secret", id);
+    } finally {
+      globalThis.fetch = original;
+    }
+
+    const fetched = await api.call(`/v1/${created.body.name}`);
+
+    expect(fetched.body.state).toBe("STATE_OPEN");
+    expect(await api.vaultFile("Inbox.md")).toContain("- [ ] Call bank");
   });
 });
 

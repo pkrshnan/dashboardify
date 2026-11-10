@@ -12,6 +12,7 @@ import {
   deleteTask,
   fetchHome,
   randomKey,
+  reopenTask,
   savedToken,
   saveToken,
   type Token,
@@ -125,13 +126,10 @@ function HomeScreen(props: {
   load: () => Promise<void>;
 }) {
   const { view, now, isPhone, token, load } = props;
-  const [done, setDone] = useState(new Set<string>());
+  const { ticked, complete, reopen } = useTicks(token, load);
   const [pending, setPending] = useState<Pending[]>([]);
   const [panel, openEvent] = useEventPanel(token, view.timeZone, load);
-  const complete = (id: string) => {
-    setDone((d) => new Set(d).add(id));
-    completeTask(token, id).then(load, load);
-  };
+  const done = new Set([...ticked].filter(([, d]) => d).map(([id]) => id));
   const capture = (
     <HomeCapture
       token={token}
@@ -147,10 +145,11 @@ function HomeScreen(props: {
     <main class="home">
       <Focus view={view} now={now} />
       <Calendar
-        view={withPending(withTicked(view, done), pending)}
+        view={withPending(withTicked(view, ticked), pending)}
         nowMin={now.minutes}
         isPhone={isPhone}
         onComplete={complete}
+        onReopen={reopen}
         onOpenEvent={openEvent}
         capture={capture}
         aside={isPhone ? undefined : tasks}
@@ -282,11 +281,46 @@ function useHome(token: Token, onUnauthorized: (setup: boolean) => void) {
   return { view, error, load };
 }
 
-/** Reminders ticked in this session show as done before the refresh confirms it. */
-function withTicked(view: HomeView, done: Set<string>): HomeView {
+/**
+ * Ticks and unticks sent to the vault. Each shows at once and lasts until the refresh after it
+ * brings the vault's answer. A task's requests wait for the one before, so a quick tick then
+ * untick reaches the vault in that order.
+ */
+function useTicks(token: Token, load: () => Promise<void>) {
+  const [ticked, setTicked] = useState(new Map<string, boolean>());
+  const queue = useRef(new Map<string, Promise<void>>());
+  const send = (id: string, done: boolean) => {
+    setTicked((t) => new Map(t).set(id, done));
+    const request = () => (done ? completeTask(token, id) : reopenTask(token, id));
+    const last = queue.current.get(id) ?? Promise.resolve();
+    const next: Promise<void> = last
+      .then(request, request)
+      .then(load, load)
+      .then(() => {
+        if (queue.current.get(id) !== next) {
+          return;
+        }
+        queue.current.delete(id);
+        setTicked((t) => {
+          const left = new Map(t);
+          left.delete(id);
+          return left;
+        });
+      });
+    queue.current.set(id, next);
+  };
+  return {
+    ticked,
+    complete: (id: string) => send(id, true),
+    reopen: (id: string) => send(id, false),
+  };
+}
+
+/** Reminders ticked or unticked in this session show that way before the refresh confirms it. */
+function withTicked(view: HomeView, ticked: Map<string, boolean>): HomeView {
   const days = view.days.map((d) => ({
     ...d,
-    reminders: d.reminders.map((r) => ({ ...r, done: r.done || done.has(r.id) })),
+    reminders: d.reminders.map((r) => ({ ...r, done: ticked.get(r.id) ?? r.done })),
   }));
   return { ...view, days };
 }
