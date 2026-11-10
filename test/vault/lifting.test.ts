@@ -77,6 +77,17 @@ describe("lifting log", () => {
     ]);
   });
 
+  test("the weight can come after the sets×reps", () => {
+    const log = parseLiftingLog(
+      "## Workouts\n* Lat Pulldown\n    * 1x10, 55lbs\n    * 2x9, 75lbs\n",
+    );
+
+    expect(log[0]?.lines).toEqual([
+      { weight: 55, unit: "lb", sets: 1, reps: 10 },
+      { weight: 75, unit: "lb", sets: 2, reps: 9 },
+    ]);
+  });
+
   test("no Workouts section, no log", () => {
     expect(parseLiftingLog("## Journal\n- Chest Press\n  - 60lbs, 1x10\n")).toEqual([]);
   });

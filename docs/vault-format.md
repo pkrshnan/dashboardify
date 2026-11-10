@@ -70,9 +70,9 @@ workout_reviews:
   reviewed. "Synced" is on today only and turns into `**14h behind**` past two hours.
 - **Agenda** is today's events, rewritten after each calendar sync that changes them.
 - **Journal** entries are `- HH:MM text`, continuation lines indented two spaces.
-- **Workouts** is yours; the server only reads it. A load line is `weight unit, sets x reps`
-  (`lb`, `lbs` or `kg`; `x` or `×`; several groups after one weight; no weight for bodyweight).
-  Other indented lines are notes. A first line lighter than the heaviest is a warm-up.
+- **Workouts** is yours; the server only reads it. A load line is `weight unit, sets x reps`,
+  or the weight last (`lb`, `lbs` or `kg`; `x` or `×`; several groups share one weight; no weight
+  for bodyweight). Other indented lines are notes. A first line lighter than the heaviest is a warm-up.
 - **`workout_reviews`** come from the Activity page and can be edited. A review applies to the
   workout it overlaps by at least half. `kind` is `running`, `walking`, `volleyball`, `lifting`,
   `workout` or `none`. Malformed entries are skipped.
