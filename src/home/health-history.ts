@@ -10,7 +10,7 @@ import type { MetricTrend } from "./types";
 /** A year for the 1Y chart, plus the 6 days before it that its first weekly mean needs. */
 export const HISTORY_DAYS = 371;
 
-interface MetricSource extends MetricDef {
+export interface MetricSource extends MetricDef {
   table: DailyTable;
   read: (row: DerivedRow) => number | null;
 }
@@ -26,7 +26,7 @@ function zone2Plus(row: DerivedRow): number | null {
   return zones.every((z) => z === null) ? null : zones.reduce<number>((s, z) => s + (z ?? 0), 0);
 }
 
-/** In the design's order: heart, sleep, activity, vitals. */
+/** The home screen's ten, in the design's order: heart, sleep, activity, vitals. */
 export const METRICS: MetricSource[] = [
   metric("recovery", "Recovery", "%", "heart", "days", column("recovery_pct"), { better: "up" }),
   metric("hrv", "HRV", "ms", "heart", "nights", column("rmssd_ms"), { better: "up" }),
@@ -62,6 +62,34 @@ export const METRICS: MetricSource[] = [
   }),
 ];
 
+/**
+ * Built since the design's ten (H1–H9), in the same group order. The design fixes the home list
+ * and its two-column layout, so these stay off the home screen until its artboards (H11).
+ */
+export const EXTENDED_METRICS: MetricSource[] = [
+  metric("vo2max", "VO2max", "ml/kg/min", "heart", "days", column("vo2max"), {
+    better: "up",
+    format: "dec1",
+  }),
+  metric("deep", "Deep sleep", "", "sleep", "nights", column("deep_min"), {
+    better: "up",
+    format: "duration",
+  }),
+  metric("rem", "REM sleep", "", "sleep", "nights", column("rem_min"), {
+    better: "up",
+    format: "duration",
+  }),
+  // Both ways can be wrong: under 0.8 is easing off, over 1.5 a spike. So always grey.
+  metric("loadRatio", "Training load", "", "activity", "days", column("load_ratio"), {
+    format: "dec1",
+  }),
+  // Burning more isn't better or worse in itself, so grey like strain.
+  metric("calories", "Calories", "kcal", "activity", "days", column("kcal"), {
+    format: "thousands",
+    cumulative: true,
+  }),
+];
+
 function metric(
   key: string,
   name: string,
@@ -79,14 +107,14 @@ export class HealthHistory {
 
   constructor(private readonly store: DerivedStore) {}
 
-  /** Every metric's trend for the HISTORY_DAYS ending on `today`. */
-  async trends(today: string): Promise<MetricTrend[]> {
+  /** Each metric's trend for the HISTORY_DAYS ending on `today`; the home screen's by default. */
+  async trends(today: string, metrics: MetricSource[] = METRICS): Promise<MetricTrend[]> {
     const dates = lastDays(today, HISTORY_DAYS);
     const rows = {
       nights: await this.rows("nights", dates),
       days: await this.rows("days", dates),
     };
-    return METRICS.map((m) =>
+    return metrics.map((m) =>
       trend(
         m,
         rows[m.table].map((row) => (row ? m.read(row) : null)),
