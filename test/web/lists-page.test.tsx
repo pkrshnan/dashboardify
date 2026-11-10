@@ -97,7 +97,52 @@ describe("Lists page", () => {
     expect(calls.find((c) => c.method === "POST")).toEqual({
       method: "POST",
       url: "/v1/lists/shopping/items",
-      body: { texts: ["eggs, bread"] },
+      body: { texts: ["eggs, bread"], section: "" },
+    });
+  });
+
+  test("the section menu adds under a heading, or a new one", async () => {
+    const page = showList();
+    const box = (await page.findByLabelText("Add to Shopping")) as HTMLInputElement;
+    const pick = page.getByLabelText("Section") as HTMLSelectElement;
+    const add = async (text: string) => {
+      fireEvent.input(box, { target: { value: text } });
+      await act(async () => {
+        fireEvent.submit(box.closest("form") as HTMLFormElement);
+      });
+    };
+
+    fireEvent.change(pick, { target: { value: "Produce" } });
+    expect(box.placeholder).toContain("Add to Produce");
+    await add("Kale");
+    fireEvent.change(pick, { target: { value: "\nnew" } });
+    fireEvent.input(page.getByLabelText("New section's name"), { target: { value: "Bakery" } });
+    await add("Bread");
+
+    expect(calls.filter((c) => c.method === "POST").map((c) => c.body)).toEqual([
+      { texts: ["Kale"], section: "Produce" },
+      { texts: ["Bread"], section: "Bakery" },
+    ]);
+  });
+
+  test("an open item's menu moves it to another section", async () => {
+    const page = showList();
+    const menu = (await page.findByLabelText("Move Coffee beans")) as HTMLSelectElement;
+
+    expect([...menu.options].map((o) => o.text)).toEqual(["Move to…", "Produce"]);
+    expect(
+      [...(page.getByLabelText("Move Spinach") as HTMLSelectElement).options].map((o) => o.text),
+    ).toEqual(["Move to…", "No section"]);
+    expect(page.queryByLabelText("Move Lemons")).toBeNull();
+    await act(async () => {
+      fireEvent.change(menu, { target: { value: "Produce" } });
+    });
+
+    await waitFor(() => expect(calls.some((c) => c.method === "PATCH")).toBe(true));
+    expect(calls.find((c) => c.method === "PATCH")).toEqual({
+      method: "PATCH",
+      url: "/v1/lists/shopping/items/a1?updateMask=section",
+      body: { section: "Produce" },
     });
   });
 

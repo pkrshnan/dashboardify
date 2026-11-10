@@ -831,10 +831,23 @@ export async function createList(token: Token, title: string): Promise<ListView>
   return listView(await call<ListJson>(token, "/v1/lists", { method: "POST", body }));
 }
 
-/** Adds what was typed; commas add several. */
-export async function addListItems(token: Token, slug: string, text: string): Promise<unknown> {
-  const body = JSON.stringify({ texts: [text] });
+/** Adds what was typed; commas add several. `section` "" is before the first heading. */
+export async function addListItems(
+  token: Token,
+  slug: string,
+  text: string,
+  section = "",
+): Promise<unknown> {
+  const body = JSON.stringify({ texts: [text], section });
   return call(token, `/v1/lists/${encodeURIComponent(slug)}/items`, { method: "POST", body });
+}
+
+/** Moves an item to the end of `section` ("" is before the first heading). */
+export function moveListItem(token: Token, name: string, section: string): Promise<unknown> {
+  return call(token, `/v1/${name}?updateMask=section`, {
+    method: "PATCH",
+    body: JSON.stringify({ section }),
+  });
 }
 
 export function setListItemDone(token: Token, name: string, done: boolean): Promise<unknown> {

@@ -37,3 +37,8 @@ export function doneItems(list: ListView): ListItemView[] {
 export function leftLabel(count: number): string {
   return count === 0 ? "All done" : `${count} left`;
 }
+
+/** The list's headings, in note order, for picking where to add or move an item. */
+export function sectionTitles(list: ListView): string[] {
+  return list.sections.map((section) => section.title).filter((title) => title !== "");
+}

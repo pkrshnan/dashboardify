@@ -11,11 +11,12 @@ import {
   fetchLists,
   type ListItemView,
   type ListView,
+  moveListItem,
   setListItemDone,
   type Token,
   Unauthorized,
 } from "../api";
-import { doneItems, leftLabel, openSections, withTicks } from "../lib/lists";
+import { doneItems, leftLabel, openSections, sectionTitles, withTicks } from "../lib/lists";
 import { href } from "../lib/router";
 import { navigate } from "../lib/use-route";
 import { useApp } from "./context";
@@ -147,6 +148,11 @@ function ListScreen(props: { slug: string; back?: boolean; onChanged: () => void
   const open = openSections(shown);
   const left = open.reduce((count, section) => count + section.items.length, 0);
   const done = doneItems(shown);
+  const titles = sectionTitles(list);
+  const move = async (item: ListItemView, section: string) => {
+    await moveListItem(token, item.name, section);
+    await changed();
+  };
   return (
     <section class="list" aria-label={list.title}>
       {props.back && (
@@ -159,12 +165,19 @@ function ListScreen(props: { slug: string; back?: boolean; onChanged: () => void
         <span class="muted">{leftLabel(left)}</span>
         <span class="list-path">{list.path}</span>
       </header>
-      <AddItems slug={list.slug} title={list.title} onAdded={changed} />
+      <AddItems slug={list.slug} title={list.title} sections={titles} onAdded={changed} />
       {open.map((section) => (
         <div key={section.title} class="list-section">
           {section.title && <h3>{section.title}</h3>}
           {section.items.map((item) => (
-            <ItemRow key={item.name} item={item} onTick={tick} />
+            <ItemRow
+              key={item.name}
+              item={item}
+              onTick={tick}
+              section={section.title}
+              sections={titles}
+              onMove={move}
+            />
           ))}
         </div>
       ))}
@@ -228,57 +241,138 @@ function withoutKey(map: Map<string, boolean>, key: string): Map<string, boolean
   return left;
 }
 
-/** The add box: Return adds what's typed (commas add several) and clears it. */
-function AddItems(props: { slug: string; title: string; onAdded: () => Promise<void> }) {
+// Menu values for "New section" and "No section": a heading can't hold a line break.
+const NEW_SECTION = "\nnew";
+const NO_SECTION = "\nnone";
+
+/**
+ * The add box: Return adds what's typed (commas add several) and clears it. Beside it, the
+ * section to add to; a new one gets its heading with the first item.
+ */
+function AddItems(props: {
+  slug: string;
+  title: string;
+  sections: string[];
+  onAdded: () => Promise<void>;
+}) {
   const { token, isPhone } = useApp();
   const [text, setText] = useState("");
+  const [section, setSection] = useState("");
+  const [newSection, setNewSection] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const target = section === NEW_SECTION ? newSection.trim() : section;
   const submit = async (event: Event) => {
     event.preventDefault();
     if (text.trim() === "") {
       return;
     }
     try {
-      await addListItems(token, props.slug, text);
+      await addListItems(token, props.slug, text, target);
       setText("");
       setError(null);
+      setSection(target);
+      setNewSection("");
       await props.onAdded();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     }
   };
+  const into = target || props.title;
   return (
     <form class="list-add" onSubmit={submit}>
-      <input
-        class="list-input"
-        aria-label={`Add to ${props.title}`}
-        placeholder={
-          isPhone ? `Add to ${props.title}` : `Add to ${props.title}. Commas add several`
-        }
-        value={text}
-        onInput={(e) => setText(e.currentTarget.value)}
-      />
+      <div class="list-add-row">
+        <input
+          class="list-input"
+          aria-label={`Add to ${props.title}`}
+          placeholder={isPhone ? `Add to ${into}` : `Add to ${into}. Commas add several`}
+          value={text}
+          onInput={(e) => setText(e.currentTarget.value)}
+        />
+        <SectionPick sections={props.sections} value={section} onChange={setSection} />
+      </div>
+      {section === NEW_SECTION && (
+        <input
+          class="list-input list-new-section"
+          aria-label="New section's name"
+          placeholder="New section's name, such as Produce"
+          value={newSection}
+          onInput={(e) => setNewSection(e.currentTarget.value)}
+        />
+      )}
       {error && <p class="list-error">{error}</p>}
     </form>
   );
 }
 
+function SectionPick(props: {
+  sections: string[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <select
+      class="list-section-pick"
+      aria-label="Section"
+      value={props.value}
+      onChange={(e) => props.onChange(e.currentTarget.value)}
+    >
+      <option value="">No section</option>
+      {props.sections.map((title) => (
+        <option key={title} value={title}>
+          {title}
+        </option>
+      ))}
+      <option value={NEW_SECTION}>New section…</option>
+    </select>
+  );
+}
+
+/** One item: a tap ticks it. Open items have a menu beside them to move to another section. */
 function ItemRow(props: {
   item: ListItemView;
   onTick: (item: ListItemView, done: boolean) => void;
+  /** The heading it's drawn under, "" for none, and the others it can move to. */
+  section?: string;
+  sections?: string[];
+  onMove?: (item: ListItemView, section: string) => void;
 }) {
-  const { item, onTick } = props;
+  const { item, onTick, section, sections, onMove } = props;
+  const others = ["", ...(sections ?? [])].filter((title) => title !== section);
   return (
-    <button
-      type="button"
-      class={`list-item${item.done ? " done" : ""}`}
-      aria-pressed={item.done}
-      onClick={() => onTick(item, !item.done)}
-    >
-      <span class="ring" aria-hidden="true" />
-      <span class="list-text">{item.text}</span>
-      {item.note && <span class="list-note">{item.note}</span>}
-    </button>
+    <div class="list-row">
+      <button
+        type="button"
+        class={`list-item${item.done ? " done" : ""}`}
+        aria-pressed={item.done}
+        onClick={() => onTick(item, !item.done)}
+      >
+        <span class="ring" aria-hidden="true" />
+        <span class="list-text">{item.text}</span>
+        {item.note && <span class="list-note">{item.note}</span>}
+      </button>
+      {onMove && others.length > 0 && (
+        <label class="list-move">
+          <span aria-hidden="true">⋯</span>
+          <select
+            aria-label={`Move ${item.text}`}
+            value=""
+            onChange={(e) => {
+              const value = e.currentTarget.value;
+              onMove(item, value === NO_SECTION ? "" : value);
+            }}
+          >
+            <option value="" disabled>
+              Move to…
+            </option>
+            {others.map((title) => (
+              <option key={title} value={title || NO_SECTION}>
+                {title || "No section"}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+    </div>
   );
 }
 

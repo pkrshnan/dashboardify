@@ -34,7 +34,7 @@ service ListService {
   }
 
   // Adds items; a text with commas is several. One already open is left alone, and one ticked is
-  // unticked where it is.
+  // unticked where it is, or moved to `section` when one is given.
   rpc AddListItems(AddListItemsRequest) returns (AddListItemsResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=lists/*}/items"
@@ -43,7 +43,7 @@ service ListService {
     option (google.api.method_signature) = "parent,texts";
   }
 
-  // Ticks, unticks or renames one item.
+  // Ticks, unticks, renames or moves one item. Moving gives it a new name, returned here.
   rpc UpdateListItem(UpdateListItemRequest) returns (ListItem) {
     option (google.api.http) = {
       patch: "/v1/{item.name=lists/*/items/*}"
@@ -138,8 +138,15 @@ message ListItem {
   // Ticked.
   bool done = 4 [(google.api.field_behavior) = OPTIONAL];
 
-  // The `##` heading it sits under; empty before the first one.
-  string section = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // The `##` heading it sits under; empty before the first one. Setting it moves the item to the
+  // end of that section, adding the heading if it isn't there.
+  string section = 5 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).string = {
+      max_len: 80
+      pattern: "^[^\\r\\n]*$"
+    }
+  ];
 }
 
 // Request for ListLists.
@@ -193,6 +200,16 @@ message AddListItemsRequest {
 
   // Add only if the list is still at this version.
   string etag = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // The `##` heading to add under, such as `Produce`, matched ignoring case; one that isn't there
+  // is added at the end of the note. Empty: before the first heading.
+  string section = 4 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).string = {
+      max_len: 80
+      pattern: "^[^\\r\\n]*$"
+    }
+  ];
 }
 
 // Response for AddListItems.
