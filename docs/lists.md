@@ -71,7 +71,9 @@ A `lists` module at `#/lists/:list?`, sidebar group 2, a phone tab, icon `lists`
 
 - Desktop: the lists in a column beside the open list, and "+ New list". The add box at the top,
   with a section menu beside it ("No section", the headings, "New section…"); sections with their
-  items, each with a ⋯ menu to move it (shown on hover; always on the phone); "Done · 3" with "Clear done items"; the note's path.
+  items, each with a drag handle (shown on hover; always on the phone). Drag it onto another
+  section, or focus it and press ↑ or ↓; while dragging, empty sections and "No section" show as
+  drop zones. "Done · 3" with "Clear done items"; the note's path.
 - Phone: `#/lists` shows the lists; `#/lists/shopping` the list, with 52 px rows and "Done" at
   the bottom.
 - The wording fits any list: "7 left", "All done", "Done", not shopping's "to get" and "got".
@@ -85,7 +87,7 @@ A `lists` module at `#/lists/:list?`, sidebar group 2, a phone tab, icon `lists`
 | LS2 | ListService | `list.proto`, `src/server/api/lists.ts`, REST bindings, api.md | Each method; stale etag `409`; unknown list `404`; `requestId` retry |
 | LS3 | Lists page | `web/modules/lists.tsx`, `web/api.ts`, styles; the sidebar and tab bar gain Lists; demo lists | Component tests for add, tick, Got, clear; the module in the nav |
 | LS4 | Siri | `VoiceService.AddToList`, `shortcuts/add-to-list.md` | Fuzzy list name, commas, the spoken sentence |
-| LS5 | Sections | Add into a section (new ones get a heading), move an item with `updateMask=section`; the section menu and the ⋯ move menu | Insert at a section's end, new heading, move with indented lines, ticked match moved; API and page tests |
+| LS5 | Sections | Add into a section (new ones get a heading), move an item with `updateMask=section`; the section menu and the move handle | Insert at a section's end, new heading, move with indented lines, ticked match moved; API and page tests |
 
 ## Open questions
 

@@ -69,7 +69,7 @@ describe("Lists page", () => {
 
   test("a tap ticks the item at once and sends done with its update mask", async () => {
     const page = showList();
-    const spinach = await page.findByRole("button", { name: /Spinach/ });
+    const spinach = await page.findByRole("button", { name: /^Spinach/ });
 
     await act(async () => {
       fireEvent.click(spinach);
@@ -104,7 +104,11 @@ describe("Lists page", () => {
   test("the section menu adds under a heading, or a new one", async () => {
     const page = showList();
     const box = (await page.findByLabelText("Add to Shopping")) as HTMLInputElement;
-    const pick = page.getByLabelText("Section") as HTMLSelectElement;
+    const pick = page.getByRole("button", { name: "Section" });
+    const choose = (name: string) => {
+      fireEvent.click(pick);
+      fireEvent.click(page.getByRole("menuitemradio", { name }));
+    };
     const add = async (text: string) => {
       fireEvent.input(box, { target: { value: text } });
       await act(async () => {
@@ -112,10 +116,20 @@ describe("Lists page", () => {
       });
     };
 
-    fireEvent.change(pick, { target: { value: "Produce" } });
+    fireEvent.click(pick);
+    expect(page.getAllByRole("menuitemradio").map((o) => o.textContent)).toEqual([
+      "No section",
+      "Produce",
+      "New section…",
+    ]);
+    fireEvent.keyDown(pick, { key: "Escape" });
+    expect(page.queryByRole("menu")).toBeNull();
+    choose("Produce");
+    expect(page.queryByRole("menu")).toBeNull();
+    expect(pick.textContent).toBe("Produce");
     expect(box.placeholder).toContain("Add to Produce");
     await add("Kale");
-    fireEvent.change(pick, { target: { value: "\nnew" } });
+    choose("New section…");
     fireEvent.input(page.getByLabelText("New section's name"), { target: { value: "Bakery" } });
     // Two boxes: browsers submit on Return only when the form has a submit button.
     expect(box.closest("form")?.querySelector('button[type="submit"]')).toBeTruthy();
@@ -127,25 +141,26 @@ describe("Lists page", () => {
     ]);
   });
 
-  test("an open item's menu moves it to another section", async () => {
+  test("an open item's handle moves it a section down or up with the arrow keys", async () => {
     const page = showList();
-    const menu = (await page.findByLabelText("Move Coffee beans")) as HTMLSelectElement;
+    const coffee = await page.findByRole("button", { name: "Move Coffee beans" });
 
-    expect([...menu.options].map((o) => o.text)).toEqual(["Move to…", "Produce"]);
-    expect(
-      [...(page.getByLabelText("Move Spinach") as HTMLSelectElement).options].map((o) => o.text),
-    ).toEqual(["Move to…", "No section"]);
-    expect(page.queryByLabelText("Move Lemons")).toBeNull();
+    expect(page.getByRole("button", { name: "Move Spinach" })).toBeTruthy();
+    expect(page.queryByRole("button", { name: "Move Lemons" })).toBeNull();
+    // Already at the top: nothing to send.
+    fireEvent.keyDown(coffee, { key: "ArrowUp" });
     await act(async () => {
-      fireEvent.change(menu, { target: { value: "Produce" } });
+      fireEvent.keyDown(coffee, { key: "ArrowDown" });
     });
 
     await waitFor(() => expect(calls.some((c) => c.method === "PATCH")).toBe(true));
-    expect(calls.find((c) => c.method === "PATCH")).toEqual({
-      method: "PATCH",
-      url: "/v1/lists/shopping/items/a1?updateMask=section",
-      body: { section: "Produce" },
-    });
+    expect(calls.filter((c) => c.method === "PATCH")).toEqual([
+      {
+        method: "PATCH",
+        url: "/v1/lists/shopping/items/a1?updateMask=section",
+        body: { section: "Produce" },
+      },
+    ]);
   });
 
   test("on the phone, a list has a way back to the lists", async () => {

@@ -2672,18 +2672,99 @@ button.link {
   gap: 8px;
 }
 
-/* The section to add to: a quiet pill that opens the system menu. */
-.list-section-pick {
+/* The section to add to: a quiet pill, and the menu it opens over the list. */
+.list-pick {
+  position: relative;
   flex: none;
+}
+
+.list-pick-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   max-width: 180px;
   height: 40px;
-  padding: 0 12px;
+  padding: 0 12px 0 14px;
   border: 0;
   border-radius: 10px;
   background: var(--fill);
   color: var(--text-2);
   font-size: var(--type-footnote);
   cursor: pointer;
+}
+
+.list-pick-button:hover,
+.list-pick-button[aria-expanded="true"] {
+  color: var(--text);
+}
+
+.list-pick-button svg {
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.list-pick-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  max-width: 280px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 5px;
+  border: 1px solid var(--line-3);
+  border-radius: 12px;
+  background: var(--fill);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.5);
+}
+
+.list-pick-menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  padding: 0 10px 0 30px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--text);
+  font-size: var(--type-body);
+  text-align: left;
+  cursor: pointer;
+  position: relative;
+}
+
+.list-pick-menu button:hover,
+.list-pick-menu button:focus-visible {
+  background: var(--line-2);
+  outline: none;
+}
+
+/* A tick beside the section items go to now. */
+.list-pick-menu button[aria-checked="true"]::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  width: 4px;
+  height: 8px;
+  border: solid var(--text);
+  border-width: 0 1.5px 1.5px 0;
+  transform: translateY(-65%) rotate(45deg);
+}
+
+.list-pick-menu .list-pick-new {
+  margin-top: 5px;
+  border-top: 1px solid var(--line-3);
+  border-radius: 0 0 7px 7px;
+  color: var(--text-2);
 }
 
 .list-new-section {
@@ -2756,35 +2837,80 @@ button.link {
   border-bottom: 0;
 }
 
-/* A "⋯" over an invisible select, so the menu is the system's own on every device. */
-.list-move {
-  position: relative;
+/* The handle to drag an item to another section, shown on hover. */
+.list-grip {
   flex: none;
   display: grid;
   place-items: center;
   width: 32px;
   height: 32px;
+  padding: 0;
+  border: 0;
   border-radius: 8px;
+  background: none;
   color: var(--text-3);
-  font-size: var(--type-headline);
+  cursor: grab;
+  touch-action: none;
   opacity: 0;
 }
 
-.list-row:hover .list-move,
-.list-move:focus-within {
+.list-grip svg {
+  fill: currentColor;
+}
+
+.list-row:hover .list-grip,
+.list-grip:focus-visible {
   opacity: 1;
 }
 
-.list-move:hover {
+.list-grip:hover {
   background: var(--fill);
+  color: var(--text-2);
 }
 
-.list-move select {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  opacity: 0;
-  cursor: pointer;
+/* While dragging: the row stays as a dim gap, the target section lights up. */
+.list-row.dragging .list-item {
+  color: var(--text-3);
+}
+
+.list-row.dragging .list-grip {
+  opacity: 1;
+  cursor: grabbing;
+}
+
+.list-section {
+  border-radius: 10px;
+  transition: background-color 120ms;
+}
+
+.list-section.drop {
+  background: var(--fill);
+  box-shadow:
+    0 0 0 6px var(--fill),
+    0 0 0 7px var(--line-3);
+}
+
+.list-drop-space {
+  height: 44px;
+  border: 1px dashed var(--line-3);
+  border-radius: 10px;
+}
+
+.list-ghost {
+  position: fixed;
+  z-index: 30;
+  max-width: 280px;
+  padding: 10px 14px;
+  border: 1px solid var(--line-3);
+  border-radius: 10px;
+  background: var(--fill);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.5);
+  font-size: var(--type-body);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  transform: translate(-100%, -50%) translateX(-12px);
 }
 
 .list-done-head {
@@ -2857,13 +2983,17 @@ button.link {
   min-height: 52px;
 }
 
-.lists.phone .list-section-pick {
+.lists.phone .list-pick-button {
   height: 44px;
   max-width: 120px;
 }
 
-/* No hover on the phone, so the menu always shows. */
-.lists.phone .list-move {
+.lists.phone .list-pick-menu button {
+  min-height: 44px;
+}
+
+/* No hover on the phone, so the handle always shows. */
+.lists.phone .list-grip {
   width: 40px;
   height: 44px;
   opacity: 1;
