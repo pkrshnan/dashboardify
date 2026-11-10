@@ -24,6 +24,8 @@ describe("pageFor", () => {
     ["/nowhere", "today", {}],
     ["/activity/extra", "today", {}],
     ["/more", "more", {}],
+    ["/lists", "lists", {}],
+    ["/lists/shopping", "lists", { list: "shopping" }],
   ])("%s shows %s", (path, id, params) => {
     const page = pageFor(path);
 

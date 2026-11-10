@@ -2,7 +2,7 @@
 
 Checklists you keep and tick off: shopping first, then packing, gift ideas, films. One note per
 list in the vault, a Lists page on desktop and phone, and Siri to add from anywhere. Design: the
-Lists boards on https://claude.ai/artifact/XuhyWehLi6CPS3yFr4paUU. Status: LS1 and LS2 built; LS3 and LS4 planned.
+Lists boards on https://claude.ai/artifact/XuhyWehLi6CPS3yFr4paUU. Status: LS1–LS3 built; LS4 (Siri) planned.
 
 ## Goals
 
@@ -21,7 +21,7 @@ Not goals: shared lists, quantities as numbers, prices, reminders on items (that
 | Not tasks | `TaskStore` skips `Lists/`, so list items never show up in Tasks, Today or Siri's due list |
 | Item ids | No markers in the note. An item is named by a hash of its section, text and which occurrence it is (`lists/shopping/items/k3f9a2`). Editing its text gives it a new name, which the response returns. |
 | Detail | A trailing `(…)` is the item's note, shown on the right: `- [ ] Spinach (2 bags)` |
-| Ticking | `[x]` in place; the page shows ticked items under "Got". "Clear got items" removes the `[x]` lines. |
+| Ticking | `[x]` in place; the page shows ticked items under "Done". "Clear done items" removes the `[x]` lines. |
 | Adding | New items go at the top, before the first section. An item that matches a ticked one (same text, ignoring case) is unticked where it is instead, so bananas go back to Produce. Commas add several. |
 | Concurrency | The list's etag is a hash of the note; writes send it and a stale one is `409`, as tasks do. One writer per file through `Vault.update`. |
 | Order | Items keep the note's order; the page doesn't reorder. Moving an item to another section is done in Obsidian for now. |
@@ -68,10 +68,11 @@ as part of the line above and not shown.
 
 A `lists` module at `#/lists/:list?`, sidebar group 2, a phone tab, icon `lists`.
 
-- Desktop: the lists in a column beside the open list. The add box at the top; sections with
-  their items; "Got · 3" with "Clear got items"; the note's path links to Obsidian.
-- Phone: `#/lists` shows the lists; `#/lists/shopping` the list, with 52 px rows and "Got"
-  folded at the bottom.
+- Desktop: the lists in a column beside the open list, and "+ New list". The add box at the top;
+  sections with their items; "Done · 3" with "Clear done items"; the note's path.
+- Phone: `#/lists` shows the lists; `#/lists/shopping` the list, with 52 px rows and "Done" at
+  the bottom.
+- The wording fits any list: "7 left", "All done", "Done", not shopping's "to get" and "got".
 - A tick shows at once and is sent in order, as on Today.
 
 ## Build plan

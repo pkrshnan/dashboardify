@@ -2572,3 +2572,235 @@ button.link {
 .more .icon {
   color: var(--text-2);
 }
+
+/* ---- Lists (docs/lists.md): the lists beside the open one; one at a time on the phone ---- */
+
+.lists {
+  max-width: 1200px;
+  display: grid;
+  grid-template-columns: 240px minmax(0, 760px);
+  min-height: 100vh;
+}
+
+.list-index {
+  padding: 32px 12px;
+  border-right: 1px solid var(--line-2);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.list-index h1 {
+  margin: 0 10px 14px;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.list-index a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: var(--text-2);
+  font-size: 15px;
+  text-decoration: none;
+}
+
+.list-index a[aria-current="page"] {
+  background: var(--fill);
+  color: var(--text);
+}
+
+.list-count {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.list-new {
+  margin-top: 10px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  background: none;
+  color: var(--text-2);
+  font-size: 15px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.list-new-form {
+  margin-top: 10px;
+  padding: 0 4px;
+}
+
+.list {
+  padding: 32px 40px 64px;
+}
+
+.list-head {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+
+.list-head h2 {
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.list-path {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.list-add {
+  margin: 16px 0 6px;
+}
+
+.list-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--fill);
+  font-size: 15px;
+  outline: none;
+}
+
+.list-error {
+  margin: 6px 2px 0;
+  font-size: 13px;
+  color: var(--bad);
+}
+
+.list-section h3,
+.list-done-head {
+  margin: 22px 0 4px;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-3);
+}
+
+.list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--fill);
+  background: none;
+  font-size: 15px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.list-item .ring {
+  pointer-events: none;
+}
+
+.list-item.done {
+  color: var(--text-3);
+}
+
+.list-item.done .list-text {
+  text-decoration: line-through;
+}
+
+.list-item.done .ring {
+  background: var(--text-3);
+  border-color: var(--text-3);
+  box-shadow: inset 0 0 0 3px var(--bg);
+}
+
+.list-note {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.list-done-head {
+  display: flex;
+  align-items: center;
+  margin-top: 26px;
+}
+
+.list-clear {
+  margin-left: auto;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--line-3);
+  border-radius: 8px;
+  background: none;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.list-back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--link);
+  font-size: 17px;
+  text-decoration: none;
+}
+
+.lists.phone {
+  display: block;
+  padding-top: env(safe-area-inset-top);
+}
+
+.lists.phone .list-index {
+  padding: 56px var(--gutter) 24px;
+  border-right: 0;
+}
+
+.lists.phone .list-index h1,
+.lists.phone .list-head h2 {
+  margin-left: 0;
+  font-size: 34px;
+}
+
+.lists.phone .list-index a {
+  min-height: 52px;
+  padding: 0;
+  border-bottom: 1px solid var(--line-2);
+  border-radius: 0;
+  font-size: 17px;
+  color: var(--text);
+}
+
+.lists.phone .list {
+  padding: 12px var(--gutter) 32px;
+}
+
+.lists.phone .list-new {
+  padding: 0;
+  min-height: 52px;
+  font-size: 17px;
+}
+
+.lists.phone .list-path {
+  display: none;
+}
+
+.lists.phone .list-input {
+  height: 44px;
+  font-size: 17px;
+}
+
+.lists.phone .list-item {
+  min-height: 52px;
+  font-size: 17px;
+}
+
+.lists.phone .list-item .ring {
+  width: 24px;
+  height: 24px;
+}
