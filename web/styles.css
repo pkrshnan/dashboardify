@@ -15,6 +15,16 @@
   --bad: #ff453a;
   --link: #8ab4ff;
   --gutter: 64px;
+  /* The type scale (docs/design/README.md). Every font-size is one of these; the phone redefines
+     a token rather than an element, so text of one role is one size everywhere. */
+  --type-caption: 11px;
+  --type-footnote: 13px;
+  --type-body: 15px;
+  --type-headline: 17px;
+  --type-title: 22px;
+  --type-large: 28px;
+  --type-display: 34px;
+  --type-hero: 64px;
 }
 
 * {
@@ -28,6 +38,7 @@ body {
   color: var(--text);
   font-family:
     -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, system-ui, sans-serif;
+  font-size: var(--type-body);
   font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
   -webkit-text-size-adjust: 100%;
@@ -41,7 +52,7 @@ input {
 
 h2 {
   margin: 0;
-  font-size: 22px;
+  font-size: var(--type-title);
   font-weight: 500;
 }
 
@@ -98,13 +109,13 @@ h2 {
 .focus-date {
   display: flex;
   gap: 16px;
-  font-size: 15px;
+  font-size: var(--type-body);
   color: var(--text-2);
 }
 
 .sentence {
   margin: 0;
-  font-size: 34px;
+  font-size: var(--type-display);
   line-height: 1.25;
   font-weight: 300;
   letter-spacing: -0.02em;
@@ -117,14 +128,14 @@ h2 {
 }
 
 .number-value {
-  font-size: 64px;
+  font-size: var(--type-hero);
   font-weight: 200;
   letter-spacing: -0.04em;
   line-height: 1;
 }
 
 .unit {
-  font-size: 17px;
+  font-size: var(--type-headline);
   font-weight: 400;
   letter-spacing: 0;
   color: var(--text-3);
@@ -136,7 +147,7 @@ h2 {
   gap: 8px;
   align-items: baseline;
   margin-top: 10px;
-  font-size: 15px;
+  font-size: var(--type-body);
   color: var(--text-2);
 }
 
@@ -145,7 +156,7 @@ h2 {
 }
 
 .next-label {
-  font-size: 13px;
+  font-size: var(--type-footnote);
   color: var(--text-3);
 }
 
@@ -157,12 +168,12 @@ h2 {
 }
 
 .next-title {
-  font-size: 22px;
+  font-size: var(--type-title);
   font-weight: 500;
 }
 
 .next-detail {
-  font-size: 15px;
+  font-size: var(--type-body);
   color: var(--text-2);
   margin-top: 2px;
 }
@@ -174,7 +185,7 @@ h2 {
   background: var(--fill);
   border: 1px solid var(--line-3);
   color: var(--text);
-  font-size: 15px;
+  font-size: var(--type-body);
   font-weight: 500;
   text-decoration: none;
   display: flex;
@@ -200,7 +211,7 @@ h2 {
   padding: 0 14px;
   border: 0;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: var(--type-footnote);
   font-weight: 500;
   cursor: pointer;
   background: transparent;
@@ -253,7 +264,7 @@ h2 {
   flex: 1;
   min-width: 0;
   height: 24px;
-  font-size: 17px;
+  font-size: var(--type-body);
   line-height: 24px;
 }
 
@@ -311,7 +322,7 @@ h2 {
   align-items: center;
   gap: 8px;
   min-width: 0;
-  font-size: 13px;
+  font-size: var(--type-footnote);
 }
 
 .capture-place-name {
@@ -341,7 +352,7 @@ h2 {
   padding: 0 14px;
   border: 0;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: var(--type-footnote);
   font-weight: 500;
   cursor: pointer;
   background: transparent;
@@ -364,7 +375,7 @@ h2 {
   gap: 4px;
   padding: 10px 18px 12px;
   border-top: 1px solid var(--line-2);
-  font-size: 15px;
+  font-size: var(--type-body);
   color: var(--text-2);
 }
 
@@ -390,7 +401,7 @@ h2 {
 .capture-preview .muted,
 .capture-reason,
 .capture-note {
-  font-size: 13px;
+  font-size: var(--type-footnote);
 }
 
 .capture-reason {
@@ -411,7 +422,7 @@ h2 {
   border-radius: 16px;
   background: transparent;
   color: var(--text);
-  font-size: 13px;
+  font-size: var(--type-footnote);
   cursor: pointer;
 }
 
@@ -436,7 +447,7 @@ h2 {
   border-radius: 22px;
   background: var(--text);
   color: var(--bg);
-  font-size: 15px;
+  font-size: var(--type-body);
   font-weight: 600;
   cursor: pointer;
 }
@@ -450,7 +461,7 @@ h2 {
 .capture-added {
   height: 44px;
   border-bottom: 1px solid var(--line-2);
-  font-size: 15px;
+  font-size: var(--type-body);
 }
 
 .capture-added-mark {
@@ -466,7 +477,7 @@ h2 {
 }
 
 .capture-added .muted {
-  font-size: 13px;
+  font-size: var(--type-footnote);
 }
 
 .muted-2 {
@@ -489,7 +500,7 @@ button.link {
   border: 0;
   background: transparent;
   color: var(--link);
-  font-size: 13px;
+  font-size: var(--type-footnote);
   cursor: pointer;
 }
 
@@ -565,7 +576,7 @@ button.link {
   gap: 12px;
   border-radius: 6px;
   padding: 3px 10px;
-  font-size: 13px;
+  font-size: var(--type-footnote);
   line-height: 18px;
 }
 
@@ -573,7 +584,7 @@ button.link {
   position: absolute;
   left: -48px;
   transform: translateY(-50%);
-  font-size: 11px;
+  font-size: var(--type-caption);
   color: var(--text-3);
 }
 
@@ -597,8 +608,12 @@ button.link {
   border-radius: 6px;
   padding: 6px 10px;
   overflow: hidden;
-  font-size: 13px;
+  font-size: var(--type-footnote);
   line-height: 18px;
+}
+
+.event-detail {
+  line-height: 16px;
 }
 
 .event.one-line {
@@ -647,7 +662,7 @@ button.link {
   border: 1px dashed var(--control);
   border-radius: 16px;
   background: var(--bg);
-  font-size: 13px;
+  font-size: var(--type-footnote);
 }
 
 .reminder.done .reminder-text {
@@ -673,7 +688,7 @@ button.link {
   left: 0;
   width: 62%;
   top: 50%;
-  font-size: 15px;
+  font-size: var(--type-body);
   color: var(--text-3);
 }
 
@@ -688,7 +703,7 @@ button.link {
   width: 28px;
   flex: none;
   position: relative;
-  font-size: 11px;
+  font-size: var(--type-caption);
   color: var(--text-3);
 }
 
@@ -708,7 +723,7 @@ button.link {
 .week-day {
   height: 28px;
   padding: 0 4px;
-  font-size: 13px;
+  font-size: var(--type-footnote);
   color: var(--text-2);
 }
 
@@ -730,7 +745,7 @@ button.link {
   display: flex;
   gap: 5px;
   align-items: center;
-  font-size: 11px;
+  font-size: var(--type-caption);
 }
 
 .week-body {
@@ -742,7 +757,7 @@ button.link {
   position: absolute;
   border-radius: 4px;
   padding: 3px 6px;
-  font-size: 11px;
+  font-size: var(--type-caption);
   line-height: 14px;
   overflow: hidden;
 }
@@ -764,7 +779,7 @@ button.link {
   border-radius: 10px;
   border: 1px dashed var(--control);
   background: var(--bg);
-  font-size: 11px;
+  font-size: var(--type-caption);
 }
 
 .week-reminder .hollow {
@@ -801,11 +816,11 @@ button.link {
 }
 
 .day-strip .dow {
-  font-size: 11px;
+  font-size: var(--type-caption);
 }
 
 .day-strip .num {
-  font-size: 17px;
+  font-size: var(--type-headline);
 }
 
 .day-strip .dot {
@@ -826,12 +841,12 @@ button.link {
   gap: 12px;
   min-height: 44px;
   border-bottom: 1px solid var(--line-2);
-  font-size: 15px;
+  font-size: var(--type-body);
 }
 
 .agenda-time {
   width: 44px;
-  font-size: 13px;
+  font-size: var(--type-footnote);
   color: var(--text-3);
   flex: none;
 }
@@ -843,7 +858,7 @@ button.link {
 }
 
 .agenda-detail {
-  font-size: 13px;
+  font-size: var(--type-footnote);
   color: var(--text-3);
 }
 
@@ -872,7 +887,7 @@ button.link {
   border-radius: 12px;
   background: var(--fill);
   color: var(--text-3);
-  font-size: 15px;
+  font-size: var(--type-body);
 }
 
 .quick-add input {
@@ -886,7 +901,7 @@ button.link {
 
 .task-group h3 {
   margin: 0 0 2px;
-  font-size: 13px;
+  font-size: var(--type-footnote);
   font-weight: 500;
   color: var(--text-2);
 }
@@ -912,7 +927,7 @@ button.link {
 .task-text {
   flex: 1;
   min-width: 0;
-  font-size: 15px;
+  font-size: var(--type-body);
 }
 
 .task-row.done .task-text {
@@ -921,7 +936,7 @@ button.link {
 }
 
 .task-meta {
-  font-size: 13px;
+  font-size: var(--type-footnote);
   color: var(--text-3);
 }
 
@@ -934,7 +949,7 @@ button.link {
 }
 
 .range-label {
-  font-size: 15px;
+  font-size: var(--type-body);
   color: var(--text-3);
 }
 
@@ -975,12 +990,12 @@ button.link {
 }
 
 .metric-name {
-  font-size: 13px;
+  font-size: var(--type-footnote);
   color: var(--text-2);
 }
 
 .metric-value {
-  font-size: 36px;
+  font-size: var(--type-display);
   font-weight: 300;
   letter-spacing: -0.02em;
   line-height: 1.15;
@@ -988,11 +1003,11 @@ button.link {
 }
 
 .metric-value .unit {
-  font-size: 15px;
+  font-size: var(--type-body);
 }
 
 .metric-delta {
-  font-size: 13px;
+  font-size: var(--type-footnote);
   margin-top: 2px;
 }
 
@@ -1030,7 +1045,7 @@ button.link {
   align-items: center;
   height: 44px;
   color: var(--link);
-  font-size: 15px;
+  font-size: var(--type-body);
   text-decoration: none;
 }
 
@@ -1043,7 +1058,7 @@ button.link {
 
 .settings h1 {
   margin: 0 0 20px;
-  font-size: 28px;
+  font-size: var(--type-large);
   font-weight: 300;
   letter-spacing: -0.02em;
 }
@@ -1061,7 +1076,7 @@ button.link {
   padding: 0 12px;
   border-radius: 10px;
   color: var(--text-2);
-  font-size: 15px;
+  font-size: var(--type-body);
   text-decoration: none;
 }
 
@@ -1086,7 +1101,7 @@ button.link {
   margin: 0 0 4px;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--line-3);
-  font-size: 17px;
+  font-size: var(--type-headline);
   font-weight: 500;
 }
 
@@ -1100,7 +1115,7 @@ button.link {
 }
 
 .settings-row label {
-  font-size: 15px;
+  font-size: var(--type-body);
   line-height: 44px;
 }
 
@@ -1119,7 +1134,7 @@ button.link {
   border-radius: 10px;
   background: var(--fill);
   color: var(--text);
-  font-size: 15px;
+  font-size: var(--type-body);
   outline: none;
 }
 
@@ -1132,7 +1147,7 @@ button.link {
 }
 
 .settings-note {
-  font-size: 13px;
+  font-size: var(--type-footnote);
   line-height: 18px;
   color: var(--text-3);
 }
@@ -1153,7 +1168,7 @@ button.link {
   flex-wrap: wrap;
   align-items: center;
   gap: 4px 12px;
-  font-size: 15px;
+  font-size: var(--type-body);
 }
 
 .place-chosen a {
@@ -1179,7 +1194,7 @@ button.link {
   border-radius: 6px;
   background: transparent;
   color: var(--text);
-  font-size: 15px;
+  font-size: var(--type-body);
   text-align: left;
   cursor: pointer;
 }
@@ -1204,7 +1219,7 @@ button.link {
   padding: 0 4px 0 12px;
   border: 1px solid var(--line-3);
   border-radius: 16px;
-  font-size: 13px;
+  font-size: var(--type-footnote);
 }
 
 .settings-chip button {
@@ -1213,7 +1228,7 @@ button.link {
   border: 0;
   background: transparent;
   color: var(--text-3);
-  font-size: 15px;
+  font-size: var(--type-body);
   cursor: pointer;
 }
 
@@ -1244,7 +1259,7 @@ button.link {
 }
 
 .device-name {
-  font-size: 15px;
+  font-size: var(--type-body);
 }
 
 .device-tag {
@@ -1253,7 +1268,7 @@ button.link {
   border-radius: 10px;
   background: var(--fill);
   color: var(--text-2);
-  font-size: 12px;
+  font-size: var(--type-caption);
 }
 
 .device-revoke {
@@ -1263,7 +1278,7 @@ button.link {
   border-radius: 18px;
   background: transparent;
   color: var(--bad);
-  font-size: 13px;
+  font-size: var(--type-footnote);
   cursor: pointer;
 }
 
@@ -1273,7 +1288,7 @@ button.link {
   border: 0;
   background: var(--bad);
   color: var(--text);
-  font-size: 15px;
+  font-size: var(--type-body);
   font-weight: 600;
 }
 
@@ -1312,10 +1327,6 @@ button.link {
   border: 1px solid var(--bad);
 }
 
-.dialog-body h2 {
-  font-size: 22px;
-}
-
 .dialog-actions {
   display: flex;
   justify-content: flex-end;
@@ -1329,12 +1340,12 @@ button.link {
 }
 
 .event-when {
-  font-size: 15px;
+  font-size: var(--type-body);
   color: var(--text-2);
 }
 
 .event-text {
-  font-size: 15px;
+  font-size: var(--type-body);
   line-height: 21px;
   white-space: pre-line;
 }
@@ -1351,7 +1362,7 @@ button.link {
   height: 44px;
   padding: 0 20px;
   border-radius: 22px;
-  font-size: 15px;
+  font-size: var(--type-body);
 }
 
 .device-qr {
@@ -1385,14 +1396,14 @@ button.link {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
-  font-size: 13px;
+  font-size: var(--type-footnote);
 }
 
 .device-understood {
   display: flex;
   gap: 10px;
   align-items: center;
-  font-size: 15px;
+  font-size: var(--type-body);
 }
 
 .settings-note.warn {
@@ -1419,7 +1430,7 @@ button.link {
 .capture-add.small {
   height: 36px;
   padding: 0 14px;
-  font-size: 13px;
+  font-size: var(--type-footnote);
 }
 
 .calendar-row {
@@ -1436,7 +1447,7 @@ button.link {
   gap: 10px;
   align-items: baseline;
   min-width: 0;
-  font-size: 15px;
+  font-size: var(--type-body);
 }
 
 .calendar-name .settings-note {
@@ -1462,7 +1473,7 @@ button.link {
   border: 0;
   background: transparent;
   color: var(--text);
-  font-size: 13px;
+  font-size: var(--type-footnote);
   appearance: none;
   cursor: pointer;
 }
@@ -1513,7 +1524,7 @@ button.link {
   border: 0;
   background: transparent;
   color: var(--text-3);
-  font-size: 18px;
+  font-size: var(--type-headline);
   cursor: pointer;
 }
 
@@ -1539,7 +1550,7 @@ button.link {
 
 .settings-foot {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--type-footnote);
   color: var(--text-3);
 }
 
@@ -1557,7 +1568,7 @@ button.link {
 .sign-in p {
   margin: 0;
   color: var(--text-2);
-  font-size: 15px;
+  font-size: var(--type-body);
   line-height: 1.4;
 }
 
@@ -1571,7 +1582,7 @@ button.link {
   border-radius: 10px;
   background: var(--fill);
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
-  font-size: 12px;
+  font-size: var(--type-footnote);
   line-height: 18px;
   color: var(--text-2);
   white-space: pre-wrap;
@@ -1581,7 +1592,7 @@ button.link {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  font-size: 13px;
+  font-size: var(--type-footnote);
   color: var(--text-2);
 }
 
@@ -1594,7 +1605,7 @@ button.link {
   border-radius: 12px;
   background: var(--fill);
   color: var(--text);
-  font-size: 17px;
+  font-size: var(--type-body);
   outline: none;
 }
 
@@ -1602,7 +1613,7 @@ button.link {
   height: auto;
   padding: 12px 14px;
   font: inherit;
-  font-size: 17px;
+  font-size: var(--type-body);
   resize: vertical;
 }
 
@@ -1614,7 +1625,7 @@ button.link {
 .setup-field .setup-code {
   height: 56px;
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
-  font-size: 22px;
+  font-size: var(--type-title);
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -1624,6 +1635,12 @@ button.link {
 @media (max-width: 899px) {
   :root {
     --gutter: 20px;
+    /* iOS sizes: body text is 17 px, titles are larger and the display sizes smaller. */
+    --type-body: 17px;
+    --type-title: 20px;
+    --type-large: 34px;
+    --type-display: 24px;
+    --type-hero: 48px;
   }
 
   .capture-row {
@@ -1640,17 +1657,12 @@ button.link {
     padding: calc(56px + env(safe-area-inset-top)) var(--gutter) 32px;
   }
 
-  .settings.phone h1 {
-    font-size: 34px;
-  }
-
   .settings.phone .settings-sections a {
     height: 56px;
     padding: 0;
     border-bottom: 1px solid var(--line-2);
     border-radius: 0;
     color: var(--text);
-    font-size: 17px;
   }
 
   .settings-row {
@@ -1660,7 +1672,7 @@ button.link {
 
   .settings-row label {
     line-height: 20px;
-    font-size: 13px;
+    font-size: var(--type-footnote);
     color: var(--text-2);
   }
 
@@ -1680,7 +1692,6 @@ button.link {
   .settings-input {
     max-width: none;
     height: 48px;
-    font-size: 17px;
   }
 
   .capture-preview {
@@ -1689,10 +1700,6 @@ button.link {
 
   .capture-kind button {
     height: 38px;
-  }
-
-  h2 {
-    font-size: 20px;
   }
 
   .focus {
@@ -1710,7 +1717,6 @@ button.link {
   }
 
   .sentence {
-    font-size: 24px;
     line-height: 1.3;
     letter-spacing: -0.01em;
   }
@@ -1722,17 +1728,15 @@ button.link {
   }
 
   .number-value {
-    font-size: 48px;
     letter-spacing: -0.03em;
   }
 
   .number-value .unit {
-    font-size: 15px;
     margin-left: 3px;
   }
 
   .number-name {
-    font-size: 13px;
+    font-size: var(--type-footnote);
     margin-top: 8px;
   }
 
@@ -1742,11 +1746,11 @@ button.link {
   }
 
   .next-title {
-    font-size: 17px;
+    font-size: var(--type-headline);
   }
 
   .next-detail {
-    font-size: 13px;
+    font-size: var(--type-footnote);
   }
 
   .next-row {
@@ -1798,7 +1802,7 @@ button.link {
   }
 
   .reminder-body .reminder-time {
-    font-size: 11px;
+    font-size: var(--type-caption);
     line-height: 14px;
     color: var(--text-3);
   }
@@ -1820,10 +1824,6 @@ button.link {
 
   .task-row {
     min-height: 48px;
-  }
-
-  .task-text {
-    font-size: 17px;
   }
 
   .tasks {
@@ -1852,18 +1852,17 @@ button.link {
 
   .metric-row .metric-name {
     flex: 1;
-    font-size: 15px;
+    font-size: var(--type-body);
   }
 
   .metric-row .metric-value {
-    font-size: 24px;
     min-width: 76px;
     text-align: right;
     margin: 0;
   }
 
   .metric-row .metric-value .unit {
-    font-size: 13px;
+    font-size: var(--type-footnote);
     margin-left: 2px;
   }
 
@@ -1877,7 +1876,7 @@ button.link {
   }
 
   .range-label {
-    font-size: 13px;
+    font-size: var(--type-footnote);
     margin-top: 2px;
   }
 
@@ -1893,7 +1892,7 @@ button.link {
 /* ---- Activity ---- */
 
 .section-link {
-  font-size: 15px;
+  font-size: var(--type-body);
   color: var(--accent);
   text-decoration: none;
 }
@@ -1920,13 +1919,13 @@ button.link {
 
 .activity-title h1 {
   margin: 0;
-  font-size: 34px;
+  font-size: var(--type-large);
   font-weight: 300;
 }
 
 .link-button {
   color: var(--accent);
-  font-size: 15px;
+  font-size: var(--type-body);
   text-decoration: none;
   background: none;
   border: 0;
@@ -1961,7 +1960,7 @@ button.link {
 
 .stat-name,
 .stat-detail {
-  font-size: 13px;
+  font-size: var(--type-footnote);
   color: var(--text-2);
 }
 
@@ -1970,12 +1969,12 @@ button.link {
 }
 
 .stat-value {
-  font-size: 40px;
+  font-size: var(--type-display);
   font-weight: 300;
 }
 
 .detail-stats .stat-value {
-  font-size: 28px;
+  font-size: var(--type-title);
 }
 
 .activity-body {
@@ -2006,7 +2005,7 @@ button.link {
 
 .act-heading {
   margin: 20px 0 4px;
-  font-size: 13px;
+  font-size: var(--type-footnote);
   font-weight: 600;
   color: var(--text-2);
   display: flex;
@@ -2051,16 +2050,16 @@ button.link {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  font-size: 15px;
+  font-size: var(--type-body);
 }
 
 .row-sub {
-  font-size: 13px;
+  font-size: var(--type-footnote);
   color: var(--text-3);
 }
 
 .row .muted {
-  font-size: 13px;
+  font-size: var(--type-footnote);
   text-align: right;
 }
 
@@ -2097,7 +2096,7 @@ button.link {
   flex-direction: column;
   gap: 8px;
   padding: 0 0 14px 20px;
-  font-size: 13px;
+  font-size: var(--type-footnote);
 }
 
 .review.quiet {
@@ -2117,7 +2116,7 @@ button.link {
   border: 1.5px solid var(--line-3);
   background: none;
   color: var(--text);
-  font-size: 13px;
+  font-size: var(--type-footnote);
   cursor: pointer;
 }
 
@@ -2134,7 +2133,7 @@ button.link {
 }
 
 .month-dow span {
-  font-size: 11px;
+  font-size: var(--type-caption);
   color: var(--text-3);
   padding: 0 8px;
 }
@@ -2170,11 +2169,11 @@ button.link {
 .month-day-head {
   display: flex;
   justify-content: space-between;
-  font-size: 13px;
+  font-size: var(--type-footnote);
 }
 
 .month-day-head .muted {
-  font-size: 11px;
+  font-size: var(--type-caption);
 }
 
 .month-day-marks {
@@ -2185,7 +2184,7 @@ button.link {
 }
 
 .chip {
-  font-size: 11px;
+  font-size: var(--type-caption);
   padding: 3px 6px;
   border-radius: 5px;
   background: var(--accent);
@@ -2211,7 +2210,7 @@ button.link {
 }
 
 .note {
-  font-size: 13px;
+  font-size: var(--type-footnote);
 }
 
 .quarter-bars {
@@ -2259,7 +2258,7 @@ button.link {
   display: grid;
   grid-template-columns: repeat(13, minmax(0, 1fr));
   gap: 8px;
-  font-size: 11px;
+  font-size: var(--type-caption);
   margin-top: 6px;
   white-space: nowrap;
 }
@@ -2267,7 +2266,7 @@ button.link {
 .legend {
   display: flex;
   gap: 16px;
-  font-size: 11px;
+  font-size: var(--type-caption);
   margin-top: 10px;
 }
 
@@ -2317,7 +2316,7 @@ button.link {
   right: 100%;
   padding-right: 8px;
   transform: translateY(-50%);
-  font-size: 11px;
+  font-size: var(--type-caption);
   color: var(--text-3);
 }
 
@@ -2325,7 +2324,7 @@ button.link {
   display: grid;
   grid-template-columns: var(--hr-gutter) minmax(0, 1fr) auto;
   margin-top: 6px;
-  font-size: 11px;
+  font-size: var(--type-caption);
 }
 
 .session-shade {
@@ -2348,12 +2347,12 @@ button.link {
   min-height: 36px;
   align-items: center;
   border-bottom: 1px solid var(--line-2);
-  font-size: 15px;
+  font-size: var(--type-body);
 }
 
 .set > :last-child {
   text-align: right;
-  font-size: 13px;
+  font-size: var(--type-footnote);
 }
 
 .set.warm > :first-child {
@@ -2373,10 +2372,6 @@ button.link {
 
   .activity-range {
     justify-content: space-between;
-  }
-
-  .stat-value {
-    font-size: 32px;
   }
 
   .month-day {
@@ -2465,7 +2460,7 @@ button.link {
   padding: 0 10px;
   border-radius: 8px;
   color: var(--text-2);
-  font-size: 15px;
+  font-size: var(--type-body);
   text-decoration: none;
 }
 
@@ -2533,7 +2528,7 @@ button.link {
   justify-content: center;
   gap: 3px;
   color: var(--text-2);
-  font-size: 11px;
+  font-size: var(--type-caption);
   text-decoration: none;
 }
 
@@ -2554,8 +2549,8 @@ button.link {
 
 .more h1 {
   margin: 0 0 12px;
-  font-size: 34px;
-  font-weight: 600;
+  font-size: var(--type-large);
+  font-weight: 300;
 }
 
 .more a {
@@ -2565,7 +2560,7 @@ button.link {
   min-height: 52px;
   border-bottom: 1px solid var(--line-2);
   color: var(--text);
-  font-size: 17px;
+  font-size: var(--type-body);
   text-decoration: none;
 }
 
@@ -2592,8 +2587,8 @@ button.link {
 
 .list-index h1 {
   margin: 0 10px 14px;
-  font-size: 28px;
-  font-weight: 600;
+  font-size: var(--type-large);
+  font-weight: 300;
 }
 
 .list-index a {
@@ -2604,7 +2599,7 @@ button.link {
   padding: 0 10px;
   border-radius: 8px;
   color: var(--text-2);
-  font-size: 15px;
+  font-size: var(--type-body);
   text-decoration: none;
 }
 
@@ -2615,7 +2610,7 @@ button.link {
 
 .list-count {
   margin-left: auto;
-  font-size: 13px;
+  font-size: var(--type-footnote);
   color: var(--text-3);
 }
 
@@ -2626,7 +2621,7 @@ button.link {
   border: 0;
   background: none;
   color: var(--text-2);
-  font-size: 15px;
+  font-size: var(--type-body);
   text-align: left;
   cursor: pointer;
 }
@@ -2647,13 +2642,13 @@ button.link {
 }
 
 .list-head h2 {
-  font-size: 28px;
-  font-weight: 600;
+  font-size: var(--type-large);
+  font-weight: 300;
 }
 
 .list-path {
   margin-left: auto;
-  font-size: 13px;
+  font-size: var(--type-footnote);
   color: var(--text-3);
 }
 
@@ -2668,20 +2663,20 @@ button.link {
   border: 0;
   border-radius: 10px;
   background: var(--fill);
-  font-size: 15px;
+  font-size: var(--type-body);
   outline: none;
 }
 
 .list-error {
   margin: 6px 2px 0;
-  font-size: 13px;
+  font-size: var(--type-footnote);
   color: var(--bad);
 }
 
 .list-section h3,
 .list-done-head {
   margin: 22px 0 4px;
-  font-size: 13px;
+  font-size: var(--type-footnote);
   font-weight: 400;
   color: var(--text-3);
 }
@@ -2696,7 +2691,7 @@ button.link {
   border: 0;
   border-bottom: 1px solid var(--fill);
   background: none;
-  font-size: 15px;
+  font-size: var(--type-body);
   text-align: left;
   cursor: pointer;
 }
@@ -2721,7 +2716,7 @@ button.link {
 
 .list-note {
   margin-left: auto;
-  font-size: 13px;
+  font-size: var(--type-footnote);
   color: var(--text-3);
 }
 
@@ -2738,7 +2733,7 @@ button.link {
   border: 1px solid var(--line-3);
   border-radius: 8px;
   background: none;
-  font-size: 13px;
+  font-size: var(--type-footnote);
   cursor: pointer;
 }
 
@@ -2747,7 +2742,7 @@ button.link {
   align-items: center;
   min-height: 44px;
   color: var(--link);
-  font-size: 17px;
+  font-size: var(--type-body);
   text-decoration: none;
 }
 
@@ -2764,7 +2759,6 @@ button.link {
 .lists.phone .list-index h1,
 .lists.phone .list-head h2 {
   margin-left: 0;
-  font-size: 34px;
 }
 
 .lists.phone .list-index a {
@@ -2772,7 +2766,6 @@ button.link {
   padding: 0;
   border-bottom: 1px solid var(--line-2);
   border-radius: 0;
-  font-size: 17px;
   color: var(--text);
 }
 
@@ -2783,7 +2776,6 @@ button.link {
 .lists.phone .list-new {
   padding: 0;
   min-height: 52px;
-  font-size: 17px;
 }
 
 .lists.phone .list-path {
@@ -2792,12 +2784,10 @@ button.link {
 
 .lists.phone .list-input {
   height: 44px;
-  font-size: 17px;
 }
 
 .lists.phone .list-item {
   min-height: 52px;
-  font-size: 17px;
 }
 
 .lists.phone .list-item .ring {

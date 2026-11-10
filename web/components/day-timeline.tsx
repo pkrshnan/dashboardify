@@ -183,7 +183,7 @@ function EventBlock(props: {
         </>
       )}
       {isPhone && !block.oneLine && (
-        <div class="ell" style={{ color: detailColor, fontSize: "12px", lineHeight: "16px" }}>
+        <div class="ell event-detail" style={{ color: detailColor }}>
           {detail}
         </div>
       )}

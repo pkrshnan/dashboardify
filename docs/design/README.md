@@ -108,8 +108,22 @@ colour.
 1.5 px `control` rings that fill when done; touch targets 44 px on the phone; task rows are the
 hit area.
 
-**Type:** the system font, tabular figures. Weight 200 only at 48 px+, 300 for 24–40 px. Sizes 11,
-13, 15, 17. Formats: "3 Nov", 24-hour times, "7h 12m", "3d late".
+**Type:** the system font, tabular figures. Every size is a `--type-*` token in `web/styles.css`
+(a test rejects raw pixels); the phone changes the token, not the element.
+
+| Token | Desktop | Phone | Use |
+|---|---|---|---|
+| caption | 11 | 11 | hour labels, axis ticks, chips, tab bar |
+| footnote | 13 | 13 | metadata, notes, group labels, small buttons |
+| body | 15 | 17 | rows, inputs and their placeholders, buttons |
+| headline | 17 | 17 | group headings, units beside big numbers |
+| title | 22 | 20 | section headings, the next event, dialogs |
+| large | 28 | 34 | page titles |
+| display | 34 | 24 | the sentence, health and activity numbers |
+| hero | 64 | 48 | the focus numbers |
+
+Weight 200 only for hero, 300 for large and display. Formats: "3 Nov", 24-hour times, "7h 12m",
+"3d late".
 
 ## Not done yet
 
