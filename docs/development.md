@@ -23,9 +23,9 @@ screenshots:
 DEMO_TIME=09:12 bun run demo
 ```
 
-See the [code style guide](style.md) and [formatting and test layout guide](../STYLE.md)
-for conventions. `bun run format:check` checks formatting without changing files. GitHub Actions runs checks on every pull
-request using `.github/workflows/ci.yml`.
+See the [code style guide](style.md) for conventions. `bun run format:check` checks formatting
+without changing files. GitHub Actions runs checks on every pull request using
+`.github/workflows/ci.yml`.
 
 ### Trying a pull request in the browser
 

@@ -1,8 +1,10 @@
-# Settings and secrets plan
+# Settings and secrets
 
-This is the build plan for moving configuration out of `.env` and into settings the app can
-edit. It comes before the calendar work ([calendar-plan.md](calendar-plan.md)), which builds on
-the store, the secret box and the Settings page described here.
+How configuration lives outside `.env`: `settings.db` for settings and devices, a secret box for
+passwords, the CLI and the Settings page. Built as S1–S8 (PRs #37–#52); the PR-by-PR plan is in
+git history (`git show 7d6e452:docs/settings-plan.md`). [Calendar](calendar.md) builds on the
+store, the secret box and the Settings page described here. New features add their own tables
+(a migration registered under the module's name) and their own Settings section.
 
 ## Goals
 
@@ -48,18 +50,10 @@ cover that, which is too much for a one-person server reached over Tailscale.
 So the key must not travel with the database:
 
 - Exclude `secret.key` from the restic backup of `DATA_PATH`. Also exclude derived files such
-  as the calendar plan's `calendar-cache.db`, which are rebuilt on start.
+  as `calendar-cache.db`, which are rebuilt on start.
 - Store the key once in a password manager. `bun run settings key show` prints it for that.
 - Losing the key means re-entering calendar and mail passwords. Device tokens keep working,
   because they are hashes.
-
-## What is in `data/` today
-
-The checkout has an untracked `data/dashboardify.db` from 5 October, before the rebuild. It holds
-the old Go server's API keys: tables `api_keys`, `api_key_scopes` and `api_key_schema_migrations`.
-Nothing reads it now. The new file is `settings.db`, so the two don't collide. The first PR adds
-`/data` to `.gitignore`. The old file can be deleted once you've checked you don't need it; this
-plan doesn't import it.
 
 ## Data model
 
@@ -105,7 +99,7 @@ Primary key `(module, version)`.
 Revoking deletes the row. Tokens are 32 random bytes, base64url, prefixed `dfy_` so they are
 easy to spot in logs and secret scanners.
 
-The calendar plan adds `calendar_accounts` and `calendars` through its own migration.
+Calendar adds `calendar_accounts` and `calendars` through its own migration (`src/calendar/accounts.ts`).
 
 ## Module layout
 
@@ -299,132 +293,31 @@ its bearer token, saves the new token and signs in.
 | `rotate-key` | New key, re-seals every registered sealed column and `key_check` in one transaction, then replaces the key file through a temporary file and rename. Refuses while the server is running. |
 
 The server holds `$DATA_PATH/server.lock` (its pid) while running, which is how `rotate-key`
-knows to refuse. TOML is written with `smol-toml`, the one new dependency, unless a small
-hand-written serializer for flat tables turns out simpler.
+knows to refuse. TOML is written by a small serializer in `src/settings/export.ts`.
 
 ## Settings page
 
-The web app has no router, so Settings is a `#settings` view, opened from a gear button next to
+Settings is the `#settings` view (`#settings/<section>`), opened from a gear button next to
 the date. The shell is a section list and a content pane on desktop, and a list that pushes to
 each section on the phone:
 
 ```ts
 // web/settings/sections.ts
 export const SECTIONS: SettingsSection[] = [
-  { id: "general", title: "General", component: General },
-  { id: "devices", title: "Devices", component: Devices },
-  // The calendar plan adds { id: "calendars", … } here.
+  { id: "general", title: "General" },
+  { id: "devices", title: "Devices" },
+  { id: "calendars", title: "Calendars" },
 ];
+// web/settings/settings.tsx maps each id to its component in VIEWS.
 ```
 
 - **General:** time zone (a searchable list of IANA zones, restart note), tasks inbox, tailnet
-  proxy and allowed logins. Fields set from the environment are shown read-only with the
+  proxy and allowed logins, and Places (the town place searches look near first). Fields set from the environment are shown read-only with the
   override note.
 - **Devices:** list with name, created and last used. Add device asks for a name, then shows the
   token once, a copy button and a QR code for the iPhone, with "You won't see this again."
   Revoke asks for confirmation and warns harder for the current device. The QR code uses a small
-  client-side encoder (`uqr` or similar); no data leaves the page.
-
-### Artboards on the design canvas
-
-These are drawn on https://claude.ai/artifact/YNnwtKHE7AAzjLswS4JnSc (the "Settings and
-devices" row):
-
-1. Settings shell, desktop: section list (General, Devices, with room for Calendars) and the
-   General pane, including a field locked by an env override.
-2. Devices, desktop: the list, with the current device marked.
-3. Add device: name step, then the token-once step with copy and QR.
-4. Revoke confirmation, including the current-device warning.
-5. Settings on the phone: the section list and the Devices section.
-6. First-run sign-in with the setup code.
-
-## Pull requests
-
-Each PR passes CI, adds tests for what it changes, updates the docs it affects and leaves `main`
-deployable. They stack in this order.
-
-**1. Settings store and secret box.**
-Scope: `key.ts`, `secret-box.ts`, `store.ts`, `core.ts` migrations. Not wired into the server.
-Add `/data` to `.gitignore`.
-Files: `src/settings/{key,secret-box,store,core}.ts`, `test/settings/*`, `.gitignore`.
-Tests: key creation with mode 0600, reuse, wrong-length rejection; seal and open round trip;
-wrong AAD, flipped byte and unknown version all fail; two seals of one value differ; migrations
-run once, in module order, roll back on failure and resume on the next open; `key_check`
-detects a wrong key.
-Done when: the store can be opened, migrated and used from tests.
-
-**2. Devices and hashed tokens.**
-Scope: `devices` table and `DeviceStore`; `bearerAuth` reads the store; startup opens
-`settings.db` under `DATA_PATH` and imports `INGEST_TOKENS` once. `Config.tokens` goes away.
-Files: `src/settings/devices.ts`, `src/settings/env-import.ts` (tokens only),
-`src/server/{auth,config,app}.ts`, `src/main.ts`, `scripts/demo.ts`,
-`test/server/api/helpers.ts`, `Dockerfile` (`DATA_PATH=/data/settings`), `docs/api.md`
-(authentication), `docs/development.md`.
-Tests: only the hash is stored, checked by scanning the database file for the token; match,
-no match and revoked; a CLI-style write from a second connection is seen on the next request;
-`last_used_time` throttling; import runs once and keeps old tokens working; every existing API
-test still passes with the new helper.
-Done when: the server starts with `DATA_PATH` and old device tokens still sign in.
-
-**3. General settings from the store.**
-Scope: `settings` row; import `TZ_NAME`, `TASKS_INBOX`, `TAILSCALE_PROXY`, `TAILNET_USERS`; env
-overrides with warnings; `Config` built from settings; tailnet read through the cache.
-Files: `src/settings/{core,env-import}.ts`, `src/server/{config,auth,tailnet}.ts`,
-`src/main.ts`, `.env.example` (down to the startup values, with the old ones listed as
-deprecated), `README.md` getting started.
-Tests: import once; override wins and warns once; an invalid time zone in the store or the env
-fails at startup with a clear message; tailnet change applies without restart.
-Done when: a fresh install needs only `VAULT_PATH`.
-
-**4. Settings and Device APIs.**
-Scope: `settings.proto`, `device.proto`, generated code, services, REST bindings, setup-code
-gate on `CreateDevice`, the `INPUT_ONLY` response-check helper.
-Files: `proto/dashboardify/v1/{settings,device}.proto`, `src/gen/…`,
-`src/server/api/{settings,devices}.ts`, `src/server/routes/v1.ts`,
-`src/server/api/rest-bindings.ts`, `test/server/api/{settings,devices}.test.ts`, `docs/api.md`.
-Tests: get and update with update masks and stale etags; time zone validation and
-`restart_required`; env-overridden fields rejected on update with a clear error; create returns
-the token once and list never does; `request_id` retries; delete revokes at once; `current`
-flag; both REST and Connect.
-Done when: everything in Settings can be done with curl.
-
-**5. CLI and export.**
-Scope: `bun run settings` with export, devices, key show and rotate-key; the sealed-column
-registry; the server lock file.
-Files: `scripts/settings.ts`, `src/settings/{export,store}.ts`, `src/main.ts` (lock),
-`package.json`, `docs/development.md`, `docs/architecture.md` (principle amended: settings live
-in SQLite outside the vault, and `settings export` gives the readable copy), `docs/plan.md`
-(decisions and security).
-Tests: commands run with `Bun.spawn` against a temp `DATA_PATH`; export has no secrets;
-rotate-key re-seals a registered test column, the old key no longer opens it, and it refuses
-while the lock is held.
-Done when: you can manage devices and rotate the key from the terminal.
-
-**6. First-run setup code.**
-Scope: setup code at startup; "Set up this device" on the sign-in screen.
-Files: `src/settings/setup-code.ts`, `src/main.ts`, `src/server/auth.ts`,
-`web/components/sign-in.tsx`, `web/api.ts`, `test/settings/setup-code.test.ts`,
-`test/web/api.test.ts`, `README.md`.
-Tests: code works once, only for `CreateDevice`, expires, and is not printed when a device or
-tailnet sign-in exists.
-Done when: a fresh install can be signed into from a browser with no CLI step.
-
-**7. Settings page shell and General.** Needs the artboards above.
-Scope: `#settings` view, gear button, `SECTIONS`, General section.
-Files: `web/settings/{settings,sections,general}.tsx`, `web/app.tsx`, `web/api.ts`,
-`web/styles.css`, `test/web/*`.
-Tests: the API adapter for settings; section list rendering; env-override fields read-only.
-Done when: General settings can be changed in the browser on desktop and phone.
-
-**8. Devices section.**
-Scope: list, add with token once and QR, revoke.
-Files: `web/settings/devices.tsx`, `web/api.ts`, `package.json` (QR encoder),
-`web/styles.css`, `test/web/*`.
-Tests: adapter tests for create, list and delete; the token is cleared from state when the
-dialog closes.
-Done when: a new iPhone can be added by scanning the QR code from the desktop page.
-
-**Follow-up, one release later.** Remove the env overrides and the deprecated variables.
+  client-side encoder (`uqr`); no data leaves the page.
 
 ## Testing
 
@@ -436,20 +329,10 @@ Done when: a new iPhone can be added by scanning the QR code from the desktop pa
 - Crypto tests use the real WebCrypto, never a mock.
 - CLI tests spawn the script; they don't import its internals.
 
-## Docs to update
-
-| Doc | Change | PR |
-| --- | --- | --- |
-| `.env.example` | Startup values only, deprecated ones listed | 3 |
-| `README.md` | Getting started without tokens in `.env`; setup code | 3, 6 |
-| `docs/api.md` | Authentication from devices; Settings and Devices sections | 2, 4 |
-| `docs/development.md` | `DATA_PATH`, the CLI, backups (exclude the key) | 2, 5 |
-| `docs/architecture.md` | "Files are the source of truth" amended for settings and export | 5 |
-| `docs/plan.md` | Decisions table (settings, secrets); security section (hashed tokens, sealed secrets, key handling) | 5 |
-
 ## Open questions
 
-- [ ] Delete the old `data/dashboardify.db`, or keep it as a reference?
+- [ ] Delete the old `data/dashboardify.db` (the pre-rebuild Go server's API keys; nothing reads
+      it), or keep it as a reference?
 - [ ] Is a restart for time zone changes acceptable for now, or should the vault and
       schedulers pick it up live?
 - [ ] Should revoking the device you're using be allowed at all, or blocked when it is the last

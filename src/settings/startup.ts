@@ -1,4 +1,4 @@
-// Opening Settings at startup, in the order docs/settings-plan.md gives: load the key, open
+// Opening Settings at startup, in the order docs/settings.md gives: load the key, open
 // settings.db and migrate, import .env once, apply variables still in the environment on top,
 // then build the Config the rest of the server uses.
 

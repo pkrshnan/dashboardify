@@ -116,8 +116,8 @@ Recovery is coloured by band only in the focus row, and its number is always sho
 ## Calendar capture and Settings
 
 The capture box, Settings and Settings › Calendars are on a second canvas:
-https://claude.ai/artifact/YNnwtKHE7AAzjLswS4JnSc. The plans that build them are
-[settings-plan.md](../settings-plan.md) and [calendar-plan.md](../calendar-plan.md).
+https://claude.ai/artifact/YNnwtKHE7AAzjLswS4JnSc. How they work is in
+[settings.md](../settings.md) and [calendar.md](../calendar.md).
 
 ## Activity page
 
