@@ -8,7 +8,7 @@ import type { CleanBeat } from "./hrv";
 import { median } from "./stats";
 
 /** Resample the uneven beat series at 4 Hz so it can be transformed. */
-const SAMPLE_HZ = 4;
+export const SAMPLE_HZ = 4;
 /** 6 to 30 breaths a minute. */
 const MIN_HZ = 0.1;
 const MAX_HZ = 0.5;
@@ -16,6 +16,11 @@ const MAX_HZ = 0.5;
 const MIN_SNR = 2.5;
 /** 4.5 minutes of a 5-minute window: a resolution of 1/270 Hz, about 0.2 breaths a minute. */
 const SPECTRUM_SAMPLES = SAMPLE_HZ * 270;
+
+export interface SpectrumBin {
+  hz: number;
+  power: number;
+}
 
 /** Evenly sampled gap values (ms) over the window, linearly interpolated between kept beats. */
 export function resample(window: CleanBeat[]): number[] {
@@ -66,22 +71,55 @@ export function detrend(values: number[]): number[] {
  * Power at each frequency in the breathing band, from a Hann-windowed discrete Fourier
  * transform. Frequencies step by 1/duration, the finest a window this long can resolve.
  */
-export function bandSpectrum(values: number[]): { hz: number; power: number }[] {
+export function bandSpectrum(values: number[]): SpectrumBin[] {
   const n = values.length;
-  const tapered = values.map((v, i) => v * (0.5 - 0.5 * Math.cos((2 * Math.PI * i) / (n - 1))));
-  const stepHz = SAMPLE_HZ / n;
-  const spectrum: { hz: number; power: number }[] = [];
-  for (let k = Math.ceil(MIN_HZ / stepHz); k * stepHz <= MAX_HZ; k++) {
+  const basis = bandBasis(n);
+  const tapered = values.map((v, i) => v * (basis.taper[i] ?? 0));
+  return basis.bins.map(({ hz, cos, sin }) => {
     let re = 0;
     let im = 0;
-    for (const [i, v] of tapered.entries()) {
-      const angle = (2 * Math.PI * k * i) / n;
-      re += v * Math.cos(angle);
-      im -= v * Math.sin(angle);
+    for (let i = 0; i < n; i++) {
+      const v = tapered[i] ?? 0;
+      re += v * (cos[i] ?? 0);
+      im -= v * (sin[i] ?? 0);
     }
-    spectrum.push({ hz: k * stepHz, power: re * re + im * im });
+    return { hz, power: re * re + im * im };
+  });
+}
+
+interface BandBasis {
+  taper: Float64Array;
+  bins: { hz: number; cos: Float64Array; sin: Float64Array }[];
+}
+
+/**
+ * The Hann taper and each band frequency's cosines and sines for n samples. Windows share a
+ * length, so these are worked out once: sleep-features.ts transforms a window per epoch.
+ */
+const bases = new Map<number, BandBasis>();
+
+function bandBasis(n: number): BandBasis {
+  const cached = bases.get(n);
+  if (cached) {
+    return cached;
   }
-  return spectrum;
+  const taper = Float64Array.from(
+    { length: n },
+    (_, i) => 0.5 - 0.5 * Math.cos((2 * Math.PI * i) / (n - 1)),
+  );
+  const stepHz = SAMPLE_HZ / n;
+  const bins: BandBasis["bins"] = [];
+  for (let k = Math.ceil(MIN_HZ / stepHz); k * stepHz <= MAX_HZ; k++) {
+    const angle = (i: number) => (2 * Math.PI * k * i) / n;
+    bins.push({
+      hz: k * stepHz,
+      cos: Float64Array.from({ length: n }, (_, i) => Math.cos(angle(i))),
+      sin: Float64Array.from({ length: n }, (_, i) => Math.sin(angle(i))),
+    });
+  }
+  const basis = { taper, bins };
+  bases.set(n, basis);
+  return basis;
 }
 
 /**
@@ -93,25 +131,43 @@ export function breathingRate(windows: CleanBeat[][]): number | null {
   for (const window of windows) {
     addSpectrum(total, window);
   }
-  const powers = [...total.values()];
-  const peak = [...total.entries()].reduce<[number, number] | null>(
-    (best, entry) => (best === null || entry[1] > best[1] ? entry : best),
-    null,
-  );
-  const typical = median(powers);
-  if (peak === null || typical === null || peak[1] < MIN_SNR * typical) {
+  const peak = sharpestPeak([...total.entries()].map(([hz, power]) => ({ hz, power })));
+  if (peak === null || peak.ratio < MIN_SNR) {
     return null;
   }
-  return peak[0] * 60;
+  return peak.hz * 60;
+}
+
+/** The tallest bin, and how many times the band's median power it is. */
+export function sharpestPeak(spectrum: SpectrumBin[]): { hz: number; ratio: number } | null {
+  const peak = spectrum.reduce<SpectrumBin | null>(
+    (best, bin) => (best === null || bin.power > best.power ? bin : best),
+    null,
+  );
+  const typical = median(spectrum.map((bin) => bin.power));
+  if (peak === null || typical === null) {
+    return null;
+  }
+  return { hz: peak.hz, ratio: peak.power / typical };
+}
+
+/**
+ * The band spectrum of a window's first `length` samples. Every window is cut to the same length
+ * so their frequency bins line up. Null when the window is shorter.
+ */
+export function windowSpectrum(window: CleanBeat[], length: number): SpectrumBin[] | null {
+  const samples = resample(window);
+  if (samples.length < length) {
+    return null;
+  }
+  return bandSpectrum(detrend(samples.slice(0, length)));
 }
 
 function addSpectrum(total: Map<number, number>, window: CleanBeat[]): void {
-  const samples = resample(window);
-  // Every window is cut to the same length so their frequency bins line up.
-  if (samples.length < SPECTRUM_SAMPLES) {
+  const spectrum = windowSpectrum(window, SPECTRUM_SAMPLES);
+  if (spectrum === null) {
     return;
   }
-  const spectrum = bandSpectrum(detrend(samples.slice(0, SPECTRUM_SAMPLES)));
   const sum = spectrum.reduce((s, bin) => s + bin.power, 0);
   if (sum <= 0) {
     return;

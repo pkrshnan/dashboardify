@@ -35,25 +35,26 @@ export interface Epoch {
   asleep: boolean;
 }
 
-interface EpochSignals {
+export interface EpochSignals {
   ts: number;
   moved: boolean;
+  /** The largest 5-second arm angle change in the epoch, in degrees (0 with none). */
+  movementDeg: number;
   /** Mean HR in the epoch, or null with no HR (off the arm, or a gap). */
   hr: number | null;
 }
 
-function signals(window: Span, changes: AngleChange[], heartRate: HeartRate[]): EpochSignals[] {
+/** Per-epoch movement and HR. sleep-features.ts reads the same values, so epochs line up. */
+export function epochSignals(
+  window: Span,
+  changes: AngleChange[],
+  heartRate: HeartRate[],
+): EpochSignals[] {
   const count = Math.floor((window.end - window.start) / EPOCH_MS);
-  const moved = new Array<boolean>(count).fill(false);
+  const movement = epochMovement(window, changes, count);
   const hrSums = new Array<number>(count).fill(0);
   const hrCounts = new Array<number>(count).fill(0);
   const index = (ts: number) => Math.floor((ts - window.start) / EPOCH_MS);
-  for (const c of changes) {
-    const i = index(c.ts);
-    if (i >= 0 && i < count && c.change > POSTURE_CHANGE_DEG) {
-      moved[i] = true;
-    }
-  }
   for (const h of heartRate) {
     const i = index(h.ts);
     if (i >= 0 && i < count) {
@@ -61,11 +62,24 @@ function signals(window: Span, changes: AngleChange[], heartRate: HeartRate[]): 
       hrCounts[i] = (hrCounts[i] ?? 0) + 1;
     }
   }
-  return moved.map((m, i) => ({
+  return movement.map((deg, i) => ({
     ts: window.start + i * EPOCH_MS,
-    moved: m,
+    moved: deg > POSTURE_CHANGE_DEG,
+    movementDeg: deg,
     hr: (hrCounts[i] ?? 0) > 0 ? (hrSums[i] ?? 0) / (hrCounts[i] ?? 1) : null,
   }));
+}
+
+/** The largest angle change in each epoch. */
+function epochMovement(window: Span, changes: AngleChange[], count: number): number[] {
+  const movement = new Array<number>(count).fill(0);
+  for (const c of changes) {
+    const i = Math.floor((c.ts - window.start) / EPOCH_MS);
+    if (i >= 0 && i < count) {
+      movement[i] = Math.max(movement[i] ?? 0, c.change);
+    }
+  }
+  return movement;
 }
 
 /** Whether each epoch's HR jumps above its surroundings, or sits well above sleeping level. */
@@ -90,7 +104,7 @@ function arousals(epochs: EpochSignals[]): boolean[] {
 
 /** Score each 30-second epoch of the window from arm movement and heart rate. */
 export function scoreEpochs(window: Span, changes: AngleChange[], heartRate: HeartRate[]): Epoch[] {
-  const epochs = signals(window, changes, heartRate);
+  const epochs = epochSignals(window, changes, heartRate);
   const aroused = arousals(epochs);
   // No HR at all means the strap was off or out of contact: count it as awake, not as sleep.
   const awake = epochs.map((e, i) => e.moved || aroused[i] === true || e.hr === null);

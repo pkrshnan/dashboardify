@@ -18,7 +18,7 @@ export const WINDOW_MS = 5 * 60_000;
 /** A window counts only if at least 80% of its beats survived cleaning. */
 const MIN_KEPT_SHARE = 0.8;
 /** And it has enough beats to mean something (about one minute's worth at rest). */
-const MIN_BEATS = 60;
+export const MIN_BEATS = 60;
 /** Two kept gaps are only "consecutive" if no beat is missing between them. */
 const MAX_JOIN_SLACK_MS = 150;
 
@@ -59,12 +59,17 @@ function neighbourhood(beats: RrInterval[], inRange: boolean[], i: number): numb
  * time minus its own gap lands on the earlier beat (give or take MAX_JOIN_SLACK_MS).
  */
 export function successiveDiffs(beats: CleanBeat[]): number[] {
-  const diffs: number[] = [];
+  return timedDiffs(beats).map((d) => d.ms);
+}
+
+/** successiveDiffs, each stamped with the later beat's time, for sliding windows. */
+export function timedDiffs(beats: CleanBeat[]): RrInterval[] {
+  const diffs: RrInterval[] = [];
   for (let i = 1; i < beats.length; i++) {
     const prev = beats[i - 1];
     const cur = beats[i];
     if (prev?.kept && cur?.kept && Math.abs(cur.ts - cur.ms - prev.ts) <= MAX_JOIN_SLACK_MS) {
-      diffs.push(cur.ms - prev.ms);
+      diffs.push({ ts: cur.ts, ms: cur.ms - prev.ms });
     }
   }
   return diffs;
