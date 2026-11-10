@@ -29,14 +29,25 @@ function rem(minutes: number, id = String(minutes)): Reminder {
 
 describe("timeline", () => {
   test("runs from an hour before now to 22:00, or later when needed", () => {
-    expect(hourRange(9 * 60 + 12, [], [])).toEqual({ startHour: 8, endHour: 22 });
-    expect(hourRange(9 * 60, [ev(21 * 60, 23 * 60)], [])).toEqual({ startHour: 8, endHour: 23 });
-    expect(hourRange(23 * 60 + 30, [], [])).toEqual({ startHour: 20, endHour: 23 });
-    expect(hourRange(30, [], [])).toEqual({ startHour: 0, endHour: 22 });
+    expect(hourRange(9 * 60 + 12, [], [])).toEqual({ startHour: 8, endHour: 22, viewHour: 8 });
+    expect(hourRange(9 * 60, [ev(21 * 60, 23 * 60)], [])).toEqual({
+      startHour: 8,
+      endHour: 23,
+      viewHour: 8,
+    });
+    expect(hourRange(23 * 60 + 30, [], [])).toEqual({ startHour: 20, endHour: 23, viewHour: 20 });
+    expect(hourRange(30, [], [])).toEqual({ startHour: 0, endHour: 22, viewHour: 0 });
+  });
+
+  test("starts earlier, above the view, when something is in the hours before it", () => {
+    const early = [ev(6 * 60 + 30, 7 * 60)];
+    const pill = [{ id: "r", text: "Pills", time: "05:45", minutes: 5 * 60 + 45, done: false }];
+    expect(hourRange(14 * 60, early, [])).toEqual({ startHour: 6, endHour: 22, viewHour: 13 });
+    expect(hourRange(14 * 60, early, pill)).toEqual({ startHour: 5, endHour: 22, viewHour: 13 });
   });
 
   test("blocks: position, past, next, and one-line for short events", () => {
-    const range = { startHour: 8, endHour: 22 };
+    const range = { startHour: 8, endHour: 22, viewHour: 8 };
     const blocks = layoutBlocks(
       [ev(7 * 60, 8 * 60 + 30), ev(10 * 60, 10 * 60 + 15), ev(14 * 60, 15 * 60)],
       range,
@@ -64,7 +75,7 @@ describe("timeline", () => {
   });
 
   test("back-to-back short events stretched to the minimum height don't cover each other", () => {
-    const range = { startHour: 8, endHour: 22 };
+    const range = { startHour: 8, endHour: 22, viewHour: 8 };
     const blocks = layoutBlocks([ev(600, 615), ev(615, 630), ev(630, 645)], range, 52, 0);
     expect(blocks.map((b) => [b.lane, b.lanes])).toEqual([
       [0, 2],
@@ -81,7 +92,7 @@ describe("timeline", () => {
   test("reminder pills are pushed apart so they never overlap", () => {
     const pills = layoutPills(
       [rem(600), rem(605), rem(900)],
-      { startHour: 8, endHour: 22 },
+      { startHour: 8, endHour: 22, viewHour: 8 },
       52,
       32,
     );

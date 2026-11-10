@@ -10,18 +10,28 @@ const MIN_HOURS = 3;
 export interface HourRange {
   startHour: number;
   endHour: number;
+  /** The hour the timeline opens scrolled to; earlier hours are above it. */
+  viewHour: number;
 }
 
-/** From an hour before now to 22:00, stretched to fit anything later. */
+/**
+ * Shown from an hour before now to 22:00, stretched to fit anything later. Hours before that are
+ * drawn too when something is in them, so a past task can still be ticked off.
+ */
 export function hourRange(nowMin: number, events: AgendaEvent[], reminders: Reminder[]): HourRange {
-  const startHour = Math.min(LAST_START_HOUR, Math.max(0, Math.floor(nowMin / 60) - 1));
+  const viewHour = Math.min(LAST_START_HOUR, Math.max(0, Math.floor(nowMin / 60) - 1));
+  const startHour = Math.min(
+    viewHour,
+    ...events.map((e) => Math.floor(Math.max(0, e.startMin) / 60)),
+    ...reminders.map((r) => Math.floor(r.minutes / 60)),
+  );
   const latest = Math.max(
     0,
     ...events.map((e) => Math.ceil(e.endMin / 60)),
     ...reminders.map((r) => Math.floor(r.minutes / 60) + 1),
   );
-  const endHour = Math.min(24, Math.max(DEFAULT_END_HOUR, latest, startHour + MIN_HOURS));
-  return { startHour, endHour };
+  const endHour = Math.min(24, Math.max(DEFAULT_END_HOUR, latest, viewHour + MIN_HOURS));
+  return { startHour, endHour, viewHour };
 }
 
 export interface Block {

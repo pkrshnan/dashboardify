@@ -121,13 +121,27 @@ describe("DayTimeline", () => {
     expect(lines).toEqual(["Workshop", "12:00 · Room 4"]);
   });
 
-  test("events outside the hours shown are left out", () => {
-    const { blocks } = timeline(
-      { events: [event("Early", 6 * 60, 7 * 60), event("Late", 23 * 60, 23 * 60 + 30)] },
+  test("earlier hours are drawn above the view, scrolled out of sight", () => {
+    const { container, blocks } = timeline(
+      { events: [event("Early", 6 * 60, 7 * 60)], reminders: [reminder("Pills", 7 * 60 + 30)] },
       { nowMin: 9 * 60 },
     );
-    // 23:00 stretches the range to 24:00, so only the early one is gone.
-    expect(blocks.map(text).map((t) => t.split(" ")[0])).toEqual(["Late"]);
+    const labels = [...container.querySelectorAll(".hour-label")].map(text);
+    expect(labels[0]).toBe("06");
+    expect(blocks[0]?.style.top).toBe("0px");
+    const scroller = container.querySelector<HTMLElement>(".timeline-scroll");
+    // Opens at 08:00, two hours down; the box is as tall as 08:00 to 22:00.
+    expect(scroller?.scrollTop).toBe(2 * 52);
+    expect(scroller?.style.maxHeight).toBe(`${14 * 52 + 20}px`);
+  });
+
+  test("a past task above the view can still be ticked off", () => {
+    const { getByLabelText, onComplete } = timeline(
+      { reminders: [reminder("Pills", 7 * 60 + 30)] },
+      { nowMin: 14 * 60 },
+    );
+    fireEvent.click(getByLabelText("Mark Pills done"));
+    expect(onComplete).toHaveBeenCalledWith("Pills");
   });
 
   test("all-day events sit in a row above the hours", () => {
