@@ -39,7 +39,7 @@ import { type DaySummary, frontmatter, healthBlock, syncLine } from "./render";
 import { counted, type ReviewedWorkout, reviewFor, reviewWorkouts } from "./reviews";
 
 /** Bump when a calculation changes, so old rows can be told apart and rebuilt. */
-export const ALGO_VERSION = "4";
+export const ALGO_VERSION = "5";
 
 /** How far either way to look for a night with resting HR when there is no recent one. */
 const NEAREST_NIGHT_DAYS = 7;

@@ -145,7 +145,7 @@ describe("DailySummary", () => {
     expect(note?.body.indexOf("## Health")).toBeLessThan(note?.body.indexOf("## Journal") ?? 0);
 
     expect((await derived.read("nights", DATE))?.rhr_bpm).toBeCloseTo(52, 0);
-    expect((await derived.read("days", DATE))?.algo_version).toBe("4");
+    expect((await derived.read("days", DATE))?.algo_version).toBe("5");
   });
 
   test("recovery appears once there are two weeks of nights", async () => {
