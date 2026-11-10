@@ -87,7 +87,7 @@ workout_reviews:
 ## `profile.md`
 
 At the vault root. Strain needs `birth_date` (or `hr_max_measured`); `sex` picks the strain
-constants; `sleep_need_h` defaults to 8.
+constants; `sleep_need_h` defaults to 8. Calories need `weight_kg` and `height_cm`.
 
 ```yaml
 ---
@@ -95,6 +95,8 @@ birth_date: 1996-05-01
 sex: male
 hr_max_measured: 192
 sleep_need_h: 8
+weight_kg: 72
+height_cm: 178
 ---
 ```
 

@@ -239,7 +239,7 @@ describe("summaries", () => {
       motion: [],
       sleep: null,
       restingHr: 55,
-      profile: { ageYears: null, sex: null, maxHrMeasured: null },
+      profile: { ageYears: null, sex: null, maxHrMeasured: null, weightKg: null, heightCm: null },
     });
     expect(day.wornMin).toBe(60);
     expect(day.strain).toBeNull();
@@ -252,7 +252,7 @@ describe("summaries", () => {
       motion: [],
       sleep: null,
       restingHr: 55,
-      profile: { ageYears: 30, sex: "male", maxHrMeasured: 190 },
+      profile: { ageYears: 30, sex: "male", maxHrMeasured: 190, weightKg: null, heightCm: null },
     });
     expect(day.strain).toBeGreaterThan(10);
     expect(day.zoneMin).toEqual([0, 0, 60, 0, 0]);
