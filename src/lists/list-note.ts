@@ -105,9 +105,11 @@ function addOne(text: string, name: string, note: string | null): string {
   }
   const lines = [...list.lines];
   const at = topInsertIndex(lines);
-  const before = lines[at - 1] ?? "";
   const added = itemLine({ text: name, note, done: false });
-  lines.splice(at, 0, ...(before.startsWith("# ") ? ["", added] : [added]));
+  // A blank line after a title, and before a section heading that would otherwise touch it.
+  const lead = (lines[at - 1] ?? "").startsWith("# ") ? [""] : [];
+  const tail = SECTION.test(lines[at] ?? "") ? [""] : [];
+  lines.splice(at, 0, ...lead, added, ...tail);
   return lines.join("\n");
 }
 

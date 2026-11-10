@@ -2,7 +2,7 @@
 
 Checklists you keep and tick off: shopping first, then packing, gift ideas, films. One note per
 list in the vault, a Lists page on desktop and phone, and Siri to add from anywhere. Design: the
-Lists boards on https://claude.ai/artifact/XuhyWehLi6CPS3yFr4paUU. Status: LS1 built; LS2–LS4 planned.
+Lists boards on https://claude.ai/artifact/XuhyWehLi6CPS3yFr4paUU. Status: LS1 and LS2 built; LS3 and LS4 planned.
 
 ## Goals
 
@@ -54,10 +54,10 @@ as part of the line above and not shown.
 | Method | Path | Does |
 | --- | --- | --- |
 | GET | `/v1/lists` | Each list's `name`, `title` and `openCount` |
-| POST | `/v1/lists` | Create `Lists/<title>.md` (`requestId` for retries) |
+| POST | `/v1/lists` | Create `Lists/<title>.md`; one already there is returned, so a retry is safe |
 | GET | `/v1/lists/{list}` | Its sections, each with items (`name`, `text`, `note`, `done`), and `etag` |
-| POST | `/v1/lists/{list}/items:batchCreate` | Add items (`texts`), unticking matches |
-| PATCH | `/v1/lists/{list}/items/{item}` | `text` or `done` |
+| POST | `/v1/lists/{list}/items` | Add items (`texts`, commas split), unticking matches |
+| PATCH | `/v1/lists/{list}/items/{item}` | `text`, `note` or `done` (send `updateMask`) |
 | DELETE | `/v1/lists/{list}/items/{item}` | Remove the line |
 | POST | `/v1/lists/{list}:clearDone` | Remove every `[x]` line |
 | RPC | `VoiceService/AddToList` | `list`, `text` (commas allowed); fuzzy list name; speaks back what it added |
