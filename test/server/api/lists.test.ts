@@ -89,6 +89,36 @@ describe("ListService", () => {
     expect((await api.call(`/v1/${bananas.name}?updateMask=done`, "PATCH", {})).status).toBe(404);
   });
 
+  test("adds to a section, making its heading when it's new", async () => {
+    const into = (section: string, texts: string[]) =>
+      api.call("/v1/lists/shopping/items", "POST", { texts, section });
+
+    const dairy = await into("dairy", ["Butter"]);
+    await into("Household", ["Foil"]);
+
+    expect(dairy.body.items[0].section).toBe("Dairy");
+    expect(await api.vaultFile("Lists/Shopping.md")).toBe(
+      `${SHOPPING.replace("(2)\n", "(2)\n- [ ] Butter\n")}\n## Household\n- [ ] Foil\n`,
+    );
+    expect((await into("Two\nlines", ["Tea"])).status).toBe(400);
+  });
+
+  test("moves an item through the update mask; an empty section is the top", async () => {
+    const bananas = await item("Bananas");
+
+    const moved = await api.call(`/v1/${bananas.name}?updateMask=section`, "PATCH", {
+      section: "Dairy",
+    });
+    const back = await api.call(`/v1/${moved.body.name}?updateMask=section`, "PATCH", {});
+
+    expect(moved.body.section).toBe("Dairy");
+    expect(moved.body.name).not.toBe(bananas.name);
+    expect(back.body.section ?? "").toBe("");
+    expect(await api.vaultFile("Lists/Shopping.md")).toBe(
+      "- [ ] Bananas\n\n## Produce\n- [x] Lemons\n\n## Dairy\n- [ ] Oat milk (2)\n",
+    );
+  });
+
   test("deletes an item and clears the ticked ones", async () => {
     const bananas = await item("Bananas");
 

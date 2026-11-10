@@ -18,9 +18,10 @@ interface ItemInput {
   text?: string;
   note?: string;
   done?: boolean;
+  section?: string;
 }
 
-const ITEM_FIELDS = ["text", "note", "done"];
+const ITEM_FIELDS = ["text", "note", "done", "section"];
 
 export class ListsService {
   constructor(private readonly store: ListStore) {}
@@ -46,12 +47,17 @@ export class ListsService {
     }
   };
 
-  addListItems = async (request: { parent: string; texts: string[]; etag?: string }) => {
+  addListItems = async (request: {
+    parent: string;
+    texts: string[];
+    etag?: string;
+    section?: string;
+  }) => {
     const slug = slugFrom(request.parent);
     const entries = request.texts.flatMap((text) => text.split(","));
     let added: ListItem[] = [];
     await this.edit(slug, request.etag, (text) => {
-      const result = addItems(text, entries);
+      const result = addItems(text, entries, request.section);
       added = result.items;
       return result.text;
     });
@@ -107,14 +113,15 @@ export class ListsService {
 }
 
 /**
- * The fields to change. Protobuf JSON leaves out `done: false`, so a masked `done` that is
- * missing means unticked.
+ * The fields to change. Protobuf JSON leaves out `done: false` and `section: ""`, so a masked
+ * field that is missing means unticked, or before the first heading.
  */
 function itemChange(item: ItemInput, fields: string[]) {
   return {
     ...(fields.includes("text") && { text: item.text ?? "" }),
     ...(fields.includes("note") && { note: item.note?.trim() || null }),
     ...(fields.includes("done") && { done: item.done === true }),
+    ...(fields.includes("section") && { section: item.section?.trim() || null }),
   };
 }
 

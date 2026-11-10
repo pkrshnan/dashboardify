@@ -56,14 +56,15 @@ Days follow the server's time zone.
 | GET | `/v1/lists` | Each list's `name`, `title`, `path` and `openCount` |
 | POST | `/v1/lists` | `{"title": "Shopping"}` makes `Lists/Shopping.md`; one already there is returned |
 | GET | `/v1/lists/{list}` | Its `sections`, each with `items` (`name`, `text`, `note`, `done`), and `etag` |
-| POST | `/v1/lists/{list}/items` | `{"texts": ["eggs, bread"]}`: commas add several; a ticked match is unticked in its section |
-| PATCH | `/v1/lists/{list}/items/{item}?updateMask=done` | Tick (`done`), rename (`text`), or set the `note` |
+| POST | `/v1/lists/{list}/items` | `{"texts": ["eggs, bread"], "section": "Produce"}`: commas add several; a ticked match is unticked in its section, or moved to `section` if given; a new section gets a heading |
+| PATCH | `/v1/lists/{list}/items/{item}?updateMask=done` | Tick (`done`), rename (`text`), set the `note`, or move (`section`; `""` is before the first heading) |
 | DELETE | `/v1/lists/{list}/items/{item}` | Remove the line |
 | POST | `/v1/lists/{list}:clearDone` | Remove every ticked line |
 
 `{list}` is the file name's slug (`Gift ideas.md` → `gift-ideas`). An item's name changes when
-its text does; the response has the new one. Writes take the list's `etag` and refuse an older
-one with `409`. Send `updateMask`: unticking sends `done: false`, which protobuf JSON leaves out.
+its text or section does; the response has the new one. Writes take the list's `etag` and refuse an older
+one with `409`. Send `updateMask`: unticking sends `done: false`, and moving to the top `section: ""`, which protobuf JSON leaves
+out.
 
 ## Home
 
