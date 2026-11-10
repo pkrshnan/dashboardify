@@ -23,6 +23,7 @@ Read the one for the area you change.
 | [roadmap.md](docs/roadmap.md) | Decisions, what is built, what is next |
 | [architecture.md](docs/architecture.md) | Code map, request flow, data on disk, security |
 | [navigation.md](docs/navigation.md) | Plan N1–N8: router, modules, command bar, search, sidebar |
+| [lists.md](docs/lists.md) | Plan LS1–LS4: list notes, ListService, the Lists page, Siri |
 | [api.md](docs/api.md) | Every v1 endpoint and its conventions |
 | [vault-format.md](docs/vault-format.md) | What the server writes into notes |
 | [calendar.md](docs/calendar.md) | CalDAV, ICS links, cache and sync, capture |
