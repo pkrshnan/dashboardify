@@ -19,9 +19,15 @@ import {
   tempDeviation,
 } from "./metrics/recovery";
 import { DEFAULT_NEED_MIN, type PastNight } from "./metrics/sleep-score";
-import { median } from "./metrics/stats";
+import { median, round } from "./metrics/stats";
 import { stepsPerMinute } from "./metrics/steps";
-import { type DayMetrics, dayMetrics, type NightMetrics, nightMetrics } from "./metrics/summary";
+import {
+  type DayMetrics,
+  dayMetrics,
+  type NightMetrics,
+  nightMetrics,
+  type Profile,
+} from "./metrics/summary";
 import type {
   Accel,
   HeartRate,
@@ -31,6 +37,7 @@ import type {
   Span,
   StepCounter,
 } from "./metrics/types";
+import { RESTING_NIGHTS, vo2max } from "./metrics/vo2max";
 import type { Walk } from "./metrics/walks";
 import { movingInPlace } from "./metrics/workouts";
 import { ParamsStore } from "./params";
@@ -40,7 +47,7 @@ import { type DaySummary, frontmatter, healthBlock, syncLine } from "./render";
 import { counted, type ReviewedWorkout, reviewFor, reviewWorkouts } from "./reviews";
 
 /** Bump when a calculation changes, so old rows can be told apart and rebuilt. */
-export const ALGO_VERSION = "8";
+export const ALGO_VERSION = "9";
 
 /** How far either way to look for a night with resting HR when there is no recent one. */
 const NEAREST_NIGHT_DAYS = 7;
@@ -86,6 +93,7 @@ export class DailySummary {
     const steps = await this.load(date, "steps", 0, 24, toSteps);
     const motion = await this.load(date, "motion", 0, 24, toMotion);
     const sleep = night ? { start: night.bed, end: night.wake } : null;
+    const profile = parseProfile(profileFields, date);
     const day = dayMetrics({
       day: this.daySpan(date),
       heartRate,
@@ -93,13 +101,14 @@ export class DailySummary {
       motion,
       sleep,
       restingHr: await this.restingHr(date, night, history),
-      profile: parseProfile(profileFields, date),
+      profile,
     });
     return {
       night,
       day,
       ...(await this.reviewed(date, day, { heartRate, steps, motion, sleep })),
       load: await this.trainingLoad(date, day),
+      vo2max: await this.vo2max(date, night, profile),
       recovery: signals ? recovery(signals, history, params.recovery) : null,
       paramsVersion: params.version,
       baselineNights: history.filter((n) => n.lnRmssd !== null).length,
@@ -148,6 +157,22 @@ export class DailySummary {
     // Today's TRIMP is still a running total; see trainingLoad.
     const today = date === localDate(new Date(this.now()), this.timeZone);
     return trainingLoad([...past, { trimp: day.trimp, wornMin: day.wornMin }], today);
+  }
+
+  /** VO2max on the last 30 nights' resting HR: the stored nights before, then last night's. */
+  private async vo2max(
+    date: string,
+    night: NightMetrics | null,
+    profile: Profile,
+  ): Promise<number | null> {
+    const start = Temporal.PlainDate.from(date);
+    const restingHrs: (number | null)[] = [];
+    for (let back = RESTING_NIGHTS - 1; back >= 1; back--) {
+      const row = await this.derived.read("nights", start.subtract({ days: back }).toString());
+      restingHrs.push(typeof row?.rhr_bpm === "number" ? row.rhr_bpm : null);
+    }
+    restingHrs.push(night?.restingHr ?? null);
+    return vo2max({ maxHrMeasured: profile.maxHrMeasured, sex: profile.sex, restingHrs });
   }
 
   /** Midnight to midnight on `date`, or to now for today: calories are a running total. */
@@ -393,6 +418,7 @@ function dayRow(s: DaySummary): DerivedRow {
     load_ratio: s.load.ratio,
     kcal: roundOrNull(s.day.calories?.kcal),
     active_kcal: roundOrNull(s.day.calories?.activeKcal),
+    vo2max: round(s.vo2max, 1),
     ...Object.fromEntries([0, 1, 2, 3, 4].map((i) => [`zone${i + 1}_min`, zones[i] ?? null])),
   };
 }

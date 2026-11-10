@@ -3,7 +3,8 @@
 How raw strap data becomes the numbers in the daily note. Code: `src/health/metrics/`, one file
 per idea; each constant has a comment citing its source. Longer explanations with worked
 examples: https://claude.ai/artifact/7nYauS8aMi84xLQfXFXxbu. Everything that compares you with
-"normal" uses your own history, never population averages.
+"normal" uses your own history, never population averages; VO2max is the exception, since it is
+a comparison with other people by definition.
 
 ```mermaid
 flowchart LR
@@ -16,6 +17,7 @@ flowchart LR
   R --> ST & W
   ST --> L[load]
   HR & R & S --> CAL[calories]
+  R --> V[VO2max]
   STP[steps] --> STEPS[steps] & W & WK[walks] & CAL
   MOT[motion] --> W
   W --> WK
@@ -119,6 +121,21 @@ Keytel likely reads high for light people: 13.4 kcal/min at 150 bpm for a 56 kg 
 tables give about 9 for a steady jog. Its sample's mean mass (115 people, 47–120 kg) isn't in any
 source we could read, and the equation already has a weight term, so there is no correction.
 
+## VO2max (`vo2max.ts`)
+
+Uth 2004: `15.3 × max HR ÷ resting HR` ml/kg/min (14.5 for women, Uth 2005). Resting HR is the
+median of the last 30 nights, last night included, so it moves as fitness does; under 14 nights
+with a reading, none. Needs `hr_max_measured` and `sex`: with Tanaka's predicted max the number
+is just age and resting HR again. Note: rounded, "(estimate)"; row: one decimal.
+
+Uth's SEE was 2.7 ml/kg/min, but in 46 well-trained men. In 109 men of mixed fitness it was about
+7 (Esco 2012), and the 15 factor read about 2 too high in untrained men (Castagna 2022 found 14.6
+for them). A high max for your age raises the ratio without more fitness, so read it as ±10–15%.
+No correction is applied: none is general.
+
+Later, with runs or reliable walking speed: extrapolate submaximal HR against speed to max HR,
+as watches do.
+
 ## Steps (`steps.ts`)
 
 The counter is cumulative and 16-bit: sum increases, treat a drop from near 65,536 as a wrap and
@@ -174,5 +191,5 @@ Garmin do). The weights are versioned params tuned against check-ins
 
 ## Still to build
 
-VO2max, fitness and biological age, and sleep stages: planned in
+Fitness and biological age, and sleep stages: planned in
 [health-extended.md](health-extended.md).

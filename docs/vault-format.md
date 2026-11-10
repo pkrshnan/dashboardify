@@ -26,6 +26,7 @@ load_chronic: 68.9
 load_ratio: 1.08
 kcal: 2640
 active_kcal: 610
+vo2max: 57
 sleep_score: 84
 tst_min: 432
 rhr_bpm: 52
@@ -47,6 +48,7 @@ workout_reviews:
 - Strain **11.4** · Zones 42 / 18 / 6 / 0 / 0 min
 - Load steady · 1.08 (7 d vs 28 d)
 - Calories 2,640 · 610 active
+- VO2max 57 (estimate)
 - Volleyball 20:30–21:15 · 45 min · 138 avg / 179 max · strain 8.3 · 410 kcal
 - Lifting log · 3 exercises · 12 sets · 4,650 lb · sets matched 18:02–19:05
 - Synced 07:58
@@ -76,7 +78,8 @@ workout_reviews:
   workouts and steps cover the calendar day. Load (`load_*`) is the last 7 days' TRIMP against
   the last 28's and needs four weeks of days. Calories (`kcal`, `active_kcal`) need weight, height,
   birth date and sex in `profile.md`, and are a running total today; a workout line
-  ends with its own. An unsure workout ends with `?` (`Lifting?`) until
+  ends with its own. VO2max (`vo2max`, whole ml/kg/min) needs `hr_max_measured`, `sex` and 14 of
+  the last 30 nights. An unsure workout ends with `?` (`Lifting?`) until
   reviewed. "Synced" is on today only and turns into `**14h behind**` past two hours.
 - **Agenda** is today's events, rewritten after each calendar sync that changes them.
 - **Journal** entries are `- HH:MM text`, continuation lines indented two spaces.
@@ -92,7 +95,8 @@ workout_reviews:
 ## `profile.md`
 
 At the vault root. Strain needs `birth_date` (or `hr_max_measured`); `sex` picks the strain
-constants; `sleep_need_h` defaults to 8. Calories need `weight_kg` and `height_cm`.
+constants; `sleep_need_h` defaults to 8. Calories need `weight_kg` and `height_cm`; VO2max needs
+`hr_max_measured`.
 
 ```yaml
 ---
