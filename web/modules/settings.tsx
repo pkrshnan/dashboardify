@@ -8,6 +8,7 @@ import type { Module, PageProps } from "./types";
 export const settings: Module = {
   id: "settings",
   title: "Settings",
+  icon: "settings",
   path: "/settings/:section?",
   key: "s",
   nav: { group: "bottom", phone: "more" },

@@ -10,6 +10,7 @@ import type { Module, PageProps } from "./types";
 export const activity: Module = {
   id: "activity",
   title: "Activity",
+  icon: "activity",
   path: "/activity",
   key: "a",
   nav: { group: 3, phone: "more" },

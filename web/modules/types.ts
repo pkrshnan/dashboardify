@@ -4,6 +4,7 @@
 
 import type { JSX } from "preact";
 import type { HomeView } from "../../src/home/types";
+import type { IconName } from "../components/icons";
 import type { Now } from "../lib/clock";
 import type { Address } from "../lib/router";
 
@@ -26,12 +27,16 @@ export interface Module {
   /** Stable: used in addresses and, later, recency and command ids. */
   id: string;
   title: string;
+  icon: IconName;
   /** "/", "/activity", "/settings/:section?" (see matchPath). */
   path: string;
   /** `g` then this letter goes to the page. */
   key: string;
-  /** Sidebar group (separated by space, not labelled) and where it sits on the phone. */
-  nav: { group: 1 | 2 | 3 | 4 | "bottom"; phone: "tab" | "more" };
+  /**
+   * Sidebar group (separated by space, not labelled) and where it sits on the phone. Without it
+   * the page has an address but no nav entry, like More.
+   */
+  nav?: { group: 1 | 2 | 3 | 4 | "bottom"; phone: "tab" | "more" };
   /** The page waits for the home view before it shows. */
   needsHome: boolean;
   view: (props: PageProps) => JSX.Element | null;

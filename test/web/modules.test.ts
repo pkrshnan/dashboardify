@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { MODULES, pageFor } from "../../web/modules/index";
+import { MODULES, MORE, pageFor } from "../../web/modules/index";
 
 describe("modules", () => {
   test("ids, paths and shortcut letters are each used once", () => {
     for (const field of ["id", "path", "key"] as const) {
-      const values = MODULES.map((m) => m[field]);
+      const values = [...MODULES, MORE].map((m) => m[field]);
 
       expect(new Set(values).size).toBe(values.length);
     }
@@ -23,6 +23,7 @@ describe("pageFor", () => {
     ["/settings/devices", "settings", { section: "devices" }],
     ["/nowhere", "today", {}],
     ["/activity/extra", "today", {}],
+    ["/more", "more", {}],
   ])("%s shows %s", (path, id, params) => {
     const page = pageFor(path);
 
