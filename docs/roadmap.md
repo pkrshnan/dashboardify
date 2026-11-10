@@ -51,8 +51,8 @@ Apple Reminders.
 
 | # | Work | State |
 | --- | --- | --- |
-| 1 | Navigation: router, modules, command bar, search, sidebar and tab bar | Needs a plan |
-| 2 | Tasks page and reminder editing (the API already does it all) | Needs a plan |
+| 1 | Navigation: router, modules, command bar, search, sidebar and tab bar | Planned: [navigation.md](navigation.md) (N1–N8) |
+| 2 | Tasks page and reminder editing (the API already does it all); starts with N7's task panel | Needs a plan |
 | 3 | Lists (shopping). A `- [ ]` line anywhere in the vault is read as a task, so lists need a folder tasks skip, or another format. | Needs a plan |
 | 4 | Journal page: the day's journal and check-in | Needs a plan |
 | 5 | The rest of health: sleep stages, calories, training load, VO2max, biological age | Needs a plan |

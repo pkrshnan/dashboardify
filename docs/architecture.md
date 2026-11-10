@@ -88,3 +88,8 @@ data/ (DATA_PATH)               settings.db, secret.key, calendar-cache.db, serv
   returned. `secret.key` stays out of backups ([settings.md](settings.md#threat-model)).
 - File paths are built only from validated dates and fixed names.
 - Text from calendars is untrusted and rendered as text, never HTML.
+
+## Web app
+
+Hash views in `web/app.tsx` today; [navigation.md](navigation.md) plans the router, modules,
+command bar and sidebar that replace them.
