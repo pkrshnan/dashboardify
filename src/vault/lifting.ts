@@ -37,11 +37,16 @@ export interface LoggedSet {
 }
 
 /**
- * A load line: an optional weight, then one or more `sets×reps`, such as `60lbs, 1x10`,
- * `7.5 lbs 3 x 10`, `40kg, 3×8`, `15lbs, 2x10, 1x8` (two sets of 10, then one of 8), or bodyweight
- * `3x12`.
+ * A load line: one or more `sets×reps` with an optional weight before or after, such as
+ * `60lbs, 1x10`, `1x10, 60lbs`, `7.5 lbs 3 x 10`, `40kg, 3×8`, `15lbs, 2x10, 1x8` (two sets of 10,
+ * then one of 8), or bodyweight `3x12`.
  */
-const LOAD = /^(?:(\d+(?:\.\d+)?)\s*(lbs?|kgs?)\b[\s,]*)?((?:\d+\s*[x×]\s*\d+[\s,]*)+)$/i;
+const WEIGHT = String.raw`(\d+(?:\.\d+)?)\s*(lbs?|kgs?)\b`;
+const GROUPS = String.raw`(\d+\s*[x×]\s*\d+(?:[\s,]+\d+\s*[x×]\s*\d+)*)`;
+const LOAD = new RegExp(
+  String.raw`^(?:${WEIGHT}[\s,]*${GROUPS}|${GROUPS}(?:[\s,]+${WEIGHT})?)[\s,]*$`,
+  "i",
+);
 const SETS_REPS = /(\d+)\s*[x×]\s*(\d+)/gi;
 const BULLET = /^(\s*)[-*+]\s+(.*)$/;
 
@@ -67,7 +72,9 @@ export function parseLiftingLog(body: string): Exercise[] {
 
 /** One LoadLine per `sets×reps` group, all at the line's weight. */
 function toLoads(match: RegExpExecArray): LoadLine[] {
-  const [, weight, unit, groups = ""] = match;
+  const [, before, beforeUnit, beforeGroups, groups = beforeGroups ?? "", after, afterUnit] = match;
+  const weight = before ?? after;
+  const unit = beforeUnit ?? afterUnit;
   return [...groups.matchAll(SETS_REPS)].map(([, sets, reps]) => ({
     weight: weight === undefined ? null : Number(weight),
     unit: unit === undefined ? null : toUnit(unit),
