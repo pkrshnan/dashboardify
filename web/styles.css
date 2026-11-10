@@ -2672,6 +2672,29 @@ button.link {
   outline: none;
 }
 
+.list-add-row {
+  display: flex;
+  gap: 8px;
+}
+
+/* The section to add to: a quiet pill that opens the system menu. */
+.list-section-pick {
+  flex: none;
+  max-width: 180px;
+  height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--fill);
+  color: var(--text-2);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.list-new-section {
+  margin-top: 8px;
+}
+
 .list-error {
   margin: 6px 2px 0;
   font-size: 13px;
@@ -2723,6 +2746,50 @@ button.link {
   margin-left: auto;
   font-size: 13px;
   color: var(--text-3);
+}
+
+.list-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--fill);
+}
+
+.list-row .list-item {
+  flex: 1;
+  min-width: 0;
+  border-bottom: 0;
+}
+
+/* A "⋯" over an invisible select, so the menu is the system's own on every device. */
+.list-move {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  color: var(--text-3);
+  font-size: 17px;
+  opacity: 0;
+}
+
+.list-row:hover .list-move,
+.list-move:focus-within {
+  opacity: 1;
+}
+
+.list-move:hover {
+  background: var(--fill);
+}
+
+.list-move select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
 }
 
 .list-done-head {
@@ -2798,6 +2865,19 @@ button.link {
 .lists.phone .list-item {
   min-height: 52px;
   font-size: 17px;
+}
+
+.lists.phone .list-section-pick {
+  height: 44px;
+  max-width: 120px;
+  font-size: 15px;
+}
+
+/* No hover on the phone, so the menu always shows. */
+.lists.phone .list-move {
+  width: 40px;
+  height: 44px;
+  opacity: 1;
 }
 
 .lists.phone .list-item .ring {

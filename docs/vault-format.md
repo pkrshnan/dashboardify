@@ -83,8 +83,10 @@ workout_reviews:
 
 One note per list ([lists.md](lists.md)); the file name is the list's title. `##` headings are
 sections and `- [ ]` / `- [x]` lines are items; a trailing `(…)` is the item's note. The server
-adds items at the end of the block before the first heading, unticks an item that's added again,
-and removes `[x]` lines (with their indented lines) when you clear what you got. Every other line
+adds items at the end of the block before the first heading, or of the section they're added to
+(a new section's `## Heading` goes at the end of the note). It unticks an item that's added
+again, moves an item's line (with its indented lines) to the end of another section, and removes
+`[x]` lines when you clear what's done. Every other line
 is left alone, and no ids are written into the note.
 
 ```markdown

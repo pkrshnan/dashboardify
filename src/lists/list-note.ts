@@ -69,11 +69,17 @@ export function itemLine(item: Pick<ListItem, "text" | "note" | "done">): string
 
 /**
  * Adds entries ("oat milk", "Spinach (2 bags)") to the list. One already on it and open is left
- * alone; one on it and ticked is unticked where it is, so it goes back to its section; anything
- * else is a new line at the top, before the first section. Returns the new text and each
- * entry's item, in the order given.
+ * alone; one on it and ticked is unticked where it is, so it goes back to its section. Anything
+ * else is a new line at the end of `section`, or of the block before the first heading when
+ * there's none; a section that isn't there yet gets a heading at the end of the note. A ticked
+ * match is moved to `section` when one is given. Returns the new text and each entry's item, in
+ * the order given.
  */
-export function addItems(text: string, entries: string[]): { text: string; items: ListItem[] } {
+export function addItems(
+  text: string,
+  entries: string[],
+  section?: string,
+): { text: string; items: ListItem[] } {
   let current = text;
   const keys: string[] = [];
   for (const entry of entries) {
@@ -82,14 +88,14 @@ export function addItems(text: string, entries: string[]): { text: string; items
       continue;
     }
     keys.push(name.toLowerCase());
-    current = addOne(current, name, note);
+    current = addOne(current, name, note, section?.trim() || null);
   }
   const { items } = parseList(current);
   const found = keys.map((key) => items.find((item) => item.text.toLowerCase() === key));
   return { text: current, items: found.filter((item) => item !== undefined) };
 }
 
-function addOne(text: string, name: string, note: string | null): string {
+function addOne(text: string, name: string, note: string | null, section: string | null): string {
   const list = parseList(text);
   const same = list.items.filter((item) => item.text.toLowerCase() === name.toLowerCase());
   if (same.some((item) => !item.done)) {
@@ -97,20 +103,88 @@ function addOne(text: string, name: string, note: string | null): string {
   }
   const ticked = same[0];
   if (ticked) {
-    return replaceLine(
+    const unticked = replaceLine(
       list.lines,
       ticked.line,
       itemLine({ ...ticked, note: note ?? ticked.note, done: false }),
     );
+    return section ? (moveItem(unticked, ticked.id, section)?.text ?? unticked) : unticked;
   }
+  return insertBlock(list, section, [itemLine({ text: name, note, done: false })]).text;
+}
+
+/**
+ * Moves one item, with its indented lines, to the end of `section` (null: the block before the
+ * first heading), making the heading if it isn't there. Its id changes with its section; the
+ * moved item is returned. Null when no item has that id.
+ */
+export function moveItem(
+  text: string,
+  id: string,
+  section: string | null,
+): { text: string; item: ListItem } | null {
+  const list = parseList(text);
+  const item = list.items.find((candidate) => candidate.id === id);
+  if (!item) {
+    return null;
+  }
+  const target = section?.trim() || null;
+  if (sameSection(item.section, target)) {
+    return { text, item };
+  }
+  const own = linesOf(list.lines, [item]);
+  const block = list.lines.filter((_, line) => own.has(line));
+  const rest = parseList(withoutLines(list.lines, own).join("\n"));
+  const { text: moved, at } = insertBlock(rest, target, block);
+  const found = parseList(moved).items.find((candidate) => candidate.line === at);
+  return found ? { text: moved, item: found } : null;
+}
+
+/** Inserts `block` at the end of a section; `at` is the line its first line lands on. */
+function insertBlock(
+  list: ParsedList,
+  section: string | null,
+  block: string[],
+): { text: string; at: number } {
   const lines = [...list.lines];
+  const at =
+    section === null
+      ? insertAtTop(lines, block)
+      : insertInSection(lines, list.items, section, block);
+  return { text: lines.join("\n"), at };
+}
+
+function insertAtTop(lines: string[], block: string[]): number {
   const at = topInsertIndex(lines);
-  const added = itemLine({ text: name, note, done: false });
   // A blank line after a title, and before a section heading that would otherwise touch it.
   const lead = (lines[at - 1] ?? "").startsWith("# ") ? [""] : [];
   const tail = SECTION.test(lines[at] ?? "") ? [""] : [];
-  lines.splice(at, 0, ...lead, added, ...tail);
-  return lines.join("\n");
+  lines.splice(at, 0, ...lead, ...block, ...tail);
+  return at + lead.length;
+}
+
+/** After the section's last item, or under its heading; a new heading goes at the end. */
+function insertInSection(
+  lines: string[],
+  items: ListItem[],
+  section: string,
+  block: string[],
+): number {
+  const last = items.filter((item) => sameSection(item.section, section)).at(-1);
+  const heading = lines.findIndex((line) => sameSection(SECTION.exec(line)?.[1] ?? null, section));
+  const at = last ? Math.max(...linesOf(lines, [last])) + 1 : heading + 1;
+  if (last || heading !== -1) {
+    lines.splice(at, 0, ...block);
+    return at;
+  }
+  // After a blank line, keeping the note's final newline.
+  const ending = lines.at(-1) === "" ? [""] : [];
+  while (lines.length > 0 && (lines.at(-1) ?? "").trim() === "") {
+    lines.pop();
+  }
+  const lead = lines.length > 0 ? [""] : [];
+  lines.push(...lead, `## ${section}`, ...block, ...ending);
+  return lines.length - block.length - ending.length;
 }
 
 /**
@@ -127,21 +201,33 @@ function topInsertIndex(lines: string[]): number {
   return at;
 }
 
-/** Changes one item's text, note or tick. Null when no item has that id. */
+/** Headings match ignoring case, so "produce" is Produce. */
+function sameSection(a: string | null, b: string | null): boolean {
+  return (a ?? "").toLowerCase() === (b ?? "").toLowerCase();
+}
+
+/**
+ * Changes one item's text, note or tick, and moves it when `section` is given (null: before the
+ * first heading). Null when no item has that id.
+ */
 export function updateItem(
   text: string,
   id: string,
-  change: { text?: string; note?: string | null; done?: boolean },
+  change: { text?: string; note?: string | null; done?: boolean; section?: string | null },
 ): { text: string; item: ListItem } | null {
   const list = parseList(text);
   const item = list.items.find((candidate) => candidate.id === id);
   if (!item) {
     return null;
   }
-  const next = { ...item, ...change, text: change.text?.trim() || item.text };
+  const { section, ...line } = change;
+  const next = { ...item, ...line, text: line.text?.trim() || item.text };
   const edited = replaceLine(list.lines, item.line, itemLine(next));
-  const moved = parseList(edited).items.find((candidate) => candidate.line === item.line);
-  return moved ? { text: edited, item: moved } : null;
+  const updated = parseList(edited).items.find((candidate) => candidate.line === item.line);
+  if (!updated || section === undefined) {
+    return updated ? { text: edited, item: updated } : null;
+  }
+  return moveItem(edited, updated.id, section);
 }
 
 /** Removes one item and its indented lines. Null when no item has that id. */

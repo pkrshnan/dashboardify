@@ -3,6 +3,7 @@ import {
   addItems,
   clearDone,
   itemLine,
+  moveItem,
   parseList,
   removeItem,
   splitNote,
@@ -118,6 +119,59 @@ describe("addItems", () => {
 
   test("a list without sections takes new items at the end", () => {
     expect(addItems("- [ ] Dune\n", ["Arrival"]).text).toBe("- [ ] Dune\n- [ ] Arrival\n");
+  });
+});
+
+describe("sections", () => {
+  test("an item added to a section goes at its end, matching the heading's case", () => {
+    const { text, items } = addItems(SHOPPING, ["Kale"], "produce");
+
+    expect(text).toContain("  - the unwaxed ones\n- [ ] Kale\n\n## Dairy");
+    expect(items[0]?.section).toBe("Produce");
+  });
+
+  test("a new section is a heading at the end of the note", () => {
+    const { text } = addItems(SHOPPING, ["Bin bags", "Foil"], "Household");
+
+    expect(text).toBe(`${SHOPPING}\n## Household\n- [ ] Bin bags\n- [ ] Foil\n`);
+    expect(addItems("", ["Tea"], "Pantry").text).toBe("## Pantry\n- [ ] Tea\n");
+  });
+
+  test("an empty heading takes the item under it", () => {
+    expect(addItems("## Bakery\n\n## Dairy\n", ["Bread"], "Bakery").text).toBe(
+      "## Bakery\n- [ ] Bread\n\n## Dairy\n",
+    );
+  });
+
+  test("a ticked match moves to the section it was added to", () => {
+    const { text, items } = addItems(SHOPPING, ["Lemons"], "Dairy");
+
+    expect(text).toContain("- [ ] Oat milk (2)\n- [ ] Lemons\n  - the unwaxed ones\n");
+    expect(text).not.toContain("- [x] Lemons");
+    expect(items[0]?.section).toBe("Dairy");
+  });
+
+  test("moving takes the indented lines along and gives a new id", () => {
+    const lemons = named(SHOPPING, "Lemons");
+    const moved = moveItem(SHOPPING, lemons.id, null);
+
+    expect(moved?.text).toContain(
+      "- [ ] Coffee beans\n- [x] Lemons\n  - the unwaxed ones\n\n## Produce\n- [ ] Bananas\n- [ ] Spinach (2 bags)\n\n## Dairy",
+    );
+    expect(moved?.item.section).toBeNull();
+    expect(moved?.item.id).not.toBe(lemons.id);
+    expect(moveItem(SHOPPING, lemons.id, "PRODUCE")?.text).toBe(SHOPPING);
+    expect(moveItem(SHOPPING, "nope", null)).toBeNull();
+  });
+
+  test("an update can move and tick at once", () => {
+    const result = updateItem(SHOPPING, named(SHOPPING, "Coffee beans").id, {
+      done: true,
+      section: "Pantry",
+    });
+
+    expect(result?.text).toContain("## Pantry\n- [x] Coffee beans\n");
+    expect(result?.item).toMatchObject({ section: "Pantry", done: true });
   });
 });
 
