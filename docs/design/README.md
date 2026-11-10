@@ -28,7 +28,8 @@ https://claude.ai/artifact/Dm3mFqJPttBWpS9VxeYPUD. `home-desktop.dc.html` (1440 
      show why they can't be changed.
    - **Week:** desktop has seven columns with dated tasks on top; the phone has a day strip and
      that day's agenda. Events are filled markers, reminders hollow, all-day events hollow
-     squares.
+     squares. Events show their location under the title, as plain text, and open the same
+     event panel as the Day view.
    - **Capture box** under the heading: highlights the time, person and place as you type, shows
      Event or Reminder with the reason and a preview line (title, when, calendar button). A place
      line shows the match with "1 of 5". Return adds; the added line has Undo; `N` focuses it. A

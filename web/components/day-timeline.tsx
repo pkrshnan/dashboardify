@@ -106,7 +106,7 @@ interface Opener {
 }
 
 /** Makes an event's block open the panel, for a calendar event that has finished saving. */
-function opener(event: AgendaEvent, onOpen?: (event: string) => void): Partial<Opener> {
+export function opener(event: AgendaEvent, onOpen?: (event: string) => void): Partial<Opener> {
   const name = event.event;
   if (!(name && onOpen) || event.pending) {
     return {};
