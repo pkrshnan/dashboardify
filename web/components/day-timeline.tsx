@@ -1,7 +1,7 @@
 // The Day view: all-day events in a row on top, then hour lines from an hour before now to 22:00,
 // event blocks on the left, timed tasks as dashed pills in a lane on the right, and a red line for
 // now. An event the capture box is still saving has a stronger fill and a ring. Tapping a
-// calendar event opens it.
+// calendar event opens it; tapping a pill's ring ticks it off or, once done, opens it again.
 
 import type { AgendaEvent, DayAgenda } from "../../src/home/types";
 import { alpha, CATEGORY, TEXT, TEXT_2, TEXT_3 } from "../lib/colors";
@@ -13,11 +13,12 @@ interface Props {
   nowMin: number;
   isPhone: boolean;
   onComplete: (id: string) => void;
+  onReopen: (id: string) => void;
   /** Opens the event panel for "events/{id}". */
   onOpen?: (event: string) => void;
 }
 
-export function DayTimeline({ day, nowMin, isPhone, onComplete, onOpen }: Props) {
+export function DayTimeline({ day, nowMin, isPhone, onComplete, onReopen, onOpen }: Props) {
   const hourPx = isPhone ? 56 : 52;
   const range = hourRange(nowMin, day.events, day.reminders);
   const hours = Array.from(
@@ -53,7 +54,13 @@ export function DayTimeline({ day, nowMin, isPhone, onComplete, onOpen }: Props)
           />
         ))}
         {pills.map((p) => (
-          <ReminderPill key={p.reminder.id} pill={p} isPhone={isPhone} onComplete={onComplete} />
+          <ReminderPill
+            key={p.reminder.id}
+            pill={p}
+            isPhone={isPhone}
+            onComplete={onComplete}
+            onReopen={onReopen}
+          />
         ))}
         {blocks.length === 0 && pills.length === 0 && day.allDay.length === 0 && (
           <div class="empty-day">Nothing on the calendar.</div>
@@ -210,7 +217,12 @@ function blockFill(block: Block): number {
   return block.next ? 0.25 : 0.15;
 }
 
-function ReminderPill(props: { pill: Pill; isPhone: boolean; onComplete: (id: string) => void }) {
+function ReminderPill(props: {
+  pill: Pill;
+  isPhone: boolean;
+  onComplete: (id: string) => void;
+  onReopen: (id: string) => void;
+}) {
   const { reminder, top } = props.pill;
   return (
     <label class={`reminder${reminder.done ? " done" : ""}`} style={{ top: `${top}px` }}>
@@ -218,9 +230,10 @@ function ReminderPill(props: { pill: Pill; isPhone: boolean; onComplete: (id: st
         type="checkbox"
         class="ring sm"
         checked={reminder.done}
-        disabled={reminder.done}
-        aria-label={reminder.done ? "Done" : `Mark ${reminder.text} done`}
-        onChange={() => props.onComplete(reminder.id)}
+        aria-label={`Mark ${reminder.text} ${reminder.done ? "not done" : "done"}`}
+        onChange={() =>
+          reminder.done ? props.onReopen(reminder.id) : props.onComplete(reminder.id)
+        }
       />
       {props.isPhone ? (
         <span class="reminder-body">

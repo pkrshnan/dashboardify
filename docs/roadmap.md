@@ -38,7 +38,7 @@ Apple Reminders.
 | Foundation | Strict TypeScript, Biome, CI, Dockerfile, a `demo` label that runs a PR on a temporary URL |
 | Vault | Frontmatter, sections, `<!-- cc:name -->` blocks, atomic writes, one writer per file, time-zone-correct days |
 | API | 14 v1 services; etags, update masks, `requestId` retries, pagination |
-| Tasks | Full API (create, edit, delete, complete with recurrence, reopen, search) and Siri. On screen: a grouped list you can tick. |
+| Tasks | Full API (create, edit, delete, complete with recurrence, reopen, search) and Siri. On screen: a grouped list you can tick, and Day timeline reminders you can tick and untick. |
 | Capture | One box: a line becomes an event or a reminder, with the calendar guessed and the place looked up; Undo; Siri "Add to command center" |
 | Calendar | iCloud sync every 2 min, ICS links every 15; Day and Week, all-day row, overlap layout; event panel edits and deletes; agenda block in the daily note |
 | Settings | `settings.db`, hashed devices, sealed secrets, setup code, `bun run settings`, Settings page (General, Devices, Calendars) |

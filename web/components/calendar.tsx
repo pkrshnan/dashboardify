@@ -18,6 +18,7 @@ interface Props {
   nowMin: number;
   isPhone: boolean;
   onComplete: (id: string) => void;
+  onReopen: (id: string) => void;
   /** Opens the event panel for "events/{id}". */
   onOpenEvent?: (event: string) => void;
   /** The capture box, under the heading. */
@@ -27,7 +28,7 @@ interface Props {
 }
 
 export function Calendar(props: Props) {
-  const { view, nowMin, isPhone, onComplete, capture, aside } = props;
+  const { view, nowMin, isPhone, onComplete, onReopen, capture, aside } = props;
   const [mode, setMode] = useState<View>("day");
   const today = view.days[0];
   const last = view.days.at(-1);
@@ -62,6 +63,7 @@ export function Calendar(props: Props) {
               nowMin={nowMin}
               isPhone={isPhone}
               onComplete={onComplete}
+              onReopen={onReopen}
               onOpen={props.onOpenEvent}
             />
           )}

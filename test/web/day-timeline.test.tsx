@@ -12,16 +12,18 @@ function timeline(
   options: { isPhone?: boolean; nowMin?: number } = {},
 ) {
   const onComplete = mock((_id: string) => undefined);
+  const onReopen = mock((_id: string) => undefined);
   const view = render(
     <DayTimeline
       day={day("2026-11-09", items)}
       nowMin={options.nowMin ?? NINE_TWELVE}
       isPhone={options.isPhone ?? false}
       onComplete={onComplete}
+      onReopen={onReopen}
     />,
   );
   const blocks = [...view.container.querySelectorAll<HTMLElement>(".event")];
-  return { ...view, blocks, onComplete };
+  return { ...view, blocks, onComplete, onReopen };
 }
 
 function text(el: Element | null | undefined): string {
@@ -169,21 +171,25 @@ describe("DayTimeline", () => {
   });
 
   test("ticking a reminder pill completes it", () => {
-    const { container, getByLabelText, onComplete } = timeline({
+    const { container, getByLabelText, onComplete, onReopen } = timeline({
       reminders: [reminder("Call the bank", 10 * 60)],
     });
     expect(container.querySelector<HTMLElement>(".reminder")?.style.top).toBe("104px");
     fireEvent.click(getByLabelText("Mark Call the bank done"));
     expect(onComplete).toHaveBeenCalledWith("Call the bank");
+    expect(onReopen).not.toHaveBeenCalled();
   });
 
-  test("a done reminder is ticked and can't be unticked", () => {
-    const { container, getByLabelText } = timeline({
+  test("unticking a done reminder reopens it", () => {
+    const { container, getByLabelText, onComplete, onReopen } = timeline({
       reminders: [reminder("Pay rent", 10 * 60, true)],
     });
-    const box = getByLabelText("Done") as HTMLInputElement;
+    const box = getByLabelText("Mark Pay rent not done") as HTMLInputElement;
     expect(box.checked).toBe(true);
-    expect(box.disabled).toBe(true);
+    expect(box.disabled).toBe(false);
     expect(container.querySelector(".reminder")?.classList.contains("done")).toBe(true);
+    fireEvent.click(box);
+    expect(onReopen).toHaveBeenCalledWith("Pay rent");
+    expect(onComplete).not.toHaveBeenCalled();
   });
 });
