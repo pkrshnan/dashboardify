@@ -124,6 +124,7 @@ are encrypted with `data/secret.key`. Keep that key out of backups of the data f
 it somewhere safe (`bun run settings key show`); without it the stored passwords can't be read.
 
 See the [HTTP API](docs/api.md), [vault format](docs/vault-format.md),
-[health calculations](docs/health-metrics.md), and the [calendar](docs/calendar-plan.md) and
-[settings](docs/settings-plan.md) plans for details. The [architecture](docs/architecture.md)
-and [plan](docs/plan.md) describe the broader design and work still to come.
+[health calculations](docs/health-metrics.md), [calendar](docs/calendar.md) and
+[settings](docs/settings.md) docs for details. The [architecture](docs/architecture.md)
+describes the broader design, and the [roadmap](docs/roadmap.md) what is built and what comes
+next. [CLAUDE.md](CLAUDE.md) indexes every doc.

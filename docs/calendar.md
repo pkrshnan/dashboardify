@@ -1,13 +1,14 @@
-# Calendar plan
+# Calendar
 
-This is the plan for two-way calendar sync with Apple Calendar and one capture box for events
-and reminders. It covers the architecture and APIs (step 2) and the PR-by-PR build (step 3).
-The UI design is on the Claude Design canvas: https://claude.ai/artifact/YNnwtKHE7AAzjLswS4JnSc
-(artboards Main, Desktop and Phone for capture; the "Settings › Calendars" row for Settings).
+How two-way calendar sync with Apple Calendar works, and the one capture box that turns a line of
+text into an event or a reminder. Built as C1–C13 (PRs #33–#61); the PR-by-PR plan is in git
+history (`git show 7d6e452:docs/calendar-plan.md`). The UI design is on the Claude Design
+canvas: https://claude.ai/artifact/YNnwtKHE7AAzjLswS4JnSc (artboards Main, Desktop and Phone for
+capture; the "Settings › Calendars" row for Settings).
 
-It builds on [the settings plan](settings-plan.md), which lands first: `settings.db`,
-`SettingsStore`, `SecretBox` and the Settings page shell. Names and PR numbers (S1–S8) from that
-plan are used here as they are.
+It sits on [settings](settings.md): `settings.db`, `SettingsStore`, `SecretBox` and the Settings
+page shell. Place search for event locations (Photon, L1–L3) is in
+[api.md](api.md#places).
 
 ## Goals
 
@@ -18,7 +19,7 @@ plan are used here as they are.
 - Connect one iCloud account and any number of calendar links (for example a work calendar
   published as an ICS URL), and choose their colours in Settings, not in `.env`.
 
-## Non-goals (v1)
+## Non-goals
 
 - Creating or editing recurring events. Occurrences of recurring events are read and shown.
 - Moving an event between calendars, invites, attendees and alarms.
@@ -476,7 +477,7 @@ Shared code, run in both places.
 
 A hand-picked calendar always wins and holds until the box is cleared, like the kind switch.
 
-### Changes to GetHome
+### Calendar fields in GetHome
 
 ```proto
 message AgendaEvent {
@@ -518,49 +519,8 @@ and getting an answer; the block and its "Saving to iCloud…" line live in the 
 `writable` and `allDay` fields; the cache-backed source replaces `noCalendar` in `main.ts` when
 any account or link exists.
 
-The daily note gets a machine-owned `<!-- cc:agenda -->` block (vault library, step 3 of
-docs/plan.md) with today's events as `- 10:00–10:15 Standup`, rewritten after each sync that
+The daily note gets a machine-owned `<!-- cc:agenda -->` block ([vault format](vault-format.md)) with today's events as `- 10:00–10:15 Standup`, rewritten after each sync that
 changes today.
-
-## Web changes
-
-| Component | Change |
-| --- | --- |
-| `web/components/capture.tsx` (new) | The box from the Main artboard: mirror overlay for highlights, Event/Reminder switch with a hand-switched mark, preview line with calendar picker (writable only), Return to add, "added · Undo" line, error and Retry. Keyboard: `N` focuses it on desktop. |
-| `web/components/task-list.tsx` | Remove `QuickAdd`. |
-| `web/app.tsx` | Place `Capture` under the Calendar heading, above the timeline and task list (Desktop and Phone artboards). Hold pending items and merge them into the view until the next refresh. |
-| `web/components/day-timeline.tsx` | Pending style (stronger fill, ring, "Saving to iCloud…" detail), error style, a brief highlight on the item just added. Tapping an event opens the event panel (`event-panel.tsx`) to edit or delete it; read-only events open read-only. |
-| `web/components/week.tsx` | All-day events as hollow markers with an event glyph in the dated row. Pending items. |
-| `web/components/calendar.tsx` | "Calendar synced 09:10" next to the heading; orange when stale or failing, like Health's synced label. |
-| `web/components/settings/calendars.tsx` (new) | The Calendars section in the Settings shell (below). |
-| `web/api.ts` | `capture`, `deleteEvent`, `deleteTask`, and the calendar account calls. |
-| `web/lib/colors.ts` | Category colours already exist; add pending and error tints. |
-
-### Settings › Calendars
-
-The page has three parts: iCloud, Calendar links and New events.
-
-- **iCloud:** with no account, a "Connect iCloud" button. The flow: credentials (Apple ID and
-  app-specific password with a link to account.apple.com) → Test (`validate_only`) → the found
-  calendars, each with category, writable or read-only badge and a Show switch → Save → pick the
-  default calendar. Once connected, the row shows status ("Synced 09:10", "Sign-in failed ·
-  Replace password"), Sync now and Disconnect. There is no second "Connect".
-- **Calendar links:** one row per link with its name, host, category, Show switch and status
-  ("Updated 09:00", "Link stopped working · Replace link"), and "Add calendar link". The flow:
-  paste the URL → Check (`validate_only`) → the name from the feed (editable), category, event
-  count → Add.
-- **New events:** default calendar and keyword rules. Links never appear here, because they are
-  read-only.
-
-Artboards on the canvas:
-
-1. **Calendars list:** iCloud and its calendars, two links (one failing), New events with rules.
-2. **Connect iCloud:** credentials, testing and failure states.
-3. **Connect iCloud, found calendars:** category, writable/read-only and Show per calendar.
-4. **Add calendar link:** pasting, checking, checked with name and category, and failure.
-5. **Phone:** the list, the credentials step and the link step at 390 wide.
-6. **Capture states not yet drawn:** error with Retry, a read-only event opened, the hand-switched
-   mark, an all-day event in Week.
 
 ## Libraries
 
@@ -570,18 +530,8 @@ Artboards on the canvas:
 | WebDAV XML | `fast-xml-parser` | Small, no dependencies, maintained, works in Bun. Responses are read with namespace-aware paths. |
 | iCalendar | `ical.js` (Mozilla) | Handles `VTIMEZONE`, `RRULE`, `EXDATE` and `RECURRENCE-ID` correctly, which is where hand-written parsers break. Also writes VEVENTs. No dependencies. |
 
-Pin exact versions in the PR that adds each one, as `package.json` does today. If `ical.js`
-turns out to be awkward under Bun's bundler for the web, it stays server-only; the web never
-parses iCalendar.
-
-## Demo
-
-`scripts/demo.ts` keeps its fake `CalendarSource` and gains:
-
-- a fake CalDAV server (the same one the tests use) seeded with Personal, Work (read-only) and
-  Fitness calendars, so capture, Undo and the Settings flow work in the demo;
-- a demo account that is already added, with sample history so the calendar guess has something
-  to go on.
+Versions are pinned exactly in `package.json`. `ical.js` is server-only; the web never parses
+iCalendar.
 
 ## Security
 
@@ -600,152 +550,13 @@ parses iCalendar.
   is left out of the vault, and does not need backing up.
 - Writes are limited to calendars marked writable, checked on the server, not only in the UI.
 
-## Build plan
-
-Each PR passes CI, adds tests, updates the docs it touches and leaves `main` deployable.
-"Needs settings" names the settings PRs from docs/settings-plan.md it waits for: S1 store and
-SecretBox, S3 general settings (time zone), S4 the Settings API patterns, S7 the Settings page shell.
-
-| # | PR | Needs settings |
-| --- | --- | --- |
-| C1 | Capture parser, shared | No |
-| C2 | Capture box in the web app, reminders only | No |
-| C3 | iCalendar model | No |
-| C4 | CalDAV client and fake server | No |
-| C5 | Calendar accounts and CalendarAccountService | S1, S4 |
-| C6 | Event cache and sync loop | S1 (via C5) |
-| C7 | Events on the home screen, read-only | via C6 |
-| C8 | EventService writes | S3 (via C6) |
-| C9 | Capture creates events | via C8 |
-| C10 | Settings › Calendars | S7, C5, design artboards |
-| C11 | Agenda block, Siri Shortcut, docs | via C7, C9 |
-| C12 | Calendar links (ICS) | via C6, C10 |
-
-C1–C4 need none of the settings PRs and can be reviewed while they are open. C5 can start as soon
-as S1 and S4 merge; it does not wait for S5–S8.
-
-### C1: Capture parser
-
-- Scope: `src/capture/parse.ts` and `choose-calendar.ts`. Move `parseWhen` in and drop Temporal;
-  `src/vault/when.ts` re-exports. The classification rules from the Main artboard, highlight
-  spans, title cleanup, reason strings, 1-hour default length, recurring text → reminder.
-- Tests: `test/capture/parse.test.ts` as a table of input → kind, title, times, spans, reason,
-  including every Main artboard example, DST edges, "12-1" lunch, "3-4pm", "noon", "for 45m",
-  overrides. `choose-calendar.test.ts` for each of the three steps and the read-only skip.
-- Done when the existing task and voice tests still pass and the table covers each rule.
-
-### C2: Capture box, reminders only
-
-- Scope: `web/components/capture.tsx` with highlights, the kind switch and preview line; remove
-  `QuickAdd`; place the box above the timeline. While no calendar exists, Event is shown but
-  disabled with "Connect a calendar in Settings" and everything goes to tasks through the
-  existing `VoiceService.AddTask`.
-- Tests: `test/web/capture.test.ts` for the overlay segments and the hand-switch rules
-  (pure helpers; no DOM test framework is added).
-- Docs: design/README.md "Calendar and tasks" section.
-- Done when typing in the box on desktop and phone matches the Main and Phone artboards.
-
-### C3: iCalendar model
-
-- Scope: add `ical.js`. `src/calendar/ical.ts`: a calendar object → its occurrences in a window
-  (recurrences expanded, EXDATEs and moved instances applied), and writing a single VEVENT with
-  the VTIMEZONE it uses.
-- Tests: fixtures in the shapes iCloud and Outlook write (hand-written, no real data): time
-  zones, all-day, a moved instance, EXDATE, a DST change mid-series, floating times, an event over
-  midnight, a Windows zone name.
-- Done when every fixture expands as expected and a written event reads back the same.
-
-### C4: CalDAV client and fake server
-
-- Scope: add `fast-xml-parser`. `src/calendar/caldav.ts` with discovery, listing, incremental
-  sync with fallback, multiget, create/update/delete with preconditions, the redirect host check.
-  `test/calendar/fake-caldav.ts`: an in-memory Hono app that answers PROPFIND, `calendar-query`,
-  `sync-collection`, `calendar-multiget`, PUT and DELETE with ctags, sync-tokens, etags,
-  `If-Match`/`If-None-Match`, privileges, a redirect like iCloud's and 401s on bad passwords.
-- Tests: against the fake server: discovery through the redirect, token expiry fallback, 412 on
-  stale etag, 412-on-retry treated as success, redirect to a foreign host refused, 401 surfaced.
-- Done when the client passes against the fake server and one manual run against iCloud lists
-  calendars (recorded in the PR description, no credentials).
-
-### C5: Calendar accounts
-
-- Scope: `src/calendar/accounts.ts` and its migrations with `SettingsStore`; sealed fields with
-  `SecretBox`, registered with `registerSealed`; `calendar_account.proto`; `CalendarAccountService` with `validate_only`;
-  REST bindings.
-- Tests: `test/server/api/calendar-accounts.test.ts`: create with test, bad password, secrets
-  never returned, `password_set`, a second iCloud account is `ALREADY_EXISTS`, update replaces
-  the secret, delete cascades, force read-only,
-  default calendar must be writable, `rotate-key` re-encrypts calendar secrets and they still open.
-- Docs: api.md "Calendar accounts".
-
-### C6: Event cache and sync loop
-
-- Scope: `src/calendar/cache.ts`, `src/calendar/sync.ts`, started from `main.ts` when accounts
-  exist; dedupe by UID; status written back to the account; backoff; reload on `store.version()`.
-- Tests: with the fake server and a fake clock: first sync, quiet poll is one request, an event
-  added "in Apple Calendar" (directly on the fake) appears after one tick, deletion, token
-  expiry, 401 stops polling, a password replaced from the CLI resumes polling on the next tick,
-  duplicate UID across calendars keeps the writable copy,
-  deleting the cache file resyncs.
-
-### C7: Events on the home screen
-
-- Scope: cache-backed `CalendarSource`; `AgendaEvent` and `Home` proto fields; `calendar_sync`
-  and `capture_hints`; "Calendar synced" label; all-day markers in Week; read-only event detail.
-- Tests: `test/home/agenda.test.ts` for all-day and dedupe; `test/server/api/home.test.ts` for
-  the new fields and the hints' size cap.
-- Done when an event added on the phone shows on the home screen within 2 minutes.
-
-### C8: EventService writes
-
-- Scope: `event.proto`, `src/server/api/events.ts`: create (UID from `request_id`,
-  `If-None-Match: *`), update with `If-Match`, delete, list from the cache, the error mapping;
-  immediate resync after a write.
-- Tests: create, retry with the same `request_id` gives one event, read-only calendar refused,
-  stale etag `ABORTED`, recurring `FAILED_PRECONDITION`, server down `UNAVAILABLE`, time zone of
-  the written event.
-
-### C9: Capture creates events
-
-- Scope: `capture.proto` and `src/server/api/capture.ts`; the box enables Event; pending block,
-  "added · Undo", error and Retry; Undo deletes the event or task.
-- Tests: `test/server/api/capture.test.ts` for both kinds, hand overrides, server zone wins,
-  idempotent retries for both kinds; web helper tests for pending merge and Undo.
-- Done when the Desktop artboard's flow works against the fake server in the demo.
-
-### C10: Settings › Calendars
-
-- Needs the Settings artboards above to be designed and approved first.
-- Scope: `web/components/settings/calendars.tsx`, the Connect iCloud flow, the list, keyword
-  rules. The Calendar links part waits for C12.
-- Tests: web helper tests for form state; the API is covered by C5.
-
-### C11: Agenda block, Siri and docs
-
-- Scope: `<!-- cc:agenda -->` block in the daily note; the "Add to command center" Shortcut
-  recipe in `shortcuts/`; doc updates below.
-- Tests: `test/calendar/agenda-block.test.ts` that only the owned block changes.
-- Done when the manual checklist below passes.
-
-### C12: Calendar links
-
-- Scope: `KIND_ICS` in `CalendarAccountService` (create with `validate_only`, replace URL,
-  delete); `src/calendar/feed.ts` with the conditional GET, size cap and redirect check; links in
-  the sync loop at 15 minutes; the Calendar links part of Settings › Calendars and its add flow.
-- Tests: `test/calendar/feed.test.ts` against an in-process server: 304 is one request and no
-  writes, a 200 replaces the calendar's events, recurring events from the feed expand, `http:`
-  and a redirect to `http:` refused, oversize feed refused, 410 marks "Link stopped working",
-  URL never returned and never logged; `rotate-key` re-encrypts `feed_url_sealed`; a link's
-  calendar can't be the default or a rule's target.
-- Done when a real Outlook or Google published-calendar link shows its events on the home screen.
-
 ## Testing
 
 - **Unit:** parser table, calendar guess, iCalendar fixtures, XML parsing.
 - **Integration:** the real Hono app against the fake CalDAV server, with an isolated vault and
   temporary `settings.db` and `calendar-cache.db` per test (extend `test/server/api/helpers.ts`).
-- **No network in tests**, as docs/plan.md requires. The CalDAV client takes a `fetch` so tests
-  inject the fake server's handler.
+- **No network in tests**, as [style.md](style.md#tests) requires. The CalDAV client takes a
+  `fetch`, so tests inject the fake server's handler.
 
 ### Manual end-to-end checklist (real iCloud)
 
@@ -772,24 +583,13 @@ as S1 and S4 merge; it does not wait for S5–S8.
 
 ## Later: more accounts
 
-Not in v1. Each is one PR on top of C12 and needs no migration:
+Not built. Each is one PR and needs no migration:
 
 | Account | How | Notes |
 | --- | --- | --- |
 | A second iCloud account | Drop the `one_caldav_account` index | The sync loop and APIs already handle several accounts. |
 | Google | The same CalDAV client, with an app password | Read and write. Redirect check widened to `*.google.com`. |
 | Microsoft Graph | OAuth app | Only if a 15-minute link is too slow or the work calendar can't be published. Usually needs IT approval. |
-
-## Docs to update
-
-| File | Change |
-| --- | --- |
-| docs/plan.md | Remove "Two-way sync with Apple apps" from non-goals; Calendar decision becomes "Read and write iCloud over CalDAV, accounts in Settings"; step 10 points here. |
-| docs/architecture.md | Calendar row in Sources: two-way iCloud CalDAV; add the cache and sync loop to the diagram; note `calendar-cache.db` as derived. |
-| docs/api.md | Calendar accounts, Events, Captures, the new Home fields. |
-| docs/design/README.md | The capture box, pending and error states, all-day markers, calendar synced label; link the canvas. |
-| README.md | Connecting a calendar in Settings. |
-| docs/development.md | Running the fake CalDAV server in the demo and tests. |
 
 ## Open questions
 
