@@ -64,11 +64,6 @@ Apple Reminders.
 | 11 | Inbox: IMAP triage, daily messages digest | Not started |
 | 12 | Local: Ollama guide, morning brief over ntfy | Not started |
 
-## Clean-up
-
-- The legacy `/api` routes in `src/server/routes/` and the `.env` overrides (`TZ_NAME`,
-  `TASKS_INBOX`, `TAILSCALE_PROXY`, `TAILNET_USERS`) are due to go.
-
 ## Open questions
 
 - [ ] Runs: Apple Health or Strava?

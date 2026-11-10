@@ -50,7 +50,7 @@ async function holdLock(dataPath: string): Promise<void> {
 if (import.meta.main) {
   const opened = await openSettings(loadStartup(), process.env);
   await holdLock(opened.config.dataPath);
-  const { config, devices, general, tailnet, overrides, envChange } = opened;
+  const { config, devices, general, tailnet } = opened;
   const accounts = new CalendarAccounts(opened.store);
   // The home screen reads the cache; syncing rebuilds it if it is missing.
   const cache = await EventCache.open(config.dataPath);
@@ -75,8 +75,6 @@ if (import.meta.main) {
     settings: {
       general,
       devices,
-      envChange,
-      envNames: overrides,
       calendars: { accounts, cache, sync: calendarSync },
       places: new Photon(process.env.PHOTON_URL || PHOTON_URL),
     },

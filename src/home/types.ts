@@ -1,6 +1,6 @@
 import type { CaptureHints } from "./calendar";
-// The shape of GET /api/home: everything the home screen shows, already worked out on the server
-// so the web app only lays it out. The web app imports these types directly.
+// The home view: everything the home screen shows, already worked out on the server so the web
+// app only lays it out. GET /v1/home sends it as protobuf; web/api.ts turns it back into this.
 
 export type Tone = "good" | "bad" | "neutral";
 export type Category = "work" | "fitness" | "personal" | "relationships" | "family" | "focus";

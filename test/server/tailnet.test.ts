@@ -65,7 +65,7 @@ describe("API sign-in through Tailscale", () => {
     const headers: Record<string, string> = login ? { "tailscale-user-login": login } : {};
     const res = await createApp(config, {
       devices: tokenDevices({ healthstrap: "healthstrap-token-0123" }),
-    }).request("/api/tasks", { headers }, server);
+    }).request("/v1/tasks", { headers }, server);
     await rm(dir, { recursive: true, force: true });
     return res.status;
   }

@@ -1,5 +1,5 @@
 // The home screen: focus, then calendar and tasks, then health trends. It loads everything from
-// GET /api/home and refreshes every few minutes, when the tab comes back, and at midnight.
+// GET /v1/home and refreshes every few minutes, when the tab comes back, and at midnight.
 
 import { render } from "preact";
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";

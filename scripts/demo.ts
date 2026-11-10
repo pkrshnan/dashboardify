@@ -42,7 +42,7 @@ const CALENDAR_FOR: Record<Category, string> = {
 };
 
 const TOKEN = "demo-token-0123456789";
-const TIME_ZONE = process.env.TZ_NAME ?? "Europe/London";
+const TIME_ZONE = process.env.DEMO_TZ ?? "Europe/London";
 const today = Temporal.Now.plainDateISO(TIME_ZONE);
 const day = (offset: number) => today.add({ days: offset }).toString();
 
@@ -104,8 +104,6 @@ const app = createApp(config, {
   settings: {
     general: new GeneralSettings(settings),
     devices,
-    envChange: {},
-    envNames: [],
     calendars,
     places: demoPlaces(),
   },

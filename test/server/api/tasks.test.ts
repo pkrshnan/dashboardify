@@ -100,12 +100,11 @@ describe("tasks API", () => {
     expect(listed.body.tasks).toHaveLength(1);
   });
 
-  test("legacy message history never appears in the task collection", async () => {
-    await api.call("/api/ingest/messages", "POST", {
-      id: "legacy",
+  test("message history never appears in the task collection", async () => {
+    await api.call("/v1/messages?messageId=m1", "POST", {
       sender: "Alice",
       text: "A message",
-      received_at: "2026-11-03T12:00:00Z",
+      receiveTime: "2026-11-03T12:00:00Z",
     });
     await api.call("/v1/tasks", "POST", { description: "A task" });
 

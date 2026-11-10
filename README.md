@@ -37,22 +37,17 @@ ln -s /absolute/path/to/your/vault vault
 cp .env.example .env
 ```
 
-Edit `.env` to set your time zone and replace `INGEST_TOKENS` with a device name and a random
-token, such as `mac:<token>`. Generate a token with `openssl rand -hex 24`. The first start
-copies both into Settings (`data/settings.db`, with the token stored only as a hash); after that
-you can remove them from `.env`. The default `VAULT_PATH=./vault` uses the symlink above; you can
-instead set an absolute vault path. Only `VAULT_PATH` is required.
-
-Load the configuration and start the server:
+Only `VAULT_PATH` is required; the default `./vault` uses the symlink above. Start the server
+(Bun reads `.env` itself):
 
 ```sh
-set -a
-. ./.env
-set +a
 bun run dev
 ```
 
-Open [localhost:8787](http://localhost:8787) and enter your device token. Without `INGEST_TOKENS`, the first start prints a one-time setup code instead ("No devices yet. Open … and enter setup code 4KQ7-MZ2D"); enter it on the "Set up this device" screen to add this browser. Add more devices later with `bun run settings devices add <name>`. Your vault and `.env`
+The first start prints a one-time setup code ("No devices yet. Open … and enter setup code
+4KQ7-MZ2D"). Open [localhost:8787](http://localhost:8787) and enter it on the "Set up this
+device" screen to add this browser. Then set your time zone in Settings › General. Add more
+devices in Settings › Devices or with `bun run settings devices add <name>`. Your vault and `.env`
 are git-ignored. See [development notes](docs/development.md) for checks, demo options, and hosting.
 
 ### Connect a calendar

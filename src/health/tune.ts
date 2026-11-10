@@ -1,5 +1,5 @@
 // Command line: re-fit recovery's weights against your check-ins, test the result on past nights,
-// and (with --apply) make it live if it earned it. Uses the same environment as the server.
+// and (with --apply) make it live if it earned it. Uses the server's .env and Settings.
 //
 //   bun src/health/tune.ts                     last 180 days, report only
 //   bun src/health/tune.ts 2026-06-01 2026-11-03
@@ -7,7 +7,8 @@
 //
 // See docs/health-feedback.md.
 
-import { loadConfig } from "../server/config";
+import { loadStartup } from "../server/config";
+import { configFromSettings } from "../settings/startup";
 import { isIsoDate, localDate } from "../vault/time";
 import { Vault } from "../vault/vault";
 import { fromNightRow } from "./daily-summary";
@@ -27,7 +28,7 @@ const DEFAULT_DAYS = 180;
 
 async function main(args: string[]): Promise<void> {
   const apply = args.includes("--apply");
-  const config = loadConfig();
+  const config = await configFromSettings(loadStartup());
   const range = dateRange(
     args.filter((a) => a !== "--apply"),
     localDate(new Date(), config.timeZone),

@@ -1,10 +1,10 @@
-// Settings › General: time zone, tasks inbox, where place searches look, and Tailscale sign-in. Changes save as you make
-// them. A field still set in .env is read-only and says where it is set.
+// Settings › General: time zone, tasks inbox, where place searches look, and Tailscale sign-in.
+// Changes save as you make them.
 
 import { useEffect, useState } from "preact/hooks";
 import { getSettings, type SettingsView, Unauthorized, updateSettings } from "../api";
 import { PlacesNear } from "./places-near";
-import { lockedBy, timeZones } from "./sections";
+import { timeZones } from "./sections";
 import type { SectionProps } from "./settings";
 
 type Change = Parameters<typeof updateSettings>[1];
@@ -71,7 +71,6 @@ interface GroupProps {
 }
 
 function TimeSection({ settings, restart, error, save }: GroupProps & { restart: string | null }) {
-  const lock = lockedBy("time_zone", settings.envOverrides);
   const [typed, setTyped] = useState(settings.timeZone);
   const zones = timeZones();
   // Read from the field, not state: picking from the list fires input and change together.
@@ -90,7 +89,6 @@ function TimeSection({ settings, restart, error, save }: GroupProps & { restart:
           list="time-zones"
           value={typed}
           placeholder="The server's own zone"
-          readOnly={Boolean(lock)}
           onInput={(e) => setTyped(e.currentTarget.value)}
           onChange={(e) => commit(e.currentTarget.value)}
           onKeyDown={(e) => e.key === "Enter" && commit(e.currentTarget.value)}
@@ -105,14 +103,13 @@ function TimeSection({ settings, restart, error, save }: GroupProps & { restart:
             Changed from {restart || "the server's zone"}. Restart the server to use it.
           </span>
         )}
-        <Note lock={lock} error={error} />
+        <ErrorNote error={error} />
       </Row>
     </section>
   );
 }
 
 function TasksSection({ settings, error, save }: GroupProps) {
-  const lock = lockedBy("tasks_inbox", settings.envOverrides);
   const [inbox, setInbox] = useState(settings.tasksInbox);
   const commit = (value: string) =>
     value !== settings.tasksInbox && save("tasks_inbox", { tasksInbox: value });
@@ -124,20 +121,18 @@ function TasksSection({ settings, error, save }: GroupProps) {
           id="inbox"
           class="settings-input"
           value={inbox}
-          readOnly={Boolean(lock)}
           onInput={(e) => setInbox(e.currentTarget.value)}
           onBlur={(e) => commit(e.currentTarget.value)}
           onKeyDown={(e) => e.key === "Enter" && commit(e.currentTarget.value)}
         />
         <span class="settings-note">Where new tasks and reminders go, relative to the vault.</span>
-        <Note lock={lock} error={error} />
+        <ErrorNote error={error} />
       </Row>
     </section>
   );
 }
 
 function TailnetSection({ settings, error, save }: GroupProps) {
-  const lock = lockedBy("tailnet", settings.envOverrides);
   const [proxy, setProxy] = useState(settings.tailnet.proxy);
   const saveTailnet = (next: { proxy?: string; allowedLogins?: string[] }) =>
     save("tailnet", { tailnet: { proxy, allowedLogins: settings.tailnet.allowedLogins, ...next } });
@@ -150,7 +145,6 @@ function TailnetSection({ settings, error, save }: GroupProps) {
           class="settings-input"
           value={proxy}
           placeholder="An IP address, or gateway in Docker"
-          readOnly={Boolean(lock)}
           onInput={(e) => setProxy(e.currentTarget.value)}
           onBlur={(e) => {
             const value = e.currentTarget.value;
@@ -159,12 +153,11 @@ function TailnetSection({ settings, error, save }: GroupProps) {
             }
           }}
         />
-        <Note lock={lock} error={error} />
+        <ErrorNote error={error} />
       </Row>
       <Row label="Allowed logins" id="login">
         <LoginChips
           logins={settings.tailnet.allowedLogins}
-          locked={Boolean(lock)}
           onChange={(allowedLogins) => saveTailnet({ allowedLogins })}
         />
       </Row>
@@ -173,12 +166,8 @@ function TailnetSection({ settings, error, save }: GroupProps) {
 }
 
 /** Each login as a chip with ×, then a field to add one (Return or leaving it adds). */
-function LoginChips(props: {
-  logins: string[];
-  locked: boolean;
-  onChange: (logins: string[]) => Promise<void>;
-}) {
-  const { logins, locked, onChange } = props;
+function LoginChips(props: { logins: string[]; onChange: (logins: string[]) => Promise<void> }) {
+  const { logins, onChange } = props;
   const [login, setLogin] = useState("");
   const add = () => {
     const value = login.trim();
@@ -191,28 +180,24 @@ function LoginChips(props: {
       {logins.map((l) => (
         <span key={l} class="settings-chip">
           {l}
-          {!locked && (
-            <button
-              type="button"
-              aria-label={`Remove ${l}`}
-              onClick={() => onChange(logins.filter((x) => x !== l))}
-            >
-              ×
-            </button>
-          )}
+          <button
+            type="button"
+            aria-label={`Remove ${l}`}
+            onClick={() => onChange(logins.filter((x) => x !== l))}
+          >
+            ×
+          </button>
         </span>
       ))}
-      {!locked && (
-        <input
-          id="login"
-          class="settings-input settings-chip-input"
-          placeholder="Add a login"
-          value={login}
-          onInput={(e) => setLogin(e.currentTarget.value)}
-          onKeyDown={(e) => e.key === "Enter" && add()}
-          onBlur={add}
-        />
-      )}
+      <input
+        id="login"
+        class="settings-input settings-chip-input"
+        placeholder="Add a login"
+        value={login}
+        onInput={(e) => setLogin(e.currentTarget.value)}
+        onKeyDown={(e) => e.key === "Enter" && add()}
+        onBlur={add}
+      />
     </div>
   );
 }
@@ -234,17 +219,6 @@ function Row({
   );
 }
 
-function Note({ lock, error }: { lock: string[] | undefined; error: string | undefined }) {
-  if (error) {
-    return <span class="settings-note bad">{error}</span>;
-  }
-  if (!lock) {
-    return null;
-  }
-  return (
-    <span class="settings-note">
-      Set by {lock.map((name, i) => [i > 0 && " and ", <code key={name}>{name}</code>])} in .env.
-      Remove it there to change it here.
-    </span>
-  );
+function ErrorNote({ error }: { error: string | undefined }) {
+  return error ? <span class="settings-note bad">{error}</span> : null;
 }

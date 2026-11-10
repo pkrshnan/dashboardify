@@ -28,7 +28,8 @@ Losing it means re-entering calendar passwords; device tokens keep working.
 ## Tables
 
 - `schema_migrations (module, version, apply_time)`.
-- `meta`: `key_check` (a sealed known string; a wrong key stops startup) and `env_imported`.
+- `meta`: `key_check` (a sealed known string; a wrong key stops startup), and the old import
+  markers.
 - `settings`, one row: `time_zone`, `tasks_inbox`, `tailnet_proxy`, `tailnet_logins` (JSON),
   `places_near`, `update_time` (also the etag).
 - `devices`: `id` (slug of the name), `display_name`, `token_hash`, `create_time`,
@@ -44,8 +45,8 @@ Losing it means re-entering calendar passwords; device tokens keep working.
 | `src/settings/store.ts` | Open, migrate, `transaction`, `registerSealed` for rotate-key, `version()` (`PRAGMA data_version`, so CLI writes are seen without polling) |
 | `src/settings/core.ts` | The `settings` row |
 | `src/settings/devices.ts` | `DeviceStore`: add, list, revoke, match a token |
-| `src/settings/env-import.ts` | One-time import from `.env`, and the overrides |
-| `src/settings/startup.ts` | The startup order below |
+| `src/settings/retired-env.ts` | Warns about old `.env` variables that are no longer read |
+| `src/settings/startup.ts` | The startup order below; `configFromSettings` for CLIs (`summarize.ts`, `tune.ts`) |
 | `src/settings/setup-code.ts`, `export.ts`, `rotate.ts` | Setup code, TOML export, key rotation |
 | `scripts/settings.ts` | The `bun run settings` CLI |
 | `web/settings/` | The Settings page and its sections |
@@ -56,18 +57,17 @@ Losing it means re-entering calendar passwords; device tokens keep working.
 2. Load or create the key. If `settings.db` exists without a key, stop rather than make one that
    can't open it.
 3. Open `settings.db`, run migrations, check `key_check`.
-4. Import `.env` once (logged by name, never value); apply overrides.
+4. Warn about any retired variable still in `.env`.
 5. Build `Config`; print a setup code if nobody can sign in; serve.
 
 Changes from the API or the CLI apply on the next request (devices, tailnet, inbox). A time zone
 change needs a restart, and the response's `restart_required` says so.
 
-## Moving off `.env`
+## Retired `.env` variables
 
-The first start imports `INGEST_TOKENS` (as hashed devices), `TZ_NAME`, `TASKS_INBOX`,
-`TAILSCALE_PROXY` and `TAILNET_USERS`. After that, a settings variable still set in the
-environment overrides Settings with a warning, and the page shows the field read-only.
-`INGEST_TOKENS` is never an override; once imported it is ignored.
+`INGEST_TOKENS`, `TZ_NAME`, `TASKS_INBOX`, `TAILSCALE_PROXY` and `TAILNET_USERS` used to be copied
+into Settings on the first start (PRs #38, #39). They are no longer read; one still set only logs a
+warning. A fresh install signs in with the setup code, then sets the rest in Settings.
 
 ## CLI
 

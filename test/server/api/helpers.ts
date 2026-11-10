@@ -12,7 +12,7 @@ import type { CalendarSource } from "../../../src/home/calendar";
 import { Photon } from "../../../src/places/photon";
 import type { ConnectCalDav } from "../../../src/server/api/calendar-accounts";
 import { type AppDeps, createApp } from "../../../src/server/app";
-import { GeneralSettings, type SettingsChange } from "../../../src/settings/core";
+import { GeneralSettings } from "../../../src/settings/core";
 import { DeviceStore } from "../../../src/settings/devices";
 import { SecretBox } from "../../../src/settings/secret-box";
 import type { SetupCode } from "../../../src/settings/setup-code";
@@ -38,8 +38,6 @@ function fakeConnect(server: (() => FakeCalDav) | undefined): ConnectCalDav {
  */
 export function useApi(
   options: {
-    envChange?: SettingsChange;
-    envNames?: string[];
     calDav?: () => FakeCalDav;
     recompute?: AppDeps["recompute"];
     calendar?: CalendarSource;
@@ -96,8 +94,6 @@ export function useApi(
         settings: {
           general: new GeneralSettings(settings),
           devices,
-          envChange: options.envChange ?? {},
-          envNames: options.envNames ?? [],
           calendars: { accounts, connect, cache, sync, feedFetch },
           places: new Photon("https://photon.test", (request) => {
             if (!options.photon) {

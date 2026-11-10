@@ -1,4 +1,4 @@
-// Talks to the server's /api. Opened through Tailscale, the server knows who you are and no
+// Talks to the server's v1 API. Opened through Tailscale, the server knows who you are and no
 // token is needed. Anywhere else (local development, the demo) the server answers 401, and the
 // sign-in screen asks for a device token, which is kept in localStorage.
 
@@ -317,8 +317,6 @@ export interface SettingsView {
   /** Place searches look near here first. */
   placesNear?: PlaceView;
   etag: string;
-  /** Fields still set in .env, such as "time_zone". */
-  envOverrides: string[];
   /** Fields the last change needs a restart for. */
   restartRequired: string[];
 }
@@ -334,7 +332,6 @@ function settingsView(json: SettingsJson): SettingsView {
     tailnet: { proxy: json.tailnet?.proxy ?? "", allowedLogins: json.tailnet?.allowedLogins ?? [] },
     placesNear: json.placesNear && placeView(json.placesNear),
     etag: json.etag ?? "",
-    envOverrides: json.envOverrides ?? [],
     restartRequired: json.restartRequired ?? [],
   };
 }
@@ -626,7 +623,7 @@ export async function updateCalendarPreferences(
   return { defaultCalendar: r.defaultCalendar ?? "", keywordRules: r.keywordRules ?? [] };
 }
 
-/** The error a service sent ("time_zone is set by TZ_NAME in .env…"), to show beside a field. */
+/** The error a service sent ("tasks_inbox must be a .md file…"), to show beside a field. */
 export class ServiceError extends Error {}
 
 /**

@@ -1,10 +1,11 @@
 // Command line: compute health summaries for a range of dates, oldest first, e.g. to backfill
-// history or after changing a calculation. Uses the same environment as the server.
+// history or after changing a calculation. Uses the server's .env and its Settings (time zone).
 //
 //   bun src/health/summarize.ts 2026-10-13 2026-11-03
 //   bun src/health/summarize.ts 2026-11-03
 
-import { loadConfig } from "../server/config";
+import { loadStartup } from "../server/config";
+import { configFromSettings } from "../settings/startup";
 import { isIsoDate } from "../vault/time";
 import { Vault } from "../vault/vault";
 import { DailySummary } from "./daily-summary";
@@ -17,7 +18,7 @@ async function main(args: string[]): Promise<void> {
     console.error("usage: bun src/health/summarize.ts FROM [TO]   (dates as YYYY-MM-DD)");
     process.exit(2);
   }
-  const config = loadConfig();
+  const config = await configFromSettings(loadStartup());
   const summary = new DailySummary(
     new RawStore(config.healthRawPath),
     new DerivedStore(config.healthDerivedPath),

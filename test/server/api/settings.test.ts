@@ -91,28 +91,3 @@ describe("settings API", () => {
     expect(body.tasksInbox).toBe("Inbox.md");
   });
 });
-
-describe("settings API with .env overrides", () => {
-  const api = useApi({ envChange: { timeZone: "Asia/Tokyo" }, envNames: ["TZ_NAME"] });
-
-  test("shows the environment's value and says it is overridden", async () => {
-    const { body } = await api.call("/v1/settings");
-
-    expect(body).toMatchObject({ timeZone: "Asia/Tokyo", envOverrides: ["time_zone"] });
-  });
-
-  test("refuses to change an overridden field, and says where it is set", async () => {
-    const { status, body } = await api.call("/v1/settings", "PATCH", { timeZone: "Europe/London" });
-
-    expect(status).toBe(400);
-    expect(body.message).toBe(
-      "time_zone is set by TZ_NAME in .env. Remove it there to change it here.",
-    );
-  });
-
-  test("other fields can still change", async () => {
-    const { status } = await api.call("/v1/settings", "PATCH", { tasksInbox: "Tasks.md" });
-
-    expect(status).toBe(200);
-  });
-});

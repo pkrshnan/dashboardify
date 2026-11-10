@@ -7,6 +7,8 @@ RUN bun install --frozen-lockfile --production
 COPY tsconfig.json ./
 COPY src ./src
 COPY web ./web
+# The settings CLI: docker compose exec dashboardify bun run settings devices add <name>
+COPY scripts/settings.ts ./scripts/settings.ts
 ENV NODE_ENV=production \
     PORT=8787 \
     VAULT_PATH=/data/vault \

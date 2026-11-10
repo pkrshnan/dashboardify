@@ -59,9 +59,9 @@ message Settings {
   // Changes on every update. Updates with a stale etag are rejected.
   string etag = 6 [(google.api.field_behavior) = OPTIONAL];
 
-  // Fields still set from the environment, which win until removed from .env, such as
-  // `time_zone`.
-  repeated string env_overrides = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Was env_overrides: fields still set in .env, which no longer override Settings.
+  reserved 7;
+  reserved "env_overrides";
 
   // Fields changed by this update that apply only after a restart.
   repeated string restart_required = 8 [(google.api.field_behavior) = OUTPUT_ONLY];

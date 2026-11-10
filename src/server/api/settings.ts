@@ -1,6 +1,5 @@
 // SettingsService: the time zone, tasks inbox, tailnet sign-in and where place searches look
-// first, from settings.db. A field
-// still set in the environment wins and can't be changed here until it is removed from .env.
+// first, from settings.db.
 
 import type { GeneralSettings, SettingsChange, StoredSettings } from "../../settings/core";
 import { ApiError, invalidArgument } from "./errors";
@@ -16,31 +15,13 @@ export interface SettingsInput {
   etag?: string;
 }
 
-/** Which .env variable sets which field. */
-const ENV_FIELDS: Record<string, string> = {
-  TZ_NAME: "timeZone",
-  TASKS_INBOX: "tasksInbox",
-  TAILSCALE_PROXY: "tailnet",
-  TAILNET_USERS: "tailnet",
-};
-
 const FIELDS = ["timeZone", "tasksInbox", "tailnet", "placesNear"];
 
 /** Fields that apply only after a restart: the vault and schedulers take the zone at start. */
 const RESTART_FIELDS = new Set(["timeZone"]);
 
 export class SettingsService {
-  private readonly overridden: Map<string, string>;
-
-  constructor(
-    private readonly general: GeneralSettings,
-    /** The environment's values, applied on top of Settings. */
-    private readonly envChange: SettingsChange,
-    /** Variable names still set in the environment, such as TZ_NAME. */
-    envNames: string[],
-  ) {
-    this.overridden = new Map(envNames.map((name) => [ENV_FIELDS[name] ?? name, name]));
-  }
+  constructor(private readonly general: GeneralSettings) {}
 
   getSettings = async () => this.view(this.general.get(), []);
 
@@ -54,14 +35,6 @@ export class SettingsService {
       throw new ApiError(409, "Settings changed since you loaded them. Reload and try again.");
     }
     const fields = requestedFields(request, input, FIELDS);
-    for (const field of fields) {
-      const variable = this.overridden.get(field);
-      if (variable) {
-        invalidArgument(
-          `${snake(field)} is set by ${variable} in .env. Remove it there to change it here.`,
-        );
-      }
-    }
     const updated = this.write(fields, input);
     const changed = fields.filter((field) => differs(field, current, updated));
     return this.view(
@@ -95,16 +68,14 @@ export class SettingsService {
   }
 
   private view(stored: StoredSettings, restartRequired: string[]) {
-    const inForce = { ...stored, ...this.envChange };
     return {
       name: "settings",
-      timeZone: inForce.timeZone ?? "",
-      tasksInbox: inForce.tasksInbox,
-      tailnet: { proxy: inForce.tailnetProxy ?? "", allowedLogins: inForce.tailnetLogins },
-      ...(inForce.placesNear && { placesNear: placeView(inForce.placesNear) }),
+      timeZone: stored.timeZone ?? "",
+      tasksInbox: stored.tasksInbox,
+      tailnet: { proxy: stored.tailnetProxy ?? "", allowedLogins: stored.tailnetLogins },
+      ...(stored.placesNear && { placesNear: placeView(stored.placesNear) }),
       updateTime: stored.updateTime,
       etag: etagOf(stored),
-      envOverrides: [...new Set(this.overridden.keys())].map(snake),
       restartRequired: restartRequired.map(snake),
     };
   }

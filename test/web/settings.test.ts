@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { getSettings, ServiceError, updateSettings } from "../../web/api";
-import { lockedBy, SECTIONS, sectionFromHash, timeZones } from "../../web/settings/sections";
+import { SECTIONS, sectionFromHash, timeZones } from "../../web/settings/sections";
 import { useApi } from "../server/api/helpers";
 
 function through<T>(api: ReturnType<typeof useApi>, run: () => Promise<T>): Promise<T> {
@@ -22,7 +22,6 @@ describe("settings API adapter", () => {
       timeZone: "",
       tasksInbox: "Inbox.md",
       tailnet: { proxy: "", allowedLogins: [] },
-      envOverrides: [],
       restartRequired: [],
     });
   });
@@ -51,18 +50,6 @@ describe("settings API adapter", () => {
   });
 });
 
-describe("settings API adapter with .env overrides", () => {
-  const api = useApi({ envChange: { timeZone: "Asia/Tokyo" }, envNames: ["TZ_NAME"] });
-
-  test("lists the overridden fields, which the page shows read-only", async () => {
-    const settings = await through(api, () => getSettings("secret"));
-
-    expect(settings.envOverrides).toEqual(["time_zone"]);
-    expect(lockedBy("time_zone", settings.envOverrides)).toEqual(["TZ_NAME"]);
-    expect(lockedBy("tasks_inbox", settings.envOverrides)).toBeUndefined();
-  });
-});
-
 describe("sections", () => {
   test("General comes first", () => {
     expect(SECTIONS.map((s) => s.id)[0]).toBe("general");
@@ -72,10 +59,6 @@ describe("sections", () => {
     expect(sectionFromHash("#settings/general")).toBe("general");
     expect(sectionFromHash("#settings")).toBeUndefined();
     expect(sectionFromHash("#settings/nope")).toBeUndefined();
-  });
-
-  test("tailnet is locked by both of its variables", () => {
-    expect(lockedBy("tailnet", ["tailnet"])).toEqual(["TAILSCALE_PROXY", "TAILNET_USERS"]);
   });
 
   test("time zones come from the runtime", () => {
