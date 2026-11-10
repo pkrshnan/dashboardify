@@ -35,8 +35,12 @@ describe("timeline", () => {
       endHour: 23,
       viewHour: 8,
     });
-    expect(hourRange(23 * 60 + 30, [], [])).toEqual({ startHour: 20, endHour: 23, viewHour: 20 });
     expect(hourRange(30, [], [])).toEqual({ startHour: 0, endHour: 22, viewHour: 0 });
+  });
+
+  test("late in the day it still shows eight hours, ending at the last one", () => {
+    expect(hourRange(19 * 60 + 40, [], [])).toEqual({ startHour: 14, endHour: 22, viewHour: 14 });
+    expect(hourRange(23 * 60 + 30, [], [])).toEqual({ startHour: 15, endHour: 23, viewHour: 15 });
   });
 
   test("starts earlier, above the view, when something is in the hours before it", () => {

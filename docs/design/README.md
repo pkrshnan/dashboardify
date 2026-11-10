@@ -22,8 +22,9 @@ https://claude.ai/artifact/Dm3mFqJPttBWpS9VxeYPUD. `home-desktop.dc.html` (1440 
    tab bar on the phone ([navigation.md](../navigation.md)).
 2. **Calendar and tasks.** Day/Week toggle; "Calendar synced 09:10" (orange past 15 min or on an
    account error).
-   - **Day:** a timeline from an hour before now to 22:00 with a red now line. It scrolls up to
-     the day's first event or task, so a past task can still be ticked off. Short events take
+   - **Day:** a timeline from an hour before now to 22:00 with a red now line. It shows at least
+     eight hours and scrolls up to the day's first event or task, so a past task can still be
+     ticked off. Short events take
      one line. Overlapping events sit side by side. Timed reminders (`⏰`) are dashed pills in a
      lane to the right. All-day events are slim bars in a row above the timeline. Tapping an event
      opens the event panel (view, Edit, Delete with one confirm); repeating and read-only events

@@ -6,6 +6,8 @@ import type { AgendaEvent, Reminder } from "../../src/home/types";
 const LAST_START_HOUR = 20;
 const DEFAULT_END_HOUR = 22;
 const MIN_HOURS = 3;
+/** The scroll box is never shorter than this. */
+const MIN_SHOWN_HOURS = 8;
 
 export interface HourRange {
   startHour: number;
@@ -15,22 +17,24 @@ export interface HourRange {
 }
 
 /**
- * Shown from an hour before now to 22:00, stretched to fit anything later. Hours before that are
- * drawn too when something is in them, so a past task can still be ticked off.
+ * Shown from an hour before now to 22:00, stretched to fit anything later, and never fewer than
+ * eight hours: late in the day it opens on the last eight. Hours before that are drawn too when
+ * something is in them, so a past task can still be ticked off.
  */
 export function hourRange(nowMin: number, events: AgendaEvent[], reminders: Reminder[]): HourRange {
-  const viewHour = Math.min(LAST_START_HOUR, Math.max(0, Math.floor(nowMin / 60) - 1));
-  const startHour = Math.min(
-    viewHour,
-    ...events.map((e) => Math.floor(Math.max(0, e.startMin) / 60)),
-    ...reminders.map((r) => Math.floor(r.minutes / 60)),
-  );
+  const hourBefore = Math.min(LAST_START_HOUR, Math.max(0, Math.floor(nowMin / 60) - 1));
   const latest = Math.max(
     0,
     ...events.map((e) => Math.ceil(e.endMin / 60)),
     ...reminders.map((r) => Math.floor(r.minutes / 60) + 1),
   );
-  const endHour = Math.min(24, Math.max(DEFAULT_END_HOUR, latest, viewHour + MIN_HOURS));
+  const endHour = Math.min(24, Math.max(DEFAULT_END_HOUR, latest, hourBefore + MIN_HOURS));
+  const viewHour = Math.max(0, Math.min(hourBefore, endHour - MIN_SHOWN_HOURS));
+  const startHour = Math.min(
+    viewHour,
+    ...events.map((e) => Math.floor(Math.max(0, e.startMin) / 60)),
+    ...reminders.map((r) => Math.floor(r.minutes / 60)),
+  );
   return { startHour, endHour, viewHour };
 }
 
