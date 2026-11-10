@@ -1,7 +1,7 @@
 # Health: the rest
 
 Plan for the health numbers still missing: training load, calories, VO2max and sleep stages.
-Status: H1–H5, H8–H10 and H12 done, H6 and H7 (fitness and biological age) dropped, H13, H14
+Status: H1–H5, H8–H10, H12 and H13 done, H6 and H7 (fitness and biological age) dropped, H14
 and H11 planned; H11 waits for artboards. As each PR lands, its section moves into [health-metrics.md](health-metrics.md). This
 file goes when the last one does.
 
@@ -52,7 +52,7 @@ Not goals: SpO2 from the raw `ppg` stream, runs with pace and route (roadmap #6)
 | H9 | Sleep stages | Done; now in [health-metrics.md](health-metrics.md#sleep-stages-sleep-stagests) |
 | H10 | API | Done: `EXTENDED_METRICS` in `health-history.ts` (off the home list until H11); `GetNight` in [api.md](api.md#activity) |
 | H12 | Trained stages | Done; now in [health-metrics.md](health-metrics.md#sleep-stages-sleep-stagests) |
-| H13 | DFA α1 | A per-epoch feature on RR |
+| H13 | DFA α1 | Done; now in [health-metrics.md](health-metrics.md#sleep-stages-sleep-stagests) |
 | H14 | Per-person refit | HRV, breathing and DFA emissions fitted to your own nights |
 | H11 | UI | home rows, workout calories, a night view with the hypnogram (after artboards) |
 
@@ -65,8 +65,8 @@ H9's hand-set model called 65% of real nights light and flagged half of them.
 
 - **H12:** HR, movement and transitions fitted to Walch 2019's lab nights, with leave-one-out
   accuracy against H9, and a flag only for nights the model rarely gives.
-- **H13:** DFA α1 over the RR around each epoch: short-term correlations are lost in deep sleep
-  and high in REM and wake (Penzel 2003; Bunde 2000).
+- **H13 (done):** DFA α1 over the RR around each epoch: short-term correlations are lost in deep
+  sleep and high in REM and wake (Penzel 2003; Bunde 2000).
 - **H14:** an offline command like `tune.ts` that re-fits the HRV, breathing and DFA emissions
   to your own nights by EM, holding the trained HR, movement and time parts fixed; versioned
   params.

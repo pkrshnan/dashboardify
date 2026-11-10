@@ -80,6 +80,7 @@ function labelled(stages: Stage[], hrBy: Record<Stage, number>): LabelledNight {
     asleep: s !== "awake",
     hrZ: hrBy[s] + (i % 2 === 0 ? 0.1 : -0.1),
     hrvZ: null,
+    dfaZ: null,
     breathingZ: null,
     movementDeg: s === "light" && i % 10 === 0 ? 8 : 0,
     sinceOnsetMin: i / 2,
