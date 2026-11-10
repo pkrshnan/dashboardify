@@ -57,6 +57,9 @@ bun src/health/summarize.ts FROM TO                 # then rebuild past days
 On 4–9 Nov it was rejected: light fell under 35% on two nights. EM wants deep's HRV at −0.05
 (light's is highest, 0.44) and sharper DFA (deep −0.91, REM 1.04), and calls more deep: shares
 48/24/28 → 38/33/29 (light/deep/REM) after the cap.
+With algo 13's beat joining (more beats in RMSSD, [health-metrics.md](health-metrics.md#hrv-hrvts))
+it is still rejected, now with light under 35% on four nights: EM puts light's HRV at −0.50
+(capped), deep's at 0.97 and REM's at −0.21, and calls more REM: 48/24/28 → 36/27/37.
 
 ## Next
 

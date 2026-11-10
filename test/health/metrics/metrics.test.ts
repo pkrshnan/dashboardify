@@ -8,6 +8,7 @@ import {
 } from "../../../src/health/metrics/heart-rate";
 import {
   cleanRr,
+  continuityBreaks,
   goodWindows,
   nightHrv,
   rmssd,
@@ -20,7 +21,17 @@ import { normalCdf, percentile } from "../../../src/health/metrics/stats";
 import { stepsTaken } from "../../../src/health/metrics/steps";
 import { strain, trimp } from "../../../src/health/metrics/strain";
 import { dayMetrics, nightMetrics } from "../../../src/health/metrics/summary";
-import { accelDay, breathingBeats, HOUR, heartRate, random, T0 } from "./fixtures";
+import {
+  accelDay,
+  breathingBeats,
+  HOUR,
+  heartRate,
+  packetStamped,
+  random,
+  seriesBeats,
+  T0,
+  whiteNoise,
+} from "./fixtures";
 
 const beatsFrom = (start: number, gaps: number[]) => {
   let t = start;
@@ -55,6 +66,37 @@ describe("HRV", () => {
     expect(beats.map((b) => b.kept)).toEqual([true, true, false, true, true, true]);
     // 1010 → 995 straddles the dropped gap, so it isn't a successive difference.
     expect(successiveDiffs(beats)).toEqual([10, 5, 5]);
+  });
+
+  test("a gap 20%+ off the one before is not a successive difference", () => {
+    // 820 and 1150 both pass cleaning against the median, but not one after the other.
+    const beats = cleanRr(beatsFrom(T0, [1000, 1000, 820, 1150, 1000, 1000]));
+
+    expect(beats.every((b) => b.kept)).toBe(true);
+    expect(successiveDiffs(beats)).toEqual([0, -180, -150, 0]);
+  });
+
+  test("beats stamped to the second are still consecutive", () => {
+    // About 75 bpm, so packets hold one beat or two; a 150 ms join kept a fifth of these.
+    const beats = breathingBeats(T0, 10 * 60_000, { base: 800, swing: 40 });
+    const stamped = packetStamped(beats);
+    const exact = successiveDiffs(cleanRr(beats));
+
+    expect(successiveDiffs(cleanRr(stamped))).toEqual(exact);
+    expect(exact).toHaveLength(beats.length - 1);
+  });
+
+  test("a missing stretch breaks the beats; stamps to the second and gaps 2.4% short don't", () => {
+    const beats = seriesBeats(T0, whiteNoise(400, 5));
+    const ceiled = beats.map((b) => ({ ts: Math.ceil(b.ts / 1000) * 1000, ms: b.ms / 1.024 }));
+    const packets = packetStamped(beats).map((b) => ({ ts: b.ts, ms: b.ms / 1.024 }));
+    const missing = packets.filter((_, i) => i < 200 || i >= 205);
+    const breaksAt = (b: boolean[]) => b.flatMap((broken, i) => (broken ? [i] : []));
+
+    expect(breaksAt(continuityBreaks(ceiled))).toEqual([]);
+    expect(breaksAt(continuityBreaks(packets))).toEqual([]);
+    expect(breaksAt(continuityBreaks(missing))).toEqual([200]);
+    expect(successiveDiffs(cleanRr(missing))).toHaveLength(beats.length - 5 - 2);
   });
 
   test("drops gaps outside 300–2000 ms", () => {
