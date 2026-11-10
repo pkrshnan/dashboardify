@@ -145,7 +145,7 @@ describe("DailySummary", () => {
     expect(note?.body.indexOf("## Health")).toBeLessThan(note?.body.indexOf("## Journal") ?? 0);
 
     expect((await derived.read("nights", DATE))?.rhr_bpm).toBeCloseTo(52, 0);
-    expect((await derived.read("days", DATE))?.algo_version).toBe("6");
+    expect((await derived.read("days", DATE))?.algo_version).toBe("7");
     // No earlier days, so no training load yet.
     expect(note?.body).not.toContain("- Load");
     expect(note?.frontmatter.load_ratio).toBeUndefined();

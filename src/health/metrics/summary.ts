@@ -141,7 +141,7 @@ export function dayMetrics(input: DayInput): DayMetrics {
     maxHr: bpms.length > 0 ? Math.max(...bpms) : null,
     steps: stepsTaken(input.steps),
     ...effort,
-    calories: calories(input, minutes),
+    calories: calories(input, minutes, perMinute),
     // A walk can't be inside a workout: walking to the court is a walk, the game isn't.
     walks: walks(perMinute, minutes, [...sleep, ...effort.workouts]),
   };
@@ -184,7 +184,11 @@ function effortMetrics(
  * Calories need resting and max HR as strain does. Without them every awake minute would get the
  * sitting rate, a total that reads like a real day but leaves out all exercise.
  */
-function calories(input: DayInput, minutes: MinuteHr[]): Calories | null {
+function calories(
+  input: DayInput,
+  minutes: MinuteHr[],
+  steps: Map<number, number>,
+): Calories | null {
   const body = profileBody(input.profile);
   const maxHr = profileMaxHr(input.profile);
   if (!body || maxHr === null || input.restingHr === null || maxHr <= input.restingHr) {
@@ -192,6 +196,7 @@ function calories(input: DayInput, minutes: MinuteHr[]): Calories | null {
   }
   return dayCalories({
     minutes,
+    steps,
     day: input.day,
     sleep: input.sleep,
     restingHr: input.restingHr,
