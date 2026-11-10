@@ -5,6 +5,7 @@ import type { HomeView, MetricTrend, NextEvent } from "../../src/home/types";
 import type { Now } from "../lib/clock";
 import { recoveryColor, TEXT, toneColor } from "../lib/colors";
 import { longDate, startsIn } from "../lib/format";
+import { href } from "../lib/router";
 
 const FOCUS_KEYS = ["recovery", "sleepScore", "hrv", "restingHr"];
 
@@ -19,7 +20,7 @@ export function Focus({ view, now }: { view: HomeView; now: Now }) {
         <header class="focus-date">
           <span>{longDate(view.date)}</span>
           <span>{now.time}</span>
-          <a class="settings-gear" href="#settings" title="Settings">
+          <a class="settings-gear" href={href("/settings")} title="Settings">
             <span class="visually-hidden">Settings</span>
             <svg
               width="16"

@@ -60,7 +60,7 @@ https://claude.ai/artifact/Dm3mFqJPttBWpS9VxeYPUD. `home-desktop.dc.html` (1440 
 
 ## Activity page
 
-`#activity`, from the Health heading. Week lists each day's sessions, Month is a calendar with a
+`#/activity`, from the Health heading. Week lists each day's sessions, Month is a calendar with a
 chip per session, 3M is active minutes per week. A day, week or workout opens beside the list
 (below it on the phone). Workouts are activity cyan, walks teal `#66D4CF`; an unsure workout has a
 dashed outline and `?`, and only its detail asks "What was this?" ("It was lifting" or "Not a

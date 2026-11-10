@@ -19,16 +19,19 @@ import {
   Unauthorized,
 } from "./api";
 import { Activity } from "./components/activity";
-import { Calendar } from "./components/calendar";
+import { Calendar, type CalendarMode } from "./components/calendar";
 import { Capture } from "./components/capture";
 import { EventPanel } from "./components/event-panel";
 import { Focus } from "./components/focus";
 import { Health } from "./components/health";
 import { SignIn } from "./components/sign-in";
 import { TaskList } from "./components/task-list";
+import type { Range } from "./lib/activity";
 import { type Pending, pendingEvent, withPending } from "./lib/capture";
 import { type Now, nowIn } from "./lib/clock";
-import { sectionFromHash } from "./settings/sections";
+import { type Address, matchPath } from "./lib/router";
+import { setQuery, useRoute } from "./lib/use-route";
+import { knownSection } from "./settings/sections";
 import { Settings } from "./settings/settings";
 import { tokenFromHash } from "./settings/sign-in-link";
 
@@ -79,53 +82,69 @@ function tokenFromLink(): Token {
   return linked;
 }
 
-/** `#settings…` shows Settings; anything else, the home screen. */
+/** `#/settings/<section>` shows Settings; anything else needs the home view (below). */
 function Routes(props: { token: Token; onUnauthorized: (setup: boolean) => void }) {
-  const hash = useHash();
+  const route = useRoute();
   const isPhone = useMedia(PHONE_QUERY);
-  if (hash.startsWith("#settings")) {
-    return <Settings {...props} section={sectionFromHash(hash)} isPhone={isPhone} />;
+  const settings = matchPath("/settings/:section?", route.path);
+  if (settings) {
+    return <Settings {...props} section={knownSection(settings.section)} isPhone={isPhone} />;
   }
-  return <Home {...props} />;
+  return <Home {...props} route={route} />;
 }
 
-/** Loads the home view, then shows the home screen or, at #activity, the Activity page. */
+/**
+ * Loads the home view, then shows the Activity page at `#/activity` and the home screen
+ * everywhere else, so an unknown address lands on Today.
+ */
 function Home({
   token,
   onUnauthorized,
+  route,
 }: {
   token: Token;
   onUnauthorized: (setup: boolean) => void;
+  route: Address;
 }) {
   const { view, error, load } = useHome(token, onUnauthorized);
   const now = useNow(view?.timeZone);
   const isPhone = useMedia(PHONE_QUERY);
-  const hash = useHash();
 
   if (!(view && now)) {
     return <p class="sign-in muted">{error ? "Can't reach the server." : ""}</p>;
   }
-  if (hash === "#activity") {
+  if (route.path === "/activity") {
     return (
       <Activity
         token={token}
         timeZone={view.timeZone}
         today={view.date}
+        range={activityRange(route.query.range)}
+        onRange={(range) => setQuery({ range: range === "week" ? "" : range })}
         onUnauthorized={onUnauthorized}
       />
     );
   }
-  return <HomeScreen view={view} now={now} isPhone={isPhone} token={token} load={load} />;
+  const mode: CalendarMode = route.query.view === "week" ? "week" : "day";
+  return (
+    <HomeScreen view={view} now={now} mode={mode} isPhone={isPhone} token={token} load={load} />
+  );
+}
+
+/** `?range=` on the Activity page; the week when it is missing or unknown. */
+function activityRange(value: string | undefined): Range {
+  return value === "month" || value === "3m" ? value : "week";
 }
 
 function HomeScreen(props: {
   view: HomeView;
   now: Now;
+  mode: CalendarMode;
   isPhone: boolean;
   token: Token;
   load: () => Promise<void>;
 }) {
-  const { view, now, isPhone, token, load } = props;
+  const { view, now, mode, isPhone, token, load } = props;
   const { ticked, complete, reopen } = useTicks(token, load);
   const [pending, setPending] = useState<Pending[]>([]);
   const [panel, openEvent] = useEventPanel(token, view.timeZone, load);
@@ -146,6 +165,8 @@ function HomeScreen(props: {
       <Focus view={view} now={now} />
       <Calendar
         view={withPending(withTicked(view, ticked), pending)}
+        mode={mode}
+        onMode={(next) => setQuery({ view: next === "week" ? "week" : "" })}
         nowMin={now.minutes}
         isPhone={isPhone}
         onComplete={complete}
@@ -333,20 +354,6 @@ function useNow(timeZone: string | undefined): Now | null {
     return () => clearInterval(timer);
   }, []);
   return timeZone ? nowIn(timeZone, at) : null;
-}
-
-/** The page's #hash, so the Activity page has its own address and the back button works. */
-function useHash(): string {
-  const [hash, setHash] = useState(() => window.location.hash);
-  useEffect(() => {
-    const onChange = () => {
-      setHash(window.location.hash);
-      window.scrollTo(0, 0);
-    };
-    window.addEventListener("hashchange", onChange);
-    return () => window.removeEventListener("hashchange", onChange);
-  }, []);
-  return hash;
 }
 
 function useMedia(query: string): boolean {
