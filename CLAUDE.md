@@ -22,6 +22,7 @@ Read the one for the area you change.
 | --- | --- |
 | [roadmap.md](docs/roadmap.md) | Decisions, what is built, what is next |
 | [architecture.md](docs/architecture.md) | Code map, request flow, data on disk, security |
+| [navigation.md](docs/navigation.md) | Plan N1–N8: router, modules, command bar, search, sidebar |
 | [api.md](docs/api.md) | Every v1 endpoint and its conventions |
 | [vault-format.md](docs/vault-format.md) | What the server writes into notes |
 | [calendar.md](docs/calendar.md) | CalDAV, ICS links, cache and sync, capture |
@@ -37,7 +38,9 @@ Read the one for the area you change.
 1. A plan in `docs/<feature>.md`: goals, decisions, data, API, a numbered PR list.
 2. Proto → store in `src/<feature>/` → service in `src/server/api/<feature>.ts` → register in
    `src/server/routes/v1.ts` and `rest-bindings.ts` → calls in `web/api.ts` → UI.
-3. Update `docs/api.md`, `docs/vault-format.md` if it writes notes, and the roadmap.
+3. After navigation N2, the UI is one `web/modules/<feature>.tsx`
+   ([navigation.md](docs/navigation.md#adding-a-module)).
+4. Update `docs/api.md`, `docs/vault-format.md` if it writes notes, and the roadmap.
 
 ## Rules that are easy to miss
 
