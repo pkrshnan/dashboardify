@@ -117,6 +117,8 @@ describe("Lists page", () => {
     await add("Kale");
     fireEvent.change(pick, { target: { value: "\nnew" } });
     fireEvent.input(page.getByLabelText("New section's name"), { target: { value: "Bakery" } });
+    // Two boxes: browsers submit on Return only when the form has a submit button.
+    expect(box.closest("form")?.querySelector('button[type="submit"]')).toBeTruthy();
     await add("Bread");
 
     expect(calls.filter((c) => c.method === "POST").map((c) => c.body)).toEqual([
