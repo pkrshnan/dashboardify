@@ -399,9 +399,10 @@ function Sessions(props: Ctx & { day: ActivityDayView }) {
   return <div class="sessions">{rows.map((r) => r.el)}</div>;
 }
 
-function WorkoutRow(props: Ctx & { w: WorkoutView; day: ActivityDayView }) {
+function WorkoutRow(
+  props: Ctx & { w: WorkoutView; day: ActivityDayView; children?: preact.ComponentChildren },
+) {
   const { w, day } = props;
-  const [changing, setChanging] = useState(false);
   const dismissed = w.status === "dismissed";
   const lifting = w.kind === "lifting" && day.lifting;
   const stat = lifting
@@ -423,15 +424,7 @@ function WorkoutRow(props: Ctx & { w: WorkoutView; day: ActivityDayView }) {
         </span>
         <span class="muted">{stat}</span>
       </button>
-      <Review
-        w={w}
-        changing={changing}
-        onChange={() => setChanging(true)}
-        onReview={async (kind) => {
-          setChanging(false);
-          await props.review(w.name, kind);
-        }}
-      />
+      {props.children}
     </div>
   );
 }
@@ -489,6 +482,7 @@ function Review(props: {
 
 function WorkoutPanel(props: SideProps & { name: string }) {
   const [detail, setDetail] = useState<WorkoutDetail | null>(null);
+  const [changing, setChanging] = useState(false);
   const date = props.name.slice(5, 15);
   const day = props.days.find((d) => d.date === date);
   const listed = day?.workouts.find((w) => w.name === props.name);
@@ -527,7 +521,17 @@ function WorkoutPanel(props: SideProps & { name: string }) {
       </div>
       <HeartRateChart detail={w} clock={props.clock} />
       {w.sets.length > 0 && <SetTable sets={w.sets} clock={props.clock} />}
-      <WorkoutRow {...props} w={listed} day={day} />
+      <WorkoutRow {...props} w={listed} day={day}>
+        <Review
+          w={listed}
+          changing={changing}
+          onChange={() => setChanging(true)}
+          onReview={async (kind) => {
+            setChanging(false);
+            await props.review(listed.name, kind);
+          }}
+        />
+      </WorkoutRow>
     </div>
   );
 }
