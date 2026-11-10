@@ -26,7 +26,6 @@ import {
 } from "../lib/activity";
 import { nowIn } from "../lib/clock";
 import { dayMonth, dayOfMonth, shortDate } from "../lib/format";
-import { href } from "../lib/router";
 import { Segmented } from "./segmented";
 
 const RANGES: { value: Range; label: string }[] = [
@@ -96,9 +95,6 @@ export function Activity({ token, timeZone, today, range, onRange, onUnauthorize
       <section class="section">
         <div class="section-head">
           <div class="activity-title">
-            <a class="back" href={href("/")}>
-              ‹ Home
-            </a>
             <h1>Activity</h1>
           </div>
           <div class="activity-range">

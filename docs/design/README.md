@@ -18,7 +18,8 @@ https://claude.ai/artifact/Dm3mFqJPttBWpS9VxeYPUD. `home-desktop.dc.html` (1440 
 
 1. **Focus.** Date, time and one sentence that judges and names the next action without
    repeating numbers. Recovery, sleep score, HRV and resting HR with their change. The next event,
-   with Join for a call and Map for a located place. A gear opens Settings.
+   with Join for a call and Map for a located place. Pages are in the sidebar on desktop and the
+   tab bar on the phone ([navigation.md](../navigation.md)).
 2. **Calendar and tasks.** Day/Week toggle; "Calendar synced 09:10" (orange past 15 min or on an
    account error).
    - **Day:** a timeline from an hour before now to 22:00 with a red now line. Short events take
@@ -60,7 +61,7 @@ https://claude.ai/artifact/Dm3mFqJPttBWpS9VxeYPUD. `home-desktop.dc.html` (1440 
 
 ## Activity page
 
-`#/activity`, from the Health heading. Week lists each day's sessions, Month is a calendar with a
+`#/activity`, from the sidebar or the Health heading. Week lists each day's sessions, Month is a calendar with a
 chip per session, 3M is active minutes per week. A day, week or workout opens beside the list
 (below it on the phone). Workouts are activity cyan, walks teal `#66D4CF`; an unsure workout has a
 dashed outline and `?`, and only its detail asks "What was this?" ("It was lifting" or "Not a

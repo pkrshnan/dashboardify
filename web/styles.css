@@ -1019,34 +1019,10 @@ button.link {
   align-items: center;
 }
 
-.settings-gear {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  margin: -8px 0;
-  border-radius: 16px;
-  color: var(--text-3);
-}
-
-.settings-gear:hover {
-  color: var(--text);
-  background: var(--fill);
-}
-
 .settings {
   max-width: 1280px;
   margin: 0 auto;
   padding-bottom: env(safe-area-inset-bottom);
-}
-
-.settings-top {
-  height: 64px;
-  padding: 0 48px;
-  display: flex;
-  align-items: center;
-  border-bottom: 1px solid var(--line-2);
 }
 
 .settings-back {
@@ -1661,7 +1637,7 @@ button.link {
   }
 
   .settings.phone {
-    padding: calc(12px + env(safe-area-inset-top)) var(--gutter) 32px;
+    padding: calc(56px + env(safe-area-inset-top)) var(--gutter) 32px;
   }
 
   .settings.phone h1 {
@@ -1948,7 +1924,6 @@ button.link {
   font-weight: 300;
 }
 
-.back,
 .link-button {
   color: var(--accent);
   font-size: 15px;
@@ -1958,13 +1933,6 @@ button.link {
   padding: 0;
   cursor: pointer;
   text-align: left;
-}
-
-.activity-title .back {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  font-size: 17px;
 }
 
 .activity-range {
@@ -2453,4 +2421,154 @@ button.link {
   .quarter-labels {
     gap: 3px;
   }
+}
+
+/* ---- Navigation: the sidebar, the icon rail under 1200 px, the phone's tab bar, More ---- */
+
+.frame {
+  display: flex;
+  min-height: 100vh;
+}
+
+.frame-page {
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar {
+  position: sticky;
+  top: 0;
+  width: 220px;
+  height: 100vh;
+  flex: none;
+  padding: 20px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.sidebar-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar-bottom {
+  margin-top: auto;
+}
+
+.sidebar a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: var(--text-2);
+  font-size: 15px;
+  text-decoration: none;
+}
+
+.sidebar a:hover {
+  color: var(--text);
+}
+
+.sidebar a[aria-current="page"] {
+  background: var(--fill);
+  color: var(--text);
+}
+
+.sidebar .icon {
+  flex: none;
+}
+
+@media (max-width: 1199px) {
+  .sidebar {
+    width: 64px;
+    padding: 20px 10px;
+    align-items: center;
+  }
+
+  .sidebar a {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 10px;
+  }
+
+  .sidebar-name {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+.tab-bar {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  z-index: 20;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  border-radius: 32px;
+  background: rgba(28, 28, 30, 0.86);
+  border: 1px solid var(--line-2);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.tab-bar a {
+  flex: 1;
+  height: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: var(--text-2);
+  font-size: 11px;
+  text-decoration: none;
+}
+
+.tab-bar a[aria-current="page"] {
+  color: var(--text);
+}
+
+@media (max-width: 899px) {
+  /* Room for the tab bar under the last row of every page. */
+  .frame-page {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+}
+
+.more {
+  padding: calc(56px + env(safe-area-inset-top)) var(--gutter) 28px;
+}
+
+.more h1 {
+  margin: 0 0 12px;
+  font-size: 34px;
+  font-weight: 600;
+}
+
+.more a {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 52px;
+  border-bottom: 1px solid var(--line-2);
+  color: var(--text);
+  font-size: 17px;
+  text-decoration: none;
+}
+
+.more .icon {
+  color: var(--text-2);
 }

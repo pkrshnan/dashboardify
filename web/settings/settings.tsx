@@ -1,5 +1,5 @@
-// The Settings page, at `#/settings/<section>`. Desktop: a section list
-// beside the section. Phone: the list, which pushes to each section.
+// The Settings page, at `#/settings/<section>`. Desktop: a section list beside the section.
+// Phone: the list, which pushes to each section; the tab bar is the way out.
 
 import type { Token } from "../api";
 import { href } from "../lib/router";
@@ -33,11 +33,6 @@ export function Settings({ section, isPhone, ...props }: Props) {
   const View = shown ? VIEWS[shown] : undefined;
   return (
     <main class="settings">
-      <header class="settings-top">
-        <a class="settings-back" href={href("/")}>
-          ‹ Home
-        </a>
-      </header>
       <div class="settings-grid">
         <nav aria-label="Settings sections">
           <h1>Settings</h1>
@@ -55,9 +50,6 @@ function PhoneSettings({ section, ...props }: SectionProps & { section?: string 
   if (!View) {
     return (
       <main class="settings phone">
-        <a class="settings-back" href={href("/")}>
-          ‹ Home
-        </a>
         <h1>Settings</h1>
         <SectionList current={undefined} />
       </main>

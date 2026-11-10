@@ -27,6 +27,7 @@ import type { LoadedHome, Module, PageProps } from "./types";
 export const today: Module = {
   id: "today",
   title: "Today",
+  icon: "today",
   path: "/",
   key: "t",
   nav: { group: 1, phone: "tab" },

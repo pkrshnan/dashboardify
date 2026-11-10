@@ -78,7 +78,7 @@ registered column and `key_check` in one transaction, then swaps the key file. I
 
 ## Settings page
 
-`#/settings/<section>`, from the gear beside the date. Desktop: a section list beside the
+`#/settings/<section>`, from the sidebar or tab bar. Desktop: a section list beside the
 section. Phone: the list, which pushes to each section. Sections are listed in
 `web/settings/sections.ts` and mapped to components in `settings.tsx`.
 

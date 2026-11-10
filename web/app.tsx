@@ -6,11 +6,12 @@ import { render } from "preact";
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 import type { HomeView } from "../src/home/types";
 import { fetchHome, savedToken, saveToken, type Token, Unauthorized } from "./api";
+import { Sidebar, TabBar } from "./components/nav";
 import { SignIn } from "./components/sign-in";
 import { type Now, nowIn } from "./lib/clock";
 import { useRoute } from "./lib/use-route";
 import { AppContext } from "./modules/context";
-import { pageFor } from "./modules/index";
+import { MODULES, MORE, pageFor } from "./modules/index";
 import type { LoadedHome } from "./modules/types";
 import { tokenFromHash } from "./settings/sign-in-link";
 
@@ -61,7 +62,10 @@ function tokenFromLink(): Token {
   return linked;
 }
 
-/** The page for the address. One that needs the home view waits for it. */
+/**
+ * The page for the address, beside the sidebar on desktop and above the tab bar on the phone.
+ * A page that needs the home view waits for it; the nav shows at once.
+ */
 function Shell(props: { token: Token; onUnauthorized: (setup: boolean) => void }) {
   const { token, onUnauthorized } = props;
   const route = useRoute();
@@ -74,11 +78,17 @@ function Shell(props: { token: Token; onUnauthorized: (setup: boolean) => void }
 
   return (
     <AppContext.Provider value={{ token, onUnauthorized, isPhone }}>
-      {module.needsHome && !home ? (
-        <p class="sign-in muted">{error ? "Can't reach the server." : ""}</p>
-      ) : (
-        <View route={route} params={params} home={home} />
-      )}
+      <div class="frame">
+        {!isPhone && <Sidebar modules={MODULES} current={module.id} />}
+        <div class="frame-page">
+          {module.needsHome && !home ? (
+            <p class="sign-in muted">{error ? "Can't reach the server." : ""}</p>
+          ) : (
+            <View route={route} params={params} home={home} />
+          )}
+        </div>
+        {isPhone && <TabBar modules={MODULES} current={module.id} more={MORE} />}
+      </div>
     </AppContext.Provider>
   );
 }

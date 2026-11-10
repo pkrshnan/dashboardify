@@ -2,16 +2,22 @@
 
 import { matchPath } from "../lib/router";
 import { activity } from "./activity";
+import { moreModule } from "./more";
 import { settings } from "./settings";
 import { today } from "./today";
 import type { Module } from "./types";
 
 export const MODULES: Module[] = [today, activity, settings];
 
+/** More lists what the phone's tab bar has no room for; it is routed but not in the nav. */
+export const MORE = moreModule(() => MODULES);
+
+const ROUTED = [...MODULES, MORE];
+
 /** The page an address shows, with its parameters; an unknown path shows Today. */
 export function pageFor(
   path: string,
-  modules: Module[] = MODULES,
+  modules: Module[] = ROUTED,
 ): { module: Module; params: Record<string, string> } {
   for (const module of modules) {
     const params = matchPath(module.path, path);
