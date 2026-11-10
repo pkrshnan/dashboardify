@@ -555,6 +555,14 @@ button.link {
   align-items: start;
 }
 
+/* Earlier hours sit above the top, scrolled out of view. Padding matches SCROLL_PAD_PX. */
+.timeline-scroll {
+  overflow-y: auto;
+  padding: 10px 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-3) transparent;
+}
+
 .timeline {
   position: relative;
   margin-left: 48px;
@@ -1775,8 +1783,12 @@ button.link {
     display: block;
   }
 
+  .timeline-scroll {
+    margin: 8px 0 12px;
+  }
+
   .timeline {
-    margin: 8px 0 12px 28px;
+    margin-left: 28px;
   }
 
   .all-day-row {
