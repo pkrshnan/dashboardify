@@ -7,8 +7,9 @@
 // they give the 90-minute cycles without hard-coding them.
 //
 // The HR, movement and transition parts are fitted to sleep-lab-labelled nights by
-// src/health/train-stages.ts (H12) and read from stage-params.json; HRV, breathing and DFA α1
-// are still hand-set, since that data has no beat-to-beat intervals. See docs/health-metrics.md.
+// src/health/train-stages.ts (H12) and read from stage-params.json. That data has no beat-to-beat
+// intervals, so HRV, breathing and DFA α1 start hand-set, and src/health/fit-stages.ts can fit
+// them to your own nights (H14). See docs/health-metrics.md.
 
 import { EPOCH_MS } from "./sleep-epochs";
 import type { EpochFeatures } from "./sleep-features";
@@ -47,7 +48,21 @@ export interface StageModel {
   transitions(t: number): number[][];
 }
 
-// ---- hand-set until H14 fits them per person ----
+// ---- HRV, breathing and DFA α1: hand-set, or fitted to your nights (H14) ----
+
+/** The features the per-person fit re-estimates; HR is the trained file's. */
+export const FITTED_FEATURES = ["hrvZ", "breathingZ", "dfaZ"] as const;
+export type FittedFeature = (typeof FITTED_FEATURES)[number];
+
+export interface Gaussian {
+  mean: number;
+  sd: number;
+}
+
+/** A Gaussian per sleep stage and fitted feature. */
+export type StageEmissions = Record<SleepStage, Record<FittedFeature, Gaussian>>;
+
+export const SLEEP_STAGES: SleepStage[] = ["light", "deep", "rem"];
 
 /**
  * HRV and breathing, from the direction the literature gives (Fonseca 2017; breathing: Gutierrez
@@ -57,14 +72,21 @@ export interface StageModel {
  *
  * DFA α1 (H13): beat-to-beat correlations are lost in deep sleep and strong in REM (Bunde 2000;
  * Penzel 2003). On six real nights α1 averaged 0.76 in epochs decoded deep, 0.86 light and 1.15
- * REM, so it agrees with the HR and time parts; the means are kept small until H14 fits them.
+ * REM, so it agrees with the HR and time parts; the means are kept small until fitted per person.
+ *
+ * Used until fit-stages.ts applies your own (params.ts).
  */
-const HAND_SET: Record<SleepStage, Record<"hrvZ" | "breathingZ" | "dfaZ", number>> = {
-  light: { hrvZ: 0, breathingZ: 0, dfaZ: 0 },
-  deep: { hrvZ: 0.8, breathingZ: 0.8, dfaZ: -0.6 },
-  rem: { hrvZ: -0.6, breathingZ: -0.8, dfaZ: 0.5 },
-};
 const HAND_SET_SD = 0.8;
+const handSet = (hrvZ: number, breathingZ: number, dfaZ: number) => ({
+  hrvZ: { mean: hrvZ, sd: HAND_SET_SD },
+  breathingZ: { mean: breathingZ, sd: HAND_SET_SD },
+  dfaZ: { mean: dfaZ, sd: HAND_SET_SD },
+});
+export const DEFAULT_EMISSIONS: StageEmissions = {
+  light: handSet(0, 0, 0),
+  deep: handSet(0.8, 0.8, -0.6),
+  rem: handSet(-0.6, -0.8, 0.5),
+};
 
 /**
  * HR falls across a night whatever the stage, partly from the circadian low (Burgess 1997), and
@@ -100,8 +122,11 @@ export interface SleepStages {
   plausible: boolean;
 }
 
-/** The model from fitted params, with HRV, breathing and DFA α1 hand-set. */
-export function trainedModel(params: StageParams): StageModel {
+/** The model from trained params, with HRV, breathing and DFA α1 hand-set or your own. */
+export function trainedModel(
+  params: StageParams,
+  emissions: StageEmissions = DEFAULT_EMISSIONS,
+): StageModel {
   const before = logRows(withoutRem(params.transitions.beforeOnset));
   const bins = params.transitions.sinceOnset.map(logRows);
   const noRem = params.transitions.sinceOnset.map((m) => logRows(withoutRem(m)));
@@ -114,11 +139,12 @@ export function trainedModel(params: StageParams): StageModel {
     emission(stage, f) {
       const { mean, sd } = params.hr[stage];
       const bin = params.movement.edgesDeg.filter((edge) => f.movementDeg >= edge).length;
+      const own = emissions[stage];
       return (
         gaussian(f.hrZ, mean, sd) +
-        gaussian(f.hrvZ, HAND_SET[stage].hrvZ, HAND_SET_SD) +
-        gaussian(f.breathingZ, HAND_SET[stage].breathingZ, HAND_SET_SD) +
-        gaussian(f.dfaZ, HAND_SET[stage].dfaZ, HAND_SET_SD) +
+        gaussian(f.hrvZ, own.hrvZ.mean, own.hrvZ.sd) +
+        gaussian(f.breathingZ, own.breathingZ.mean, own.breathingZ.sd) +
+        gaussian(f.dfaZ, own.dfaZ.mean, own.dfaZ.sd) +
         (logMoved[stage][bin] ?? 0)
       );
     },
@@ -133,6 +159,11 @@ export function trainedModel(params: StageParams): StageModel {
 }
 
 const TRAINED = trainedModel(STAGE_PARAMS);
+
+/** The live model: trained HR, movement and transitions, with your own emissions if fitted. */
+export function stageModel(emissions: StageEmissions | undefined): StageModel {
+  return emissions ? trainedModel(STAGE_PARAMS, emissions) : TRAINED;
+}
 
 /** log N(z; mean, sd) up to a constant shared by every state; null features add nothing. */
 export function gaussian(z: number | null, mean: number, sd: number): number {
@@ -196,11 +227,7 @@ export function epochTime(features: EpochFeatures[], i: number): number {
 /** The most likely state sequence, in log space; one pass forward, one back. */
 function viterbi(features: EpochFeatures[], model: StageModel): number[] {
   const back: number[][] = [];
-  // Sleep starts from wake or light, never straight into deep or REM.
-  let scores = STATES.map(
-    (_, s) =>
-      emission(model, s, features[0]) + (s === DEEP || s === REM ? Number.NEGATIVE_INFINITY : 0),
-  );
+  let scores = STATES.map((_, s) => startScore(model, s, features[0]));
   for (let i = 1; i < features.length; i++) {
     const step = model.transitions(epochTime(features, i));
     const from = STATES.map((_, to) => bestFrom(scores, step, to));
@@ -237,8 +264,15 @@ function backtrack(scores: number[], back: number[][]): number[] {
   return path.reverse();
 }
 
+/** The first epoch's score: sleep starts from wake or light, never straight into deep or REM. */
+export function startScore(model: StageModel, state: number, f: EpochFeatures | undefined): number {
+  return (
+    emission(model, state, f) + (state === DEEP || state === REM ? Number.NEGATIVE_INFINITY : 0)
+  );
+}
+
 /** The model's likelihood, except that awake follows scoreEpochs exactly. */
-function emission(model: StageModel, state: number, f: EpochFeatures | undefined): number {
+export function emission(model: StageModel, state: number, f: EpochFeatures | undefined): number {
   if (!f || f.asleep === (state === AWAKE)) {
     return Number.NEGATIVE_INFINITY;
   }
@@ -280,7 +314,7 @@ function toRuns(features: EpochFeatures[], stages: Stage[]): StageRun[] {
   return runs;
 }
 
-function isPlausible(lightMin: number, deepMin: number, remMin: number): boolean {
+export function isPlausible(lightMin: number, deepMin: number, remMin: number): boolean {
   const asleep = lightMin + deepMin + remMin;
   const within = (min: number, [low = 0, high = 1]: number[]) =>
     min / asleep >= low && min / asleep <= high;

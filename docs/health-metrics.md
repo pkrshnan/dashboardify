@@ -43,7 +43,8 @@ neighbours (Webster 1982). Onset is the first 10 min of unbroken sleep; latency,
 ## Sleep stages (`sleep-stages.ts`)
 
 Light, deep and REM for each asleep epoch. Estimated: the HR, movement and transition parts are
-fitted to sleep-lab nights; HRV, breathing and DFA α1 are still hand-set.
+fitted to sleep-lab nights; HRV, breathing and DFA α1 are hand-set until `fit-stages.ts` fits them
+to your nights ([health-feedback.md](health-feedback.md#fitting-stages-to-you)).
 
 - **Features** (`sleep-features.ts`), per epoch, z-scored against the night's asleep epochs:
   mean HR; `ln(RMSSD)` over the 5 min around it (null under 60 differences; Esco & Flatt 2014);
@@ -60,7 +61,7 @@ fitted to sleep-lab nights; HRV, breathing and DFA α1 are still hand-set.
   each leaning on the night-wide matrix as if it had 100 more epochs. The time of night (deep
   early, REM later) is in those matrices. REM can't start before 45 min: the lab nights had it
   there on one night of 30.
-- **Hand-set** until H14: HRV (deep +0.8, REM −0.6), breathing (deep +0.8, REM −0.8) and DFA
+- **Hand-set** by default: HRV (deep +0.8, REM −0.6), breathing (deep +0.8, REM −0.8) and DFA
   α1 (deep −0.6, REM +0.5), SD 0.8 (Fonseca 2017, Gutierrez 2016, Bunde 2000, Penzel 2003). The
   lab data has no RR, so nothing has checked HRV and breathing.
 - **DFA α1** (`dfa.ts`): how correlated the gaps are over 4–16 beats, the slope of log F(n)
