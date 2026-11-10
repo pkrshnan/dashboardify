@@ -38,8 +38,9 @@ Read the one for the area you change.
 1. A plan in `docs/<feature>.md`: goals, decisions, data, API, a numbered PR list.
 2. Proto → store in `src/<feature>/` → service in `src/server/api/<feature>.ts` → register in
    `src/server/routes/v1.ts` and `rest-bindings.ts` → calls in `web/api.ts` → UI.
-3. After navigation N2, the UI is one `web/modules/<feature>.tsx`
-   ([navigation.md](docs/navigation.md#adding-a-module)).
+3. The page is one `web/modules/<feature>.tsx`, listed in `web/modules/index.ts`
+   ([navigation.md](docs/navigation.md#adding-a-module)). It reads the token and phone flag
+   with `useApp()` and the home view from its props.
 4. Update `docs/api.md`, `docs/vault-format.md` if it writes notes, and the roadmap.
 
 ## Rules that are easy to miss

@@ -91,5 +91,6 @@ data/ (DATA_PATH)               settings.db, secret.key, calendar-cache.db, serv
 
 ## Web app
 
-Hash views in `web/app.tsx` today; [navigation.md](navigation.md) plans the router, modules,
-command bar and sidebar that replace them.
+Each page is a module in `web/modules/` with its own address (`#/activity?range=month`), read
+by `web/lib/router.ts`. `web/app.tsx` is the shell: sign-in, the home view, and the page for the
+address. [navigation.md](navigation.md) plans the sidebar, command bar and search.

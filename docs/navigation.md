@@ -5,8 +5,8 @@ Tasks, Journal) joins: one module file, which the sidebar, tab bar, command bar,
 search and Settings all read. Design canvas, with every page and state on desktop and phone:
 https://claude.ai/artifact/XuhyWehLi6CPS3yFr4paUU.
 
-Status: N1 built. Next, N2 and then the sidebar and tab bar (N8) with the pages that exist, ahead
-of the command bar; then Lists, then N3–N7.
+Status: N1 and N2 built. Next, the sidebar and tab bar (N8) with the pages that exist, ahead of
+the command bar; then Lists, then N3–N7.
 
 ## Where it started
 
