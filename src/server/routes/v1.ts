@@ -85,6 +85,8 @@ export function v1Services(
   const taskService = new TasksService(tasks, vault, now);
   const dayService = new DaysService(vault);
   const journalService = new JournalService(vault, now);
+  const listStore = new ListStore(vault);
+  const listsService = new ListsService(listStore);
   const voiceService = new VoiceService(
     taskService,
     dayService,
@@ -92,6 +94,7 @@ export function v1Services(
     tasks,
     vault.timeZone,
     now,
+    { service: listsService, store: listStore },
   );
   const events = eventService(settings?.calendars, now, vault.timeZone);
   const captureService = new CaptureService(
@@ -111,7 +114,7 @@ export function v1Services(
     { schema: DaySchema, implementation: dayService },
     { schema: JournalSchema, implementation: journalService },
     { schema: MessageSchema, implementation: new MessagesService(vault) },
-    { schema: ListSchema, implementation: new ListsService(new ListStore(vault)) },
+    { schema: ListSchema, implementation: listsService },
     { schema: SampleSchema, implementation: new SamplesService(raw, onSamples) },
     { schema: HomeSchema, implementation: new HomeService(home, now) },
     { schema: ActivitySchema, implementation: new ActivityService(activity) },
