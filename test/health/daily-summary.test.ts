@@ -145,7 +145,31 @@ describe("DailySummary", () => {
     expect(note?.body.indexOf("## Health")).toBeLessThan(note?.body.indexOf("## Journal") ?? 0);
 
     expect((await derived.read("nights", DATE))?.rhr_bpm).toBeCloseTo(52, 0);
-    expect((await derived.read("days", DATE))?.algo_version).toBe("4");
+    expect((await derived.read("days", DATE))?.algo_version).toBe("5");
+    // No earlier days, so no training load yet.
+    expect(note?.body).not.toContain("- Load");
+    expect(note?.frontmatter.load_ratio).toBeUndefined();
+  });
+
+  test("training load appears after the strain line once there are four weeks of days", async () => {
+    await putNight();
+    await writeProfile();
+    for (let i = 1; i <= 28; i++) {
+      const date = Temporal.PlainDate.from(DATE).subtract({ days: i }).toString();
+      await derived.write("days", date, { trimp: 60, worn_min: 1440 });
+    }
+
+    const result = await summary.run(DATE);
+
+    const ratio = result?.load.ratio ?? 0;
+    expect(ratio).toBeGreaterThan(0);
+    const note = await vault.readDaily(DATE);
+    expect(note?.frontmatter.load_ratio).toBe(Math.round(ratio * 100) / 100);
+    expect(note?.frontmatter.load_chronic).toBeGreaterThan(0);
+    expect(note?.body).toMatch(
+      /- Strain \*\*[\d.]+\*\* · Zones [\d /]+ min\n- Load [a-z ]+ · \d\.\d\d \(7 d vs 28 d\)/,
+    );
+    expect((await derived.read("days", DATE))?.load_ratio).toBeCloseTo(ratio, 6);
   });
 
   test("recovery appears once there are two weeks of nights", async () => {

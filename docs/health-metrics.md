@@ -14,6 +14,7 @@ flowchart LR
   TMP[temperature] --> T
   R & H & B & T --> REC
   R --> ST & W
+  ST --> L[load]
   STP[steps] --> STEPS[steps] & W & WK[walks]
   MOT[motion] --> W
   W --> WK
@@ -72,6 +73,22 @@ Rest is last night's resting HR, else the past week's median, else the closest n
 week (earlier first). Max is `hr_max_measured`, else `208 − 0.7 × age` (Tanaka); no birth date
 means no strain. Zones: minutes at 50–60, 60–70, 70–80, 80–90, 90%+ of max.
 
+## Training load (`load.ts`)
+
+From each day's TRIMP in `days/` (strain is squashed, so it can't be averaged). Acute and chronic
+are 7- and 28-day exponentially weighted means, `λ = 2 / (N + 1)` (Williams 2017), seeded with the
+first day of up to 56. Ratio = acute ÷ chronic.
+
+- **Bands:** under 0.8 easing off, 0.8–1.3 steady, 1.3–1.5 building fast, over 1.5 spike
+  (Gabbett 2016). The injury claims for them are disputed (Impellizzeri 2020), so the note says
+  "load", never "risk".
+- **Gaps:** a day with no row, no TRIMP or under 16 h worn gets the median TRIMP of the well-worn
+  days in the 28 before. Days before the first row aren't gaps.
+- **Today** is a running total, so it counts as at least that median until the day ends and is
+  never a gap. Otherwise the ratio would sag to about 0.8 every morning.
+- **Missing:** no acute with more than 2 gaps in the last 7 days or under 7 days of history; no
+  chronic under 28 days; no ratio without both, and then no note line.
+
 ## Steps (`steps.ts`)
 
 The counter is cumulative and 16-bit: sum increases, treat a drop from near 65,536 as a wrap and
@@ -127,5 +144,5 @@ Garmin do). The weights are versioned params tuned against check-ins
 
 ## Still to build
 
-Training load, calories, VO2max, fitness and biological age, and sleep stages: planned in
+Calories, VO2max, fitness and biological age, and sleep stages: planned in
 [health-extended.md](health-extended.md).
