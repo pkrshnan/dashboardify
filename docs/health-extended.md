@@ -1,9 +1,9 @@
 # Health: the rest
 
-Plan for the health numbers still missing: training load, calories, VO2max, fitness and
-biological age, and sleep stages. Status: H1–H5 done, H6–H11 planned; H11 waits for artboards. As each PR
-lands, its section moves into [health-metrics.md](health-metrics.md). This file goes when the
-last one does.
+Plan for the health numbers still missing: training load, calories, VO2max and sleep stages.
+Status: H1–H5 done, H6 and H7 (fitness and biological age) dropped, H8–H11 planned; H11 waits for
+artboards. As each PR lands, its section moves into [health-metrics.md](health-metrics.md). This
+file goes when the last one does.
 
 ## Goals
 
@@ -20,26 +20,12 @@ Not goals: SpO2 from the raw `ppg` stream, runs with pace and route (roadmap #6)
 
 | Area | Decision |
 | --- | --- |
-| Order | Training load first (needs nothing new), then calories, VO2max, ages, and stages last (hardest, least checkable) |
-| Profile | `weight_kg` and `height_cm` join `profile.md`. Without them, calories and biological age are left out, as strain is without a birth date. |
-| Population norms | The "your own history, never population averages" rule holds, with one exception: VO2max, fitness age and biological age are comparisons with people by definition. Their docs say so. |
+| Order | Training load first (needs nothing new), then calories, VO2max, and stages last (hardest, least checkable) |
+| Profile | `weight_kg` and `height_cm` join `profile.md`. Without them, calories are left out, as strain is without a birth date. |
+| Population norms | The "your own history, never population averages" rule holds, with one exception: VO2max is a comparison with people by definition. Its doc says so. |
 | Recovery | No new number feeds recovery or the sleep score in this plan |
 | Versions | Each PR that changes rows bumps `ALGO_VERSION`; rebuild with `summarize.ts` |
 | UI | Note and API first. Home rows, Activity calories and a sleep view wait for artboards (H11). |
-
-## Fitness age and biological age (`age.ts`)
-
-- **Fitness age** (Nes 2013, HUNT): the age at which a healthy person of your sex has your VO2max.
-  Key: `fitness_age`.
-- **Biological age**: your age plus the years each factor adds or takes off. Each factor's hazard
-  ratio for all-cause mortality comes from a published meta-analysis; a hazard ratio becomes years
-  through the Gompertz law (adult mortality doubles about every 8 years, so
-  `years = ln(HR) ÷ ln 2 × 8`). Factors, each over the last 30 days:
-  VO2max (Kodama 2009), sleep duration (Cappuccio 2010), sleep regularity (Windred 2024), steps
-  (Paluch 2022), strength sessions (Momma 2022), zone 2+ minutes (Arem 2015).
-- Resting HR is left out: our VO2max already holds it, and counting it twice would double its
-  weight. Each factor's years are kept in the row, so the note can say what moved it.
-- Key: `bio_age`.
 
 ## Sleep stages (`sleep-stages.ts`)
 
@@ -68,7 +54,7 @@ Light, deep and REM for each asleep epoch; awake stays as `sleep-epochs.ts` scor
 - Deep 1h 25m · REM 1h 40m · Light 4h 07m
 - Calories 2,640 · 610 active
 - Load steady · 1.08 (7 d vs 28 d)
-- VO2max 48 · fitness age 27 · biological age 29
+- VO2max 48
 ```
 
 ## PRs
@@ -80,8 +66,8 @@ Light, deep and REM for each asleep epoch; awake stays as `sleep-epochs.ts` scor
 | H3 | Calories | Done; now in [health-metrics.md](health-metrics.md#calories-caloriests) |
 | H4 | Workout calories | Done; now in [health-metrics.md](health-metrics.md#calories-caloriests) |
 | H5 | VO2max | Done; now in [health-metrics.md](health-metrics.md#vo2max-vo2maxts) |
-| H6 | Fitness age | `age.ts`, Nes constants |
-| H7 | Biological age | factors, hazard ratios, Gompertz years; per-factor columns |
+| H6 | Fitness age | Dropped: no reference data spans adult ages for South Asians |
+| H7 | Biological age | Dropped, for the same reason |
 | H8 | Epoch features | per-epoch HR, RMSSD, breathing regularity, movement; pure, tested |
 | H9 | Sleep stages | HMM and Viterbi; `stages/`, `nights/` columns, note line |
 | H10 | API | home trend rows for the new keys; `GetNight` returns the stage runs |
@@ -92,5 +78,4 @@ Each PR adds tests on made-up samples, its section in `health-metrics.md`, and i
 
 ## Open questions
 
-- [ ] Biological age: the factor sum above, or fitness age only?
 - [ ] Is a fixed `weight_kg` in the profile enough, or log weight over time?
