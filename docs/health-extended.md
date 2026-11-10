@@ -1,8 +1,8 @@
 # Health: the rest
 
 Plan for the health numbers still missing: training load, calories, VO2max and sleep stages.
-Status: H1–H5 and H8 done, H6 and H7 (fitness and biological age) dropped, H9–H11 planned; H11
-waits for artboards. As each PR lands, its section moves into [health-metrics.md](health-metrics.md). This
+Status: H1–H5, H8 and H9 done, H6 and H7 (fitness and biological age) dropped, H10 and H11
+planned; H11 waits for artboards. As each PR lands, its section moves into [health-metrics.md](health-metrics.md). This
 file goes when the last one does.
 
 ## Goals
@@ -27,36 +27,6 @@ Not goals: SpO2 from the raw `ppg` stream, runs with pace and route (roadmap #6)
 | Versions | Each PR that changes rows bumps `ALGO_VERSION`; rebuild with `summarize.ts` |
 | UI | Note and API first. Home rows, Activity calories and a sleep view wait for artboards (H11). |
 
-## Sleep stages (`sleep-stages.ts`)
-
-Light, deep and REM for each asleep epoch; awake stays as `sleep-epochs.ts` scores it.
-
-- **Features per epoch**, each a z-score against the night: HR, RMSSD over the surrounding 5 min,
-  breathing regularity (how sharp the breathing peak is in a 2-min spectrum, as `breathing.ts`
-  does for the night), and movement.
-- **What they mean:** deep is low HR, high HRV and very regular breathing; REM is HR up and
-  irregular, low HRV, no movement; light is in between (Fonseca 2017, Walch 2019).
-- **Epoch features** (H8, `sleep-features.ts`; moves to health-metrics.md with H9). Per
-  epoch of `scoreEpochs`, z-scored against the night's asleep epochs:
-  - HR: the epoch's mean.
-  - HRV: `ln(RMSSD)` over the 5 min around it, from `hrv.ts`'s cleaned beats; null under 60
-    differences (RMSSD over 60 s agrees with 5 min: Esco & Flatt 2014, Munoz 2015).
-  - Breathing regularity: `ln(peak ÷ band median)` of the 2-min spectrum, `breathing.ts`'s steps
-    and sharpness test. Regular breathing gives a sharp peak; N3 breathing varies least and REM
-    most (Gutierrez 2016). Null when kept beats cover under 80% of the window.
-  - Movement: the largest 5-s arm angle change, in degrees (not z-scored).
-  - Minutes since onset, for H9's cycle prior. Awake epochs pass through.
-- **A 4-state hidden Markov model** (awake fixed, light, deep, REM), decoded with Viterbi.
-  Transitions from adult sleep-lab norms: deep mostly in the first third, the first REM rarely
-  under an hour after onset, REM bouts growing through the night. This gives the 90-minute cycles
-  without hard-coding them.
-- Wrist and arm staging agrees with a sleep lab about 60–65% of the time for 4 stages. Shown as
-  "estimated"; a night far outside 40–65% light, 10–25% deep, 15–30% REM is flagged.
-- There is nothing to check against yet, so it is checked for plausibility only and tuned as
-  nights with the strap pile up.
-- Writes `stages/` (one row per run: start, end, stage) and `light_min`, `deep_min`, `rem_min` in
-  `nights/` and the note.
-
 ## Note
 
 ```markdown
@@ -78,8 +48,8 @@ Light, deep and REM for each asleep epoch; awake stays as `sleep-epochs.ts` scor
 | H5 | VO2max | Done; now in [health-metrics.md](health-metrics.md#vo2max-vo2maxts) |
 | H6 | Fitness age | Dropped: no reference data spans adult ages for South Asians |
 | H7 | Biological age | Dropped, for the same reason |
-| H8 | Epoch features | Done; `sleep-features.ts`, used by H9 |
-| H9 | Sleep stages | HMM and Viterbi; `stages/`, `nights/` columns, note line |
+| H8 | Epoch features | Done; now in [health-metrics.md](health-metrics.md#sleep-stages-sleep-stagests) |
+| H9 | Sleep stages | Done; now in [health-metrics.md](health-metrics.md#sleep-stages-sleep-stagests) |
 | H10 | API | home trend rows for the new keys; `GetNight` returns the stage runs |
 | H11 | UI | home rows, workout calories, a night view with the hypnogram (after artboards) |
 

@@ -145,7 +145,7 @@ describe("DailySummary", () => {
     expect(note?.body.indexOf("## Health")).toBeLessThan(note?.body.indexOf("## Journal") ?? 0);
 
     expect((await derived.read("nights", DATE))?.rhr_bpm).toBeCloseTo(52, 0);
-    expect((await derived.read("days", DATE))?.algo_version).toBe("9");
+    expect((await derived.read("days", DATE))?.algo_version).toBe("10");
     // No earlier days, so no training load yet.
     expect(note?.body).not.toContain("- Load");
     expect(note?.frontmatter.load_ratio).toBeUndefined();
@@ -153,6 +153,68 @@ describe("DailySummary", () => {
     expect(note?.body).not.toContain("- Calories");
     expect(note?.frontmatter.kcal).toBeUndefined();
     expect((await derived.read("days", DATE))?.kcal).toBeNull();
+  });
+
+  test("sleep stages go in the nights row, stages/, the frontmatter and a line after Sleep", async () => {
+    await putNight();
+    await writeProfile();
+
+    const result = await summary.run(DATE);
+
+    const night = result?.night;
+    const stages = night?.stages;
+    if (!(night && stages)) {
+      throw new Error("expected a staged night");
+    }
+    const { lightMin, deepMin, remMin, runs } = stages;
+    // The fixture's HR is flat, so the stages rest on its near-constant beats: light-heavy.
+    expect(stages.plausible).toBe(false);
+    expect(lightMin + deepMin + remMin).toBe(night.asleepMin);
+    const note = await vault.readDaily(DATE);
+    const hm = (min: number) =>
+      `${Math.floor(Math.round(min) / 60)}h ${String(Math.round(min) % 60).padStart(2, "0")}m`;
+    const line = `- Deep ${hm(deepMin)} · REM ${hm(remMin)} · Light ${hm(lightMin)} · unusual`;
+    expect(note?.body).toContain(
+      `- Sleep **100** · 8h 00m of 8h 00m · 23:00–07:00\n${line}\n- RHR`,
+    );
+    expect(note?.frontmatter).toMatchObject({
+      light_min: Math.round(lightMin),
+      deep_min: Math.round(deepMin),
+      rem_min: Math.round(remMin),
+    });
+    expect(await derived.read("nights", DATE)).toMatchObject({
+      light_min: lightMin,
+      deep_min: deepMin,
+      rem_min: remMin,
+      stages_plausible: 0,
+    });
+    const rows = await derived.readAll("stages", DATE);
+    expect(rows).toHaveLength(runs.length);
+    expect(rows[0]).toMatchObject({
+      date: DATE,
+      algo_version: "10",
+      start_ts: runs[0]?.start,
+      end_ts: runs[0]?.end,
+      stage: runs[0]?.stage,
+    });
+    expect(rows.map((r) => r.stage)).toContain("deep");
+  });
+
+  test("no stages without a night, and none left from an earlier run", async () => {
+    await putNight();
+    await writeProfile();
+    await summary.run(DATE);
+    await rm(join(dir, "health-raw"), { recursive: true, force: true });
+    raw = new RawStore(join(dir, "health-raw"));
+    summary = new DailySummary(raw, derived, vault, TZ, () =>
+      Date.parse("2026-11-03T12:00:00-08:00"),
+    );
+    await putNextNight();
+
+    await summary.run(DATE);
+
+    expect(await derived.readAll("stages", DATE)).toEqual([]);
+    expect((await vault.readDaily(DATE))?.body).not.toContain("- Deep");
   });
 
   test("calories appear after the strain line with weight and height in the profile", async () => {

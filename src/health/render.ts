@@ -4,6 +4,7 @@
 import type { LiftingDay } from "./lifting";
 import { type Load, loadBand } from "./metrics/load";
 import type { Recovery } from "./metrics/recovery";
+import type { SleepStages } from "./metrics/sleep-stages";
 import type { DayMetrics, NightMetrics } from "./metrics/summary";
 import type { Walk } from "./metrics/walks";
 import type { Workout } from "./metrics/workouts";
@@ -44,6 +45,9 @@ export function frontmatter(s: DaySummary): Record<string, number> {
     sleep_score: round(s.night?.sleep.score, 0),
     sleep_performance_pct: round(s.night?.sleep.sufficiency, 0),
     tst_min: round(s.night?.asleepMin, 0),
+    deep_min: round(s.night?.stages?.deepMin, 0),
+    rem_min: round(s.night?.stages?.remMin, 0),
+    light_min: round(s.night?.stages?.lightMin, 0),
     rhr_bpm: round(s.night?.restingHr, 0),
     rmssd_ms: round(s.night?.rmssdMs, 0),
     resp_rate_bpm: round(s.night?.breathingRate, 1),
@@ -78,8 +82,7 @@ export function healthBlock(
   const lines = s
     ? [
         recoveryLine(s, needed),
-        s.night ? sleepLine(s.night, clock) : null,
-        s.night ? vitalsLine(s.night, s.tempDevC) : null,
+        ...(s.night ? nightLines(s.night, s.tempDevC, clock) : []),
         strainLine(s.day),
         loadLine(s.load),
         caloriesLine(s.day),
@@ -107,10 +110,28 @@ function recoveryLine(s: DaySummary, needed: number): string {
   return `- Recovery calibrating, ${Math.min(s.baselineNights, needed)}/${needed} nights`;
 }
 
+function nightLines(
+  night: NightMetrics,
+  tempDevC: number | null,
+  clock: (ts: number) => string,
+): (string | null)[] {
+  return [
+    sleepLine(night, clock),
+    night.stages ? stagesLine(night.stages) : null,
+    vitalsLine(night, tempDevC),
+  ];
+}
+
 function sleepLine(night: NightMetrics, clock: (ts: number) => string): string {
   const score = Math.round(night.sleep.score);
   const slept = `${duration(night.asleepMin)} of ${duration(night.sleep.needMin)}`;
   return `- Sleep **${score}** · ${slept} · ${clock(night.onset)}–${clock(night.wake)}`;
+}
+
+/** "- Deep 1h 25m · REM 1h 40m · Light 4h 07m", ending "· unusual" when not plausible. */
+function stagesLine(stages: SleepStages): string {
+  const line = `- Deep ${duration(stages.deepMin)} · REM ${duration(stages.remMin)} · Light ${duration(stages.lightMin)}`;
+  return stages.plausible ? line : `${line} · unusual`;
 }
 
 function vitalsLine(night: NightMetrics, tempDevC: number | null): string {

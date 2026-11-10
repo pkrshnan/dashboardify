@@ -6,7 +6,7 @@
 // variability falls, and breathing turns irregular, while the body barely moves (Fonseca 2017;
 // Gutierrez 2016 for breathing). Adding HR to motion lifts NREM/REM accuracy by 15–25 points
 // over motion alone, the weakest single signal for it (Walch 2019). Each feature is a z-score against the night's asleep epochs, since
-// the stages are relative to your own night, not to fixed numbers. See docs/health-extended.md.
+// the stages are relative to your own night, not to fixed numbers. See docs/health-metrics.md.
 
 import { SAMPLE_HZ, sharpestPeak, windowSpectrum } from "./breathing";
 import { type CleanBeat, MIN_BEATS, timedDiffs } from "./hrv";

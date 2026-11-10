@@ -9,7 +9,9 @@ import { climbs, type SetClimb } from "./sets";
 import { sleepSkinTemp } from "./skin-temp";
 import { rawAngleChanges, sleepWindow } from "./sleep";
 import { scoreEpochs, sleepTimes } from "./sleep-epochs";
+import { epochFeatures } from "./sleep-features";
 import { type PastNight, type SleepScore, sleepScore } from "./sleep-score";
+import { type SleepStages, sleepStages } from "./sleep-stages";
 import { stepsPerMinute, stepsTaken } from "./steps";
 import { type Sex, strain, trimp } from "./strain";
 import type { Accel, HeartRate, Motion, RrInterval, SkinTemp, Span, StepCounter } from "./types";
@@ -48,6 +50,8 @@ export interface NightMetrics {
   hrvWindows: number;
   breathingRate: number | null;
   skinTemp: number | null;
+  /** Light, deep and REM; null without an asleep epoch. Estimated, checked for plausibility only. */
+  stages: SleepStages | null;
 }
 
 /** Last night's sleep and overnight vitals, from samples covering the evening to midday. */
@@ -56,10 +60,9 @@ export function nightMetrics(input: NightInput): NightMetrics | null {
   if (!sleep) {
     return null;
   }
-  const times = sleepTimes(
-    sleep,
-    scoreEpochs(sleep, rawAngleChanges(input.accel), input.heartRate),
-  );
+  const changes = rawAngleChanges(input.accel);
+  const epochs = scoreEpochs(sleep, changes, input.heartRate);
+  const times = sleepTimes(sleep, epochs);
   const onset = times.onset ?? sleep.start;
   const timing = {
     onsetMin: input.minutesAfterNoon(onset),
@@ -84,6 +87,10 @@ export function nightMetrics(input: NightInput): NightMetrics | null {
     hrvWindows: hrv?.windows ?? 0,
     breathingRate: breathingRate(goodWindows(beats, sleep)),
     skinTemp: sleepSkinTemp(input.skinTemp, sleep),
+    // The same epochs, angle changes and clean beats as above, so nothing is worked out twice.
+    stages: sleepStages(
+      epochFeatures({ ...input, window: sleep, epochs, onset: times.onset, changes, beats }),
+    ),
   };
 }
 

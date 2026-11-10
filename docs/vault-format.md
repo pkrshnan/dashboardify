@@ -29,6 +29,9 @@ active_kcal: 610
 vo2max: 57
 sleep_score: 84
 tst_min: 432
+deep_min: 85
+rem_min: 100
+light_min: 247
 rhr_bpm: 52
 rmssd_ms: 48
 steps: 8412
@@ -44,6 +47,7 @@ workout_reviews:
 ## Health
 - Recovery **62%**
 - Sleep **84** · 7h 12m of 8h 00m · 23:41–07:05
+- Deep 1h 25m · REM 1h 40m · Light 4h 07m
 - RHR 52 · HRV 48 ms · Breathing 14.2 · Skin +0.2 °C
 - Strain **11.4** · Zones 42 / 18 / 6 / 0 / 0 min
 - Load steady · 1.08 (7 d vs 28 d)
@@ -79,7 +83,8 @@ workout_reviews:
   the last 28's and needs four weeks of days. Calories (`kcal`, `active_kcal`) need weight, height,
   birth date and sex in `profile.md`, and are a running total today; a workout line
   ends with its own. VO2max (`vo2max`, whole ml/kg/min) needs `hr_max_measured`, `sex` and 14 of
-  the last 30 nights. An unsure workout ends with `?` (`Lifting?`) until
+  the last 30 nights. Stages (`deep_min`, `rem_min`, `light_min`) are estimated from HR, HRV and
+breathing; the line ends `· unusual` when the night is far from typical shares. An unsure workout ends with `?` (`Lifting?`) until
   reviewed. "Synced" is on today only and turns into `**14h behind**` past two hours.
 - **Agenda** is today's events, rewritten after each calendar sync that changes them.
 - **Journal** entries are `- HH:MM text`, continuation lines indented two spaces.
@@ -125,4 +130,5 @@ One row per day: `date`, the metric names sorted, then `source`. A day sent agai
 
 `bun src/health/summarize.ts 2026-10-13 2026-11-03` (on the server, prefix
 `docker compose exec dashboardify`). Computed tables also go to `health-derived/` (`nights/`,
-`days/`, `workouts/`, `walks/`, `sets/`; Parquet, one file per date, rebuildable).
+`days/`, `workouts/`, `walks/`, `sets/`, `stages/` with one row per stage run; Parquet, one file
+per date, rebuildable).
