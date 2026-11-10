@@ -2,7 +2,7 @@
 
 Checklists you keep and tick off: shopping first, then packing, gift ideas, films. One note per
 list in the vault, a Lists page on desktop and phone, and Siri to add from anywhere. Design: the
-Lists boards on https://claude.ai/artifact/XuhyWehLi6CPS3yFr4paUU. Status: planned (LS1–LS4).
+Lists boards on https://claude.ai/artifact/XuhyWehLi6CPS3yFr4paUU. Status: LS1 built; LS2–LS4 planned.
 
 ## Goals
 

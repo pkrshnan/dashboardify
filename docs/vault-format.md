@@ -13,7 +13,7 @@ What the server writes, so files can be edited by hand without breaking anything
   `- [ ] Call the bank ⏰ 09:00 ⏫ 🔁 every week 📅 2026-11-03 ➕ 2026-11-02 🆔 k7f3a2`.
   `⏰ HH:MM` is our own due time and always sits right after the description; `🆔` is the id the
   API uses. New tasks go to the inbox note (Settings › General, default `Inbox.md`). Every `- [ ]`
-  line in the vault is read as a task.
+  line in the vault is read as a task, except in `Lists/`.
 
 ## Daily note: `daily/YYYY/YYYY-MM-DD.md`
 
@@ -78,6 +78,22 @@ workout_reviews:
   `workout` or `none`. Malformed entries are skipped.
 - **`feel`, `effort_rpe`, `health_tags`** come from the morning check-in
   ([health-feedback.md](health-feedback.md)).
+
+## Lists: `Lists/<Title>.md`
+
+One note per list ([lists.md](lists.md)); the file name is the list's title. `##` headings are
+sections and `- [ ]` / `- [x]` lines are items; a trailing `(…)` is the item's note. The server
+adds items at the end of the block before the first heading, unticks an item that's added again,
+and removes `[x]` lines (with their indented lines) when you clear what you got. Every other line
+is left alone, and no ids are written into the note.
+
+```markdown
+- [ ] Coffee beans
+
+## Produce
+- [ ] Spinach (2 bags)
+- [x] Lemons
+```
 
 ## `profile.md`
 
