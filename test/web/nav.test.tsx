@@ -52,7 +52,7 @@ describe("nav rules", () => {
   test("while every page fits, each is a tab and there is no More", () => {
     const { tabs, more } = phoneTabs(MODULES);
 
-    expect(tabs.map((m) => m.id)).toEqual(["today", "activity", "settings"]);
+    expect(tabs.map((m) => m.id)).toEqual(["today", "lists", "activity", "settings"]);
     expect(more).toEqual([]);
   });
 
@@ -69,9 +69,14 @@ describe("Sidebar", () => {
     const { getAllByRole } = render(<Sidebar modules={MODULES} current="activity" />);
     const links = getAllByRole("link");
 
-    expect(links.map((a) => a.getAttribute("href"))).toEqual(["#/", "#/activity", "#/settings"]);
-    expect(links.map((a) => a.getAttribute("aria-current"))).toEqual([null, "page", null]);
-    expect(links[1]?.getAttribute("title")).toBe("Activity (g a)");
+    expect(links.map((a) => a.getAttribute("href"))).toEqual([
+      "#/",
+      "#/lists",
+      "#/activity",
+      "#/settings",
+    ]);
+    expect(links.map((a) => a.getAttribute("aria-current"))).toEqual([null, null, "page", null]);
+    expect(links[2]?.getAttribute("title")).toBe("Activity (g a)");
   });
 });
 
@@ -81,6 +86,7 @@ describe("TabBar", () => {
 
     expect(getAllByRole("link").map((a) => a.textContent)).toEqual([
       "Today",
+      "Lists",
       "Activity",
       "Settings",
     ]);
