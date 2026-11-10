@@ -51,9 +51,9 @@ Apple Reminders.
 
 | # | Work | State |
 | --- | --- | --- |
-| 1 | Navigation: router, modules, command bar, search, sidebar and tab bar | Planned: [navigation.md](navigation.md) (N1–N8) |
+| 1 | Navigation: router, modules, command bar, search, sidebar and tab bar | Building: N1, N2, N8 done; [navigation.md](navigation.md) |
 | 2 | Tasks page and reminder editing (the API already does it all); starts with N7's task panel | Needs a plan |
-| 3 | Lists (shopping). A `- [ ]` line anywhere in the vault is read as a task, so lists need a folder tasks skip, or another format. | Needs a plan |
+| 3 | Lists (shopping): one note per list in `Lists/`, which tasks skip | Planned: [lists.md](lists.md) (LS1–LS4) |
 | 4 | Journal page: the day's journal and check-in | Needs a plan |
 | 5 | The rest of health: sleep stages, calories, training load, VO2max, biological age | Needs a plan |
 | 6 | Runs: distance, pace and route. Apple Health through a Shortcut, or the Strava API. | Open question |
