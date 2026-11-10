@@ -132,4 +132,110 @@ describe("activity API", () => {
     expect(badKind.status).toBe(400);
     expect(tooLong.status).toBe(400);
   });
+
+  describe("nights", () => {
+    const Bed = Date.parse("2026-11-03T23:10:00Z");
+    const Onset = Date.parse("2026-11-03T23:25:00Z");
+    const Wake = Date.parse(`${DAY}T07:05:00Z`);
+    const Night = {
+      bed_ts: Bed,
+      onset_ts: Onset,
+      wake_ts: Wake,
+      tst_min: 432,
+      sleep_score: 84,
+      light_min: 250,
+      deep_min: 82,
+      rem_min: 100,
+      stages_plausible: 1,
+    };
+
+    async function seedNight(night: Record<string, number | null>, stages: string[]) {
+      const derived = new DerivedStore(join(api.dir, "derived"));
+      await derived.write("nights", DAY, night);
+      const step = (Wake - Bed) / Math.max(stages.length, 1);
+      await derived.writeAll(
+        "stages",
+        DAY,
+        stages.map((stage, i) => ({
+          start_ts: Bed + i * step,
+          end_ts: Bed + (i + 1) * step,
+          stage,
+        })),
+      );
+    }
+
+    test("a night comes with its times, stage minutes and stage runs", async () => {
+      await seedNight(Night, ["awake", "light", "deep", "rem"]);
+
+      const { status, body } = await api.call("/v1/days/2026-11-04/night");
+
+      expect(status).toBe(200);
+      expect(body).toMatchObject({
+        name: "days/2026-11-04/night",
+        bedTime: "2026-11-03T23:10:00Z",
+        onsetTime: "2026-11-03T23:25:00Z",
+        wakeTime: "2026-11-04T07:05:00Z",
+        asleepMinutes: 432,
+        sleepScore: 84,
+        lightMinutes: 250,
+        deepMinutes: 82,
+        remMinutes: 100,
+        stagesPlausible: true,
+      });
+      expect(body.stages.map((r: { stage: string }) => r.stage)).toEqual([
+        "STAGE_AWAKE",
+        "STAGE_LIGHT",
+        "STAGE_DEEP",
+        "STAGE_REM",
+      ]);
+      expect(body.stages[0].startTime).toBe("2026-11-03T23:10:00Z");
+      expect(body.stages.at(-1).endTime).toBe("2026-11-04T07:05:00Z");
+    });
+
+    test("the same night over Connect", async () => {
+      await seedNight(Night, ["light"]);
+
+      const { status, body } = await api.call("/dashboardify.v1.ActivityService/GetNight", "POST", {
+        name: "days/2026-11-04/night",
+      });
+
+      expect(status).toBe(200);
+      expect(body.stages).toHaveLength(1);
+    });
+
+    test("a night without stages leaves the stage fields out", async () => {
+      await seedNight(
+        { ...Night, light_min: null, deep_min: null, rem_min: null, stages_plausible: null },
+        [],
+      );
+
+      const { status, body } = await api.call("/v1/days/2026-11-04/night");
+
+      expect(status).toBe(200);
+      expect(body.asleepMinutes).toBe(432);
+      expect(body).not.toHaveProperty("deepMinutes");
+      expect(body).not.toHaveProperty("stagesPlausible");
+      expect(body.stages ?? []).toEqual([]);
+    });
+
+    test("an implausible night says so", async () => {
+      await seedNight({ ...Night, stages_plausible: 0 }, ["light"]);
+
+      const { body } = await api.call("/v1/days/2026-11-04/night");
+
+      expect(body.stagesPlausible).toBe(false);
+    });
+
+    test("a day with no night is not found, and a bad name is refused", async () => {
+      await seedNight(Night, []);
+
+      const missing = await api.call("/v1/days/2026-11-05/night");
+      const badName = await api.call("/dashboardify.v1.ActivityService/GetNight", "POST", {
+        name: "days/2026-11-04/nights",
+      });
+
+      expect(missing.status).toBe(404);
+      expect(badName.status).toBe(400);
+    });
+  });
 });

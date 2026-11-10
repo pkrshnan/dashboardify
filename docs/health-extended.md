@@ -1,8 +1,8 @@
 # Health: the rest
 
 Plan for the health numbers still missing: training load, calories, VO2max and sleep stages.
-Status: H1–H5, H8 and H9 done, H6 and H7 (fitness and biological age) dropped, H10 and H11
-planned; H11 waits for artboards. As each PR lands, its section moves into [health-metrics.md](health-metrics.md). This
+Status: H1–H5 and H8–H10 done, H6 and H7 (fitness and biological age) dropped, H11 planned; it
+waits for artboards. As each PR lands, its section moves into [health-metrics.md](health-metrics.md). This
 file goes when the last one does.
 
 ## Goals
@@ -50,7 +50,7 @@ Not goals: SpO2 from the raw `ppg` stream, runs with pace and route (roadmap #6)
 | H7 | Biological age | Dropped, for the same reason |
 | H8 | Epoch features | Done; now in [health-metrics.md](health-metrics.md#sleep-stages-sleep-stagests) |
 | H9 | Sleep stages | Done; now in [health-metrics.md](health-metrics.md#sleep-stages-sleep-stagests) |
-| H10 | API | home trend rows for the new keys; `GetNight` returns the stage runs |
+| H10 | API | Done: `EXTENDED_METRICS` in `health-history.ts` (off the home list until H11); `GetNight` in [api.md](api.md#activity) |
 | H11 | UI | home rows, workout calories, a night view with the hypnogram (after artboards) |
 
 Each PR adds tests on made-up samples, its section in `health-metrics.md`, and its keys in

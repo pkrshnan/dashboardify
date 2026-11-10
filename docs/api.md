@@ -74,9 +74,12 @@ healthstrap is the client.
 | GET | `/v1/activityDays?startDate…&endDate…` | Each day's workouts, walks and lifting log, up to 92 days |
 | GET | `/v1/days/{date}/workouts/{HHMM}` | One workout: HR every 15 s, and sets for lifting |
 | POST | `/v1/days/{date}/workouts/{HHMM}:review` | `{"kind": "lifting"}`: `running`, `walking`, `volleyball`, `lifting`, `workout`, `none`, or `""` to undo |
+| GET | `/v1/days/{date}/night` | The night you woke from that day: bed, onset and wake, asleep minutes, score, stage minutes and runs; `404` if none |
 
 `status` is `DETECTED` (strap only), `POSSIBLE` (worth asking), `CONFIRMED` (reviewed or matched a
 lifting log) or `DISMISSED`. A review is written to the daily note and the day is recomputed.
+A night's stages are estimated: `stagesPlausible` says whether they look real, and a night without
+stages leaves the stage fields out.
 
 ## Captures
 

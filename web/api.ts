@@ -5,6 +5,8 @@
 import { fromJson, type JsonValue } from "@bufbuild/protobuf";
 import {
   ListActivityDaysResponseSchema,
+  NightSchema,
+  StageRun_Stage,
   type Workout,
   WorkoutSchema,
   WorkoutStatus,
@@ -700,6 +702,52 @@ export async function reviewWorkout(
   const body = JSON.stringify({ kind });
   const v = await call<JsonValue>(token, `/v1/${name}:review`, { method: "POST", body });
   return workoutDetail(fromJson(WorkoutSchema, v));
+}
+
+export type SleepStage = "awake" | "light" | "deep" | "rem";
+
+/** A night's sleep; times are epoch ms. Stage fields are null for a night without stages. */
+export interface NightView {
+  name: string;
+  bed: number;
+  onset: number;
+  wake: number;
+  asleepMin: number;
+  sleepScore: number;
+  lightMin: number | null;
+  deepMin: number | null;
+  remMin: number | null;
+  stagesPlausible: boolean | null;
+  stages: { start: number; end: number; stage: SleepStage }[];
+}
+
+const STAGES: Record<number, SleepStage> = {
+  [StageRun_Stage.AWAKE]: "awake",
+  [StageRun_Stage.LIGHT]: "light",
+  [StageRun_Stage.DEEP]: "deep",
+  [StageRun_Stage.REM]: "rem",
+};
+
+/** The night you woke from on `date` (YYYY-MM-DD), with its stage runs. */
+export async function fetchNight(token: Token, date: string): Promise<NightView> {
+  const n = fromJson(NightSchema, await call<JsonValue>(token, `/v1/days/${date}/night`));
+  return {
+    name: n.name,
+    bed: ms(n.bedTime),
+    onset: ms(n.onsetTime),
+    wake: ms(n.wakeTime),
+    asleepMin: n.asleepMinutes,
+    sleepScore: n.sleepScore,
+    lightMin: n.lightMinutes ?? null,
+    deepMin: n.deepMinutes ?? null,
+    remMin: n.remMinutes ?? null,
+    stagesPlausible: n.stagesPlausible ?? null,
+    // An unspecified stage would be a server bug; leaving it out keeps the hypnogram honest.
+    stages: n.stages.flatMap((r) => {
+      const stage = STAGES[r.stage];
+      return stage ? [{ start: ms(r.startTime), end: ms(r.endTime), stage }] : [];
+    }),
+  };
 }
 
 const STATUSES = {

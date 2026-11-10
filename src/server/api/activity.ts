@@ -24,7 +24,7 @@ export interface ActivityDeps {
   recompute: (date: string) => Promise<unknown>;
 }
 
-/** Workouts, walks and lifting logs from the computed health tables, and reviews of them. */
+/** Workouts, walks, lifting logs and nights from the computed health tables, and reviews. */
 export class ActivityService {
   constructor(private readonly deps: ActivityDeps) {}
 
@@ -74,6 +74,20 @@ export class ActivityService {
     );
     await this.deps.recompute(date);
     return this.getWorkout({ name: request.name });
+  };
+
+  getNight = async (request: ApiRequests["getNight"]) => {
+    const match = /^days\/(\d{4}-\d{2}-\d{2})\/night$/.exec(request.name ?? "");
+    if (!(match?.[1] && isIsoDate(match[1]))) {
+      invalidArgument("invalid night name");
+    }
+    const date = defined(match?.[1]);
+    const row = await this.deps.derived.read("nights", date);
+    if (!row) {
+      throw new ApiError(404, "night not found");
+    }
+    const runs = await this.deps.derived.readAll("stages", date);
+    return nightResource(`days/${date}/night`, row, runs);
   };
 
   private async day(date: string) {
@@ -131,6 +145,32 @@ export class ActivityService {
   }
 }
 
+/** Rows from before sleep stages (H9) have no stage columns, so those fields stay unset. */
+function nightResource(name: string, row: DerivedRow, runs: DerivedRow[]) {
+  return {
+    name,
+    bedTime: iso(num(row.bed_ts)),
+    onsetTime: iso(num(row.onset_ts)),
+    wakeTime: iso(num(row.wake_ts)),
+    asleepMinutes: num(row.tst_min),
+    sleepScore: num(row.sleep_score),
+    lightMinutes: optionalNum(row.light_min),
+    deepMinutes: optionalNum(row.deep_min),
+    remMinutes: optionalNum(row.rem_min),
+    stagesPlausible:
+      typeof row.stages_plausible === "number" ? row.stages_plausible === 1 : undefined,
+    stages: runs.map((r) => ({
+      startTime: iso(num(r.start_ts)),
+      endTime: iso(num(r.end_ts)),
+      stage: STAGES.has(String(r.stage))
+        ? `STAGE_${String(r.stage).toUpperCase()}`
+        : "STAGE_UNSPECIFIED",
+    })),
+  };
+}
+
+const STAGES = new Set(["awake", "light", "deep", "rem"]);
+
 function walkResource(row: DerivedRow) {
   return {
     startTime: iso(num(row.start_ts)),
@@ -185,6 +225,10 @@ function every(samples: { ts: number; bpm?: unknown }[], start: number, end: num
     const acc = sums.get(i);
     return acc ? Math.round(acc.sum / acc.n) : 0;
   });
+}
+
+function optionalNum(value: unknown): number | undefined {
+  return typeof value === "number" ? value : undefined;
 }
 
 function num(value: unknown): number {
