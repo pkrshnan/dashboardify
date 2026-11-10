@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { DailySummary } from "../../src/health/daily-summary";
+import { ALGO_VERSION, DailySummary } from "../../src/health/daily-summary";
 import { DerivedStore } from "../../src/health/derived-store";
 import { RawStore, utcDays } from "../../src/health/raw-store";
 import type { Sample } from "../../src/health/samples";
@@ -145,7 +145,7 @@ describe("DailySummary", () => {
     expect(note?.body.indexOf("## Health")).toBeLessThan(note?.body.indexOf("## Journal") ?? 0);
 
     expect((await derived.read("nights", DATE))?.rhr_bpm).toBeCloseTo(52, 0);
-    expect((await derived.read("days", DATE))?.algo_version).toBe("10");
+    expect((await derived.read("days", DATE))?.algo_version).toBe(ALGO_VERSION);
     // No earlier days, so no training load yet.
     expect(note?.body).not.toContain("- Load");
     expect(note?.frontmatter.load_ratio).toBeUndefined();
@@ -192,7 +192,7 @@ describe("DailySummary", () => {
     expect(rows).toHaveLength(runs.length);
     expect(rows[0]).toMatchObject({
       date: DATE,
-      algo_version: "10",
+      algo_version: ALGO_VERSION,
       start_ts: runs[0]?.start,
       end_ts: runs[0]?.end,
       stage: runs[0]?.stage,
