@@ -15,6 +15,7 @@ flowchart LR
   R & H & B & T --> REC
   R --> ST & W
   ST --> L[load]
+  HR & R & S --> CAL[calories]
   STP[steps] --> STEPS[steps] & W & WK[walks]
   MOT[motion] --> W
   W --> WK
@@ -89,6 +90,24 @@ first day of up to 56. Ratio = acute ÷ chronic.
 - **Missing:** no acute with more than 2 gaps in the last 7 days or under 7 days of history; no
   chronic under 28 days; no ratio without both, and then no note line.
 
+## Calories (`calories.ts`)
+
+Per minute of the local day, worn or not, then summed. BMR is Mifflin–St Jeor (1990),
+`10 × kg + 6.25 × cm − 5 × age + 5` (women −161), spread over 1,440 minutes.
+
+- **Asleep** (in last night's window): BMR × 0.95.
+- **Awake** at or under the flex point, or no HR: BMR × 1.2.
+- **Over the flex point** (40% of HR reserve; flex-HR method, Spurr 1988): the larger of that and
+  Keytel 2005 without VO2max, `−55.0969 + 0.6309 HR + 0.1988 kg + 0.2017 age` kJ/min (women
+  `−20.4022 + 0.4472 HR − 0.1263 kg + 0.074 age`). Rest and max HR are strain's.
+- **Active** = total − BMR for the same minutes, never below 0.
+- **Today** is a running total of the minutes so far, like strain and steps.
+- **Missing:** no weight, height, birth date or sex, or no resting or max HR: no calories. Without
+  HR the total would leave out all exercise yet read like a real day.
+
+Keytel was fitted at 57–90% of max HR and reads high at the bottom of it: a minute just over the
+flex point gives about 6 METs, where a brisk walk is 3–4.
+
 ## Steps (`steps.ts`)
 
 The counter is cumulative and 16-bit: sum increases, treat a drop from near 65,536 as a wrap and
@@ -144,5 +163,5 @@ Garmin do). The weights are versioned params tuned against check-ins
 
 ## Still to build
 
-Calories, VO2max, fitness and biological age, and sleep stages: planned in
+VO2max, fitness and biological age, and sleep stages: planned in
 [health-extended.md](health-extended.md).

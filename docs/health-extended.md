@@ -1,7 +1,7 @@
 # Health: the rest
 
 Plan for the health numbers still missing: training load, calories, VO2max, fitness and
-biological age, and sleep stages. Status: H1–H2 done, H3–H11 planned; H11 waits for artboards. As each PR
+biological age, and sleep stages. Status: H1–H3 done, H4–H11 planned; H11 waits for artboards. As each PR
 lands, its section moves into [health-metrics.md](health-metrics.md). This file goes when the
 last one does.
 
@@ -26,20 +26,6 @@ Not goals: SpO2 from the raw `ppg` stream, runs with pace and route (roadmap #6)
 | Recovery | No new number feeds recovery or the sleep score in this plan |
 | Versions | Each PR that changes rows bumps `ALGO_VERSION`; rebuild with `summarize.ts` |
 | UI | Note and API first. Home rows, Activity calories and a sleep view wait for artboards (H11). |
-
-## Calories (`calories.ts`)
-
-Per minute, then summed:
-
-- **Base:** Mifflin–St Jeor BMR (1990) from weight, height, age and sex.
-- **Asleep:** BMR × 0.95 (sleeping metabolism runs a little under BMR).
-- **Awake, under the flex point:** BMR × 1.2. Not worn counts here too.
-- **Awake, over the flex point:** the larger of that and Keytel 2005 (HR, weight, age, sex).
-  Flex point = 40% of heart-rate reserve, where Keytel stops overestimating light activity
-  (flex-HR method, Spurr 1988).
-- Active = total − BMR for the day. Each workout gets its own total.
-- Keytel is ±20% for one person. Check: a brisk walk minute should land near 3 METs.
-- Keys: `kcal`, `active_kcal`; workouts get `kcal`.
 
 ## VO2max (`vo2max.ts`)
 
@@ -100,8 +86,8 @@ Light, deep and REM for each asleep epoch; awake stays as `sleep-epochs.ts` scor
 | --- | --- | --- |
 | H1 | Training load | Done; now in [health-metrics.md](health-metrics.md#training-load-loadts) |
 | H2 | Body fields | Done; now in [vault-format.md](vault-format.md#profilemd) |
-| H3 | Calories | `calories.ts`; day keys, note line |
-| H4 | Workout calories | `kcal` in `workouts/`; `Workout.calories` in `activity.proto` |
+| H3 | Calories | Done; now in [health-metrics.md](health-metrics.md#calories-caloriests) |
+| H4 | Workout calories | `kcal` in `workouts/` from the same minutes; `Workout.calories` in `activity.proto` |
 | H5 | VO2max | `vo2max.ts` on the 30-night resting HR |
 | H6 | Fitness age | `age.ts`, Nes constants |
 | H7 | Biological age | factors, hazard ratios, Gompertz years; per-factor columns |

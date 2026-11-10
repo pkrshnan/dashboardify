@@ -2,6 +2,7 @@
 // day. Still pure: the caller loads the samples and decides what to do with the results.
 
 import { breathingRate } from "./breathing";
+import { type Body, type Calories, dayCalories } from "./calories";
 import { type MinuteHr, minuteHr, predictedMaxHr, restingHr, zoneMinutes } from "./heart-rate";
 import { cleanRr, goodWindows, nightHrv } from "./hrv";
 import { climbs, type SetClimb } from "./sets";
@@ -86,7 +87,7 @@ export function nightMetrics(input: NightInput): NightMetrics | null {
   };
 }
 
-/** What strain needs to know about you. Read from profile.md in the vault. */
+/** What strain and calories need to know about you. Read from profile.md in the vault. */
 export interface Profile {
   /** Age on the day being scored. */
   ageYears: number | null;
@@ -98,6 +99,8 @@ export interface Profile {
 }
 
 export interface DayInput {
+  /** The local day: midnight to midnight, or to now for today. */
+  day: Span;
   heartRate: HeartRate[];
   steps: StepCounter[];
   motion: Motion[];
@@ -121,6 +124,8 @@ export interface DayMetrics {
   workouts: Workout[];
   /** Walks outside workouts. Needs only the step counter. */
   walks: Walk[];
+  /** Null without weight, height, age and sex, or without resting or max HR. */
+  calories: Calories | null;
 }
 
 /** The day's activity, from samples covering the local calendar day. */
@@ -136,6 +141,7 @@ export function dayMetrics(input: DayInput): DayMetrics {
     maxHr: bpms.length > 0 ? Math.max(...bpms) : null,
     steps: stepsTaken(input.steps),
     ...effort,
+    calories: calories(input, minutes),
     // A walk can't be inside a workout: walking to the court is a walk, the game isn't.
     walks: walks(perMinute, minutes, [...sleep, ...effort.workouts]),
   };
@@ -172,6 +178,34 @@ function effortMetrics(
       exclude: sleep,
     }),
   };
+}
+
+/**
+ * Calories need resting and max HR as strain does. Without them every awake minute would get the
+ * sitting rate, a total that reads like a real day but leaves out all exercise.
+ */
+function calories(input: DayInput, minutes: MinuteHr[]): Calories | null {
+  const body = profileBody(input.profile);
+  const maxHr = profileMaxHr(input.profile);
+  if (!body || maxHr === null || input.restingHr === null || maxHr <= input.restingHr) {
+    return null;
+  }
+  return dayCalories({
+    minutes,
+    day: input.day,
+    sleep: input.sleep,
+    restingHr: input.restingHr,
+    maxHr,
+    body,
+  });
+}
+
+function profileBody(profile: Profile): Body | null {
+  const { weightKg, heightCm, ageYears, sex } = profile;
+  if (weightKg === null || heightCm === null || ageYears === null || sex === null) {
+    return null;
+  }
+  return { weightKg, heightCm, ageYears, sex };
 }
 
 /** The day's big HR climbs, for lifting's rhythm. */
