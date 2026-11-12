@@ -8,6 +8,7 @@ import { CaptureService as CaptureSchema } from "../../gen/dashboardify/v1/captu
 import { DayService as DaySchema } from "../../gen/dashboardify/v1/day_pb";
 import { DeviceService as DeviceSchema } from "../../gen/dashboardify/v1/device_pb";
 import { EventService as EventSchema } from "../../gen/dashboardify/v1/event_pb";
+import { HabitService as HabitSchema } from "../../gen/dashboardify/v1/habit_pb";
 import { HomeService as HomeSchema } from "../../gen/dashboardify/v1/home_pb";
 import { JournalService as JournalSchema } from "../../gen/dashboardify/v1/journal_pb";
 import { ListService as ListSchema } from "../../gen/dashboardify/v1/list_pb";
@@ -17,6 +18,8 @@ import { SampleService as SampleSchema } from "../../gen/dashboardify/v1/sample_
 import { SettingsService as SettingsSchema } from "../../gen/dashboardify/v1/settings_pb";
 import { TaskService as TaskSchema } from "../../gen/dashboardify/v1/task_pb";
 import { VoiceService as VoiceSchema } from "../../gen/dashboardify/v1/voice_pb";
+import { FactReader } from "../../habits/facts";
+import { HabitStore } from "../../habits/habit-store";
 import type { RawStore } from "../../health/raw-store";
 import type { HomeDeps } from "../../home/home";
 import { ListStore } from "../../lists/list-store";
@@ -36,6 +39,7 @@ import { DaysService } from "../api/days";
 import { DevicesService } from "../api/devices";
 import { failedPrecondition } from "../api/errors";
 import { EventsService } from "../api/events";
+import { HabitsService } from "../api/habits";
 import { HomeService } from "../api/home";
 import { JournalService } from "../api/journal";
 import { ListsService } from "../api/lists";
@@ -87,6 +91,12 @@ export function v1Services(
   const journalService = new JournalService(vault, now);
   const listStore = new ListStore(vault);
   const listsService = new ListsService(listStore);
+  const habitsService = new HabitsService({
+    store: new HabitStore(vault),
+    facts: new FactReader(vault, activity.derived),
+    timeZone: vault.timeZone,
+    now,
+  });
   const voiceService = new VoiceService(
     taskService,
     dayService,
@@ -115,6 +125,7 @@ export function v1Services(
     { schema: JournalSchema, implementation: journalService },
     { schema: MessageSchema, implementation: new MessagesService(vault) },
     { schema: ListSchema, implementation: listsService },
+    { schema: HabitSchema, implementation: habitsService },
     { schema: SampleSchema, implementation: new SamplesService(raw, onSamples) },
     { schema: HomeSchema, implementation: new HomeService(home, now) },
     { schema: ActivitySchema, implementation: new ActivityService(activity) },

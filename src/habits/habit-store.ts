@@ -183,7 +183,11 @@ function checked<T extends HabitFields>(fields: T): T {
   if (!isValidSchedule(fields.schedule)) {
     throw new InvalidHabit("A habit runs every day, 1–7 times a week, or on at least one weekday.");
   }
-  return { ...fields, name: fields.name.trim() };
+  const schedule =
+    fields.schedule.kind === "days"
+      ? { kind: "days" as const, days: [...new Set(fields.schedule.days)].sort((a, b) => a - b) }
+      : fields.schedule;
+  return { ...fields, name: fields.name.trim(), schedule };
 }
 
 function etagOf(text: string): string {
