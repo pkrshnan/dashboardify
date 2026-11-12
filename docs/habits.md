@@ -7,7 +7,7 @@ Status: plan, nothing built (HB1–HB6).
 ## Goals
 
 - Tick a habit in one tap from Today or the phone, or by Siri ("I meditated").
-- Habits the server already has data for tick themselves: steps, workouts, bedtime, journal,
+- Habits the server already has data for tick themselves: steps, workouts, lights out, journal,
   check-in.
 - See how a habit is going over weeks, not just whether one streak survived.
 - The record is plain notes you can read and edit in Obsidian.
@@ -31,7 +31,7 @@ So habits never write `- [ ]` lines, never appear in Tasks, and Tasks aren't con
 | Schedules | `daily`, `N a week` (Monday–Sunday weeks), or weekdays (`Mon Wed Fri`). No "every N days". |
 | Done | The daily note's `habits:` frontmatter, a list of ids: `habits: [meditate, floss]`. A plain list shows as chips in Obsidian's Properties. The server owns only this key. |
 | Auto habits | `auto <source>` on the line. Computed on read from what's already in the note or the derived tables, never written to `habits:`, so a health sync doesn't rewrite every note. Ticking one by hand (strap off) writes it to `habits:` like any other. |
-| Auto sources | `steps ≥ N` (`steps`), a workout kind (`lifting`, `running`, `volleyball`, `workout`, after reviews), `asleep before HH:MM` (the night that starts that evening, so Wednesday's square is Wednesday night; unknown until the next morning's sync), `journal` (an entry under `## Journal`), `checkin` (`feel` set) |
+| Auto sources | `steps ≥ N` (`steps`), a workout kind (`lifting`, `running`, `volleyball`, `workout`, after reviews), `lights out by HH:MM` (the start of the night's sleep window: when you lay down and went still, not sleep onset, so a slow night doesn't break it; the night counts for the evening it started, so Wednesday's square is Wednesday night, known after the next morning's sync), `journal` (an entry under `## Journal`), `checkin` (`feel` set) |
 | Day | The server's time zone. Until 04:00, Today and Siri tick the day before, so "read" at 00:40 counts for the evening it was. The Habits page's grid can fix any past day. |
 | Streaks | Daily and weekday habits: consecutive scheduled days done; today unticked doesn't break it, and one missed day is forgiven but two in a row end it ("never miss twice"). `N a week`: consecutive weeks met; the current week counts once met. |
 | Rate | Done ÷ scheduled over the last 30 days, shown beside the streak, so one miss doesn't erase a month. |
@@ -47,7 +47,7 @@ So habits never write `- [ ]` lines, never appear in Tasks, and Tasks aren't con
 - Meditate · daily <!-- id:meditate -->
 - Lift · 3 a week · auto lifting · #40C8E0 <!-- id:lift -->
 - Steps · daily · auto steps ≥ 8000 <!-- id:steps -->
-- Bed by 23:30 · Sun Mon Tue Wed Thu · auto asleep before 23:30 <!-- id:bed -->
+- Lights out · Sun Mon Tue Wed Thu · auto lights out by 23:30 <!-- id:lights-out -->
 - Read · daily · paused <!-- id:read -->
 ```
 
