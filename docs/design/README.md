@@ -68,7 +68,9 @@ chip per session, 3M is active minutes per week. A day, week or workout opens be
 (below it on the phone). Workouts are activity cyan, walks teal `#66D4CF`; an unsure workout has a
 dashed outline and `?`, and only its detail asks "What was this?" ("It was lifting" or "Not a
 workout"; others have "Not right?"). Dismissed ones stay greyed with Undo. The detail shows HR
-every 15 s; for lifting each set is a band in its exercise's colour (paler for warm-ups).
+every 15 s; for lifting each set is a band in its exercise's colour (paler for warm-ups). A Strava
+run shows distance and pace in its row and detail, links to Strava, and its HR covers the walks
+either side, shaded teal. A Running total joins the row above when the range has runs.
 
 ## Look
 

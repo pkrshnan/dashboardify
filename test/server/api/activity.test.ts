@@ -96,8 +96,29 @@ describe("activity API", () => {
     const { body: lifted } = await api.call("/v1/days/2026-11-04/workouts/1807");
 
     expect(body).toMatchObject({ distanceMeters: 5100, stravaActivityId: "16000000001" });
+    // The walk before the run ends 18:00, far from 18:41, so the window is the run's alone.
+    expect(body.heartRateStartTime).toBe("2026-11-04T18:36:00Z");
     expect(lifted.distanceMeters).toBeUndefined();
     expect(lifted.stravaActivityId).toBeUndefined();
+  });
+
+  test("a Strava run's heart rate covers the walks either side", async () => {
+    await seed();
+    const derived = new DerivedStore(join(api.dir, "derived"));
+    const [lifting] = await derived.readAll("workouts", DAY);
+    const run = { start: START + 14 * 60_000, end: START + 46 * 60_000 };
+    await derived.writeAll("workouts", DAY, [
+      { ...lifting, kind: "running", start_ts: run.start, end_ts: run.end, strava_id: 7 },
+    ]);
+    await derived.writeAll("walks", DAY, [
+      { start_ts: START, end_ts: run.start, duration_min: 14, steps: 1500 },
+      { start_ts: run.end, end_ts: run.end + 16 * 60_000, duration_min: 16, steps: 1600 },
+    ]);
+
+    const { body } = await api.call("/v1/days/2026-11-04/workouts/1821");
+
+    expect(body.heartRateStartTime).toBe("2026-11-04T18:02:00Z");
+    expect(body.heartRate).toHaveLength(72 * 4);
   });
 
   test("a workout comes with heart rate every 15 seconds", async () => {

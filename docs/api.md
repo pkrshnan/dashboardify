@@ -94,7 +94,7 @@ healthstrap is the client.
 
 `status` is `DETECTED` (strap only), `POSSIBLE` (worth asking), `CONFIRMED` (reviewed, matched a
 lifting log, or a Strava run) or `DISMISSED`. Strava runs also have `distanceMeters` and
-`stravaActivityId`. A review is written to the daily note and the day is recomputed.
+`stravaActivityId`, and their heart rate covers the walks either side. A review is written to the daily note and the day is recomputed.
 
 ## Captures
 
