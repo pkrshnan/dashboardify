@@ -30,6 +30,7 @@ Read the one for the area you change.
 | [strava.md](docs/strava.md) | Plan ST1–ST6: Strava runs, splitting walk-run-walk |
 | [settings.md](docs/settings.md) | `settings.db`, secrets, devices, CLI, Settings page |
 | [health-metrics.md](docs/health-metrics.md) | How each health number is computed |
+| [health-primer.html](docs/health-primer.html) | The health numbers explained from scratch; [kept current](docs/development.md#health-primer) |
 | [health-feedback.md](docs/health-feedback.md) | Check-ins and re-fitting recovery |
 | [health-extended.md](docs/health-extended.md) | Plan H1–H14: load, calories, VO2max, sleep stages |
 | [design/README.md](docs/design/README.md) | Layout rules, colour tokens, type, formats |
@@ -56,5 +57,7 @@ Read the one for the area you change.
   `useApi()` in `test/server/api/helpers.ts` for an isolated vault and `DATA_PATH`.
 - Secrets go through `SecretBox`, are `INPUT_ONLY` in protos, and are never logged or returned.
 - Days follow the server's time zone (`vault.timeZone`), never the machine's.
+- A change to how a health number is computed also changes `docs/health-primer.html`: prose,
+  formula and worked example. `test/health/primer.test.ts` only catches the numbers.
 - Don't edit `src/gen/`; regenerate.
 - Writing: short plain sentences, day-month dates ("3 Nov"), 24-hour times; comments say why.

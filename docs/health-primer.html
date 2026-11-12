@@ -1,0 +1,841 @@
+<title>Health Metrics Primer</title>
+<!-- The health primer, published at https://claude.ai/artifact/7a89zUGRVaAy9hFDb6BzUL.
+     A fragment on purpose: the artifact host adds the doctype, head and body. It still opens in a
+     browser as it is. Update it with the code (docs/development.md#health-primer);
+     test/health/primer.test.ts recomputes the worked examples. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one reading column of about 68 characters, with a sticky contents rail on wide screens.
+   Each metric follows the same order: what it is, how it is calculated, a worked example, how far to trust it. */
+:root {
+  --bg: #f5f8f7; --surface: #e9f0ee; --fg: #15211f; --muted: #566864; --rule: #cbd8d4;
+  --accent: #0d6b60; --example: #9a4f06; --example-bg: #fbf1e3; --code-bg: #e3ebe8;
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --body: "Newsreader", "Iowan Old Style", Georgia, serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1514; --surface: #18211f; --fg: #e2ebe8; --muted: #9bada8; --rule: #2c3a37;
+  --accent: #62cdbb; --example: #efab5c; --example-bg: #241c12; --code-bg: #1d2826; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1514; --surface: #18211f; --fg: #e2ebe8; --muted: #9bada8; --rule: #2c3a37;
+  --accent: #62cdbb; --example: #efab5c; --example-bg: #241c12; --code-bg: #1d2826; color-scheme: dark }
+
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 1.125rem; line-height: 1.6; padding-inline: 1.25rem; padding-block: 2.5rem 5rem; }
+.page { max-width: 68rem; margin-inline: auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 2rem; }
+main { min-width: 0; max-width: 42rem; }
+@media (min-width: 1100px) {
+  .page { grid-template-columns: 15rem minmax(0, 1fr); gap: 4rem; }
+  nav.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 1.5rem); align-self: start; max-height: calc(100vh - 3rem); overflow-y: auto; }
+}
+p { margin: 0 0 1rem; }
+ol, ul { margin: 0 0 1rem; padding-left: 1.4rem; }
+li { margin-bottom: 0.4rem; }
+a { color: var(--accent); }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+nav.toc { font-family: var(--display); font-size: 0.875rem; line-height: 1.35; }
+nav.toc p { margin: 1.1rem 0 0.35rem; font-size: 0.72rem; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); }
+nav.toc p:first-child { margin-top: 0; }
+nav.toc ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+nav.toc a { color: var(--fg); text-decoration: none; }
+nav.toc a:hover, nav.toc a:focus-visible { color: var(--accent); text-decoration: underline; }
+@media (max-width: 1099px) { nav.toc ol { flex-direction: row; flex-wrap: wrap; gap: 0.3rem 1rem; } }
+
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; line-height: 1.15; }
+h1 { font-size: clamp(2.2rem, 6vw, 3.2rem); font-weight: 700; margin: 0 0 0.75rem; letter-spacing: -0.02em; }
+.standfirst { font-size: 1.3rem; line-height: 1.45; color: var(--muted); margin: 0 0 2rem; }
+.part { font-family: var(--display); font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin: 4rem 0 0; padding-top: 1rem; border-top: 2px solid var(--fg); }
+h2 { font-size: 1.75rem; font-weight: 700; margin: 3rem 0 0.25rem; letter-spacing: -0.01em; scroll-margin-top: 1rem; }
+.part + h2 { margin-top: 1rem; }
+.file { font-family: var(--mono); font-size: 0.78rem; color: var(--muted); margin: 0 0 1rem; }
+h3 { font-size: 0.82rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 1.75rem 0 0.4rem; }
+code { font-family: var(--mono); font-size: 0.82em; background: var(--code-bg); padding: 0.08em 0.3em; }
+strong { font-weight: 600; }
+
+.eq { overflow-x: auto; padding: 0.6rem 0; margin: 0 0 1rem; font-family: var(--mono); font-size: 0.85rem; }
+.eq math { font-size: 1.15rem; }
+.tex { font-family: var(--mono); font-size: 0.85em; }
+.tex math { font-size: 1.05rem; }
+
+.ex { background: var(--example-bg); padding: 1rem 1.25rem; margin: 1.5rem 0; }
+.ex h3 { color: var(--example); margin-top: 0; }
+.ex > :last-child { margin-bottom: 0; }
+.ex .calc { font-family: var(--mono); font-size: 0.84rem; line-height: 1.7; overflow-x: auto; white-space: pre; margin: 0 0 1rem; font-variant-numeric: tabular-nums; }
+.trust { border-top: 1px solid var(--rule); padding-top: 0.9rem; color: var(--muted); font-size: 1rem; }
+.trust strong { color: var(--fg); }
+.src { font-size: 0.92rem; color: var(--muted); }
+
+.scroll { overflow-x: auto; margin: 0 0 1.25rem; }
+table { border-collapse: collapse; width: 100%; font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 0.45rem 0.9rem 0.45rem 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-family: var(--display); font-size: 0.75rem; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+td.n, th.n { text-align: right; padding-right: 1.2rem; }
+
+.person { background: var(--surface); padding: 1rem 1.25rem; margin: 1.5rem 0; }
+.person dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); gap: 0.75rem 1.5rem; margin: 0.5rem 0 0; }
+.person dt { font-family: var(--display); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.person dd { margin: 0; font-family: var(--mono); font-size: 1.05rem; }
+figure { margin: 1.5rem 0; }
+figcaption { font-size: 0.92rem; color: var(--muted); margin-top: 0.5rem; }
+svg text { font-family: var(--mono); font-size: 11px; fill: var(--muted); }
+.refs li { font-size: 0.97rem; margin-bottom: 0.6rem; }
+pre.mermaid { overflow-x: auto; }
+</style>
+
+<div class="page">
+<nav class="toc" aria-label="Contents">
+  <p>Start here</p>
+  <ol><li><a href="#read">How to read this</a></li><li><a href="#basics">Six ideas to know first</a></li><li><a href="#map">How the numbers connect</a></li></ol>
+  <p>The night</p>
+  <ol><li><a href="#window">Sleep window</a></li><li><a href="#epochs">Asleep or awake</a></li><li><a href="#stages">Sleep stages</a></li><li><a href="#dfa">DFA α1</a></li><li><a href="#score">Sleep score</a></li><li><a href="#rhr">Resting heart rate</a></li><li><a href="#hrv">Heart rate variability</a></li><li><a href="#breathing">Breathing rate</a></li><li><a href="#temp">Skin temperature</a></li><li><a href="#recovery">Recovery</a></li><li><a href="#feedback">Tuning recovery</a></li></ol>
+  <p>The day</p>
+  <ol><li><a href="#strain">Strain and zones</a></li><li><a href="#load">Training load</a></li><li><a href="#calories">Calories</a></li><li><a href="#vo2max">VO2max</a></li><li><a href="#steps">Steps and walks</a></li><li><a href="#workouts">Workouts and lifting</a></li></ol>
+  <p>Reference</p>
+  <ol><li><a href="#trust">How far to trust each number</a></li><li><a href="#refs">Papers</a></li></ol>
+</nav>
+
+<main>
+<h1>Health Metrics Primer</h1>
+<p class="standfirst">Every health number dashboardify works out from the strap: what it means for your body, how it is calculated step by step, the research behind it, and a small worked example.</p>
+
+<h2 id="read">How to read this</h2>
+<p>The strap sends six raw streams. Everything else on the Health page is arithmetic on top of them. This page follows that arithmetic as it stands on <code>main</code> at 12 Nov 2026, up to fitting the sleep stages to your own nights (H14). It lives in the repo as <code>docs/health-primer.html</code> and changes with the code: a test recomputes the worked examples.</p>
+<div class="scroll"><table>
+<thead><tr><th>Raw stream</th><th>What it is</th><th>Feeds</th></tr></thead>
+<tbody>
+<tr><td>Heart rate</td><td>Beats per minute, once a second</td><td>Almost everything</td></tr>
+<tr><td>RR intervals</td><td>The gap between each pair of heartbeats, in milliseconds</td><td>HRV, breathing, sleep stages</td></tr>
+<tr><td>Acceleration</td><td>Which way gravity pulls on the strap, once a second</td><td>Sleep window, awake or asleep</td></tr>
+<tr><td>Skin temperature</td><td>Degrees Celsius at the skin</td><td>Recovery</td></tr>
+<tr><td>Steps</td><td>A running step counter</td><td>Steps, walks, calories, naming workouts</td></tr>
+<tr><td>Motion</td><td>How much the strap is shaking</td><td>Finding workouts</td></tr>
+</tbody></table></div>
+<p>One rule runs through the whole system. Anything that compares you with "normal" compares you with <strong>your own recent history</strong>, never with population averages. A resting heart rate of 58 is neither good nor bad. It is good if you are usually at 62 and bad if you are usually at 52. VO2max is the one exception, because it is a comparison with other people by definition.</p>
+
+<div class="person">
+<strong>The example person.</strong> The worked examples use one made-up person so the numbers carry from section to section. These are not your figures.
+<dl>
+<div><dt>Age, sex</dt><dd>30, male</dd></div>
+<div><dt>Weight</dt><dd>70 kg</dd></div>
+<div><dt>Height</dt><dd>175 cm</dd></div>
+<div><dt>Resting HR</dt><dd>52 bpm</dd></div>
+<div><dt>Max HR (measured)</dt><dd>190 bpm</dd></div>
+</dl>
+</div>
+<p>The example results were produced by running the repo's own functions on these inputs, then rounded.</p>
+
+<h2 id="basics">Six ideas to know first</h2>
+<h3>1. Two nerves steer your heart</h3>
+<p>Your heart beats on its own, but two branches of the autonomic nervous system adjust the pace. The <strong>sympathetic</strong> branch ("fight or flight") speeds it up and acts over several seconds. The <strong>parasympathetic</strong> branch ("rest and digest"), working through the vagus nerve, slows it down and acts within a single beat. Most numbers on this page are indirect readings of the balance between the two.</p>
+<h3>2. The gap between beats matters as much as the rate</h3>
+<p>At 60 beats a minute the average gap is 1,000 ms, but real gaps wander: 1,000, 1,040, 980. That wandering is <strong>heart rate variability</strong>. More wandering at rest means the fast-acting vagus nerve is in charge, which is what a rested body looks like.</p>
+<h3>3. Median and percentile</h3>
+<p>The <strong>median</strong> is the middle value when you sort a list. Unlike the average, one wild reading barely moves it, so the code uses it wherever sensor glitches are likely. The <strong>10th percentile</strong> is the value that 10% of readings fall below: "among your lowest, without trusting the single lowest".</p>
+<h3>4. z-score: how unusual is this for me?</h3>
+<p>A z-score says how many standard deviations a value sits from your own average.</p>
+<div class="eq">z = \frac{\text{tonight} - \text{your mean}}{\text{your standard deviation}}</div>
+<p>If your resting heart rate averages 52 with a standard deviation of 2, a night at 50 is z = −1. About two nights in three fall between −1 and +1.</p>
+<h3>5. Heart-rate reserve</h3>
+<p>Raw heart rate is a poor measure of effort, because 120 bpm is easy for one person and hard for another. <strong>Heart-rate reserve</strong> (HRR) rescales it: 0 at your resting rate, 1 at your maximum.</p>
+<div class="eq">\text{HRR} = \frac{\text{HR} - \text{HR}_{\text{rest}}}{\text{HR}_{\text{max}} - \text{HR}_{\text{rest}}}</div>
+<p>For the example person at 150 bpm: (150 − 52) ÷ (190 − 52) = 0.71, or 71% of reserve.</p>
+<h3>6. Estimates stay labelled as estimates</h3>
+<p>A strap on the arm cannot measure brain waves, oxygen uptake or energy burned. It measures heart beats and movement, and the rest is inferred. Each section ends with how far to trust the number, and the <a href="#trust">table near the end</a> collects them.</p>
+
+<h2 id="map">How the numbers connect</h2>
+<p>Read left to right. The sleep window comes first because most overnight numbers are measured inside it. Resting heart rate then feeds the daytime numbers.</p>
+<pre class="mermaid">
+flowchart LR
+  A[acceleration] --> S[sleep window] --> E[asleep or awake] --> SS[sleep score] --> REC[recovery]
+  E --> F[epoch features] --> STG[sleep stages]
+  RR[RR intervals] --> F
+  HR[heart rate] --> F
+  HR --> E
+  HR --> R[resting HR]
+  HR --> ST[strain and zones]
+  HR --> W[workouts]
+  S --> R
+  S --> H[HRV]
+  S --> B[breathing]
+  S --> T[skin temp]
+  RR --> H
+  RR --> B
+  TMP[temperature] --> T
+  R --> REC
+  H --> REC
+  B --> REC
+  T --> REC
+  R --> ST
+  ST --> L[training load]
+  HR --> CAL[calories]
+  R --> CAL
+  R --> V[VO2max]
+  STP[step counter] --> STEPS[steps and walks]
+  STP --> CAL
+  STP --> W
+  MOT[motion] --> W
+</pre>
+
+<p class="part">Part one · The night</p>
+
+<h2 id="window">Sleep window</h2>
+<p class="file">src/health/metrics/sleep.ts</p>
+<p>The sleep window is the stretch from lying down to getting up. It is found from movement alone. Asleep, you change posture only now and then. Awake, your arm tilts constantly.</p>
+<h3>How it is calculated</h3>
+<ol>
+<li><strong>Arm angle.</strong> At rest the accelerometer feels only gravity, so its three readings say which way the strap is tilted.
+<div class="eq">\text{angle} = \arctan\!\left(\frac{z}{\sqrt{x^2 + y^2}}\right)</div></li>
+<li>Average the angle over each 5 seconds, then take the absolute change from one 5-second step to the next.</li>
+<li>Smooth with a 5-minute rolling median, so one twitch does not count as waking up.</li>
+<li><strong>Stillness threshold.</strong> 15 × the night's 10th-percentile change, kept between 0.13° and 0.5°. The threshold scales to how still <em>you</em> are on <em>this</em> night.</li>
+<li>Find still stretches of 30 minutes or more. Join stretches less than an hour apart, so getting up for water does not split the night.</li>
+<li>The longest joined block between 18:00 the day before and 14:00 is the sleep window.</li>
+</ol>
+<div class="ex" id="ex-window">
+<h3>Worked example</h3>
+<p class="calc">gravity reading   x = 0.50, y = 0.50, z = 0.71
+angle             arctan(0.71 ÷ √(0.25 + 0.25)) = 45.1°
+5 seconds later   45.3°   →  change 0.2°
+
+night's 10th-percentile change   0.012°
+threshold                        15 × 0.012 = 0.18°</p>
+<p>Any smoothed step under 0.18° counts as still. A still block from 23:38 to 03:10 and another from 03:25 to 07:20 are 15 minutes apart, so they join into one window: 23:38–07:20.</p>
+</div>
+<p class="trust"><strong>How far to trust it.</strong> The method was built and tested for the wrist. The strap sits on the bicep, which moves less, so the threshold may need tuning. Reading in bed while very still can be counted as part of the window; the next step catches most of that.</p>
+<p class="src">Sources: van Hees 2015 (arm angle from a wrist accelerometer); van Hees 2018 (the "HDCZA" window finder used in the GGIR package).</p>
+
+<h2 id="epochs">Asleep or awake</h2>
+<p class="file">src/health/metrics/sleep-epochs.ts</p>
+<p>Lying still is not sleeping. Inside the window, the night is cut into 30-second <strong>epochs</strong>, the unit sleep labs use, and each is scored asleep or awake. The heart helps here. Each arousal from sleep comes with a burst of sympathetic activity that lifts heart rate for a few beats to a minute, even if you do not move.</p>
+<h3>How it is calculated</h3>
+<p>An epoch is <strong>awake</strong> if any one of these is true:</p>
+<ul>
+<li><strong>Posture change:</strong> the arm angle moved more than 5° between 5-second steps.</li>
+<li><strong>Arousal:</strong> heart rate is 8 bpm or more above the median of the surrounding 10 minutes.</li>
+<li><strong>Lying awake:</strong> heart rate is 20% or more above the night's sleeping level (its 10th percentile). REM sleep also raises heart rate, but typically by 5–10%, so it stays under this line.</li>
+<li><strong>No heart rate:</strong> the strap was off or lost contact.</li>
+</ul>
+<p>Then one clean-up pass: a lone awake epoch between two asleep ones becomes asleep, and the reverse. One fast beat is not waking up.</p>
+<p>From the scored epochs come the standard sleep-lab measures:</p>
+<div class="scroll"><table>
+<thead><tr><th>Measure</th><th>Definition</th></tr></thead>
+<tbody>
+<tr><td>Sleep onset</td><td>The start of the first 10 unbroken minutes of sleep</td></tr>
+<tr><td>Latency</td><td>Start of the window to onset: how long you took to fall asleep</td></tr>
+<tr><td>WASO</td><td>"Wake after sleep onset": awake minutes after onset</td></tr>
+<tr><td>Awakenings</td><td>Separate awake runs of a minute or more after onset</td></tr>
+<tr><td>Efficiency</td><td>Minutes asleep ÷ minutes in the window</td></tr>
+</tbody></table></div>
+<div class="ex" id="ex-epochs">
+<h3>Worked example</h3>
+<p class="calc">night's sleeping HR (10th percentile)   50 bpm
+lying-awake line                        1.2 × 50 = 60 bpm
+
+epoch A   HR 61                        →  awake (over 60)
+epoch B   HR 58, local median 49       →  awake (9 above, arousal)
+epoch C   HR 55, local median 52, still →  asleep
+
+window      23:38–07:20   = 462 min
+latency     12 min        → onset 23:50
+asleep      410 min
+WASO        462 − 12 − 410 = 40 min
+efficiency  410 ÷ 462     = 88.7%</p>
+</div>
+<p class="trust"><strong>How far to trust it.</strong> Total sleep time from movement and heart rate is usually within tens of minutes of a sleep lab for healthy sleepers. Quiet wakefulness with a calm heart is the usual miss, so sleep tends to be slightly overcounted.</p>
+<p class="src">Sources: Webster 1982 (rescoring lone epochs); van Hees 2015 (the 5° posture change).</p>
+
+<h2 id="stages">Sleep stages</h2>
+<p class="file">src/health/metrics/sleep-features.ts · sleep-stages.ts · stage-params.json · src/health/feedback/stage-em.ts · stage-fit.ts · src/health/fit-stages.ts</p>
+<p>Sleep is not one state. Through the night you cycle, roughly every 90 minutes, through three kinds.</p>
+<div class="scroll"><table>
+<thead><tr><th>Stage</th><th>What it does</th><th>What the body shows</th></tr></thead>
+<tbody>
+<tr><td>Light</td><td>The bulk of the night; the transition state</td><td>Middling everything</td></tr>
+<tr><td>Deep</td><td>Physical repair, growth hormone, clearing the brain. Mostly in the first half.</td><td>Vagus in charge: steady heart, high variability, very regular breathing, almost no movement</td></tr>
+<tr><td>REM</td><td>Dreaming, memory, mood. Mostly in the second half.</td><td>Autonomic instability: higher, jumpy heart rate, lower variability, irregular breathing, body paralysed</td></tr>
+</tbody></table></div>
+<p>A sleep lab tells them apart from brain waves. The strap cannot, so the stages are <strong>inferred</strong> from how the heart, lungs and arm behave. This is the least certain number on the page.</p>
+<h3>Step 1: describe each epoch</h3>
+<p>Each epoch gets six features. The first four are z-scores against the night's own asleep epochs, since stages are relative to your night, not to fixed numbers.</p>
+<div class="scroll"><table>
+<thead><tr><th>Feature</th><th>How</th><th>Deep</th><th>REM</th></tr></thead>
+<tbody>
+<tr><td>Heart rate</td><td>Mean in the epoch, minus the median of asleep epochs within an hour either side. Heart rate drifts down all night whatever the stage, and this removes the drift.</td><td>Steady</td><td>Higher, spread out</td></tr>
+<tr><td>HRV</td><td>ln(RMSSD) over the 5 minutes around the epoch (<a href="#hrv">see HRV</a>)</td><td>Higher</td><td>Lower</td></tr>
+<tr><td>Breathing regularity</td><td>How sharply one breathing frequency stands out in the 2 minutes around the epoch (<a href="#breathing">see breathing</a>)</td><td>Very regular</td><td>Irregular</td></tr>
+<tr><td>DFA α1</td><td>How correlated consecutive beat gaps are (<a href="#dfa">next section</a>)</td><td>Lower</td><td>Higher</td></tr>
+<tr><td>Movement</td><td>The largest 5-second arm angle change in the epoch</td><td>Rare</td><td>Rare</td></tr>
+<tr><td>Time since onset</td><td>Minutes since falling asleep</td><td>Early</td><td>Late</td></tr>
+</tbody></table></div>
+<h3>Step 2: a hidden Markov model</h3>
+<p>A hidden Markov model (HMM) is a way to guess a hidden sequence (the stages) from a visible one (the features). It has two parts.</p>
+<ul>
+<li><strong>Emissions:</strong> for each stage, how likely are these features? Each z-scored feature is scored against a bell curve for that stage. A missing feature adds nothing.
+<div class="eq">\ln P(z \mid \text{stage}) = -\frac{(z - \mu_{\text{stage}})^2}{2\sigma_{\text{stage}}^2} - \ln \sigma_{\text{stage}}</div></li>
+<li><strong>Transitions:</strong> given the stage now, how likely is each stage 30 seconds later? Stages are sticky: light stays light about 95% of the time. There is one transition table before onset and one per 30 minutes since, which is how "deep early, REM late" gets in.</li>
+</ul>
+<p>The <strong>Viterbi algorithm</strong> then finds the single most likely path through the whole night. It walks forward keeping, for each stage, the best-scoring route that ends there, then traces back from the best ending. Because stages are sticky, one odd epoch does not flip the stage. Sustained evidence does.</p>
+<p>Three rules are fixed. Awake epochs stay awake, and asleep epochs cannot become awake. Sleep starts in light, never straight into deep or REM. REM cannot start in the first 45 minutes: the heart is still settling then and can look like REM, and REM that early is a sign of narcolepsy rather than healthy sleep.</p>
+<h3>Where the numbers in the model come from</h3>
+<div class="scroll"><table>
+<thead><tr><th>Part</th><th>Source</th></tr></thead>
+<tbody>
+<tr><td>Heart-rate bell curves, movement chances, transitions</td><td><strong>Fitted</strong> to 30 adults who wore an Apple Watch in a sleep lab (Walch 2019, 25,828 labelled epochs)</td></tr>
+<tr><td>HRV: deep +0.8, REM −0.6<br>Breathing: deep +0.8, REM −0.8<br>DFA α1: deep −0.6, REM +0.5<br>(all in z units, spread 0.8)</td><td><strong>Hand-set</strong> from the direction the papers give, since the lab data has no beat-to-beat gaps. These are the starting values. They can be <a href="#stagefit">fitted to your own nights</a>.</td></tr>
+</tbody></table></div>
+<p>Fitted heart-rate curves, in z units after removing the drift: light −0.13 ± 0.76, deep +0.12 ± 0.59, REM +0.52 ± 1.02. In the lab data deep-sleep heart rate is <em>steadier</em> than light's rather than lower, so its curve is narrow instead of shifted.</p>
+<p>Movement counts only when it happens. Stillness is normal in every stage, and scoring hundreds of still epochs would add up to a steady pull toward deep.</p>
+<div class="ex" id="ex-stages">
+<h3>Worked example: one epoch</h3>
+<p>A still epoch three hours in, with heart rate z = +0.9, HRV z = −0.5, breathing z = −0.7 and DFA z = +0.6. Log scores with the hand-set values (higher is more likely):</p>
+<p class="calc">          HR      HRV     breathing   DFA      total
+light    −0.64   +0.03    −0.16      −0.06    −0.83
+deep     −0.35   −1.10    −1.53      −0.90    −3.88
+REM      −0.09   +0.22    +0.22      +0.22    +0.56</p>
+<p>REM beats light by 1.39, so on this evidence alone REM is about e<sup>1.39</sup> ≈ 4 times more likely. But if the previous epoch was light, switching costs: light→REM has a chance near 0.010 against 0.951 for staying, a penalty of ln(0.010 ÷ 0.951) ≈ −4.5. One such epoch is not enough (1.39 &lt; 4.5). About four in a row are (4 × 1.39 = 5.6), so two minutes of REM-like signals flips the path to REM.</p>
+</div>
+<h3 id="stagefit">Fitting the stages to you</h3>
+<p>The hand-set HRV, breathing and DFA curves are guesses about an average person. <code>fit-stages.ts</code> replaces them with curves learned from your own nights. No night has lab labels, so it uses <strong>expectation–maximisation</strong> (EM, here called Baum–Welch), which takes turns at two steps.</p>
+<ol>
+<li><strong>Expectation.</strong> With the current model, work out for every epoch the chance that it was light, deep or REM, given the whole night. Viterbi picks one best path. This step (the forward–backward algorithm) keeps the doubt instead: an epoch can be 70% light and 30% REM.</li>
+<li><strong>Maximisation.</strong> Re-estimate each stage's mean and spread for the three features as weighted averages, where each epoch counts by its chance of being in that stage.</li>
+<li>Repeat until a round barely improves the fit (under 0.01 nats of log-likelihood).</li>
+</ol>
+<p>Heart rate, movement, transitions and the time-of-night tables stay as the lab nights trained them. They are the anchor that keeps "deep" meaning deep while the other three move. The current values also count as 200 epochs of evidence (100 minutes, about one night's deep sleep), so one odd night can move a stage about halfway at most, and a week outweighs it five to one.</p>
+<p>A fit is saved only if it passes every guardrail:</p>
+<ul>
+<li>5 or more nights, about 4,000 epochs, and no night more than a fifth of them.</li>
+<li>The order the papers give is kept: DFA α1 deep &lt; light &lt; REM, and HRV and breathing regularity higher in deep than in REM.</li>
+<li>No spread under 0.3, and no mean moves by more than 0.5 in one go.</li>
+<li>75% or more of the nights still have a plausible split afterwards.</li>
+</ul>
+<p>A saved fit gets a new params version, the same one recovery's weights use, so every stored night records which model staged it.</p>
+<p><strong>So far it has been rejected.</strong> On 4–9 Nov the fit left light sleep under 35% on four of six nights, shifting the shares from 48 / 24 / 28 to 36 / 27 / 37 (light / deep / REM). So the hand-set values are still the ones in use. Six nights is thin evidence, and the guardrails are doing their job.</p>
+<h3>How good is it?</h3>
+<p>Tested by leaving each lab subject out in turn, fitting on the others, and scoring the one left out.</p>
+<div class="scroll"><table>
+<thead><tr><th>Model</th><th class="n">Accuracy</th><th class="n">κ</th><th class="n">Light</th><th class="n">Deep</th><th class="n">REM</th><th>Shares L/D/R</th></tr></thead>
+<tbody>
+<tr><td>Fitted (current)</td><td class="n">52%</td><td class="n">0.28</td><td class="n">55%</td><td class="n">56%</td><td class="n">46%</td><td>51 / 31 / 19</td></tr>
+<tr><td>Earlier hand-set model</td><td class="n">51%</td><td class="n">0.19</td><td class="n">69%</td><td class="n">6%</td><td class="n">38%</td><td>70 / 12 / 18</td></tr>
+<tr><td>The lab's own scoring</td><td class="n"></td><td class="n"></td><td class="n"></td><td class="n"></td><td class="n"></td><td>60 / 16 / 23</td></tr>
+</tbody></table></div>
+<p>The stage columns are recall: of the epochs the lab called deep, the share the model also called deep. <strong>κ</strong> (Cohen's kappa) is agreement beyond chance: 0 is guessing, 1 is perfect. Two human scorers reading the same lab recording reach about 0.8. Heart-rate-and-motion models usually land at 0.3–0.5, and this one is at the bottom of that range. Its main error is calling too much sleep deep (31% against the lab's 16%).</p>
+<p>A night is flagged "unusual" when light falls outside 35–68%, deep outside 4–52% or REM outside 4–38% of asleep time. The bounds are wide because the model's own error is wide.</p>
+<p class="trust"><strong>How far to trust it.</strong> Treat one night's split as a rough sketch. Roughly half of individual epochs are right. Trends over weeks ("less deep sleep since I started late dinners") are more believable than any single night, and even those rest on HRV, breathing and DFA settings that are hand-set, and that the first fit to real nights did not pass.</p>
+<p class="src">Sources: Walch 2019 (training data and benchmark); Fonseca 2017 (heart-based staging); Gutierrez 2016 (breathing regularity by stage); Burgess 1997 (heart rate falling across the night); Carskadon &amp; Dement 2011 (no early REM); Esco &amp; Flatt 2014 and Munoz 2015 (HRV from a minute of beats); Baum 1970 and Rabiner 1989 (EM for hidden Markov models, background).</p>
+
+<h2 id="dfa">DFA α1</h2>
+<p class="file">src/health/metrics/dfa.ts</p>
+<p>DFA α1 is one of the stage features, but it needs its own explanation. HRV asks <em>how much</em> the gaps between beats vary. DFA α1 asks <em>how they vary</em>: does a long gap tend to be followed by another long gap, or is each gap unrelated to the last?</p>
+<div class="scroll"><table>
+<thead><tr><th class="n">α1</th><th>Pattern</th><th>Seen in</th></tr></thead>
+<tbody>
+<tr><td class="n">about 0.5</td><td>Uncorrelated: each gap is a fresh coin toss</td><td>Deep sleep, very hard exercise</td></tr>
+<tr><td class="n">about 1.0</td><td>"1/f": small fast wobbles riding on larger slow ones</td><td>Healthy rest, REM, wake</td></tr>
+<tr><td class="n">about 1.5</td><td>Random walk: each gap is the last one plus a nudge</td><td>Strongly drifting heart rate</td></tr>
+</tbody></table></div>
+<h3>How it is calculated</h3>
+<p>DFA stands for detrended fluctuation analysis. "α1" is the short-range version, over 4 to 16 beats.</p>
+<ol>
+<li><strong>Integrate.</strong> Subtract the mean gap from every gap and keep a running total. This turns the series into a wandering line, the profile.
+<div class="eq">y(k) = \sum_{i=1}^{k} \left(RR_i - \overline{RR}\right)</div></li>
+<li><strong>Box and detrend.</strong> Cut the profile into boxes of <span class="tex">n</span> beats. In each box, fit a straight line and measure how far the profile strays from it.</li>
+<li><strong>Fluctuation.</strong> <span class="tex">F(n)</span> is the root-mean-square of that straying over all boxes.
+<div class="eq">F(n) = \sqrt{\frac{1}{N}\sum_{k=1}^{N}\bigl(y(k) - y_n(k)\bigr)^2}</div></li>
+<li>Repeat for every box size from 4 to 16.</li>
+<li><strong>Slope.</strong> Plot <span class="tex">\ln F(n)</span> against <span class="tex">\ln n</span>. The slope of the best-fit line is α1. If straying grows quickly as boxes get longer, the gaps are correlated.</li>
+</ol>
+<p>Per epoch, it runs over the longest run of clean, consecutive beats in the surrounding 5 minutes and needs at least 100 beats. One dropped gap is bridged; two in a row, or a missing beat, end the run.</p>
+<div class="ex" id="ex-dfa">
+<h3>Worked example</h3>
+<p>Two made-up series of 300 gaps, run through <code>dfaAlpha1</code>:</p>
+<p class="calc">independent gaps around 1,000 ms (coin tosses)      α1 = 0.53
+each gap = previous gap + a small nudge (drift)     α1 = 1.60</p>
+<p>Theory says 0.5 and 1.5. The small differences are what 300 beats of randomness give.</p>
+</div>
+<p>On six real nights (4–9 Nov), with no lab labels to check against, α1 averaged 0.76 in epochs decoded deep, 0.86 in light and 1.15 in REM, and 0.83 in the first 90 minutes against 1.01 in the last two hours. That matches the papers' direction. It correlated only −0.15 with HRV, so it adds information HRV does not have.</p>
+<p class="trust"><strong>How far to trust it.</strong> The calculation is standard. Its weight in the stage model is hand-set until a fit to your nights passes. The check above is partly circular, since the stages it was compared with came from the same model.</p>
+<p class="src">Sources: Peng 1995 (the method and the 4–16 beat range); Bunde 2000 and Penzel 2003 (correlations lost in deep sleep, strong in REM); Gronwald 2020 and Rogers 2021 (the same range in exercise work; tolerance to a few dropped beats).</p>
+
+<h2 id="score">Sleep score</h2>
+<p class="file">src/health/metrics/sleep-score.ts</p>
+<p>One number from 0 to 100 answering three questions: did you get the sleep you needed, how much of your time in bed was sleep, and was your timing regular?</p>
+<div class="eq">\text{score} = 0.6 \times \text{sufficiency} + 0.2 \times \text{efficiency} + 0.2 \times \text{consistency}</div>
+<h3>How it is calculated</h3>
+<ol>
+<li><strong>Need.</strong> A base of 8 hours (<code>sleep_need_h</code> in <code>profile.md</code> overrides it), plus a third of the shortfall over the last three nights, up to one extra hour. Sleep debt is real, but you do not repay it minute for minute.</li>
+<li><strong>Sufficiency</strong> = asleep ÷ need, capped at 100.</li>
+<li><strong>Efficiency score.</strong> 65% efficiency scores 0 and 95% scores 100, in a straight line between.
+<div class="eq">\text{efficiency score} = 100 \times \frac{\text{efficiency} - 0.65}{0.95 - 0.65}</div></li>
+<li><strong>Consistency.</strong> Compare tonight's onset and wake times with the average of the last 7 nights. Take the mean of the two differences in minutes. 0 minutes off scores 100 and 90 minutes off scores 0. It needs 3 earlier nights. Until then its weight is shared between the other two.</li>
+</ol>
+<div class="ex" id="ex-score">
+<h3>Worked example</h3>
+<p class="calc">last three nights asleep   450, 420, 480 min
+shortfall against 480      30 + 60 + 0 = 90 min
+need                       480 + 90 ÷ 3 = 510 min
+
+sufficiency   410 ÷ 510                     = 80.4
+efficiency    (0.8874 − 0.65) ÷ 0.30 × 100  = 79.1
+consistency   onset 23:50 vs usual 23:30    → 20 min off
+              wake  07:20 vs usual 07:00    → 20 min off
+              100 × (1 − 20 ÷ 90)           = 77.8
+
+score   0.6 × 80.4 + 0.2 × 79.1 + 0.2 × 77.8 = 79.6  →  80</p>
+</div>
+<p class="trust"><strong>How far to trust it.</strong> The inputs are sound. The weights and cut-offs are design choices in the style of commercial trackers, not findings from a study. Sleep stages do not feed the score.</p>
+<p class="src">Background: adults need 7–9 hours (American Academy of Sleep Medicine); 8 is the middle.</p>
+
+<h2 id="rhr">Resting heart rate</h2>
+<p class="file">src/health/metrics/heart-rate.ts</p>
+<p>How slowly your heart beats when nothing is asked of it. A fitter heart pumps more blood per beat, so it needs fewer beats. Night to night, a resting rate above your normal is an early sign of stress, illness, alcohol or unfinished recovery.</p>
+<h3>How it is calculated</h3>
+<ol>
+<li>Average heart rate per minute inside the sleep window. A minute counts only with 30 or more seconds of readings.</li>
+<li>Take the mean of every unbroken 5-minute run.</li>
+<li>Resting HR is the 10th percentile of those means.</li>
+</ol>
+<p>Measuring during sleep removes posture, caffeine and mood. The 10th percentile finds one of your calmest stretches without trusting the single lowest reading, which is often a glitch.</p>
+<div class="ex" id="ex-rhr">
+<h3>Worked example</h3>
+<p>A night gives 90 five-minute means running from 49.8 to 63 bpm. Sorted, the value 10% of the way up the list is 52.1. Resting HR is 52.</p>
+</div>
+<p class="trust"><strong>How far to trust it.</strong> High. Heart rate at rest is what optical sensors measure best.</p>
+
+<h2 id="hrv">Heart rate variability</h2>
+<p class="file">src/health/metrics/hrv.ts</p>
+<p>The vagus nerve can slow the heart within a single beat. When it is in charge (rested, recovered, asleep), consecutive gaps differ more. When stress hormones dominate, the gaps even out. So, against intuition, <strong>more variability is the healthier sign</strong>. HRV is the most sensitive overnight signal of recovery, and also the noisiest.</p>
+<h3>How it is calculated</h3>
+<ol>
+<li><strong>Clean.</strong> Drop gaps outside 300–2,000 ms (200 to 30 bpm) and any gap more than 20% away from the median of its 11-beat neighbourhood. A missed or extra beat would otherwise look like huge variability.</li>
+<li><strong>Successive differences.</strong> Subtract each gap from the next, only where both were kept and truly follow each other.</li>
+<li><strong>Skip jumps.</strong> A difference is left out when a gap is more than 20% away from the gap before it. That is an ectopic (early or extra) beat or a misread one, not the vagus nerve. Cleaning against the median lets a lone short beat through, and those 0.9% of differences would add 1–5 ms to a night's RMSSD.</li>
+<li><strong>RMSSD</strong>, the root mean square of successive differences, per 5-minute window:
+<div class="eq">\text{RMSSD} = \sqrt{\frac{1}{N}\sum_{i=1}^{N}\left(RR_{i+1} - RR_i\right)^2}</div></li>
+<li>A window counts only if 80% of its beats survived cleaning and it has 60 or more.</li>
+<li>The night's HRV is the <strong>median</strong> window.</li>
+<li>Recovery uses <span class="tex">\ln(\text{RMSSD})</span>. HRV is skewed, and the logarithm turns equal ratios into equal steps, so a move from 30 to 45 ms counts the same as 60 to 90.</li>
+</ol>
+<p>"Truly follow each other" takes some care. The strap stamps each packet of beats to the whole second, so a beat happened up to a second before its stamp, and its gaps add up about 2.4% short of the clock. The code therefore tracks the span of time each beat could have happened in: the last beat's span moved on by this gap, then cut to what this beat's stamp allows. Each stamp narrows the span. When it comes out empty, a beat must be missing, and no difference is taken across it. This keeps 84–98% of asleep beats, against 70–87% for the simpler rule it replaced.</p>
+<div class="ex" id="ex-hrv">
+<h3>Worked example</h3>
+<p class="calc">gaps (ms)       1000   1040    980   1010    990
+differences          +40    −60    +30    −20     (all under 20%)
+squared             1600   3600    900    400     sum 6500
+
+RMSSD       √(6500 ÷ 4) = 40.3 ms
+ln(RMSSD)   3.70</p>
+</div>
+<p class="trust"><strong>How far to trust it.</strong> The maths is the field's standard. The absolute value depends on the sensor and on where it is worn, so do not compare yours with anyone else's or with another device. Your own trend is what counts. Normal values range from under 20 ms to over 100 ms between healthy people.</p>
+<p class="src">Sources: Task Force 1996 (RMSSD and the 5-minute window, background); Malik 1989 (the 20% rule); Esco &amp; Flatt 2014 and Munoz 2015 (a minute of beats is enough).</p>
+
+<h2 id="breathing">Breathing rate</h2>
+<p class="file">src/health/metrics/breathing.ts</p>
+<p>Breaths per minute during sleep. It is one of the steadiest numbers your body has: most people vary by less than one breath a minute from night to night. A clear rise is therefore informative, and often appears a day or two before you feel ill.</p>
+<p>The strap has no breathing sensor. It reads breathing from the heart. Breathing in briefly releases the vagal brake and the heart speeds up; breathing out slows it. The beat gaps rise and fall once per breath. This is called respiratory sinus arrhythmia.</p>
+<h3>How it is calculated</h3>
+<ol>
+<li>Take each good 5-minute HRV window. Resample the uneven beat gaps at an even 4 times a second.</li>
+<li>Remove the straight-line trend, so slow heart-rate drift does not swamp the wobble.</li>
+<li>Taper the ends (a Hann window) and take a Fourier transform, which splits the signal into its component rhythms and gives the strength of each.</li>
+<li>Keep the band from 0.1 to 0.5 Hz, which is 6 to 30 breaths a minute.</li>
+<li>Scale each window's spectrum to sum to 1 and average them over the night, so one noisy window cannot dominate.</li>
+<li>Take the tallest peak. It counts only if it is at least 2.5 times the band's median power.</li>
+</ol>
+<div class="eq">\text{breaths per minute} = f_{\text{peak}} \times 60</div>
+<div class="ex" id="ex-breathing">
+<h3>Worked example</h3>
+<p class="calc">window used        270 s  →  frequency steps of 1 ÷ 270 Hz (0.22 breaths/min)
+tallest peak       bin 69 →  69 ÷ 270 = 0.2556 Hz
+peak ÷ median      6.1    →  over 2.5, so it counts
+breathing rate     0.2556 × 60 = 15.3 breaths/min</p>
+</div>
+<p class="trust"><strong>How far to trust it.</strong> Good for trends. The effect it relies on weakens with age and during REM, so some nights have no clear peak and no reading, which is better than a wrong one.</p>
+<p class="src">Source: Natarajan 2021 (Fitbit's method, validated against chest-belt breathing).</p>
+
+<h2 id="temp">Skin temperature</h2>
+<p class="file">src/health/metrics/skin-temp.ts</p>
+<p>Asleep, the body sheds heat through the skin, so skin warms. Fever, alcohol, a hot room and the menstrual cycle all shift it. The absolute value depends on the room and the bedding, so only the change from your normal means much.</p>
+<h3>How it is calculated</h3>
+<ol>
+<li>Skip the first 30 minutes of the sleep window while skin warms up.</li>
+<li>Take the median of the rest.</li>
+<li>Deviation = tonight minus the mean of the last 30 nights. It needs 7 nights first.</li>
+</ol>
+<div class="ex" id="ex-temp">
+<h3>Worked example</h3>
+<p class="calc">tonight's median     34.6 °C
+30-night mean        34.2 °C
+deviation            +0.4 °C</p>
+</div>
+<p class="trust"><strong>How far to trust it.</strong> As a deviation, fair. As a body temperature, not at all: skin runs several degrees below core and follows the room.</p>
+
+<h2 id="recovery">Recovery</h2>
+<p class="file">src/health/metrics/recovery.ts · src/health/params.ts</p>
+<p>Recovery rolls the overnight signals into one percentage: how ready your body looks this morning compared with your own normal. It is not a measurement of anything physical. It is a summary of how far last night's readings sit from your baseline, and in which direction.</p>
+<h3>How it is calculated</h3>
+<ol>
+<li><strong>Baseline.</strong> For HRV, resting HR, breathing and sleep score, take the mean and standard deviation over the last 60 nights. It needs 14 nights before it says anything.</li>
+<li><strong>z-score</strong> each of tonight's values against its baseline.</li>
+<li><strong>Combine.</strong>
+<div class="eq">c = 0.50\,z_{\text{HRV}} - 0.25\,z_{\text{RHR}} + 0.15\,z_{\text{sleep}} - 0.10\,\max(0,\ z_{\text{breathing}} - 1) - 0.5\,\max(0,\ \Delta T - 0.3)</div>
+High HRV is good, so it adds. High resting HR is bad, so it subtracts. Breathing counts only past +1 standard deviation, and skin temperature only past +0.3 °C above normal: both are alarm signals, quiet on ordinary nights.</li>
+<li><strong>Turn it into a percentage.</strong> Divide <span class="tex">c</span> by how much it usually varies for you (<span class="tex">\sigma_c</span>), then apply <span class="tex">\Phi</span>, the bell-curve function that gives the share of values below a point.
+<div class="eq">\text{Recovery} = 100 \times \Phi\!\left(\frac{c}{\sigma_c}\right)</div></li>
+</ol>
+<p>So recovery reads as "the share of your normal nights this one beats". An ordinary night lands near 50%. Bands: red under 34, yellow 34–66, green 67 and up.</p>
+<div class="ex" id="ex-recovery">
+<h3>Worked example: a good night</h3>
+<p class="calc">HRV         ln RMSSD 3.80 vs mean 3.70, SD 0.20   z = +0.50
+resting HR  51.2 vs mean 52, SD 2                  z = −0.40
+sleep       80 vs mean 77, SD 8                    z = +0.375
+breathing   z = +0.4  (under +1, no penalty)
+skin temp   +0.1 °C   (under +0.3, no penalty)
+
+c = 0.50 × 0.50 − 0.25 × (−0.40) + 0.15 × 0.375
+  = 0.25 + 0.10 + 0.056 = 0.406
+
+σc = 0.55      c ÷ σc = 0.74      Φ(0.74) = 0.77
+
+Recovery = 77%  (green)</p>
+<h3>And a bad one</h3>
+<p class="calc">HRV z −1.2, resting HR z +1.0, sleep z −1.0,
+breathing z +1.8, skin temp +0.7 °C
+
+c = −0.60 − 0.25 − 0.15 − 0.10 × 0.8 − 0.5 × 0.4 = −1.28
+c ÷ σc = −2.33      Φ = 0.01
+
+Recovery = 1%  (red): the pattern of coming down with something</p>
+</div>
+<p class="trust"><strong>How far to trust it.</strong> The inputs are real signals with research behind them. The recipe (weights, thresholds, bands) is a design in the manner of Whoop, Oura and Garmin, none of which publish theirs. That is why the weights are tunable against how you actually feel.</p>
+
+<h2 id="feedback">Tuning recovery</h2>
+<p class="file">src/health/feedback/refit.ts · backtest.ts · src/health/tune.ts</p>
+<p>The weights 0.50, 0.25, 0.15 and 0.10 began as a guess. The feedback loop checks them against your morning check-ins, where you rate how you feel from 1 to 5.</p>
+<ol>
+<li><strong>Feel is only ever the target.</strong> It never feeds recovery, so the score cannot simply mirror your mood.</li>
+<li><strong>Re-fit.</strong> A ridge regression finds the weights that best predict feel from the four terms, while being pulled toward the current weights. With few mornings it stays close to what it has; with many it follows the data.
+<div class="eq">w = \left(X^{\top}X + \lambda I\right)^{-1}\left(X^{\top}y + \lambda\, s\, w_{\text{current}}\right), \qquad \lambda = 30</div>
+Here <span class="tex">X</span> holds each morning's terms, <span class="tex">y</span> the feel ratings, and <span class="tex">s</span> rescales the current weights into feel units.</li>
+<li><strong>Guardrails.</strong> At least 30 rated mornings, no negative weights, the same total, and no weight moves by more than 0.10 at a time.</li>
+<li><strong>Backtest.</strong> For each of the last 4 weeks, re-fit on the nights before it and score that week. New weights are proposed only if the rank correlation between recovery and feel rises by 0.05 or more and no day's score moves by more than 25 points.</li>
+<li>Each applied change gets a version number, and every stored row records which version made it.</li>
+</ol>
+
+<p class="part">Part two · The day</p>
+
+<h2 id="strain">Strain and zones</h2>
+<p class="file">src/health/metrics/strain.ts · heart-rate.ts</p>
+<p>Strain is how much work the day asked of your heart and circulation, on a scale from 0 to 21. It is built on <strong>TRIMP</strong> (training impulse), which adds up minutes weighted by how hard each one was.</p>
+<h3>How it is calculated</h3>
+<ol>
+<li><strong>Resting and max HR.</strong> Rest is last night's resting HR, with fallbacks to the past week. Max is <code>hr_max_measured</code> from your profile, else Tanaka's estimate:
+<div class="eq">\text{HR}_{\text{max}} = 208 - 0.7 \times \text{age}</div>
+For a 30-year-old that gives 187. The formula is an average: individuals differ from it by 10 bpm or more, so a measured max is better. With no birth date there is no strain.</li>
+<li>For each minute, work out heart-rate reserve. Minutes under 30% do not count: desk work and pottering about are not training.</li>
+<li><strong>Each remaining minute adds:</strong>
+<div class="eq">\text{TRIMP}_{\text{minute}} = \text{HRR} \times 0.64 \times e^{1.92 \times \text{HRR}}</div>
+(For women the constants are 0.86 and 1.67.) The exponential is there because effort is not linear. Blood lactate, a marker of how hard muscles are working, climbs steeply as intensity rises, and the constants trace that curve. One minute at 90% of reserve counts about as much as seven at 35%.</li>
+<li><strong>Squash onto 0–21.</strong>
+<div class="eq">\text{Strain} = 21 \times \left(1 - e^{-\text{TRIMP}/100}\right)</div>
+Each extra point is harder to earn than the last, and 21 can be approached but not reached.</li>
+</ol>
+<figure>
+<svg viewBox="0 0 600 240" role="img" aria-label="Strain against TRIMP: rises steeply at first, then flattens toward 21" style="width:100%;height:auto">
+<line x1="40" y1="200" x2="560" y2="200" stroke="var(--rule)" stroke-width="1" fill="none"/>
+<line x1="40" y1="20" x2="560" y2="20" stroke="var(--rule)" stroke-width="1" stroke-dasharray="4 4" fill="none"/>
+<line x1="40" y1="200" x2="40" y2="20" stroke="var(--rule)" stroke-width="1" fill="none"/>
+<polyline points="40,200 72.5,160.1 105,129.2 137.5,105 170,86.3 235,60.2 300,44.4 365,34.8 430,29 560,23.3" fill="none" stroke="var(--accent)" stroke-width="2.5"/>
+<circle cx="170" cy="86.3" r="4" fill="var(--accent)"/>
+<text x="178" y="100">TRIMP 100 → 13.3</text>
+<circle cx="300" cy="44.4" r="4" fill="var(--accent)"/>
+<text x="308" y="60">200 → 18.2</text>
+<text x="34" y="24" text-anchor="end">21</text>
+<text x="34" y="204" text-anchor="end">0</text>
+<text x="40" y="218" text-anchor="middle">0</text>
+<text x="170" y="218" text-anchor="middle">100</text>
+<text x="300" y="218" text-anchor="middle">200</text>
+<text x="430" y="218" text-anchor="middle">300</text>
+<text x="560" y="218" text-anchor="middle">400</text>
+<text x="300" y="236" text-anchor="middle">day's TRIMP</text>
+</svg>
+<figcaption>Strain against TRIMP. The first 100 TRIMP earn 13.3 points; the next 100 earn under 5.</figcaption>
+</figure>
+<div class="ex" id="ex-strain">
+<h3>Worked example</h3>
+<p class="calc">one minute at 150 bpm   HRR = (150 − 52) ÷ 138 = 0.71
+                        0.71 × 0.64 × e^(1.92 × 0.71) = 1.78
+one minute at 100 bpm   HRR = 0.35  →  0.43
+one minute at  80 bpm   HRR = 0.20  →  0 (under 0.3)
+
+45-minute run at 150    45 × 1.78 = 80.0
+40-minute walk at 100   40 × 0.43 = 17.4
+day's TRIMP             97.3
+
+Strain = 21 × (1 − e^(−0.973)) = 13.1</p>
+</div>
+<h3>Heart-rate zones</h3>
+<p>Minutes spent in five bands of <em>maximum</em> heart rate (not reserve). For a max of 190:</p>
+<div class="scroll"><table>
+<thead><tr><th>Zone</th><th>% of max</th><th>For max 190</th><th>Feels like</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>50–60</td><td>95–113</td><td>Easy walking</td></tr>
+<tr><td>2</td><td>60–70</td><td>114–132</td><td>Can hold a conversation</td></tr>
+<tr><td>3</td><td>70–80</td><td>133–151</td><td>Steady, short sentences</td></tr>
+<tr><td>4</td><td>80–90</td><td>152–170</td><td>Hard, a few words</td></tr>
+<tr><td>5</td><td>90+</td><td>171+</td><td>All out</td></tr>
+</tbody></table></div>
+<p class="trust"><strong>How far to trust it.</strong> TRIMP is well established for steady cardio. It undercounts lifting and sprints, where muscles work hard but the heart lags. The 0–21 scale copies Whoop's feel and has no meaning beyond "more is more". Everything rests on resting and max HR being right.</p>
+<p class="src">Sources: Banister 1991 (TRIMP); Tanaka 2001 (max HR from age).</p>
+
+<h2 id="load">Training load</h2>
+<p class="file">src/health/metrics/load.ts</p>
+<p>Strain describes one day. Training load asks whether your recent week is more or less than you are used to. Fitness builds when you do a little more than your body is adapted to. Doing a lot more, suddenly, is how people get hurt or run down.</p>
+<h3>How it is calculated</h3>
+<ol>
+<li>Start from each day's TRIMP. (Not strain: strain is squashed, so it cannot be averaged.)</li>
+<li><strong>Acute</strong> load is an exponentially weighted average over about 7 days. <strong>Chronic</strong> load is the same over about 28 days. Each day the average moves a fraction <span class="tex">\lambda</span> of the way toward today's value:
+<div class="eq">\text{EWMA}_{\text{today}} = \lambda \times \text{TRIMP}_{\text{today}} + (1 - \lambda) \times \text{EWMA}_{\text{yesterday}}, \qquad \lambda = \frac{2}{N + 1}</div>
+So <span class="tex">\lambda</span> is 0.25 for acute and 0.069 for chronic. Recent days weigh more, and a hard day fades out smoothly instead of dropping off a cliff on day 8.</li>
+<li><strong>Ratio</strong> = acute ÷ chronic.</li>
+</ol>
+<div class="scroll"><table>
+<thead><tr><th>Ratio</th><th>Label</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td>Under 0.8</td><td>Easing off</td><td>Doing less than you are used to</td></tr>
+<tr><td>0.8–1.3</td><td>Steady</td><td>Roughly your usual, or building gently</td></tr>
+<tr><td>1.3–1.5</td><td>Building fast</td><td>Clearly more than usual</td></tr>
+<tr><td>Over 1.5</td><td>Spike</td><td>Far more than usual</td></tr>
+</tbody></table></div>
+<p>Missing days are filled. A day with no data, or with the strap worn under 16 hours, gets the median TRIMP of the well-worn days in the 28 before. Today is a running total, so it counts as at least that median until the day ends. Otherwise the ratio would sag every morning. There is no acute load with more than 2 filled days in the last 7, and no chronic load under 28 days of history.</p>
+<div class="ex" id="ex-load">
+<h3>Worked example</h3>
+<p class="calc">seven weeks at TRIMP 60 a day, then one week at 100 a day
+
+acute     100 − 40 × 0.75^7      = 94.7
+chronic   100 − 40 × (27/29)^7   = 75.7
+ratio     94.7 ÷ 75.7            = 1.25   →  steady
+
+the same with a week at 130 a day
+ratio     120.7 ÷ 87.6           = 1.38   →  building fast</p>
+</div>
+<p class="trust"><strong>How far to trust it.</strong> As a description of "more or less than usual", it is sound. The bands come from Gabbett's work linking the ratio to injury in team sports, and that link is disputed: Impellizzeri and colleagues argue the ratio has statistical flaws and does not predict injury. That is why the note says "load" and never "risk".</p>
+<p class="src">Sources: Williams 2017 (exponential weighting); Gabbett 2016 (the bands); Impellizzeri 2020 (the critique).</p>
+
+<h2 id="calories">Calories</h2>
+<p class="file">src/health/metrics/calories.ts</p>
+<p>The energy your body used in the day, in kilocalories. Most of it is not exercise. It is the cost of staying alive, called the <strong>basal metabolic rate</strong> (BMR): heart, brain, liver, body heat. Movement adds to that.</p>
+<p>The day is priced minute by minute and summed.</p>
+<h3>Step 1: the base rate</h3>
+<p>BMR comes from the Mifflin–St Jeor equation, in kcal per day:</p>
+<div class="eq">\text{BMR} = 10 \times \text{kg} + 6.25 \times \text{cm} - 5 \times \text{age} + 5 \quad (\text{women: } -161)</div>
+<p>It is spread evenly over the day's 1,440 minutes.</p>
+<h3>Step 2: price each minute</h3>
+<div class="scroll"><table>
+<thead><tr><th>Minute</th><th>Rate</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>Asleep</td><td>BMR × 0.95</td><td>Sleeping metabolism runs about 5% under BMR</td></tr>
+<tr><td>Strap not worn</td><td>BMR × 1.2</td><td>The usual "sedentary" multiplier: awake and sitting about</td></tr>
+<tr><td>Awake and worn</td><td>The largest of sitting, walking and heart rate</td><td>Each method is good in a different range</td></tr>
+</tbody></table></div>
+<p><strong>Sitting</strong> is BMR × 1.2.</p>
+<p><strong>Walking</strong> uses steps, for minutes with 60 or more. Step length is taken as 0.415 × height. Speed is steps × step length, capped at 100 m/min. The ACSM walking equation gives the oxygen cost, and each litre of oxygen burned releases about 5 kcal.</p>
+<div class="eq">\dot{V}O_2 = 3.5 + 0.1 \times \text{speed (m/min)} \quad \text{ml of oxygen per kg per minute}</div>
+<p>The 3.5 is the oxygen cost of resting, known as 1 MET.</p>
+<p><strong>Heart rate</strong> uses Keytel's equation, fitted on people exercising while their oxygen use was measured. In kJ per minute, for men:</p>
+<div class="eq">E = -55.0969 + 0.6309 \times \text{HR} + 0.1988 \times \text{kg} + 0.2017 \times \text{age}</div>
+<p>(Women: −20.4022 + 0.4472 × HR − 0.1263 × kg + 0.074 × age.) Divide by 4.184 for kcal.</p>
+<p>Heart rate only tracks energy use once you are working. At low rates it rises with coffee, heat and nerves. So it is phased in: no weight below 40% of heart-rate reserve (the "flex point"), full weight at 60%, and a straight ramp between.</p>
+<div class="eq">\text{HR kcal} = \text{sitting} + w \times \max(0,\ \text{Keytel} - \text{sitting}), \qquad w = \frac{\text{HRR} - 0.4}{0.6 - 0.4} \text{ kept within } 0 \text{ to } 1</div>
+<h3>Step 3: total and active</h3>
+<p>Total is the sum of all minutes. <strong>Active</strong> calories are the total minus plain BMR for the same minutes, never below zero.</p>
+<div class="ex" id="ex-calories">
+<h3>Worked example</h3>
+<p class="calc">BMR        10 × 70 + 6.25 × 175 − 5 × 30 + 5 = 1,649 kcal/day
+per minute 1.145     asleep 1.088     sitting 1.374
+
+walking minute, 110 steps, HR 100
+  step length   0.415 × 1.75 m       = 0.726 m
+  speed         110 × 0.726          = 79.9 m/min
+  oxygen        3.5 + 0.1 × 79.9     = 11.49 ml/kg/min
+  kcal          11.49 × 70 ÷ 1000 × 5 = 4.02
+  heart rate    HRR 0.35, under the flex point → adds nothing
+  minute        4.02 kcal (walking wins)
+
+running minute, HR 150
+  Keytel   (−55.10 + 94.64 + 13.92 + 6.05) ÷ 4.184 = 14.22
+  HRR 0.71, over 0.6 → full weight
+  minute   14.22 kcal (heart rate wins)
+
+in-between minute, HR 114
+  HRR 0.449   w = (0.449 − 0.4) ÷ 0.2 = 0.246
+  Keytel 8.79
+  minute   1.374 + 0.246 × (8.79 − 1.374) = 3.20 kcal
+
+the whole day
+  450 min asleep     × 1.088  =   489
+  45 min run         × 14.22  =   640
+  40 min walk        × 4.02   =   161
+  905 min sitting    × 1.374  = 1,243
+  total                         2,534 kcal
+  active   2,534 − 1,649      =   885 kcal</p>
+</div>
+<p class="trust"><strong>How far to trust it.</strong> Expect errors of 10–20% on the day's total and more on single workouts. BMR equations are within about 10% for most people. Keytel's equation probably reads high for light people: it gives 13.4 kcal/min at 150 bpm for a 56 kg man where standard tables suggest about 9 for a steady jog. No correction is applied because the paper's data does not support one. Walking calories lean on the step counter, whose meaning is inferred. Without weight, height, birth date, sex, or resting and max HR, there are no calories at all, which beats a confident wrong total.</p>
+<p class="src">Sources: Mifflin 1990 (BMR); Keytel 2005 (energy from heart rate); Spurr 1988 (the flex point); ACSM guidelines (walking equation); Tudor-Locke 2018 (cadence).</p>
+
+<h2 id="vo2max">VO2max</h2>
+<p class="file">src/health/metrics/vo2max.ts</p>
+<p>VO2max is the most oxygen your body can take in and use per minute, per kilogram of body weight, at full effort. It is the standard measure of aerobic fitness and one of the strongest single predictors of long-term health. A lab measures it with a mask on a treadmill run to exhaustion. Here it is estimated from two heart rates.</p>
+<h3>How it is calculated</h3>
+<div class="eq">\dot{V}O_{2\text{max}} = 15.3 \times \frac{\text{HR}_{\text{max}}}{\text{HR}_{\text{rest}}} \quad \text{ml/kg/min} \qquad (\text{women: } 14.5)</div>
+<p>Why would a ratio of heart rates say anything about oxygen? Oxygen uptake is heart rate × blood pumped per beat × oxygen extracted from that blood. At rest everyone needs about the same oxygen per kilogram. A fit heart pumps more per beat, so it meets that need with fewer beats. The lower your resting rate is against your max, the more headroom you have.</p>
+<ul>
+<li><strong>Resting HR</strong> is the median of the last 30 nights, so the number moves slowly, as fitness does. It needs 14 nights with a reading.</li>
+<li><strong>Max HR</strong> must be one you have actually seen (<code>hr_max_measured</code>). With an age-predicted max, the result would just be age and resting HR dressed up.</li>
+</ul>
+<div class="ex" id="ex-vo2max">
+<h3>Worked example</h3>
+<p class="calc">15.3 × 190 ÷ 52 = 55.9   →  shown as "56 (estimate)"
+
+if resting HR were 60    48.5
+if resting HR were 45    64.6</p>
+<p>Read 56 as "somewhere between 48 and 64".</p>
+</div>
+<p class="trust"><strong>How far to trust it.</strong> Loosely: ±10–15%. The formula's error was 2.7 ml/kg/min in the 46 well-trained men it was built on, about 7 in 109 men of mixed fitness, and it read about 2 too high in untrained men. A naturally high max heart rate raises the number without any extra fitness. Use it to watch your own direction over months. A falling resting heart rate will show as a rising VO2max.</p>
+<p class="src">Sources: Uth 2004 (the method); Uth 2005 (the factor for women); Esco 2012 and Castagna 2022 (how it does outside trained men).</p>
+
+<h2 id="steps">Steps and walks</h2>
+<p class="file">src/health/metrics/steps.ts · walks.ts</p>
+<h3>Steps</h3>
+<p>The strap reports a running counter that goes up to 65,535 and then wraps to zero. Steps are the sum of its increases. A drop from near the top is a wrap; a drop from lower down is a restart. Jumps of more than 5 steps a second are ignored as glitches.</p>
+<div class="ex" id="ex-steps">
+<h3>Worked example</h3>
+<p class="calc">counter reads 65,530, then 12
+wrap: 12 − 65,530 + 65,536 = 18 steps</p>
+</div>
+<h3>Walks</h3>
+<p>A walk rarely lifts heart rate enough to count as a workout, so it is found from steps alone.</p>
+<ol>
+<li>A walking minute has 60 or more steps.</li>
+<li>Walking minutes join across stops of up to 3 minutes (crossings, lights).</li>
+<li>A walk is 10 minutes or longer, outside sleep and workouts. Five minutes is enough right before or after a recorded run.</li>
+<li>Each walk records its steps, its median cadence, and its <strong>brisk minutes</strong>: those at 100 or more steps a minute, which is about 3 METs, the line for "moderate intensity" in public-health guidelines.</li>
+</ol>
+<p class="trust"><strong>How far to trust it.</strong> Provisional. What the counter field means was inferred, not documented by the maker.</p>
+<p class="src">Source: Tudor-Locke 2018 (100 steps a minute as moderate intensity).</p>
+
+<h2 id="workouts">Workouts and lifting</h2>
+<p class="file">src/health/metrics/workouts.ts · runs.ts · sets.ts · src/health/lifting.ts</p>
+<p>Nothing here is a physiological measurement. These are detection rules, tuned by hand on a few sessions, that find when you exercised and guess what it was.</p>
+<h3>Finding a workout</h3>
+<ol>
+<li><strong>Baseline:</strong> the 25th percentile of the day's awake heart rate.</li>
+<li><strong>Active minute:</strong> 20 or more bpm above baseline, or 8 or more with clear motion, or a big heart-rate climb peaks in it. Active minutes join across rests of up to 5 minutes.</li>
+<li><strong>Big climb:</strong> a rise of 25 or more bpm from the lowest point in the previous 90 seconds. A lifting set typically produces 30–58.</li>
+<li><strong>Keep</strong> stretches of 15 minutes or more that have real motion (a still strap with high heart rate is an optical glitch) and are either <em>hard</em> (5+ minutes at 50% of reserve) or <em>spiking and calming</em> (6+ climbs, at least 2 per 10 minutes).</li>
+</ol>
+<h3>Naming it</h3>
+<div class="scroll"><table>
+<thead><tr><th>Name</th><th>Rule, checked in this order</th></tr></thead>
+<tbody>
+<tr><td>Running</td><td>Half the minutes at 140+ steps a minute</td></tr>
+<tr><td>Walking</td><td>Half at 90+ steps</td></tr>
+<tr><td>Volleyball</td><td>30%+ of minutes at 20–89 steps and 20%+ with strong motion</td></tr>
+<tr><td>Lifting</td><td>Spiking and calming, 60%+ of minutes under 20 steps</td></tr>
+<tr><td>Workout</td><td>Anything else</td></tr>
+</tbody></table></div>
+<p>Each workout gets its own TRIMP, strain and calories, using the same per-minute maths as the day. A run recorded on Strava replaces any detected workout it overlaps and is marked confirmed, with its distance. Uncertain names are marked "possible" and asked about on the Activity page.</p>
+<h3>Matching lifting sets to heart rate</h3>
+<p>If you log sets in the daily note, each is matched to the heart-rate climb it caused. The code smooths heart rate over 15 seconds, finds each peak's climb from the lowest point in the previous 90 seconds, and gives the N clearest climbs, at least a minute apart, to the N logged sets in order. With fewer clear climbs than sets, nothing is matched. Volume is weight × reps.</p>
+<p class="trust"><strong>How far to trust it.</strong> Start and end times are usually close. Names are provisional: the rules were checked against only a few sessions, and no runs before Strava was connected.</p>
+
+<p class="part">Reference</p>
+
+<h2 id="trust">How far to trust each number</h2>
+<div class="scroll"><table>
+<thead><tr><th>Number</th><th>Kind</th><th>Trust</th><th>Best used for</th></tr></thead>
+<tbody>
+<tr><td>Resting HR</td><td>Measured</td><td>High</td><td>Nightly changes and long trends</td></tr>
+<tr><td>HRV</td><td>Measured</td><td>High for your own trend</td><td>Weekly averages; never against other people</td></tr>
+<tr><td>Breathing rate</td><td>Derived from beats</td><td>Good</td><td>Spotting a rise of 1+ breaths a minute</td></tr>
+<tr><td>Skin temperature</td><td>Measured</td><td>Fair, as a deviation</td><td>Spotting +0.5 °C nights</td></tr>
+<tr><td>Sleep time, efficiency</td><td>Inferred</td><td>Good</td><td>Night totals, within tens of minutes</td></tr>
+<tr><td>Sleep stages</td><td>Modelled</td><td>Low (52% of epochs, κ 0.28); can be fitted to you</td><td>Rough multi-week trends only</td></tr>
+<tr><td>Sleep score</td><td>Designed index</td><td>As good as its inputs</td><td>A quick read of the night</td></tr>
+<tr><td>Recovery</td><td>Designed index</td><td>Moderate; tuned to you over time</td><td>Deciding how hard to go today</td></tr>
+<tr><td>Strain</td><td>Published formula, designed scale</td><td>Good for cardio, low for lifting</td><td>Comparing your own days</td></tr>
+<tr><td>Training load</td><td>Published method</td><td>Good as "more or less than usual"</td><td>Pacing a build-up; not predicting injury</td></tr>
+<tr><td>Calories</td><td>Published equations</td><td>±10–20% on the day</td><td>Comparing days, not counting to the kcal</td></tr>
+<tr><td>VO2max</td><td>Published formula</td><td>±10–15%</td><td>Direction over months</td></tr>
+<tr><td>Steps, walks, workout names</td><td>Hand-tuned rules</td><td>Provisional</td><td>A record of what you did</td></tr>
+</tbody></table></div>
+
+<h2 id="refs">Papers</h2>
+<p>These are the papers the code and docs cite, grouped by the metric that uses them. The author and year follow the code comments. Titles and journal details were written from memory, apart from Esco 2012 and Castagna 2022, which were checked online, so confirm a reference before quoting it elsewhere.</p>
+<h3>Sleep</h3>
+<ul class="refs">
+<li>van Hees VT, et al. (2015). A novel, open access method to assess sleep duration using a wrist-worn accelerometer. <em>PLoS ONE</em> 10(11): e0142533.</li>
+<li>van Hees VT, et al. (2018). Estimating sleep parameters using an accelerometer without sleep diary. <em>Scientific Reports</em> 8: 12975.</li>
+<li>Webster JB, Kripke DF, Messin S, Mullaney DJ, Wyborney G (1982). An activity-based sleep monitor system for ambulatory use. <em>Sleep</em> 5(4): 389–399.</li>
+<li>Walch O, Huang Y, Forger D, Goldstein C (2019). Sleep stage prediction with raw acceleration and photoplethysmography heart rate data derived from a consumer wearable device. <em>Sleep</em> 42(12): zsz180. Data: <a href="https://physionet.org/content/sleep-accel/1.0.0/">PhysioNet sleep-accel 1.0.0</a>, ODC-BY 1.0.</li>
+<li>Fonseca P, et al. (2017). Validation of photoplethysmography-based sleep staging compared with polysomnography in healthy middle-aged adults. <em>Sleep</em> 40(7): zsx097.</li>
+<li>Gutierrez G, et al. (2016). Respiratory rate variability in sleeping adults without obstructive sleep apnea. <em>Physiological Reports</em> 4(17): e12949.</li>
+<li>Burgess HJ, Trinder J, Kim Y, Luke D (1997). Sleep and circadian influences on cardiac autonomic nervous system activity. <em>American Journal of Physiology</em> 273: H1761–H1768.</li>
+<li>Baum LE, Petrie T, Soules G, Weiss N (1970). A maximization technique occurring in the statistical analysis of probabilistic functions of Markov chains. <em>Annals of Mathematical Statistics</em> 41(1): 164–171. (Background; not cited in the code.)</li>
+<li>Rabiner LR (1989). A tutorial on hidden Markov models and selected applications in speech recognition. <em>Proceedings of the IEEE</em> 77(2): 257–286. (Background; not cited in the code.)</li>
+<li>Carskadon MA, Dement WC (2011). Normal human sleep: an overview. In <em>Principles and Practice of Sleep Medicine</em>, 5th ed.</li>
+</ul>
+<h3>Heart rate variability, breathing and DFA</h3>
+<ul class="refs">
+<li>Task Force of the European Society of Cardiology and the North American Society of Pacing and Electrophysiology (1996). Heart rate variability: standards of measurement, physiological interpretation and clinical use. <em>Circulation</em> 93: 1043–1065. (Background; not cited in the code.)</li>
+<li>Malik M, Cripps T, Farrell T, Camm AJ (1989). Prognostic value of heart rate variability after myocardial infarction: a comparison of different data-processing methods. <em>Medical and Biological Engineering and Computing</em> 27(6): 603–611.</li>
+<li>Esco MR, Flatt AA (2014). Ultra-short-term heart rate variability indexes at rest and post-exercise in athletes. <em>Journal of Sports Science and Medicine</em> 13(3): 535–541.</li>
+<li>Munoz ML, et al. (2015). Validity of (ultra-)short recordings for heart rate variability measurements. <em>PLoS ONE</em> 10(9): e0138921.</li>
+<li>Natarajan A, Su H-W, Heneghan C, et al. (2021). Measurement of respiratory rate using wearable devices and applications to COVID-19 detection. <em>npj Digital Medicine</em> 4: 136.</li>
+<li>Peng C-K, Havlin S, Stanley HE, Goldberger AL (1995). Quantification of scaling exponents and crossover phenomena in nonstationary heartbeat time series. <em>Chaos</em> 5(1): 82–87.</li>
+<li>Bunde A, Havlin S, Kantelhardt JW, Penzel T, Peter J-H, Voigt K (2000). Correlated and uncorrelated regions in heart-rate fluctuations during sleep. <em>Physical Review Letters</em> 85(17): 3736–3739.</li>
+<li>Penzel T, Kantelhardt JW, Grote L, Peter J-H, Bunde A (2003). Comparison of detrended fluctuation analysis and spectral analysis for heart rate variability in sleep and sleep apnea. <em>IEEE Transactions on Biomedical Engineering</em> 50(10): 1143–1151.</li>
+<li>Gronwald T, Rogers B, Hoos O (2020). Fractal correlation properties of heart rate variability: a new biomarker for intensity distribution in endurance exercise and training prescription? <em>Frontiers in Physiology</em> 11: 550572.</li>
+<li>Rogers B, Giles D, Draper N, Hoos O, Gronwald T (2021). A new detection method defining the aerobic threshold for endurance exercise and training prescription based on fractal correlation properties of heart rate variability. <em>Frontiers in Physiology</em> 11: 596567.</li>
+<li>Rogers B, Giles D, Draper N, Mourot L, Gronwald T (2021). Influence of artefact correction and recording device type on the practical application of a non-linear heart rate variability biomarker for aerobic threshold determination. <em>Sensors</em> 21(3): 821.</li>
+</ul>
+<h3>Strain and training load</h3>
+<ul class="refs">
+<li>Banister EW (1991). Modeling elite athletic performance. In MacDougall JD, Wenger HA, Green HJ (eds), <em>Physiological Testing of the High-Performance Athlete</em>. Human Kinetics.</li>
+<li>Tanaka H, Monahan KD, Seals DR (2001). Age-predicted maximal heart rate revisited. <em>Journal of the American College of Cardiology</em> 37(1): 153–156.</li>
+<li>Williams S, West S, Cross MJ, Stokes KA (2017). Better way to determine the acute:chronic workload ratio? <em>British Journal of Sports Medicine</em> 51(3): 209–210.</li>
+<li>Gabbett TJ (2016). The training–injury prevention paradox: should athletes be training smarter and harder? <em>British Journal of Sports Medicine</em> 50(5): 273–280.</li>
+<li>Impellizzeri FM, Tenan MS, Kempton T, Novak A, Coutts AJ (2020). Acute:chronic workload ratio: conceptual issues and fundamental pitfalls. <em>International Journal of Sports Physiology and Performance</em> 15(6): 907–913.</li>
+</ul>
+<h3>Calories and walking</h3>
+<ul class="refs">
+<li>Mifflin MD, St Jeor ST, Hill LA, Scott BJ, Daugherty SA, Koh YO (1990). A new predictive equation for resting energy expenditure in healthy individuals. <em>American Journal of Clinical Nutrition</em> 51(2): 241–247.</li>
+<li>Keytel LR, Goedecke JH, Noakes TD, et al. (2005). Prediction of energy expenditure from heart rate monitoring during submaximal exercise. <em>Journal of Sports Sciences</em> 23(3): 289–297.</li>
+<li>Spurr GB, Prentice AM, Murgatroyd PR, et al. (1988). Energy expenditure from minute-by-minute heart-rate recording: comparison with indirect calorimetry. <em>American Journal of Clinical Nutrition</em> 48(3): 552–559.</li>
+<li>American College of Sports Medicine. <em>ACSM's Guidelines for Exercise Testing and Prescription</em> (the metabolic equation for walking).</li>
+<li>Tudor-Locke C, et al. (2018). How fast is fast enough? Walking cadence (steps/min) as a practical estimate of intensity in adults: a narrative review. <em>British Journal of Sports Medicine</em> 52(12): 776–788.</li>
+</ul>
+<h3>VO2max</h3>
+<ul class="refs">
+<li>Uth N, Sørensen H, Overgaard K, Pedersen PK (2004). Estimation of VO2max from the ratio between HRmax and HRrest – the Heart Rate Ratio Method. <em>European Journal of Applied Physiology</em> 91(1): 111–115.</li>
+<li>Uth N (2005). Gender difference in the proportionality factor between the mass specific VO2max and the ratio between HRmax and HRrest. <em>International Journal of Sports Medicine</em> 26(9): 763–767.</li>
+<li>Esco MR, et al. (2012). Crossvalidation of two heart rate-based equations for predicting VO2max in white and black men. <em>Journal of Strength and Conditioning Research</em>.</li>
+<li>Castagna C, Krustrup P, Póvoas S (2022). Estimation of maximal oxygen uptake using the heart rate ratio method in male recreational football players. <em>European Journal of Applied Physiology</em>. <a href="https://doi.org/10.1007/s00421-022-04928-0">doi:10.1007/s00421-022-04928-0</a></li>
+</ul>
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script>
+// Formulas are written as TeX and drawn as MathML, which needs no stylesheet. If the library
+// does not load, the TeX stays readable as text.
+if (window.katex) {
+  document.querySelectorAll(".eq, .tex").forEach((el) => {
+    try {
+      // renderToString, since render refuses to run when this file is opened on its own (no doctype).
+      el.innerHTML = katex.renderToString(el.textContent.trim(), { output: "mathml", displayMode: el.classList.contains("eq"), throwOnError: false });
+    } catch { /* keep the TeX */ }
+  });
+}
+</script>
