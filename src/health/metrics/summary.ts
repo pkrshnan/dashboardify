@@ -94,6 +94,8 @@ export interface Profile {
   sex: Sex | null;
   /** A max HR you've actually seen in a hard effort beats any formula. */
   maxHrMeasured: number | null;
+  weightKg: number | null;
+  heightCm: number | null;
 }
 
 export interface DayInput {
