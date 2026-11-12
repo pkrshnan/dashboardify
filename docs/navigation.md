@@ -2,12 +2,17 @@
 
 How you reach any part of the app and control anything in it, and how a new feature (Lists,
 Tasks, Journal) joins: one module file, which the sidebar, tab bar, command bar, shortcuts,
-search and Settings all read. Status: planned (N1–N8); N3 and N8 wait for artboards.
+search and Settings all read. Design canvas, with every page and state on desktop and phone:
+https://claude.ai/artifact/XuhyWehLi6CPS3yFr4paUU.
 
-## Today
+Status: N1, N2 and N8 built: the sidebar, icon rail and tab bar list Today, Lists, Activity and
+Settings. While four pages or fewer exist, each is a phone tab; past that, More (`#/more`) takes
+the rest. Next, N3–N7.
+
+## Where it started
 
 Three hash views checked by hand in `web/app.tsx` (home, `#activity`, `#settings/<id>`), reached
-from a Health heading link and a gear. Day/Week, the Activity range and the open event aren't in
+from a Health heading link and a gear. Day/Week, the Activity range and the open event weren't in
 the address. `N` is the only shortcut. Each new page edits `app.tsx`; each Settings section edits
 `sections.ts` and `settings.tsx`.
 
@@ -47,8 +52,9 @@ The nav lists only pages that exist.
 | Today | `#/` (`?view=week`) | `g t` | 1 | Tab | Built |
 | Calendar | `#/calendar/<date>` | `g c` | 2 | More | Planned |
 | Tasks | `#/tasks` | `g k` | 2 | Tab | Planned |
-| Lists | `#/lists/<list>` | `g l` | 2 | Tab | Planned |
-| Activity | `#/activity` (`?range=month`) | `g a` | 3 | More | Built |
+| Lists | `#/lists/<list>` | `g l` | 2 | Tab | Built ([lists.md](lists.md)) |
+| Health | `#/health` | `g h` | 3 | More | Designed: recovery and what moved it, sleep, heart, vitals |
+| Activity | `#/activity` (`?range=month`) | `g a` | 3 | More | Built: workouts, walks, lifting; strain, steps, zone 2 |
 | Journal | `#/journal/<date>` | `g j` | 4 | More | Planned |
 | Settings | `#/settings/<section>` | `g s` | bottom | More | Built |
 
@@ -126,9 +132,10 @@ Home screen tokens ([design/README.md](design/README.md#look)).
 | N5 | SearchService | | `search.proto`, `src/search/` providers, `api/search.ts`, REST binding, api.md | Each kind, `kinds`, page cap, cross-kind order, empty vault, no calendar |
 | N6 | Things and panels by address | N4, N5 | Results in the bar; `?event=`, `?workout=` over any page; Tab actions, `⌘ Return` | Panels follow the address and Back; late results don't move the selection |
 | N7 | Task panel | N6, artboards | `task-panel.tsx`: description, due, priority, recurrence, Today/Tomorrow/Next week, Delete; ring completes and text opens the panel. Starts reminder editing. | Form helpers; stale etag refused |
-| N8 | Sidebar and tab bar | N2, artboards, 4+ pages | `sidebar.tsx`, `tab-bar.tsx`, More, badges; drop "‹ Home" | Current page, rail, More |
+| N8 | Sidebar and tab bar | N2, artboards | `sidebar.tsx`, `tab-bar.tsx`, More, badges; drop "‹ Home" | Current page, rail, More |
 
-N5 can be reviewed beside N1–N4. N8 waits for Tasks or Lists so the sidebar has something to hold.
+N5 can be reviewed beside N1–N4. N8 comes right after N2 with the pages that exist (Today,
+Activity, Settings); each new page joins it as it ships. On the phone, the Search tab waits for N3.
 
 ## Adding a module
 

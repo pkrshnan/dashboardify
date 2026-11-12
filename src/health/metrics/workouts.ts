@@ -62,6 +62,9 @@ export interface Workout {
   cadence: number;
   trimp: number;
   strain: number;
+  /** Runs recorded in Strava only (see runs.ts). */
+  distanceMeters?: number;
+  stravaId?: number;
 }
 
 export interface WorkoutInput {
@@ -193,10 +196,42 @@ function toWorkout(candidate: Minute[], input: WorkoutInput): Workout | null {
 
   const cardio = session(trimToEffort(candidate, (m) => hard(m) || burst(m)));
   if (cardio && cardio.inside.filter(hard).length >= MIN_HARD_MIN) {
-    return describe(cardio, rhythm(cardio), input);
+    const workout = describe(cardio, rhythm(cardio), input);
+    if (workout.kind !== "lifting") {
+      return workout;
+    }
+    // Hard lifting still has sets that weren't hard, like a warm-up. Their climbs show them.
+    const sets = session(widen(candidate, cardio, climbing));
+    const widened = sets && describe(sets, true, input);
+    return widened?.kind === "lifting" ? widened : workout;
   }
   const lifting = session(trimToEffort(candidate, (m) => hard(m) || burst(m) || climbing(m)));
   return lifting && rhythm(lifting) ? describe(lifting, true, input) : null;
+}
+
+/**
+ * The session widened over climbs each within a rest of its edge, as sets go. A climb further out
+ * is standing up or walking off afterwards, not a set.
+ */
+function widen(candidate: Minute[], s: Session, climbing: (m: Minute) => boolean): Minute[] {
+  const rest = MAX_REST_MIN * MINUTE_MS;
+  let first = candidate.indexOf(s.inside[0] as Minute);
+  let last = candidate.indexOf(s.inside[s.inside.length - 1] as Minute);
+  for (let i = first - 1; i >= 0; i--) {
+    const m = candidate[i] as Minute;
+    if ((candidate[first] as Minute).ts - m.ts > rest) {
+      break;
+    }
+    first = climbing(m) ? i : first;
+  }
+  for (let i = last + 1; i < candidate.length; i++) {
+    const m = candidate[i] as Minute;
+    if (m.ts - (candidate[last] as Minute).ts > rest) {
+      break;
+    }
+    last = climbing(m) ? i : last;
+  }
+  return candidate.slice(first, last + 1);
 }
 
 interface Session {

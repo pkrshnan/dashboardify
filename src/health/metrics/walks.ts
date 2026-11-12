@@ -14,6 +14,8 @@ const WALK_SPM = 60;
 const MAX_STOP_MIN = 3;
 /** The classic activity bout. */
 const MIN_WALK_MIN = 10;
+/** The walk to and from a recorded run is part of the outing, so it counts when shorter. */
+const MIN_WALK_BY_RUN_MIN = 5;
 /** 100 steps a minute is moderate intensity, about 3 METs (Tudor-Locke 2018). */
 const BRISK_SPM = 100;
 
@@ -33,9 +35,15 @@ export interface Walk {
 
 /**
  * The day's walks, oldest first. `steps` is steps per minute (see stepsPerMinute); `exclude` is
- * time already taken by sleep or a workout.
+ * time already taken by sleep or a workout; `runs` are recorded runs, next to which shorter walks
+ * count.
  */
-export function walks(steps: Map<number, number>, minutes: MinuteHr[], exclude: Span[]): Walk[] {
+export function walks(
+  steps: Map<number, number>,
+  minutes: MinuteHr[],
+  exclude: Span[],
+  runs: Span[] = [],
+): Walk[] {
   const excluded = (span: Span) => exclude.some((e) => e.start < span.end && span.start < e.end);
   const walking = [...steps]
     .filter(([ts, count]) => count >= WALK_SPM && !excluded({ start: ts, end: ts + MINUTE_MS }))
@@ -51,8 +59,11 @@ export function walks(steps: Map<number, number>, minutes: MinuteHr[], exclude: 
       spans.push({ start: ts, end: ts + MINUTE_MS });
     }
   }
+  const gap = MAX_STOP_MIN * MINUTE_MS;
+  const byRun = (s: Span) =>
+    runs.some((r) => Math.abs(s.end - r.start) <= gap || Math.abs(s.start - r.end) <= gap);
   return spans
-    .filter((s) => (s.end - s.start) / MINUTE_MS >= MIN_WALK_MIN)
+    .filter((s) => (s.end - s.start) / MINUTE_MS >= (byRun(s) ? MIN_WALK_BY_RUN_MIN : MIN_WALK_MIN))
     .map((s) => toWalk(s, steps, minutes));
 }
 

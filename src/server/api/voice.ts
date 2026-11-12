@@ -2,14 +2,18 @@ import { create } from "@bufbuild/protobuf";
 import { UpdateCheckinRequestSchema } from "../../gen/dashboardify/v1/day_pb";
 import { CreateJournalEntryRequestSchema } from "../../gen/dashboardify/v1/journal_pb";
 import { CreateTaskRequestSchema } from "../../gen/dashboardify/v1/task_pb";
+import { splitNote } from "../../lists/list-note";
+import type { ListStore } from "../../lists/list-store";
 import type { TaskStore } from "../../vault/task-store";
 import { localDate } from "../../vault/time";
 import { parseWhen } from "../../vault/when";
+import { addedSentence, findList, noListSentence, spokenEntries } from "../list-messages";
 import { addedMessage, completedMessage, type DueFilter, listMessage } from "../task-messages";
 import { toDateParts, toTimeParts } from "./date-time";
 import type { DaysService } from "./days";
 import { ApiError, invalidArgument } from "./errors";
 import type { JournalService } from "./journal";
+import type { ListsService } from "./lists";
 import { validateMessage } from "./protobuf-validation";
 import type { ApiRequests, CheckinInput } from "./requests";
 import type { TasksService } from "./tasks";
@@ -23,6 +27,7 @@ export class VoiceService {
     private readonly store: TaskStore,
     private readonly timeZone: string,
     private readonly now: () => Date,
+    private readonly lists: { service: ListsService; store: ListStore },
   ) {}
 
   private today() {
@@ -114,6 +119,27 @@ export class VoiceService {
         window as DueFilter,
       ),
     };
+  };
+
+  addToList = async (request: ApiRequests["addToList"]) => {
+    const all = await this.lists.store.lists();
+    const list = findList(request.list, all);
+    if (!list) {
+      throw new ApiError(404, noListSentence(request.list, all), "not_found");
+    }
+    const items = (await this.lists.store.get(list.slug))?.sections.flatMap((s) => s.items) ?? [];
+    const open = new Set(items.filter((i) => !i.done).map((i) => i.text.toLowerCase()));
+    const names = spokenEntries(
+      request.text,
+      items.map((i) => i.text),
+    ).map((e) => splitNote(e).text);
+    if (names.length === 0) {
+      invalidArgument("nothing to add");
+    }
+    await this.lists.service.addListItems({ parent: `lists/${list.slug}`, texts: names });
+    const already = names.filter((name) => open.has(name.toLowerCase()));
+    const added = names.filter((name) => !open.has(name.toLowerCase()));
+    return { list: `lists/${list.slug}`, message: addedSentence(list.title, added, already) };
   };
 
   completeByText = async (request: ApiRequests["completeByText"]) => {
