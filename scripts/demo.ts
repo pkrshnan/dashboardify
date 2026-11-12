@@ -77,6 +77,7 @@ const activity = new DemoActivity({
   now: (now?.() ?? new Date()).getTime(),
 });
 await activity.write();
+await writeHabits(new Vault(config.vaultPath, TIME_ZONE));
 // DEMO_SYNC_MIN=300 makes the strap data that many minutes old (default 12), to see it lag.
 const syncAt = (now?.() ?? new Date()).getTime() - Number(process.env.DEMO_SYNC_MIN ?? 12) * 60_000;
 await Bun.write(
@@ -152,6 +153,44 @@ function demoPlaces(): Photon {
     },
   ]);
   return new Photon("https://photon.demo", server.fetch);
+}
+
+/**
+ * Made-up habits for the Habits page (docs/habits.md): Habits.md and 36 weeks of ticks with
+ * gaps, a forgiven miss, a weekly target and a streak that's at risk today.
+ */
+async function writeHabits(vault: Vault): Promise<void> {
+  await Bun.write(
+    join(config.vaultPath, "Habits.md"),
+    `# Habits
+
+- Meditate · daily · #BF5AF2 · since ${day(-251)} <!-- id:meditate -->
+- Lift · 3 a week · auto lifting · #40C8E0 · since ${day(-251)} <!-- id:lift -->
+- Steps · daily · auto steps ≥ 8000 · #64D2FF · since ${day(-251)} <!-- id:steps -->
+- Lights out · Sun Mon Tue Wed Thu · auto lights_out ≤ 23:30 · #7D7AFF · since ${day(-251)} <!-- id:lights-out -->
+- Read · daily · #FF7EB6 · since ${day(-62)} <!-- id:read -->
+`,
+  );
+  for (let back = 1; back <= 251; back++) {
+    const ids = demoTicks(back, today.subtract({ days: back }).dayOfWeek);
+    if (ids.length > 0) {
+      await vault.editHabitMarks(day(-back), () => ids);
+    }
+  }
+  await vault.editHabitMarks(day(0), () => ["meditate"]);
+}
+
+/** Which habits were ticked `back` days ago; a hash of the day stands in for chance. */
+function demoTicks(back: number, weekday: number): string[] {
+  const roll = (salt: number) => ((back * 2654435761 + salt * 40503) % 1000) / 1000;
+  const ticks: [string, boolean][] = [
+    ["meditate", (back < 38 || back > 42) && roll(1) < 0.88],
+    ["lift", [1, 3, 5].includes(weekday) ? roll(2) < 0.8 : weekday === 6 && roll(2) < 0.3],
+    ["steps", roll(3) < 0.72],
+    ["lights-out", back > 1 && roll(4) < ([5, 6].includes(weekday) ? 0.3 : 0.8)],
+    ["read", back <= 62 && back !== 12 && (back <= 11 || roll(5) < 0.6)],
+  ];
+  return ticks.filter(([, done]) => done).map(([id]) => id);
 }
 
 /** Made-up lists for the Lists page (docs/lists.md). */

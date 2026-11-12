@@ -18,6 +18,7 @@ import {
 } from "../src/gen/dashboardify/v1/home_pb";
 import type { AgendaEvent, HealthSyncView, HomeView } from "../src/home/types";
 import type { ActivityDayView, WorkoutDetail, WorkoutView } from "./lib/activity";
+import type { DayMark, FactView, HabitDayView, HabitSchedule, HabitView } from "./lib/habits";
 
 const TOKEN_KEY = "dashboardify.token";
 
@@ -917,4 +918,184 @@ export async function clearDoneItems(token: Token, slug: string): Promise<ListVi
       body: "{}",
     }),
   );
+}
+
+// ---- Habits (docs/habits.md) ----
+
+interface DateJson {
+  year?: number;
+  month?: number;
+  day?: number;
+}
+
+interface HabitJson {
+  name: string;
+  displayName?: string;
+  schedule?: { kind?: string; timesPerWeek?: number; days?: string[] };
+  auto?: string;
+  color?: string;
+  state?: string;
+  startDate?: DateJson;
+  progress?: Partial<Omit<HabitView["progress"], "day" | "unit">> & {
+    day?: DateJson;
+    unit?: string;
+  };
+  etag?: string;
+}
+
+const DAY_NAMES = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
+const MARKS: Record<string, DayMark> = {
+  MARK_DONE: "done",
+  MARK_OPEN: "open",
+  MARK_PENDING: "pending",
+  MARK_BEFORE_START: "before",
+};
+
+function isoDate(date: DateJson | undefined): string {
+  const { year = 1970, month = 1, day = 1 } = date ?? {};
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function dateJson(date: string): DateJson {
+  const [year, month, day] = date.split("-").map(Number);
+  return { year, month, day };
+}
+
+function habitView(json: HabitJson): HabitView {
+  return {
+    name: json.name,
+    id: json.name.replace(/^habits\//, ""),
+    displayName: json.displayName ?? "",
+    schedule: scheduleView(json.schedule),
+    auto: json.auto ?? "",
+    color: json.color ?? "",
+    state: (json.state?.replace("STATE_", "").toLowerCase() ?? "active") as HabitView["state"],
+    startDate: isoDate(json.startDate),
+    progress: progressView(json.progress ?? {}),
+    etag: json.etag ?? "",
+  };
+}
+
+/** Protobuf JSON leaves out zeros and falses. */
+function progressView(p: NonNullable<HabitJson["progress"]>): HabitView["progress"] {
+  return {
+    day: isoDate(p.day),
+    streak: p.streak ?? 0,
+    unit: p.unit === "UNIT_WEEK" ? "week" : "day",
+    atRisk: p.atRisk ?? false,
+    recentDone: p.recentDone ?? 0,
+    recentOf: p.recentOf ?? 0,
+    thisWeek: p.thisWeek ?? 0,
+    due: p.due ?? false,
+    done: p.done ?? false,
+  };
+}
+
+function scheduleView(json: HabitJson["schedule"]): HabitSchedule {
+  const days = (json?.days ?? []).map((d) => DAY_NAMES.indexOf(d) + 1).filter((d) => d > 0);
+  if (json?.kind === "KIND_WEEKLY") {
+    return { kind: "weekly", times: json.timesPerWeek ?? 1, days };
+  }
+  return { kind: json?.kind === "KIND_DAYS" ? "days" : "daily", times: 3, days };
+}
+
+function scheduleJson(schedule: HabitSchedule) {
+  if (schedule.kind === "weekly") {
+    return { kind: "KIND_WEEKLY", timesPerWeek: schedule.times };
+  }
+  if (schedule.kind === "days") {
+    return { kind: "KIND_DAYS", days: schedule.days.map((d) => DAY_NAMES[d - 1]) };
+  }
+  return { kind: "KIND_DAILY" };
+}
+
+/** What the form sends when adding or editing a habit. */
+export interface HabitInput {
+  displayName: string;
+  schedule: HabitSchedule;
+  auto: string;
+  color: string;
+}
+
+function habitJson(input: Partial<HabitInput> & { state?: HabitView["state"] }) {
+  return {
+    ...(input.displayName !== undefined && { displayName: input.displayName }),
+    ...(input.schedule && { schedule: scheduleJson(input.schedule) }),
+    ...(input.auto !== undefined && { auto: input.auto }),
+    ...(input.color !== undefined && { color: input.color }),
+    ...(input.state && { state: `STATE_${input.state.toUpperCase()}` }),
+  };
+}
+
+export async function fetchHabits(token: Token): Promise<HabitView[]> {
+  const body = await call<{ habits?: HabitJson[] }>(token, "/v1/habits");
+  return (body.habits ?? []).map(habitView);
+}
+
+/** How each day went from `from` to `to`, for the grid. */
+export async function fetchHabitDays(
+  token: Token,
+  id: string,
+  from: string,
+  to: string,
+): Promise<HabitDayView[]> {
+  const [fy, fm, fd] = from.split("-");
+  const [ty, tm, td] = to.split("-");
+  const query = `start_date.year=${fy}&start_date.month=${fm}&start_date.day=${fd}&end_date.year=${ty}&end_date.month=${tm}&end_date.day=${td}`;
+  const body = await call<{
+    days?: { date?: DateJson; mark?: string; scheduled?: boolean; ticked?: boolean }[];
+  }>(token, `/v1/habits/${encodeURIComponent(id)}/days?${query}`);
+  return (body.days ?? []).map((d) => ({
+    date: isoDate(d.date),
+    mark: MARKS[d.mark ?? ""] ?? "open",
+    scheduled: d.scheduled ?? false,
+    ticked: d.ticked ?? false,
+  }));
+}
+
+/** Ticks or unticks a day by hand. */
+export async function markHabit(
+  token: Token,
+  id: string,
+  day: string,
+  done: boolean,
+): Promise<HabitView> {
+  const body = JSON.stringify({ day: dateJson(day), done });
+  return habitView(
+    await call<HabitJson>(token, `/v1/habits/${encodeURIComponent(id)}:mark`, {
+      method: "POST",
+      body,
+    }),
+  );
+}
+
+export async function createHabit(token: Token, input: HabitInput): Promise<HabitView> {
+  const body = JSON.stringify(habitJson(input));
+  return habitView(await call<HabitJson>(token, "/v1/habits", { method: "POST", body }));
+}
+
+/** Changes the fields given; a masked field left empty (no rule, no colour) clears it. */
+export async function updateHabit(
+  token: Token,
+  id: string,
+  change: Partial<HabitInput> & { state?: HabitView["state"] },
+): Promise<HabitView> {
+  const mask = Object.keys(change).join(",");
+  return habitView(
+    await call<HabitJson>(token, `/v1/habits/${encodeURIComponent(id)}?updateMask=${mask}`, {
+      method: "PATCH",
+      body: JSON.stringify({ name: `habits/${id}`, ...habitJson(change) }),
+    }),
+  );
+}
+
+export async function fetchHabitFacts(token: Token): Promise<FactView[]> {
+  const body = await call<{ facts?: Partial<FactView>[] }>(token, "/v1/habitFacts");
+  return (body.facts ?? []).map((f) => ({
+    name: f.name ?? "",
+    label: f.label ?? "",
+    kind: f.kind ?? "count",
+    night: f.night ?? false,
+    defaultRule: f.defaultRule ?? "",
+  }));
 }

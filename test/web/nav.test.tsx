@@ -56,11 +56,11 @@ describe("nav rules", () => {
     expect(more).toEqual([]);
   });
 
-  test("Health and Activity go under More, with Settings", () => {
+  test("Habits, Health and Activity go under More, with Settings", () => {
     const { tabs, more } = phoneTabs(MODULES);
 
     expect(tabs.map((m) => m.id)).toEqual(["today", "lists"]);
-    expect(more.map((m) => m.id)).toEqual(["health", "activity", "settings"]);
+    expect(more.map((m) => m.id)).toEqual(["habits", "health", "activity", "settings"]);
   });
 
   test("past four pages, the tab pages stay and the rest go under More", () => {
@@ -79,6 +79,7 @@ describe("Sidebar", () => {
     expect(links.map((a) => a.getAttribute("href"))).toEqual([
       "#/",
       "#/lists",
+      "#/habits",
       "#/health",
       "#/activity",
       "#/settings",
@@ -86,11 +87,12 @@ describe("Sidebar", () => {
     expect(links.map((a) => a.getAttribute("aria-current"))).toEqual([
       null,
       null,
+      null,
       "page",
       null,
       null,
     ]);
-    expect(links[2]?.getAttribute("title")).toBe("Health (g h)");
+    expect(links[3]?.getAttribute("title")).toBe("Health (g h)");
   });
 });
 
