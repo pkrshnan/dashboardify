@@ -128,7 +128,8 @@ describe("Habits page", () => {
     fireEvent.input(page.getByLabelText("Name"), { target: { value: "Stretch" } });
     fireEvent.click(page.getByRole("button", { name: "Weekly" }));
     fireEvent.click(page.getByRole("button", { name: "Fewer times a week" }));
-    fireEvent.change(page.getByLabelText("Ticks itself from"), { target: { value: "steps" } });
+    fireEvent.click(page.getByRole("button", { name: "Ticks itself from" }));
+    fireEvent.click(page.getByRole("menuitemradio", { name: "Steps" }));
     fireEvent.submit(
       page.getByRole("button", { name: "Add habit" }).closest("form") as HTMLFormElement,
     );

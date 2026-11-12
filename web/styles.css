@@ -45,7 +45,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
   color: inherit;
 }
@@ -2727,13 +2728,13 @@ button.link {
   gap: 8px;
 }
 
-/* The section to add to: a quiet pill, and the menu it opens over the list. */
-.list-pick {
+/* The app's dropdown (components/pick-menu.tsx): a pill and the menu it opens. */
+.pick {
   position: relative;
   flex: none;
 }
 
-.list-pick-button {
+.pick-button {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2748,12 +2749,12 @@ button.link {
   cursor: pointer;
 }
 
-.list-pick-button:hover,
-.list-pick-button[aria-expanded="true"] {
+.pick-button:hover,
+.pick-button[aria-expanded="true"] {
   color: var(--text);
 }
 
-.list-pick-button svg {
+.pick-button svg {
   flex: none;
   fill: none;
   stroke: currentColor;
@@ -2762,7 +2763,7 @@ button.link {
   stroke-linejoin: round;
 }
 
-.list-pick-menu {
+.pick-menu {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
@@ -2773,6 +2774,8 @@ button.link {
   max-width: 280px;
   max-height: 320px;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-3) transparent;
   padding: 5px;
   border: 1px solid var(--line-3);
   border-radius: 12px;
@@ -2780,7 +2783,7 @@ button.link {
   box-shadow: 0 12px 32px rgb(0 0 0 / 0.5);
 }
 
-.list-pick-menu button {
+.pick-menu button {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -2796,14 +2799,14 @@ button.link {
   position: relative;
 }
 
-.list-pick-menu button:hover,
-.list-pick-menu button:focus-visible {
+.pick-menu button:hover,
+.pick-menu button:focus-visible {
   background: var(--line-2);
   outline: none;
 }
 
-/* A tick beside the section items go to now. */
-.list-pick-menu button[aria-checked="true"]::before {
+/* A tick beside the current choice. */
+.pick-menu button[aria-checked="true"]::before {
   content: "";
   position: absolute;
   left: 12px;
@@ -2815,11 +2818,27 @@ button.link {
   transform: translateY(-65%) rotate(45deg);
 }
 
-.list-pick-menu .list-pick-new {
+.pick-menu .pick-apart {
   margin-top: 5px;
   border-top: 1px solid var(--line-3);
   border-radius: 0 0 7px 7px;
   color: var(--text-2);
+}
+
+.pick.wide .pick-button {
+  width: 100%;
+  max-width: none;
+  justify-content: space-between;
+  border: 1px solid var(--line-2);
+  color: var(--text);
+  font-size: var(--type-body);
+}
+
+.pick.wide .pick-menu {
+  left: 0;
+  right: 0;
+  max-width: none;
+  max-height: 420px;
 }
 
 .list-new-section {
@@ -3038,12 +3057,12 @@ button.link {
   min-height: 52px;
 }
 
-.lists.phone .list-pick-button {
+.lists.phone .pick-button {
   height: 44px;
   max-width: 120px;
 }
 
-.lists.phone .list-pick-menu button {
+.lists.phone .pick-menu button {
   min-height: 44px;
 }
 
@@ -3731,8 +3750,13 @@ button.habit-cell {
   border-left: 0;
 }
 
-.habits.phone .habit-input {
+.habits.phone .habit-input,
+.habits.phone .pick-button {
   height: 44px;
+}
+
+.habits.phone .pick-menu button {
+  min-height: 44px;
 }
 
 .habits.phone .habit-days {

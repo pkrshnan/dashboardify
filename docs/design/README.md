@@ -137,7 +137,8 @@ No explanatory labels.
 Recovery's band colour shows only in the focus row, always beside its number. The sentence has no
 colour.
 
-**Controls:** segmented controls on `fill` with a `control` selected segment; checkboxes are
+**Controls:** segmented controls on `fill` with a `control` selected segment; dropdowns are
+`PickMenu` (a `fill` pill and a menu with a tick by the current choice), never a bare `<select>`; checkboxes are
 1.5 px `control` rings that fill when done; touch targets 44 px on the phone; task rows are the
 hit area.
 

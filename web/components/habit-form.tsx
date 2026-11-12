@@ -16,6 +16,7 @@ import {
   type ScheduleKind,
   WEEKDAYS,
 } from "../lib/habits";
+import { PickMenu } from "./pick-menu";
 import { Segmented } from "./segmented";
 
 const NEW_SCHEDULE: HabitSchedule = { kind: "daily", times: 3, days: [1, 3, 5] };
@@ -160,17 +161,17 @@ function TicksFrom(props: {
   };
   return (
     <div class="habit-field">
-      <label class="habit-field">
-        <span>Ticks itself from</span>
-        <select class="habit-input" value={rule.fact} onChange={(e) => pick(e.currentTarget.value)}>
-          <option value="">Nothing, I tick it</option>
-          {facts.map((f) => (
-            <option key={f.name} value={f.name}>
-              {f.label}
-            </option>
-          ))}
-        </select>
-      </label>
+      <span>Ticks itself from</span>
+      <PickMenu
+        wide
+        label="Ticks itself from"
+        value={rule.fact}
+        choices={[
+          { value: "", label: "Nothing, I tick it" },
+          ...facts.map((f) => ({ value: f.name, label: f.label })),
+        ]}
+        onChange={pick}
+      />
       {fact && (
         <label class="habit-rule">
           <span>{fact.kind === "time" ? "By" : "At least"}</span>

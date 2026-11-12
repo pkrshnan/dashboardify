@@ -17,6 +17,7 @@ import {
   type Token,
   Unauthorized,
 } from "../api";
+import { PickMenu } from "../components/pick-menu";
 import {
   doneItems,
   dropSections,
@@ -522,103 +523,20 @@ function SectionPick(props: {
   value: string;
   onChange: (value: string) => void;
 }) {
-  const wrap = useRef<HTMLDivElement>(null);
-  const { open, setOpen, close, onKey } = useMenu(wrap);
-  const choices = [
-    { value: "", label: "No section" },
-    ...props.sections.map((title) => ({ value: title, label: title })),
-    { value: NEW_SECTION, label: "New section…" },
-  ];
-  const current = choices.find((choice) => choice.value === props.value);
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: keys reach the menu's items through it.
-    <div class="list-pick" ref={wrap} onKeyDown={open ? onKey : undefined}>
-      <button
-        type="button"
-        class="list-pick-button"
-        aria-label="Section"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={() => setOpen(!open)}
-      >
-        <span class="ell">{props.value === NEW_SECTION ? "New section" : current?.label}</span>
-        <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">
-          <path d="M3 4.5 6 7.5 9 4.5" />
-        </svg>
-      </button>
-      {open && (
-        <div class="list-pick-menu" role="menu" aria-label="Sections">
-          {choices.map((choice) => (
-            <button
-              key={choice.value}
-              type="button"
-              role="menuitemradio"
-              aria-checked={choice.value === props.value}
-              class={choice.value === NEW_SECTION ? "list-pick-new" : undefined}
-              onClick={() => {
-                props.onChange(choice.value);
-                // "New section…" hands the keyboard to the name box.
-                close(choice.value !== NEW_SECTION);
-              }}
-            >
-              <span class="ell">{choice.label}</span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+    <PickMenu
+      label="Section"
+      value={props.value}
+      shown={props.value === NEW_SECTION ? "New section" : undefined}
+      choices={[
+        { value: "", label: "No section" },
+        ...props.sections.map((title) => ({ value: title, label: title })),
+        // "New section…" hands the keyboard to the name box.
+        { value: NEW_SECTION, label: "New section…", apart: true, handsOff: true },
+      ]}
+      onChange={props.onChange}
+    />
   );
-}
-
-/**
- * A menu under a button, both inside `wrap`. Opening focuses the checked item; the arrow keys
- * move through the items; Escape closes it back to the button; Tab or a tap outside just closes.
- */
-function useMenu(wrap: RefObject<HTMLElement>) {
-  const [open, setOpen] = useState(false);
-  const items = () => [
-    ...(wrap.current?.querySelectorAll<HTMLElement>("[role=menuitemradio]") ?? []),
-  ];
-  const close = (refocus: boolean) => {
-    setOpen(false);
-    if (refocus) {
-      wrap.current?.querySelector<HTMLElement>("[aria-haspopup]")?.focus();
-    }
-  };
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-    const all = items();
-    (all.find((item) => item.getAttribute("aria-checked") === "true") ?? all[0])?.focus();
-    const outside = (event: PointerEvent) => {
-      if (!wrap.current?.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("pointerdown", outside);
-    return () => document.removeEventListener("pointerdown", outside);
-  }, [open]);
-  const onKey = (event: KeyboardEvent) => {
-    const by = arrowStep(event.key);
-    if (by !== 0) {
-      event.preventDefault();
-      const all = items();
-      const at = all.indexOf(document.activeElement as HTMLElement);
-      all[(at + by + all.length) % all.length]?.focus();
-    } else if (event.key === "Escape" || event.key === "Tab") {
-      event.key === "Escape" && event.preventDefault();
-      close(event.key === "Escape");
-    }
-  };
-  return { open, setOpen, close, onKey };
-}
-
-function arrowStep(key: string): number {
-  if (key === "ArrowDown") {
-    return 1;
-  }
-  return key === "ArrowUp" ? -1 : 0;
 }
 
 /**
