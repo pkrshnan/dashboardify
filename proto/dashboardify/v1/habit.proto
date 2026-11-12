@@ -1,0 +1,347 @@
+syntax = "proto3";
+
+package dashboardify.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/field_mask.proto";
+import "google/type/date.proto";
+import "google/type/dayofweek.proto";
+
+// Habits kept in the vault's Habits.md, with each day's ticks in that day's note and auto ticks
+// computed from the day's facts (docs/habits.md). Days are habit days: until 04:00 in the
+// server's time zone it is still the day before.
+service HabitService {
+  // Every habit, in note order, with its progress as of `day`. Archived ones are left out
+  // unless asked for.
+  rpc ListHabits(ListHabitsRequest) returns (ListHabitsResponse) {
+    option (google.api.http) = {get: "/v1/habits"};
+  }
+
+  // One habit with its progress.
+  rpc GetHabit(GetHabitRequest) returns (Habit) {
+    option (google.api.http) = {get: "/v1/{name=habits/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  // Adds a line to Habits.md, starting today. A habit with the same name already there is
+  // returned as it is, so a retry is safe.
+  rpc CreateHabit(CreateHabitRequest) returns (Habit) {
+    option (google.api.http) = {
+      post: "/v1/habits"
+      body: "habit"
+    };
+    option (google.api.method_signature) = "habit";
+  }
+
+  // Renames, reschedules, pauses or archives a habit, or changes its rule or colour.
+  rpc UpdateHabit(UpdateHabitRequest) returns (Habit) {
+    option (google.api.http) = {
+      patch: "/v1/{habit.name=habits/*}"
+      body: "habit"
+    };
+    option (google.api.method_signature) = "habit,update_mask";
+  }
+
+  // How each day went, for the page's grid.
+  rpc ListHabitDays(ListHabitDaysRequest) returns (ListHabitDaysResponse) {
+    option (google.api.http) = {get: "/v1/{parent=habits/*}/days"};
+    option (google.api.method_signature) = "parent";
+  }
+
+  // Ticks or unticks a day by hand. Ticking twice is one tick.
+  rpc MarkHabit(MarkHabitRequest) returns (Habit) {
+    option (google.api.http) = {
+      post: "/v1/{name=habits/*}:mark"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name,done";
+  }
+
+  // The facts an auto rule can compare, for the "Ticks itself from" menu.
+  rpc ListHabitFacts(ListHabitFactsRequest) returns (ListHabitFactsResponse) {
+    option (google.api.http) = {get: "/v1/habitFacts"};
+  }
+}
+
+// A habit, such as Meditate.
+message Habit {
+  option (google.api.resource) = {
+    type: "dashboardify.app/Habit"
+    pattern: "habits/{habit}"
+    singular: "habit"
+    plural: "habits"
+  };
+
+  // Shown, hidden, or kept only for its history.
+  enum State {
+    // Not set; read as active.
+    STATE_UNSPECIFIED = 0;
+    // On Today and the page.
+    STATE_ACTIVE = 1;
+    // Off Today, greyed on the page, with no streak.
+    STATE_PAUSED = 2;
+    // Hidden; its ticks stay in the notes.
+    STATE_ARCHIVED = 3;
+  }
+
+  // `habits/{habit}`, the id in the line's `<!-- id:… -->`, such as `habits/meditate`.
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+
+  // What it's called, such as `Lights out`: not empty, no `·`. Checked by the service, so an
+  // update can leave it out.
+  string display_name = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.max_len = 80
+  ];
+
+  // How often it's meant to happen.
+  HabitSchedule schedule = 3 [(google.api.field_behavior) = REQUIRED];
+
+  // The auto rule, such as `steps ≥ 8000` or `lights_out ≤ 23:30`; empty when it's ticked by
+  // hand. ListHabitFacts has the facts.
+  string auto = 4 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).string.max_len = 80
+  ];
+
+  // `#RRGGBB`; a new habit without one takes the next unused colour of the page's palette.
+  string color = 5 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).string.pattern = "^(#[0-9A-Fa-f]{6})?$"
+  ];
+
+  // Active, paused or archived.
+  State state = 6 [(google.api.field_behavior) = OPTIONAL];
+
+  // Its first day: the line's `since`, else its first tick. Earlier days aren't misses.
+  google.type.Date start_date = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The streak and counts as of the day asked for.
+  HabitProgress progress = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Habits.md's version. An update that sends an older one is refused.
+  string etag = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// Every day, some times a week, or on set weekdays.
+message HabitSchedule {
+  // Which kind of schedule.
+  enum Kind {
+    // Not set; read as daily.
+    KIND_UNSPECIFIED = 0;
+    // Every day.
+    KIND_DAILY = 1;
+    // `times_per_week` days in each Monday–Sunday week, any days.
+    KIND_WEEKLY = 2;
+    // Only on `days`; other days don't count.
+    KIND_DAYS = 3;
+  }
+
+  // Which kind of schedule.
+  Kind kind = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // For KIND_WEEKLY: 1 to 7.
+  int32 times_per_week = 2 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 7
+    }
+  ];
+
+  // For KIND_DAYS: at least one weekday.
+  repeated google.type.DayOfWeek days = 3 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).repeated.max_items = 7
+  ];
+}
+
+// How a habit is going as of one day.
+message HabitProgress {
+  // What a streak counts.
+  enum Unit {
+    // Not set.
+    UNIT_UNSPECIFIED = 0;
+    // Scheduled days done; one missed day is forgiven, two in a row end it.
+    UNIT_DAY = 1;
+    // Weeks that met the target.
+    UNIT_WEEK = 2;
+  }
+
+  // The day it's as of.
+  google.type.Date day = 1;
+
+  // The streak, in `unit`s.
+  int32 streak = 2;
+
+  // Days or weeks.
+  Unit unit = 3;
+
+  // The last scheduled day was missed and this one isn't done, so it decides the streak.
+  bool at_risk = 4;
+
+  // Days done of those scheduled in the last 30, or weeks met of the last 4.
+  int32 recent_done = 5;
+
+  // The days scheduled, or weeks counted, that `recent_done` is out of.
+  int32 recent_of = 6;
+
+  // Days done this Monday–Sunday week.
+  int32 this_week = 7;
+
+  // Scheduled on the day, or for a weekly habit, the week isn't met yet.
+  bool due = 8;
+
+  // Ticked by hand or by its rule on the day.
+  bool done = 9;
+}
+
+// How one day went.
+message HabitDay {
+  // Done, missed or not known yet.
+  enum Mark {
+    // Not set.
+    MARK_UNSPECIFIED = 0;
+    // Ticked by hand or by its rule.
+    MARK_DONE = 1;
+    // Not done.
+    MARK_OPEN = 2;
+    // Its fact hasn't come in yet, such as tonight's lights out.
+    MARK_PENDING = 3;
+    // Before the habit's start.
+    MARK_BEFORE_START = 4;
+  }
+
+  // The day.
+  google.type.Date date = 1;
+
+  // How it went.
+  Mark mark = 2;
+
+  // A day the schedule counts: every day for daily and weekly habits.
+  bool scheduled = 3;
+
+  // Ticked by hand, as against by its rule.
+  bool ticked = 4;
+}
+
+// A fact an auto rule can compare.
+message HabitFact {
+  // As written in a rule, such as `steps`.
+  string name = 1;
+
+  // Shown in the menu, such as `Steps`.
+  string label = 2;
+
+  // `count`, `number`, `minutes`, `kcal`, `time` (HH:MM) or `rating`.
+  string kind = 3;
+
+  // Counts for the evening the night started.
+  bool night = 4;
+
+  // What the bare fact means, such as `steps ≥ 8000`.
+  string default_rule = 5;
+}
+
+// Request for ListHabits.
+message ListHabitsRequest {
+  // The day progress is as of; today's habit day when unset.
+  google.type.Date day = 1 [(google.api.field_behavior) = OPTIONAL];
+
+  // Include archived habits.
+  bool show_archived = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for ListHabits.
+message ListHabitsResponse {
+  // In Habits.md's order.
+  repeated Habit habits = 1;
+}
+
+// Request for GetHabit.
+message GetHabitRequest {
+  // The habit.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/Habit",
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // The day progress is as of; today's habit day when unset.
+  google.type.Date day = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request for CreateHabit.
+message CreateHabitRequest {
+  // `display_name`, `schedule`, `auto` and `color` are read.
+  Habit habit = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+}
+
+// Request for UpdateHabit.
+message UpdateHabitRequest {
+  // The habit with the new values.
+  Habit habit = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // `display_name`, `schedule`, `auto`, `color` and/or `state`.
+  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Change only if Habits.md is still at this version.
+  string etag = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request for ListHabitDays.
+message ListHabitDaysRequest {
+  // The habit.
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/Habit",
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // The first day; 252 days (36 weeks) before `end_date` when unset.
+  google.type.Date start_date = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // The last day; today's habit day when unset. At most 400 days after `start_date`.
+  google.type.Date end_date = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for ListHabitDays.
+message ListHabitDaysResponse {
+  // Oldest first.
+  repeated HabitDay days = 1;
+}
+
+// Request for MarkHabit.
+message MarkHabitRequest {
+  // The habit.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/Habit",
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // The day; today's habit day when unset. Not after it.
+  google.type.Date day = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Tick (true) or untick (false).
+  bool done = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request for ListHabitFacts.
+message ListHabitFactsRequest {}
+
+// Response for ListHabitFacts.
+message ListHabitFactsResponse {
+  // In the menu's order.
+  repeated HabitFact facts = 1;
+}

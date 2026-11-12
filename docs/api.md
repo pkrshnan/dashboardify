@@ -66,6 +66,21 @@ its text or section does; the response has the new one. Writes take the list's `
 one with `409`. Send `updateMask`: unticking sends `done: false`, and moving to the top `section: ""`, which protobuf JSON leaves
 out.
 
+## Habits
+
+| Method | Path | Does |
+| --- | --- | --- |
+| GET | `/v1/habits` | Each habit with its `schedule`, `auto` rule, `color`, `state`, `startDate` and `progress` (`streak`, `unit`, `atRisk`, `recentDone` of `recentOf`, `thisWeek`, `due`, `done`) as of `day` (today); `showArchived` |
+| GET | `/v1/habits/{habit}` | One, the same way |
+| POST | `/v1/habits` | `{"displayName": "Lift", "schedule": {"kind": "KIND_WEEKLY", "timesPerWeek": 3}, "auto": "lifting"}` adds a line to `Habits.md` starting today; one with the same name is returned |
+| PATCH | `/v1/habits/{habit}?updateMask=state` | Rename (`displayName`), `schedule`, `auto`, `color`, or pause and archive (`state`) |
+| GET | `/v1/habits/{habit}/days` | Each day from `startDate` (36 weeks back) to `endDate` (today), at most 400: `mark` (`MARK_DONE`, `MARK_OPEN`, `MARK_PENDING`, `MARK_BEFORE_START`), `scheduled`, `ticked` |
+| POST | `/v1/habits/{habit}:mark` | `{"done": true}` ticks today, or `day`; not a future day |
+| GET | `/v1/habitFacts` | The facts a rule can use, with `label`, `kind`, `night` and `defaultRule` |
+
+Days are habit days: until 04:00 it's still the day before. Writes to `Habits.md` take its
+`etag` and refuse an older one with `409`; ticks go to the day's note and need none.
+
 ## Home
 
 `GET /v1/home`: everything the home screen shows: sentence, next event, seven days of agenda,

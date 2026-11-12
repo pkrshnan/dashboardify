@@ -2,7 +2,7 @@
 
 Things you mean to do regularly (meditate, read, floss, lift three times a week, 8,000 steps) and
 a record of whether you did. Design: https://claude.ai/artifact/PQe6S6nfjyGt242ui4udNK.
-Status: HB1–HB3 built (Habits.md, ticks in daily notes, streaks, day facts).
+Status: HB1–HB4 built (Habits.md, ticks, streaks, day facts, HabitService).
 
 ## Goals
 
@@ -90,18 +90,11 @@ registry lists each fact's label, kind, day and default; the page's "Ticks itsel
 
 ## API
 
-`proto/dashboardify/v1/habit.proto`, `HabitService`:
-
-| Method | Path | Does |
-| --- | --- | --- |
-| GET | `/v1/habits` | Each habit with its schedule, `auto`, colour, state, and as of `day` (default today): `done`, `due`, `streak`, the 30-day count, this week's count |
-| POST | `/v1/habits` | Append a line to `Habits.md` with a new id; `requestId` makes a retry safe |
-| PATCH | `/v1/habits/{habit}` | `name`, `schedule`, `auto`, `state` (send `updateMask`) |
-| GET | `/v1/habitFacts` | The registry: each fact's name, label, kind and default rule |
-| GET | `/v1/habits/{habit}/days` | `from`, `to`: each day's `done`, `scheduled`, `pending`, and whether it was `auto` |
-| POST | `/v1/habits/{habit}:mark` | `day`, `done`: add or remove the id in that day's `habits:` |
-| RPC | `VoiceService/MarkHabit` | `text`: finds the habit by its spoken name, marks it, speaks back the streak ("Meditate: 12 days") |
-
+`proto/dashboardify/v1/habit.proto`, `HabitService`; paths in [api.md](api.md#habits).
+`ListHabits` and `GetHabit` give each habit's progress as of a day, `ListHabitDays` how each day
+went for the grid, `MarkHabit` ticks a day by hand, and `ListHabitFacts` lists the facts. Create
+is safe to retry: a habit with the same name is returned. `VoiceService/MarkHabit` takes `text`,
+finds the habit by its spoken name, marks it, and speaks back the streak ("Meditate: 12 days").
 `Home` gains today's due habits, so Today needs no second call.
 
 ## Web
@@ -132,10 +125,10 @@ A `habits` module at `#/habits` (`?habit=` opens one), sidebar group 2, More on 
 | HB1 | Habit notes | `src/habits/`: parse and write `Habits.md`, schedules, `habits:` in daily notes, the 04:00 rule; vault-format.md | Round trip keeps other lines; slug without an id; rename keeps id; mark is idempotent; 00:40 ticks yesterday |
 | HB2 | Streaks | Streak, rate, weekly counts, pending days; the mtime cache | Never-miss-twice; weekday and `N a week` edges; paused days; pending doesn't break; DST week |
 | HB3 | Day facts | `facts.ts`: `dayFacts`, the registry, parsing and checking `auto` rules; auto ticks in streaks | Each fact from a fixture day; night facts read the next note; 00:20 later than 23:30; missing is pending; bare fact uses its default |
-| HB4 | HabitService | `habit.proto`, `src/server/api/habits.ts`, REST bindings, Home's habits, api.md | Each method; facts list; stale `Habits.md` etag `409`; unknown habit `404`; `requestId` retry |
+| HB4 | HabitService | `habit.proto`, `src/server/api/habits.ts`, REST bindings, api.md | Each method; facts list; stale `Habits.md` etag `409`; unknown habit `404`; `requestId` retry |
 | HB5 | Siri | `VoiceService.MarkHabit`, `shortcuts/mark-habit.md` | Fuzzy name, unknown habit, spoken streak |
 | HB6 | Habits page | `web/modules/habits.tsx`, `web/api.ts`, styles, demo habits | Grid cells per cadence, the week's dots, fix a past day, cadence form; the module in the nav; Return in the new-habit form in real Firefox |
-| HB7 | Today row | Today's chips, the command bar's "Mark habit" | Tick, auto chip, done state |
+| HB7 | Today row | Home's due habits, Today's chips, the command bar's "Mark habit" | Tick, auto chip, done state |
 
 ## Open questions
 
