@@ -2,6 +2,7 @@
 // the server only appends new ones to the inbox file and edits single lines in place.
 import { createHash } from "node:crypto";
 import { defined } from "../defined";
+import { LISTS_FOLDER } from "../lists/list-store";
 import { formatTask, indentOf, nextDue, parseTaskLine, type Task } from "./tasks";
 import type { Vault } from "./vault";
 export interface FoundTask {
@@ -48,10 +49,16 @@ export class TaskStore {
     return typeof this.inbox === "string" ? this.inbox : this.inbox();
   }
 
-  /** Every task in the vault's Markdown files. Hidden folders (.obsidian, .trash, .cc) are skipped. */
+  /**
+   * Every task in the vault's Markdown files. Hidden folders (.obsidian, .trash, .cc) are
+   * skipped, and so is Lists/: a list's `- [ ]` lines are list items, not tasks.
+   */
   async list(): Promise<FoundTask[]> {
     const found: FoundTask[] = [];
     for await (const path of new Bun.Glob("**/*.md").scan({ cwd: this.vault.root })) {
+      if (path.startsWith(`${LISTS_FOLDER}/`)) {
+        continue;
+      }
       found.push(...tasksIn(path, (await this.vault.read(path)) ?? ""));
     }
     return found;

@@ -11,7 +11,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file dashboardify/v1/voice.proto.
  */
 export const file_dashboardify_v1_voice: GenFile = /*@__PURE__*/
-  fileDesc("ChtkYXNoYm9hcmRpZnkvdjEvdm9pY2UucHJvdG8SD2Rhc2hib2FyZGlmeS52MSJLCg5BZGRUYXNrUmVxdWVzdBIlCgR0ZXh0GAEgASgJQhe6SBRyEhABGKCcATIKKD9zKS4qXFMuKhISCgpyZXF1ZXN0X2lkGAIgASgJIjAKD0FkZFRhc2tSZXNwb25zZRIPCgdtZXNzYWdlGAEgASgJEgwKBHRhc2sYAiABKAkiMwoKTG9nUmVxdWVzdBIlCgR0ZXh0GAEgASgJQhe6SBRyEhABGKCcATIKKD9zKS4qXFMuKiI1CgtMb2dSZXNwb25zZRIPCgdtZXNzYWdlGAEgASgJEhUKDWpvdXJuYWxfZW50cnkYAiABKAkiZAoOQ2hlY2tJblJlcXVlc3QSHwoEZmVlbBgBIAEoCUIRukgOcgwyCl4kfF5bMS01XSQSIwoDcnBlGAIgASgJQha6SBNyETIPXiR8XigxMHxbMC05XSkkEgwKBHRhZ3MYAyABKAkiIgoPQ2hlY2tJblJlc3BvbnNlEg8KB21lc3NhZ2UYASABKAkiIAoOTGlzdER1ZVJlcXVlc3QSDgoGd2luZG93GAEgASgJIiIKD0xpc3REdWVSZXNwb25zZRIPCgdtZXNzYWdlGAEgASgJIj4KFUNvbXBsZXRlQnlUZXh0UmVxdWVzdBIlCgR0ZXh0GAEgASgJQhe6SBRyEhABGKCcATIKKD9zKS4qXFMuKiI3ChZDb21wbGV0ZUJ5VGV4dFJlc3BvbnNlEg8KB21lc3NhZ2UYASABKAkSDAoEdGFzaxgCIAEoCTKdAwoMVm9pY2VTZXJ2aWNlEkwKB0FkZFRhc2sSHy5kYXNoYm9hcmRpZnkudjEuQWRkVGFza1JlcXVlc3QaIC5kYXNoYm9hcmRpZnkudjEuQWRkVGFza1Jlc3BvbnNlEkAKA0xvZxIbLmRhc2hib2FyZGlmeS52MS5Mb2dSZXF1ZXN0GhwuZGFzaGJvYXJkaWZ5LnYxLkxvZ1Jlc3BvbnNlEkwKB0NoZWNrSW4SHy5kYXNoYm9hcmRpZnkudjEuQ2hlY2tJblJlcXVlc3QaIC5kYXNoYm9hcmRpZnkudjEuQ2hlY2tJblJlc3BvbnNlEkwKB0xpc3REdWUSHy5kYXNoYm9hcmRpZnkudjEuTGlzdER1ZVJlcXVlc3QaIC5kYXNoYm9hcmRpZnkudjEuTGlzdER1ZVJlc3BvbnNlEmEKDkNvbXBsZXRlQnlUZXh0EiYuZGFzaGJvYXJkaWZ5LnYxLkNvbXBsZXRlQnlUZXh0UmVxdWVzdBonLmRhc2hib2FyZGlmeS52MS5Db21wbGV0ZUJ5VGV4dFJlc3BvbnNlYgZwcm90bzM", [file_buf_validate_validate]);
+  fileDesc("ChtkYXNoYm9hcmRpZnkvdjEvdm9pY2UucHJvdG8SD2Rhc2hib2FyZGlmeS52MSJLCg5BZGRUYXNrUmVxdWVzdBIlCgR0ZXh0GAEgASgJQhe6SBRyEhABGKCcATIKKD9zKS4qXFMuKhISCgpyZXF1ZXN0X2lkGAIgASgJIjAKD0FkZFRhc2tSZXNwb25zZRIPCgdtZXNzYWdlGAEgASgJEgwKBHRhc2sYAiABKAkiMwoKTG9nUmVxdWVzdBIlCgR0ZXh0GAEgASgJQhe6SBRyEhABGKCcATIKKD9zKS4qXFMuKiI1CgtMb2dSZXNwb25zZRIPCgdtZXNzYWdlGAEgASgJEhUKDWpvdXJuYWxfZW50cnkYAiABKAkiZAoOQ2hlY2tJblJlcXVlc3QSHwoEZmVlbBgBIAEoCUIRukgOcgwyCl4kfF5bMS01XSQSIwoDcnBlGAIgASgJQha6SBNyETIPXiR8XigxMHxbMC05XSkkEgwKBHRhZ3MYAyABKAkiIgoPQ2hlY2tJblJlc3BvbnNlEg8KB21lc3NhZ2UYASABKAkiIAoOTGlzdER1ZVJlcXVlc3QSDgoGd2luZG93GAEgASgJIiIKD0xpc3REdWVSZXNwb25zZRIPCgdtZXNzYWdlGAEgASgJIj4KFUNvbXBsZXRlQnlUZXh0UmVxdWVzdBIlCgR0ZXh0GAEgASgJQhe6SBRyEhABGKCcATIKKD9zKS4qXFMuKiI3ChZDb21wbGV0ZUJ5VGV4dFJlc3BvbnNlEg8KB21lc3NhZ2UYASABKAkSDAoEdGFzaxgCIAEoCSJeChBBZGRUb0xpc3RSZXF1ZXN0EiQKBGxpc3QYASABKAlCFrpIE3IREAEYyAEyCig/cykuKlxTLioSJAoEdGV4dBgCIAEoCUIWukgTchEQARjQDzIKKD9zKS4qXFMuKiIyChFBZGRUb0xpc3RSZXNwb25zZRIPCgdtZXNzYWdlGAEgASgJEgwKBGxpc3QYAiABKAky8QMKDFZvaWNlU2VydmljZRJMCgdBZGRUYXNrEh8uZGFzaGJvYXJkaWZ5LnYxLkFkZFRhc2tSZXF1ZXN0GiAuZGFzaGJvYXJkaWZ5LnYxLkFkZFRhc2tSZXNwb25zZRJACgNMb2cSGy5kYXNoYm9hcmRpZnkudjEuTG9nUmVxdWVzdBocLmRhc2hib2FyZGlmeS52MS5Mb2dSZXNwb25zZRJMCgdDaGVja0luEh8uZGFzaGJvYXJkaWZ5LnYxLkNoZWNrSW5SZXF1ZXN0GiAuZGFzaGJvYXJkaWZ5LnYxLkNoZWNrSW5SZXNwb25zZRJMCgdMaXN0RHVlEh8uZGFzaGJvYXJkaWZ5LnYxLkxpc3REdWVSZXF1ZXN0GiAuZGFzaGJvYXJkaWZ5LnYxLkxpc3REdWVSZXNwb25zZRJhCg5Db21wbGV0ZUJ5VGV4dBImLmRhc2hib2FyZGlmeS52MS5Db21wbGV0ZUJ5VGV4dFJlcXVlc3QaJy5kYXNoYm9hcmRpZnkudjEuQ29tcGxldGVCeVRleHRSZXNwb25zZRJSCglBZGRUb0xpc3QSIS5kYXNoYm9hcmRpZnkudjEuQWRkVG9MaXN0UmVxdWVzdBoiLmRhc2hib2FyZGlmeS52MS5BZGRUb0xpc3RSZXNwb25zZWIGcHJvdG8z", [file_buf_validate_validate]);
 
 /**
  * Request for AddTask.
@@ -266,6 +266,62 @@ export const CompleteByTextResponseSchema: GenMessage<CompleteByTextResponse> = 
   messageDesc(file_dashboardify_v1_voice, 9);
 
 /**
+ * Request for AddToList.
+ *
+ * @generated from message dashboardify.v1.AddToListRequest
+ */
+export type AddToListRequest = Message<"dashboardify.v1.AddToListRequest"> & {
+  /**
+   * The list's name as said, such as "shopping" or "the shopping list".
+   *
+   * @generated from field: string list = 1;
+   */
+  list: string;
+
+  /**
+   * What to add, such as "oat milk and eggs" or "oat milk, eggs".
+   *
+   * @generated from field: string text = 2;
+   */
+  text: string;
+};
+
+/**
+ * Describes the message dashboardify.v1.AddToListRequest.
+ * Use `create(AddToListRequestSchema)` to create a new message.
+ */
+export const AddToListRequestSchema: GenMessage<AddToListRequest> = /*@__PURE__*/
+  messageDesc(file_dashboardify_v1_voice, 10);
+
+/**
+ * Response for AddToList.
+ *
+ * @generated from message dashboardify.v1.AddToListResponse
+ */
+export type AddToListResponse = Message<"dashboardify.v1.AddToListResponse"> & {
+  /**
+   * Sentence to speak.
+   *
+   * @generated from field: string message = 1;
+   */
+  message: string;
+
+  /**
+   * The list, `lists/{list}`.
+   *
+   * @generated from field: string list = 2;
+   */
+  list: string;
+};
+
+/**
+ * Describes the message dashboardify.v1.AddToListResponse.
+ * Use `create(AddToListResponseSchema)` to create a new message.
+ */
+export const AddToListResponseSchema: GenMessage<AddToListResponse> = /*@__PURE__*/
+  messageDesc(file_dashboardify_v1_voice, 11);
+
+/**
  * Siri Shortcuts only. Takes loose spoken input, calls the other services and
  * returns one sentence to speak. Not AIP resource methods, on purpose.
  *
@@ -321,6 +377,16 @@ export const VoiceService: GenService<{
     methodKind: "unary";
     input: typeof CompleteByTextRequestSchema;
     output: typeof CompleteByTextResponseSchema;
+  },
+  /**
+   * "Add to list": adds to the list with the spoken name; commas add several.
+   *
+   * @generated from rpc dashboardify.v1.VoiceService.AddToList
+   */
+  addToList: {
+    methodKind: "unary";
+    input: typeof AddToListRequestSchema;
+    output: typeof AddToListResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_dashboardify_v1_voice, 0);

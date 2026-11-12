@@ -43,6 +43,9 @@ both opens every secret.
 | `devices revoke <id>` | Its token stops working on the next request |
 | `key show` | The key as base64, for your password manager |
 | `rotate-key` | A new key, every secret re-sealed. Refuses while the server runs. |
+| `strava connect` | Asks for your Strava app's ID and secret, prints the approval link, takes the address you land on |
+| `strava disconnect` | Revokes access at Strava and forgets the account |
+| `strava status` | The athlete, whether it works, the last sync |
 
 ## Hosting
 

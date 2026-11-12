@@ -16,6 +16,9 @@ export interface WorkoutView {
   avgHr: number;
   maxHr: number;
   strain: number;
+  /** Runs recorded in Strava only. */
+  distanceMeters?: number;
+  stravaActivityId?: string;
 }
 
 export interface WalkView {
