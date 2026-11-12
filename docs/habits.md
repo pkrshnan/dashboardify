@@ -77,14 +77,16 @@ A `habits` module at `#/habits` (`?habit=` opens one), sidebar group 2, More on 
 `g b`. UI waits for approved artboards on the design canvas.
 
 - Habits page: a row per habit with its name, cadence and source, the streak with the 30-day
-  count (orange "Missed yesterday" when today decides it), a GitHub-style grid of the last 26
-  weeks (Monday to Sunday, top to bottom), and a 40 px tick for today. Cells: the habit's colour
+  count (orange "Missed yesterday" when today decides it), a 20 px tick for today beside the
+  name, and a GitHub-style grid of the last 36 weeks (Monday to Sunday, top to bottom) to the
+  right edge. Cells: the habit's colour
   when done, grey when missed, outlined when not scheduled, a ring on today. Tapping a cell fixes
   that day. A `N a week` habit shows this week as N dots under its streak, one filled per day done.
 - Beside the list, the selected habit's settings: name, "How often" (Every day, Times a week
   with − and +, Set days with seven day buttons), "Ticks itself from", colour, Pause, Archive.
   "+ New habit" opens the same form empty.
-- Phone: the list with 20 weeks per grid (read-only) and a 44 px tick; "+" opens a New habit
+- Phone: the list with 23 weeks per grid (read-only) and a 22 px tick beside the name (44 px to
+  tap); "+" opens a New habit
   sheet with the same fields and a preview grid in the chosen cadence. Fixing a past day is in
   the habit's own view.
 - Today: a row of today's due habits as chips; tap ticks. Auto ones tick themselves.
