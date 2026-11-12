@@ -31,9 +31,9 @@ export function reviewFor(workout: Span, reviews: Review[]): Review | null {
 }
 
 /**
- * Each workout with its status. A review decides it. Otherwise a workout the note's lifting log
- * was matched to is confirmed lifting; lifting with no log that day, or a workout of unknown kind,
- * is possible and worth asking about; anything else is detected.
+ * Each workout with its status. A review decides it. Otherwise a run recorded in Strava, or a
+ * workout the note's lifting log was matched to, is confirmed; lifting with no log that day, or a
+ * workout of unknown kind, is possible and worth asking about; anything else is detected.
  */
 export function reviewWorkouts(
   workouts: Workout[],
@@ -52,6 +52,10 @@ function reviewed(
     return review.kind === "none"
       ? { ...w, status: "dismissed" }
       : { ...w, kind: review.kind as WorkoutKind, status: "confirmed" };
+  }
+  // You recorded it in Strava, so it is a run.
+  if (w.stravaId !== undefined) {
+    return { ...w, status: "confirmed" };
   }
   if (lifting.session && reviewFor(w, [{ span: lifting.session, kind: "lifting" }])) {
     return { ...w, kind: "lifting", status: "confirmed" };

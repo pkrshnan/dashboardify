@@ -77,6 +77,31 @@ describe("activity API", () => {
     });
   });
 
+  test("a Strava run carries its distance and activity", async () => {
+    await seed();
+    const derived = new DerivedStore(join(api.dir, "derived"));
+    const [lifting] = await derived.readAll("workouts", DAY);
+    await derived.writeAll("workouts", DAY, [
+      { ...lifting, distance_m: null, strava_id: null },
+      {
+        ...lifting,
+        status: "confirmed",
+        kind: "running",
+        start_ts: END + 600_000,
+        end_ts: END + 2_400_000,
+        distance_m: 5100,
+        strava_id: 16_000_000_001,
+      },
+    ]);
+
+    const { body } = await api.call("/v1/days/2026-11-04/workouts/1841");
+    const { body: lifted } = await api.call("/v1/days/2026-11-04/workouts/1807");
+
+    expect(body).toMatchObject({ distanceMeters: 5100, stravaActivityId: "16000000001" });
+    expect(lifted.distanceMeters).toBeUndefined();
+    expect(lifted.stravaActivityId).toBeUndefined();
+  });
+
   test("a workout comes with heart rate every 15 seconds", async () => {
     await seed();
 

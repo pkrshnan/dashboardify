@@ -13,7 +13,7 @@ What the server writes, so files can be edited by hand without breaking anything
   `- [ ] Call the bank ⏰ 09:00 ⏫ 🔁 every week 📅 2026-11-03 ➕ 2026-11-02 🆔 k7f3a2`.
   `⏰ HH:MM` is our own due time and always sits right after the description; `🆔` is the id the
   API uses. New tasks go to the inbox note (Settings › General, default `Inbox.md`). Every `- [ ]`
-  line in the vault is read as a task.
+  line in the vault is read as a task, except in `Lists/`.
 
 ## Daily note: `daily/YYYY/YYYY-MM-DD.md`
 
@@ -75,9 +75,10 @@ workout_reviews:
   ([health-metrics.md](health-metrics.md)). The night is the one that ended that morning; strain,
   workouts and steps cover the calendar day. Load (`load_*`) is the last 7 days' TRIMP against
   the last 28's and needs four weeks of days. Calories (`kcal`, `active_kcal`) need weight, height,
-  birth date and sex in `profile.md`, and are a running total today; a workout line
-  ends with its own. An unsure workout ends with `?` (`Lifting?`) until
-  reviewed. "Synced" is on today only and turns into `**14h behind**` past two hours.
+  birth date and sex in `profile.md`, and are a running total today; a workout line ends with its
+  own. An unsure workout ends with `?` (`Lifting?`) until reviewed. A Strava run adds distance and
+  pace: `- Running 10:42–11:14 · 32 min · 5.1 km · 6:16 /km · …`. "Synced" is on today only and
+  turns into `**14h behind**` past two hours.
 - **Agenda** is today's events, rewritten after each calendar sync that changes them.
 - **Journal** entries are `- HH:MM text`, continuation lines indented two spaces.
 - **Workouts** is yours; the server only reads it. A load line is `weight unit, sets x reps`,
@@ -88,6 +89,24 @@ workout_reviews:
   `workout` or `none`. Malformed entries are skipped.
 - **`feel`, `effort_rpe`, `health_tags`** come from the morning check-in
   ([health-feedback.md](health-feedback.md)).
+
+## Lists: `Lists/<Title>.md`
+
+One note per list ([lists.md](lists.md)); the file name is the list's title. `##` headings are
+sections and `- [ ]` / `- [x]` lines are items; a trailing `(…)` is the item's note. The server
+adds items at the end of the block before the first heading, or of the section they're added to
+(a new section's `## Heading` goes at the end of the note). It unticks an item that's added
+again, moves an item's line (with its indented lines) to the end of another section, and removes
+`[x]` lines when you clear what's done. Every other line
+is left alone, and no ids are written into the note.
+
+```markdown
+- [ ] Coffee beans
+
+## Produce
+- [ ] Spinach (2 bags)
+- [x] Lemons
+```
 
 ## `profile.md`
 

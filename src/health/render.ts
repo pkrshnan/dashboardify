@@ -152,13 +152,32 @@ const KIND_NAMES: Record<Workout["kind"], string> = {
   workout: "Workout",
 };
 
-/** "- Volleyball 20:30–21:15 · 45 min · 138 avg / 179 max · strain 8.3 · 410 kcal" */
+/**
+ * "- Volleyball 20:30–21:15 · 45 min · 138 avg / 179 max · strain 8.3 · 410 kcal"; a Strava run
+ * adds "· 5.1 km · 6:16 /km" after the minutes.
+ */
 function workoutLine(w: ReviewedWorkout, clock: (ts: number) => string): string {
   const hr = `${Math.round(w.avgHr)} avg / ${Math.round(w.maxHr)} max`;
   const when = `${clock(w.start)}–${clock(w.end)}`;
   const name = `${KIND_NAMES[w.kind]}${w.status === "possible" ? "?" : ""}`;
-  const kcal = w.kcal === null ? "" : ` · ${Math.round(w.kcal).toLocaleString("en-US")} kcal`;
-  return `- ${name} ${when} · ${Math.round(w.minutes)} min · ${hr} · strain ${w.strain.toFixed(1)}${kcal}`;
+  const parts = [`${name} ${when}`, `${Math.round(w.minutes)} min`];
+  if (w.distanceMeters) {
+    parts.push(
+      `${(w.distanceMeters / 1000).toFixed(1)} km`,
+      `${pace(w.minutes, w.distanceMeters)} /km`,
+    );
+  }
+  parts.push(...(w.avgHr > 0 ? [hr] : []), `strain ${w.strain.toFixed(1)}`);
+  if (w.kcal !== null) {
+    parts.push(`${Math.round(w.kcal).toLocaleString("en-US")} kcal`);
+  }
+  return `- ${parts.join(" · ")}`;
+}
+
+/** Minutes per km as "6:16". */
+function pace(minutes: number, meters: number): string {
+  const seconds = Math.round((minutes * 60) / (meters / 1000));
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
 /**
