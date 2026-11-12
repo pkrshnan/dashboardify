@@ -65,6 +65,7 @@ Apple Reminders.
 | 10 | Ask: vault index, model providers, a read-only agent with cited answers, Siri, MCP | Not started |
 | 11 | Inbox: IMAP triage, daily messages digest | Not started |
 | 12 | Local: Ollama guide, morning brief over ntfy | Not started |
+| 13 | Habits: ticks in the daily note, auto habits from health and workouts, streaks that forgive one miss | Plan for review: [habits.md](habits.md) |
 
 ## Open questions
 
