@@ -2,9 +2,11 @@ import { describe, expect, test } from "bun:test";
 import {
   type ActivityDayView,
   calendarWeeks,
+  distance,
   duration,
   heartRateLines,
   heartRateTicks,
+  pace,
   rangeDates,
   totals,
   type WorkoutView,
@@ -51,6 +53,25 @@ describe("activity page", () => {
 
     expect(t).toMatchObject({ workouts: 2, workoutMin: 65, toConfirm: 1, walks: 1, walkMin: 41 });
     expect(t.steps).toBe(10_000);
+  });
+
+  test("runs from Strava add up distance and pace; a dismissed one doesn't count", () => {
+    const run = (status: WorkoutView["status"], minutes: number, meters: number): WorkoutView => ({
+      ...workout(status, minutes),
+      kind: "running",
+      distanceMeters: meters,
+      stravaActivityId: "1",
+    });
+
+    const t = totals([
+      day("2026-11-09", [run("confirmed", 32, 5100), workout("confirmed", 45)]),
+      day("2026-11-11", [run("confirmed", 28, 4900), run("dismissed", 10, 1000)]),
+    ]);
+
+    expect(t).toMatchObject({ runs: 2, runMeters: 10_000, runMin: 60 });
+    expect(distance(t.runMeters)).toBe("10.0 km");
+    expect(pace(t.runMin, t.runMeters)).toBe("6:00 /km");
+    expect(pace(32, 5100)).toBe("6:16 /km");
   });
 
   test("the month calendar is Monday-first, with days outside the range left empty", () => {
