@@ -19,6 +19,10 @@ beforeEach(() => {
   original = globalThis.fetch;
   globalThis.fetch = (async (url: string) => {
     asked.push(url);
+    const asOf = /asOfDate\.year=(\d+)&asOfDate\.month=(\d+)&asOfDate\.day=(\d+)/.exec(url);
+    if (asOf) {
+      return Response.json(pastHome(Number(asOf[3])));
+    }
     return new Response(JSON.stringify({ code: 5, message: "night not found" }), { status: 404 });
   }) as typeof fetch;
 });
@@ -26,16 +30,37 @@ afterEach(() => {
   globalThis.fetch = original;
 });
 
-function showPage(query: Record<string, string> = {}, isPhone = false) {
-  const view = {
+/** GET /v1/home as of a day in November: HRV reads the day's number. */
+function pastHome(day: number) {
+  return {
+    name: "home",
     timeZone: "UTC",
-    date: TODAY,
-    health: METRICS.map((def) => trend(def, [], TODAY)),
-    healthSync: null,
-  } as unknown as HomeView;
+    date: { year: 2026, month: 11, day: 12 },
+    metrics: [
+      {
+        key: "hrv",
+        displayName: "HRV",
+        unit: "ms",
+        group: "heart",
+        value: String(40 + day),
+        dailyValues: [40 + day],
+        lastDate: { year: 2026, month: 11, day },
+      },
+    ],
+  };
+}
+
+const view = {
+  timeZone: "UTC",
+  date: TODAY,
+  health: METRICS.map((def) => trend(def, [], TODAY)),
+  healthSync: null,
+} as unknown as HomeView;
+
+function page(query: Record<string, string>, isPhone: boolean) {
   const View = health.view;
-  return render(
-    <AppContext.Provider value={{ token: "t", onUnauthorized: () => undefined, isPhone }}>
+  return (
+    <AppContext.Provider value={{ token: "t", onUnauthorized, isPhone }}>
       <View
         route={{ path: "/health", query }}
         params={{}}
@@ -45,8 +70,16 @@ function showPage(query: Record<string, string> = {}, isPhone = false) {
           load: () => Promise.resolve(),
         }}
       />
-    </AppContext.Provider>,
+    </AppContext.Provider>
   );
+}
+
+// One function for every render, as the shell's is, so a rerender doesn't refetch.
+const onUnauthorized = () => undefined;
+
+function showPage(query: Record<string, string> = {}, isPhone = false) {
+  const shown = render(page(query, isPhone));
+  return { ...shown, show: (next: Record<string, string>) => shown.rerender(page(next, isPhone)) };
 }
 
 const names = (el: Element) =>
@@ -86,7 +119,30 @@ describe("Health page", () => {
     await page.findByText("No night recorded.");
 
     expect(page.getByText("Night, 8–9 Nov")).toBeTruthy();
-    expect(asked).toEqual(["/v1/days/2026-11-09/night"]);
+    expect(asked).toContain("/v1/days/2026-11-09/night");
+  });
+
+  test("the rows are as of last night without asking again", async () => {
+    const page = showPage();
+
+    await page.findByText("No night recorded.");
+
+    expect(asked.filter((url) => url.startsWith("/v1/home"))).toEqual([]);
+    expect(page.getByText(/ – 12 Nov/)).toBeTruthy();
+  });
+
+  test("the rows are as of the night shown, and follow it when it changes", async () => {
+    const page = showPage({ night: "2026-11-09" });
+
+    expect(await page.findByText("49")).toBeTruthy();
+    expect(asked).toContain("/v1/home?asOfDate.year=2026&asOfDate.month=11&asOfDate.day=9");
+    expect(page.getByText("11 Oct – 9 Nov")).toBeTruthy();
+
+    page.show({ night: "2026-11-08" });
+
+    expect(await page.findByText("48")).toBeTruthy();
+    expect(asked).toContain("/v1/home?asOfDate.year=2026&asOfDate.month=11&asOfDate.day=8");
+    expect(page.getByText("10 Oct – 8 Nov")).toBeTruthy();
   });
 
   test("the rows are plain, since the night is already showing", () => {

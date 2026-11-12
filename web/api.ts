@@ -81,9 +81,11 @@ function healthSyncView(s: HealthSync): HealthSyncView {
   };
 }
 
+/** The home view; with `asOf` (YYYY-MM-DD), its health metrics end on that day instead. */
 // biome-ignore lint/complexity/noExcessiveLinesPerFunction: explicit conversion from protobuf dates, times and enums into the existing presentation model
-export async function fetchHome(token: Token): Promise<HomeView> {
-  const v = fromJson(HomeSchema, await call<JsonValue>(token, "/v1/home"));
+export async function fetchHome(token: Token, asOf?: string): Promise<HomeView> {
+  const path = asOf ? `/v1/home?${dateQuery("asOfDate", asOf)}` : "/v1/home";
+  const v = fromJson(HomeSchema, await call<JsonValue>(token, path));
   const date = (d: { year: number; month: number; day: number } | undefined) =>
     d ? `${d.year}-${String(d.month).padStart(2, "0")}-${String(d.day).padStart(2, "0")}` : "";
   const time = (t: { hours: number; minutes: number } | undefined) =>

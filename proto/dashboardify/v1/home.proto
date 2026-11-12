@@ -13,7 +13,7 @@ import "google/type/timeofday.proto";
 
 // Serves the home screen, worked out on the server.
 service HomeService {
-  // Gets the home screen as of now.
+  // Gets the home screen as of now. `as_of_date` moves only the health metrics.
   rpc GetHome(GetHomeRequest) returns (Home) {
     option (google.api.http) = {get: "/v1/{name=home}"};
     option (google.api.method_signature) = "name";
@@ -285,6 +285,11 @@ message GetHomeRequest {
     (google.api.resource_reference).type = "dashboardify.app/Home",
     (buf.validate.field).string.min_len = 1
   ];
+
+  // The day the health metrics end on, as if it were today, for the Health page's past nights.
+  // Unset, or after today, means today. The sentence reads those metrics; the agenda, tasks and
+  // sync times stay as of now.
+  google.type.Date as_of_date = 2 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // When calendars last synced, for "Calendar synced 09:10".

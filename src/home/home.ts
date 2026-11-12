@@ -46,18 +46,23 @@ function calendarSyncView(status: CalendarStatus | undefined): CalendarSyncView 
   return status ? { lastSync: status.lastSyncTime ?? null, hasErrors: status.hasErrors } : null;
 }
 
-export async function homeView(deps: HomeDeps, now: Date): Promise<HomeView> {
+/**
+ * The home view as of `now`. `asOf`, a YYYY-MM-DD day, ends the health metrics there instead, for
+ * the Health page's past nights; one after today is today, since there is no data yet.
+ */
+export async function homeView(deps: HomeDeps, now: Date, asOf?: string): Promise<HomeView> {
   const zoned = Temporal.Instant.fromEpochMilliseconds(now.getTime()).toZonedDateTimeISO(
     deps.timeZone,
   );
   const today = zoned.toPlainDate();
   const from = today.toZonedDateTime(deps.timeZone).epochMilliseconds;
   const to = today.add({ days: WEEK_DAYS }).toZonedDateTime(deps.timeZone).epochMilliseconds;
+  const healthDay = asOf && asOf < today.toString() ? asOf : today.toString();
 
   const [allTasks, events, health, sync, battery] = await Promise.all([
     deps.tasks.list(),
     deps.calendar.events(from, to),
-    deps.health.trends(today.toString()),
+    deps.health.trends(healthDay),
     deps.sync(),
     deps.battery(now.getTime()),
   ]);

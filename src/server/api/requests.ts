@@ -83,7 +83,7 @@ export interface ApiRequests {
   getStream: NamedRequest;
   listStreams: PageRequest;
   mergeSamples: SampleUpload;
-  getHome: NamedRequest;
+  getHome: NamedRequest & { asOfDate?: DateParts };
   listActivityDays: { startDate: DateParts; endDate: DateParts };
   getWorkout: NamedRequest;
   reviewWorkout: NamedRequest & { kind: string };
