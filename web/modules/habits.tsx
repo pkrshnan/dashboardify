@@ -343,12 +343,18 @@ function HabitPanel(props: {
 }) {
   const { token } = useApp();
   const { habit } = props;
+  const [added, setAdded] = useState<{ name: string; count: number } | null>(null);
   const save = async (input: HabitInput) => {
-    const saved = habit
-      ? await updateHabit(token, habit.id, input)
-      : await createHabit(token, input);
+    if (habit) {
+      await updateHabit(token, habit.id, input);
+      await props.onSaved();
+      return;
+    }
+    const created = await createHabit(token, input);
     await props.onSaved();
-    navigate(href(`/habits/${saved.id}`));
+    // A blank form again, so the next habit can follow; the list shows the one just added.
+    setAdded({ name: created.displayName, count: (added?.count ?? 0) + 1 });
+    navigate(href("/habits/new"));
   };
   const setState = async (state: HabitView["state"]) => {
     if (habit) {
@@ -366,7 +372,12 @@ function HabitPanel(props: {
       <h2 class="habit-panel-title">{habit ? habit.displayName : "New habit"}</h2>
       <p class="habit-path">Habits.md</p>
       {props.back && habit && <ThisWeek habit={habit} onChanged={props.onSaved} />}
-      <HabitForm habit={habit} facts={props.facts} onSave={save} />
+      <HabitForm key={added?.count ?? 0} habit={habit} facts={props.facts} onSave={save} />
+      {added && !habit && (
+        <p class="habit-added" role="status">
+          Added {added.name}.
+        </p>
+      )}
       {habit && (
         <div class="habit-actions">
           <button

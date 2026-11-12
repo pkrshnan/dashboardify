@@ -112,7 +112,8 @@ keys `g b`. Look: [design/README.md](design/README.md#habits-page).
   that day. A `N a week` habit shows this week as N dots under its streak, one filled per day done.
 - Beside the list, the selected habit's settings: name, "How often" (Every day, Weekly
   with − and +, Set days with seven day buttons), "Ticks itself from", colour, Pause, Archive.
-  "+ New habit" opens the same form empty.
+  "+ New habit" opens the same form empty; adding one says "Added Stretch." and clears it for the
+  next.
 - Phone: the list with 23 weeks per grid (read-only) and a 22 px tick beside the name (44 px to
   tap); "+" opens a New habit screen with the same fields. A habit's own screen has this week's
   seven days to tap, to fix one.

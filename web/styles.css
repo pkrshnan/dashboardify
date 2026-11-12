@@ -3626,6 +3626,12 @@ button.habit-cell {
   cursor: default;
 }
 
+.habit-added {
+  margin: -8px 0 0;
+  color: var(--text-2);
+  font-size: var(--type-footnote);
+}
+
 .habit-error {
   margin: 0;
   color: var(--bad);
