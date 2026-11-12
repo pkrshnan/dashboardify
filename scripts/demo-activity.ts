@@ -1,6 +1,6 @@
 // Three months of made-up workouts and walks for the demo's Activity page: runs on Tuesdays,
 // Thursdays and Saturdays, lifting on Mondays, volleyball on Wednesdays, and an unnamed workout on
-// Fridays that the strap wasn't sure of. Older Fridays are already reviewed in their daily notes;
+// Fridays that the strap wasn't sure of; Saturday's run is from Strava, walked to and from. Older Fridays are already reviewed in their daily notes;
 // the last two, and this morning's gym session, are left to review. Each workout has heart rate,
 // so its chart draws, and reviews are applied to these rows rather than recomputed from the strap.
 
@@ -26,6 +26,8 @@ interface Plan {
   /** Heart rate at each second into the workout. */
   heartRate: (second: number) => number;
   sets?: SetPlan[];
+  /** Recorded in Strava, with a walk either side. */
+  meters?: number;
 }
 
 interface SetPlan {
@@ -120,7 +122,10 @@ export class DemoActivity {
     this.found.set(day, rows);
     await this.opts.derived.writeAll("workouts", day, rows);
     await this.opts.derived.writeAll("sets", day, sets);
-    const dayWalks = walks(date, (hour) => this.at(day, hour), this.noise);
+    const dayWalks = [
+      ...walks(date, (hour) => this.at(day, hour), this.noise),
+      ...timed.filter((t) => t.plan.meters).flatMap(({ start, end }) => outingWalks(start, end)),
+    ];
     await this.opts.derived.writeAll(
       "walks",
       day,
@@ -146,6 +151,8 @@ export class DemoActivity {
       max_hr: Math.max(...during),
       cadence_spm: plan.kind === "running" ? Math.round(162 + 8 * this.noise()) : 0,
       strain: round1(strainFor(plan) + this.noise()),
+      distance_m: plan.meters ?? null,
+      strava_id: plan.meters ? 16_000_000_000 + (Math.round(start / 60_000) % 1_000_000) : null,
     };
   }
 
@@ -191,7 +198,7 @@ function weekday(dayOfWeek: number, noise: () => number): Plan[] {
     case 5:
       return [unsure(17.5, noise)];
     case 6:
-      return [easyRun(9, 60 + Math.round(15 * noise()), noise)];
+      return [stravaRun(9, 32 + Math.round(8 * noise()), noise)];
     default:
       return [];
   }
@@ -206,6 +213,35 @@ function easyRun(from: number, minutes: number, noise: () => number): Plan {
     minutes,
     heartRate: (s) => ramp(s, 95, steady, 300) + 4 * Math.sin(s / 90) + wobble(s),
   };
+}
+
+/** A run you recorded in Strava, about 6:10 a km, walked to and from. */
+function stravaRun(from: number, minutes: number, noise: () => number): Plan {
+  return {
+    ...easyRun(from, minutes, noise),
+    status: "confirmed",
+    meters: Math.round((minutes / (6.1 + 0.3 * noise())) * 1000),
+  };
+}
+
+/** The walks to and from a Strava run, as the strap's steps find them. */
+function outingWalks(start: number, end: number): { start_ts: number; end_ts: number }[] {
+  const spans: [number, number][] = [
+    [start - 15 * 60_000, start],
+    [end, end + 16 * 60_000],
+  ];
+  return spans.map(([from, to]) => {
+    const minutes = (to - from) / 60_000;
+    return {
+      start_ts: from,
+      end_ts: to,
+      duration_min: minutes,
+      steps: Math.round(minutes * 106),
+      cadence_spm: 106,
+      brisk_min: minutes - 2,
+      avg_hr: 112,
+    };
+  });
 }
 
 /** 6 × 4 minutes hard, 2 easy, after a 10-minute warm-up. */
