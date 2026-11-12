@@ -2,8 +2,9 @@
 
 Runs from Strava, so a strap session of walk, run, walk is split into the run and the walks
 around it, and the run gets its distance and pace. You record only the running part in Strava,
-so the activity's start and length mark the run; the strap fills in the rest. Status: ST1–ST4 built
-(the account, `bun run settings strava`, the sync, the split); next, ST5.
+so the activity's start and length mark the run; the strap fills in the rest. Status: ST1–ST5 built
+(the account, `bun run settings strava`, the sync, the split, the API fields); the Activity
+page waits for artboards (ST6).
 
 ## Goals
 
@@ -58,4 +59,5 @@ public URL; the server is on the tailnet only), writing to Strava.
 | ST2 | `strava_account`, the client with token refresh, and the CLI commands |
 | ST3 | Cache and sync loop, started in `main.ts`; changed runs recompute their day |
 | ST4 | `runs.ts` split, the 5-min walks next to a run, the new `workouts/` columns, the note's run line |
-| ST5 | `Workout` fields; the Activity page shows distance and pace on runs and links to Strava (after artboards) |
+| ST5 | `Workout` fields, through `web/api.ts` |
+| ST6 | The Activity page shows distance and pace on runs and links to Strava (after artboards) |
