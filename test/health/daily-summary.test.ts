@@ -114,11 +114,11 @@ async function putNextNight(): Promise<void> {
   );
 }
 
-async function writeProfile(): Promise<void> {
+async function writeProfile(body = ""): Promise<void> {
   await mkdir(join(dir, "vault"), { recursive: true });
   await writeFile(
     join(dir, "vault", "profile.md"),
-    "---\nbirth_date: 1996-05-01\nsex: male\n---\n",
+    `---\nbirth_date: 1996-05-01\nsex: male\n${body}---\n`,
   );
 }
 
@@ -145,10 +145,48 @@ describe("DailySummary", () => {
     expect(note?.body.indexOf("## Health")).toBeLessThan(note?.body.indexOf("## Journal") ?? 0);
 
     expect((await derived.read("nights", DATE))?.rhr_bpm).toBeCloseTo(52, 0);
-    expect((await derived.read("days", DATE))?.algo_version).toBe("7");
+    expect((await derived.read("days", DATE))?.algo_version).toBe("9");
     // No earlier days, so no training load yet.
     expect(note?.body).not.toContain("- Load");
     expect(note?.frontmatter.load_ratio).toBeUndefined();
+    // No weight or height in the profile, so no calories.
+    expect(note?.body).not.toContain("- Calories");
+    expect(note?.frontmatter.kcal).toBeUndefined();
+    expect((await derived.read("days", DATE))?.kcal).toBeNull();
+  });
+
+  test("calories appear after the strain line with weight and height in the profile", async () => {
+    await putNight();
+    await writeProfile("weight_kg: 75\nheight_cm: 180\n");
+
+    const result = await summary.run(DATE);
+
+    const kcal = Math.round(result?.day.calories?.kcal ?? 0);
+    const active = Math.round(result?.day.calories?.activeKcal ?? 0);
+    // Above BMR (1,730 kcal for this profile at 30) for a whole day awake at 110 bpm.
+    expect(kcal).toBeGreaterThan(1730);
+    expect(active).toBe(kcal - 1730);
+    const note = await vault.readDaily(DATE);
+    expect(note?.frontmatter).toMatchObject({ kcal, active_kcal: active });
+    expect(note?.body).toContain(
+      `- Calories ${kcal.toLocaleString("en-US")} · ${active.toLocaleString("en-US")} active`,
+    );
+    expect(note?.body).toMatch(/- Strain \*\*[\d.]+\*\* · Zones [\d /]+ min\n- Calories/);
+    expect(await derived.read("days", DATE)).toMatchObject({ kcal, active_kcal: active });
+  });
+
+  test("today's calories are a running total of the minutes so far", async () => {
+    await putNight();
+    await writeProfile("weight_kg: 75\nheight_cm: 180\n");
+    const morning = new DailySummary(raw, derived, vault, TZ, () =>
+      Date.parse(`${DATE}T06:00:00-08:00`),
+    );
+
+    const result = await morning.run(DATE);
+
+    // Six hours, all asleep: BMR 1,730 × 0.95 for 360 of 1,440 minutes.
+    expect(result?.day.calories?.kcal).toBeCloseTo((1730 * 0.95 * 360) / 1440, 6);
+    expect(result?.day.calories?.activeKcal).toBe(0);
   });
 
   test("training load appears after the strain line once there are four weeks of days", async () => {

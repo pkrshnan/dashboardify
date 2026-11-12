@@ -234,6 +234,7 @@ describe("summaries", () => {
 
   test("a day without a profile has no strain", () => {
     const day = dayMetrics({
+      day: { start: T0, end: T0 + HOUR },
       heartRate: heartRate(T0, T0 + HOUR, () => 120),
       steps: [],
       motion: [],
@@ -247,6 +248,7 @@ describe("summaries", () => {
 
   test("a day with a profile has strain and zones", () => {
     const day = dayMetrics({
+      day: { start: T0, end: T0 + HOUR },
       heartRate: heartRate(T0, T0 + HOUR, () => 150),
       steps: [],
       motion: [],

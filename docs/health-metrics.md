@@ -15,7 +15,8 @@ flowchart LR
   R & H & B & T --> REC
   R --> ST & W
   ST --> L[load]
-  STP[steps] --> STEPS[steps] & W & WK[walks]
+  HR & R & S --> CAL[calories]
+  STP[steps] --> STEPS[steps] & W & WK[walks] & CAL
   MOT[motion] --> W
   W --> WK
 ```
@@ -89,6 +90,33 @@ first day of up to 56. Ratio = acute ÷ chronic.
 - **Missing:** no acute with more than 2 gaps in the last 7 days or under 7 days of history; no
   chronic under 28 days; no ratio without both, and then no note line.
 
+## Calories (`calories.ts`)
+
+Per minute of the local day, worn or not, then summed. BMR is Mifflin–St Jeor (1990),
+`10 × kg + 6.25 × cm − 5 × age + 5` (women −161), spread over 1,440 minutes.
+
+- **Asleep** (in last night's window): BMR × 0.95.
+- **Not worn** (no HR): BMR × 1.2.
+- **Awake and worn:** the largest of three.
+  - **Sitting:** BMR × 1.2.
+  - **Walking**, from the minute's steps (as walks use them): step length 0.415 × height, speed =
+    steps × step length, then ACSM's walking equation, `VO2 = 3.5 + 0.1 × m/min` ml/kg/min, at
+    5 kcal per litre. Only 60+ steps/min, and speed capped at 100 m/min, the top of the range
+    the equation holds for; running is left to HR. Steps are provisional, so this is too.
+  - **Heart rate:** Keytel 2005 without VO2max, `−55.0969 + 0.6309 HR + 0.1988 kg + 0.2017 age`
+    kJ/min (women `−20.4022 + 0.4472 HR − 0.1263 kg + 0.074 age`), weighed in linearly from none
+    at 40% of HR reserve (the flex point, Spurr 1988) to all of it at 60%:
+    `sitting + w × max(0, Keytel − sitting)`. No jump at the flex point. Rest and max HR are
+    strain's.
+- **Active** = total − BMR for the same minutes, never below 0.
+- **Today** is a running total of the minutes so far, like strain and steps.
+- **Missing:** no weight, height, birth date or sex, or no resting or max HR: no calories. Without
+  HR the total would leave out all exercise yet read like a real day.
+
+Keytel likely reads high for light people: 13.4 kcal/min at 150 bpm for a 56 kg man, where MET
+tables give about 9 for a steady jog. Its sample's mean mass (115 people, 47–120 kg) isn't in any
+source we could read, and the equation already has a weight term, so there is no correction.
+
 ## Steps (`steps.ts`)
 
 The counter is cumulative and 16-bit: sum increases, treat a drop from near 65,536 as a wrap and
@@ -150,5 +178,5 @@ Garmin do). The weights are versioned params tuned against check-ins
 
 ## Still to build
 
-Calories, VO2max, fitness and biological age, and sleep stages: planned in
+VO2max, fitness and biological age, and sleep stages: planned in
 [health-extended.md](health-extended.md).

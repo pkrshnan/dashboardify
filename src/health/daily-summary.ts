@@ -41,7 +41,7 @@ import { type DaySummary, frontmatter, healthBlock, syncLine } from "./render";
 import { counted, type ReviewedWorkout, reviewFor, reviewWorkouts } from "./reviews";
 
 /** Bump when a calculation changes, so old rows can be told apart and rebuilt. */
-export const ALGO_VERSION = "7";
+export const ALGO_VERSION = "9";
 
 /** Strava runs, as strava-cache.db holds them (see src/strava/cache.ts). */
 export interface RunSource {
@@ -104,6 +104,7 @@ export class DailySummary {
     const motion = await this.load(date, "motion", 0, 24, toMotion);
     const sleep = night ? { start: night.bed, end: night.wake } : null;
     const day = dayMetrics({
+      day: this.daySpan(date),
       heartRate,
       steps,
       motion,
@@ -165,6 +166,13 @@ export class DailySummary {
     // Today's TRIMP is still a running total; see trainingLoad.
     const today = date === localDate(new Date(this.now()), this.timeZone);
     return trainingLoad([...past, { trimp: day.trimp, wornMin: day.wornMin }], today);
+  }
+
+  /** Midnight to midnight on `date`, or to now for today: calories are a running total. */
+  private daySpan(date: string): Span {
+    const midnight = Temporal.PlainDate.from(date).toZonedDateTime(this.timeZone);
+    const end = midnight.add({ days: 1 }).epochMilliseconds;
+    return { start: midnight.epochMilliseconds, end: Math.min(this.now(), end) };
   }
 
   /** Runs that start on `date`, local midnight to midnight. */
@@ -412,8 +420,14 @@ function dayRow(s: DaySummary): DerivedRow {
     load_acute: s.load.acute,
     load_chronic: s.load.chronic,
     load_ratio: s.load.ratio,
+    kcal: roundOrNull(s.day.calories?.kcal),
+    active_kcal: roundOrNull(s.day.calories?.activeKcal),
     ...Object.fromEntries([0, 1, 2, 3, 4].map((i) => [`zone${i + 1}_min`, zones[i] ?? null])),
   };
+}
+
+function roundOrNull(value: number | undefined): number | null {
+  return value === undefined ? null : Math.round(value);
 }
 
 function workoutRow(w: ReviewedWorkout): DerivedRow {
