@@ -43,7 +43,9 @@ let original: typeof fetch;
 
 function answer(url: string, method: string): unknown {
   if (url === "/v1/habits") {
-    return method === "POST" ? { ...READ, name: "habits/stretch" } : { habits: [READ, LIFT] };
+    return method === "POST"
+      ? { ...READ, name: "habits/stretch", displayName: "Stretch" }
+      : { habits: [READ, LIFT] };
   }
   if (url === "/v1/habitFacts") {
     return { facts: FACTS };
@@ -141,6 +143,15 @@ describe("Habits page", () => {
       auto: "steps ≥ 8000",
       color: "",
     });
+    // Then a blank form for the next one.
+    expect(await page.findByRole("status")).toHaveProperty("textContent", "Added Stretch.");
+    expect(page.getByLabelText("Name")).toHaveProperty("value", "");
+    expect(page.getByRole("button", { name: "Every day" }).getAttribute("aria-pressed")).toBe(
+      "true",
+    );
+    expect(page.getByRole("button", { name: "Ticks itself from" }).textContent).toBe(
+      "Nothing, I tick it",
+    );
   });
 
   test("edits the selected habit's days with the update mask", async () => {
