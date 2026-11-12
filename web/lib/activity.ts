@@ -96,6 +96,22 @@ export function duration(minutes: number): string {
     : `${Math.floor(total / 60)}h ${String(total % 60).padStart(2, "0")}m`;
 }
 
+/** "5.1 km". */
+export function distance(meters: number): string {
+  return `${(meters / 1000).toFixed(1)} km`;
+}
+
+/** Minutes per km, "6:16 /km". Over elapsed time, as the daily note's line is. */
+export function pace(minutes: number, meters: number): string {
+  const seconds = Math.round((minutes * 60) / (meters / 1000));
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")} /km`;
+}
+
+/** The Strava activity's page. */
+export function stravaUrl(id: string): string {
+  return `https://www.strava.com/activities/${id}`;
+}
+
 export function addDays(date: string, days: number): string {
   return new Date(Date.parse(`${date}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
 }
@@ -135,6 +151,10 @@ export interface Totals {
   steps: number;
   briskMin: number;
   daysWithData: number;
+  /** Runs recorded in Strava. */
+  runs: number;
+  runMeters: number;
+  runMin: number;
 }
 
 /** What the days add up to. Dismissed workouts don't count. */
@@ -143,6 +163,7 @@ export function totals(days: ActivityDayView[]): Totals {
   const walks = days.flatMap((d) => d.walks);
   const sum = <T>(items: T[], value: (item: T) => number) =>
     items.reduce((total, item) => total + value(item), 0);
+  const runs = workouts.filter((w) => w.distanceMeters);
   return {
     workouts: workouts.length,
     workoutMin: sum(workouts, (w) => w.minutes),
@@ -153,6 +174,9 @@ export function totals(days: ActivityDayView[]): Totals {
     steps: sum(days, (d) => d.steps),
     briskMin: sum(walks, (w) => w.briskMin),
     daysWithData: days.length,
+    runs: runs.length,
+    runMeters: sum(runs, (w) => w.distanceMeters ?? 0),
+    runMin: sum(runs, (w) => w.minutes),
   };
 }
 
