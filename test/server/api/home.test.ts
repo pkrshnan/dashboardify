@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import { join } from "node:path";
+import { DerivedStore } from "../../../src/health/derived-store";
 import { useApi } from "./helpers";
 
 describe("home API", () => {
@@ -46,6 +48,54 @@ describe("home API", () => {
       charging: true,
       reportTime: "2026-11-03T01:00:00Z",
     });
+  });
+});
+
+describe("home API as of a past day", () => {
+  const api = useApi();
+  const metric = (body: { metrics: { key: string }[] }, key: string) =>
+    body.metrics.find((m) => m.key === key) as unknown as {
+      value?: string;
+      lastDate: unknown;
+      dailyValues: number[];
+    };
+  const asOf = (date: string) => {
+    const [year, month, day] = date.split("-").map(Number);
+    return `/v1/home?asOfDate.year=${year}&asOfDate.month=${month}&asOfDate.day=${day}`;
+  };
+
+  test("ends every metric on that day, nights and days alike", async () => {
+    const derived = new DerivedStore(join(api.dir, "derived"));
+    await derived.write("nights", "2026-10-31", { rmssd_ms: 48 });
+    await derived.write("days", "2026-10-31", { recovery_pct: 71 });
+    await derived.write("nights", "2026-11-03", { rmssd_ms: 60 });
+
+    const past = await api.call(asOf("2026-10-31"));
+    const now = await api.call("/v1/home");
+
+    expect(past.status).toBe(200);
+    expect(past.body.date).toEqual({ year: 2026, month: 11, day: 3 });
+    for (const key of ["hrv", "recovery"]) {
+      expect(metric(past.body, key).lastDate).toEqual({ year: 2026, month: 10, day: 31 });
+    }
+    expect(metric(past.body, "hrv").value).toBe("48");
+    expect(metric(past.body, "hrv").dailyValues.at(-1)).toBe(48);
+    expect(metric(past.body, "recovery").value).toBe("71");
+    expect(metric(now.body, "hrv").value).toBe("60");
+    expect(metric(now.body, "hrv").lastDate).toEqual({ year: 2026, month: 11, day: 3 });
+  });
+
+  test("a future day is today", async () => {
+    const response = await api.call(asOf("2026-11-20"));
+
+    expect(response.status).toBe(200);
+    expect(metric(response.body, "hrv").lastDate).toEqual({ year: 2026, month: 11, day: 3 });
+  });
+
+  test("a day that doesn't exist is refused", async () => {
+    const response = await api.call(asOf("2026-02-30"));
+
+    expect(response.status).toBe(400);
   });
 });
 

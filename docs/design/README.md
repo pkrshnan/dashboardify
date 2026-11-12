@@ -87,7 +87,7 @@ night, last night unless `?night=2026-11-12` names one: its times ("23:41–07:0
 and score, then a hypnogram (awake, REM, light and deep lanes in shades of the sleep colour, hour
 ticks in the server's time zone), the stage totals and "Estimated", plus "· unusual night" when
 the stages look unlike yours. Links step to the night before or after and replace the history
-entry, so Back leaves the page.
+entry, so Back leaves the page. Every row and the range label are as of that night's day.
 
 ## Look
 

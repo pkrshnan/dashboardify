@@ -1,8 +1,11 @@
 // The Health page: recovery, then sleep (a night's stages over the sleep trends), heart and
 // vitals. The trend rows are home's (web/components/health.tsx), given the page's width. The night
-// is the address's `?night=`, last night without it; the range is `?range=`.
+// is the address's `?night=`, last night without it; the range is `?range=`. Every row is as of
+// the night's day, so stepping back a night reads as if that day were today.
 
+import { useEffect, useState } from "preact/hooks";
 import type { HealthGroup, MetricTrend } from "../../src/home/types";
+import { fetchHome, type Token, Unauthorized } from "../api";
 import { HealthStatus, Metric, RANGES } from "../components/health";
 import { Night } from "../components/night";
 import { Segmented } from "../components/segmented";
@@ -37,6 +40,8 @@ function HealthPage({ route, home }: PageProps) {
   }
   const { view } = home;
   const range = healthRange(route.query.range);
+  const night = nightDate(route.query.night, view.date);
+  const metrics = useTrendsAsOf(token, night, view.health, view.date, onUnauthorized);
   const rows = (metrics: MetricTrend[]) => (
     <div class="health-rows">
       {metrics.map((m) => (
@@ -44,7 +49,7 @@ function HealthPage({ route, home }: PageProps) {
       ))}
     </div>
   );
-  const recovery = view.health.filter((m) => m.key === "recovery");
+  const recovery = metrics.filter((m) => m.key === "recovery");
   return (
     <main class="health-page">
       <section class="section">
@@ -54,7 +59,7 @@ function HealthPage({ route, home }: PageProps) {
           </div>
           <div class="activity-range">
             <HealthStatus
-              date={view.date}
+              date={night}
               range={range}
               sync={view.healthSync}
               timeZone={view.timeZone}
@@ -77,14 +82,14 @@ function HealthPage({ route, home }: PageProps) {
           {group === "sleep" && (
             <Night
               token={token}
-              date={nightDate(route.query.night, view.date)}
+              date={night}
               today={view.date}
               timeZone={view.timeZone}
               onStep={(date) => setQuery({ night: date })}
               onUnauthorized={onUnauthorized}
             />
           )}
-          {rows(view.health.filter((m) => m.group === group && m.key !== "recovery"))}
+          {rows(metrics.filter((m) => m.group === group && m.key !== "recovery"))}
         </section>
       ))}
     </main>
@@ -94,4 +99,39 @@ function HealthPage({ route, home }: PageProps) {
 /** `?range=`; a month when it is missing or unknown, as on home. */
 export function healthRange(value: string | undefined): Range {
   return RANGES.some((r) => r.value === value) ? (value as Range) : "1m";
+}
+
+/**
+ * The trends ending on `day`. Today's come with the home view; a past day's are fetched, and the
+ * rows keep the last ones they had until they arrive, so stepping doesn't blank the page.
+ */
+function useTrendsAsOf(
+  token: Token,
+  day: string,
+  todays: MetricTrend[],
+  today: string,
+  onUnauthorized: (setup: boolean) => void,
+): MetricTrend[] {
+  const [past, setPast] = useState<MetricTrend[] | null>(null);
+  useEffect(() => {
+    if (day === today) {
+      return;
+    }
+    let live = true;
+    fetchHome(token, day).then(
+      (view) => live && setPast(view.health),
+      (err) => {
+        if (err instanceof Unauthorized) {
+          onUnauthorized(err.setup);
+        }
+      },
+    );
+    return () => {
+      live = false;
+    };
+  }, [token, day, today, onUnauthorized]);
+  if (day === today) {
+    return todays;
+  }
+  return past ?? todays;
 }

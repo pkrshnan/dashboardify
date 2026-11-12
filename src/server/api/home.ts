@@ -7,7 +7,7 @@ import type {
   Reminder,
   TaskGroup,
 } from "../../home/types";
-import { toDateParts, toTimeParts } from "./date-time";
+import { fromDateParts, toDateParts, toTimeParts } from "./date-time";
 import { invalidArgument } from "./errors";
 import type { ApiRequests } from "./requests";
 
@@ -22,7 +22,8 @@ export class HomeService {
     if (request.name !== "home") {
       invalidArgument("name must be home");
     }
-    const view = await homeView(this.home, this.now());
+    const asOf = request.asOfDate ? fromDateParts(request.asOfDate) : undefined;
+    const view = await homeView(this.home, this.now(), asOf);
     return {
       name: "home",
       timeZone: view.timeZone,
