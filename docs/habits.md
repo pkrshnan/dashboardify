@@ -2,7 +2,7 @@
 
 Things you mean to do regularly (meditate, read, floss, lift three times a week, 8,000 steps) and
 a record of whether you did. Design: https://claude.ai/artifact/PQe6S6nfjyGt242ui4udNK.
-Status: plan, nothing built (HB1–HB7).
+Status: HB1 built (Habits.md and the ticks in daily notes).
 
 ## Goals
 

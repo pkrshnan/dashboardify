@@ -98,6 +98,8 @@ workout_reviews:
   `workout` or `none`. Malformed entries are skipped.
 - **`feel`, `effort_rpe`, `health_tags`** come from the morning check-in
   ([health-feedback.md](health-feedback.md)).
+- **`habits`** lists the ids of the habits ticked that day: `habits: [meditate, read]`
+  ([habits.md](habits.md)). The server adds and removes ids and drops the key when none are left.
 
 ## Lists: `Lists/<Title>.md`
 
@@ -115,6 +117,20 @@ is left alone, and no ids are written into the note.
 ## Produce
 - [ ] Spinach (2 bags)
 - [x] Lemons
+```
+
+## `Habits.md`
+
+At the vault root ([habits.md](habits.md)). Each top-level `- ` line that isn't a checkbox is a
+habit: its name, then `·`-separated fields (a schedule, `auto <rule>`, a colour, `paused` or
+`archived`), then its id. The server appends new habits after the last one and rewrites a habit's
+line when it's edited, writing its id so a rename keeps its history; a line without an id is
+named by its slug. Fields it doesn't know and every other line are left alone.
+
+```markdown
+- Meditate · daily <!-- id:meditate -->
+- Lift · 3 a week · auto lifting · #40C8E0 <!-- id:lift -->
+- Read · Mon Wed Fri · paused <!-- id:read -->
 ```
 
 ## `profile.md`

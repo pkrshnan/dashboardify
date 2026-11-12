@@ -107,14 +107,14 @@ export class ListStore {
 }
 
 /** "Gift ideas" → "gift-ideas"; accents are dropped, so "Café" → "cafe". */
-export function slugOf(title: string): string {
+export function slugOf(title: string, fallback = "list"): string {
   const slug = title
     .normalize("NFKD")
     .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
-  return slug || "list";
+  return slug || fallback;
 }
 
 /** A title that can be a file name in Lists/: no slashes, no leading dot, at most 80 characters. */
