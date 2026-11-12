@@ -1,8 +1,8 @@
 # Health: the rest
 
 Plan for the health numbers still missing: training load, calories, VO2max and sleep stages.
-Status: H1–H5, H8–H10 and H12–H14 done, H6 and H7 (fitness and biological age) dropped, H11
-planned; H11 waits for artboards. As each PR lands, its section moves into [health-metrics.md](health-metrics.md). This
+Status: H1–H5, H8–H10, H11a and H12–H14 done, H6 and H7 (fitness and biological age) dropped,
+H11b (the night view) next. H11 follows the existing patterns rather than new artboards. As each PR lands, its section moves into [health-metrics.md](health-metrics.md). This
 file goes when the last one does.
 
 ## Goals
@@ -25,7 +25,7 @@ Not goals: SpO2 from the raw `ppg` stream, runs with pace and route (roadmap #6)
 | Population norms | The "your own history, never population averages" rule holds, with one exception: VO2max is a comparison with people by definition. Its doc says so. |
 | Recovery | No new number feeds recovery or the sleep score in this plan |
 | Versions | Each PR that changes rows bumps `ALGO_VERSION`; rebuild with `summarize.ts` |
-| UI | Note and API first. Home rows, Activity calories and a sleep view wait for artboards (H11). |
+| UI | Note and API first, then home rows, Activity calories and a night view (H11), on the existing patterns |
 
 ## Note
 
@@ -50,11 +50,12 @@ Not goals: SpO2 from the raw `ppg` stream, runs with pace and route (roadmap #6)
 | H7 | Biological age | Dropped, for the same reason |
 | H8 | Epoch features | Done; now in [health-metrics.md](health-metrics.md#sleep-stages-sleep-stagests) |
 | H9 | Sleep stages | Done; now in [health-metrics.md](health-metrics.md#sleep-stages-sleep-stagests) |
-| H10 | API | Done: `EXTENDED_METRICS` in `health-history.ts` (off the home list until H11); `GetNight` in [api.md](api.md#activity) |
+| H10 | API | Done: the five trends in `health-history.ts`; `GetNight` in [api.md](api.md#activity) |
 | H12 | Trained stages | Done; now in [health-metrics.md](health-metrics.md#sleep-stages-sleep-stagests) |
 | H13 | DFA α1 | Done; now in [health-metrics.md](health-metrics.md#sleep-stages-sleep-stagests) |
 | H14 | Per-person refit | Done; now in [health-feedback.md](health-feedback.md#fitting-stages-to-you) |
-| H11 | UI | home rows, workout calories, a night view with the hypnogram (after artboards) |
+| H11a | Home rows and workout calories | Done; now in [design/README.md](design/README.md#health-numbers) |
+| H11b | Night view | The night from the Sleep, deep or REM row: hypnogram, stage totals, times |
 
 Each PR adds tests on made-up samples, its section in `health-metrics.md`, and its keys in
 `vault-format.md`; H4 and H10 update `api.md`.

@@ -3,7 +3,7 @@
 // - change = the 7-day mean against a baseline of the 60 days before those 7;
 // - it is a percentage, except skin temperature, which is a difference in °C;
 // - green or red only when the change is at least half a baseline SD, otherwise grey;
-// - cumulative metrics (strain, steps, zone 2+) show today's running total next to yesterday's,
+// - cumulative metrics (strain, steps, zone 2+, calories) show today's running total next to yesterday's,
 //   but the change leaves today out, so a partial day never counts.
 
 import type { HealthGroup, MetricTrend, Tone } from "./types";

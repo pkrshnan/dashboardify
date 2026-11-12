@@ -13,6 +13,7 @@ import {
   duration,
   heartRateLines,
   heartRateTicks,
+  kcal,
   kindLabel,
   monday,
   pace,
@@ -444,8 +445,13 @@ function rowWhen(w: WorkoutView, day: ActivityDayView, clock: (ms: number) => st
   return parts.join(" · ");
 }
 
-/** Lifting's volume, a run's distance and pace, else strain. */
+/** Lifting's volume, a run's distance and pace, else strain; then calories when known. */
 function rowStat(w: WorkoutView, day: ActivityDayView): string {
+  const main = mainStat(w, day);
+  return w.calories === undefined ? main : `${main} · ${kcal(w.calories)}`;
+}
+
+function mainStat(w: WorkoutView, day: ActivityDayView): string {
   if (w.kind === "lifting" && day.lifting) {
     return `${Math.round(day.lifting.volumeLb).toLocaleString("en-US")} lb`;
   }
@@ -553,6 +559,13 @@ function WorkoutPanel(props: SideProps & { name: string }) {
           detail={`max ${Math.round(w.maxHr)}`}
         />
         <Stat name="Strain" value={w.strain.toFixed(1)} detail="" />
+        {listed.calories !== undefined && (
+          <Stat
+            name="Calories"
+            value={Math.round(listed.calories).toLocaleString("en-US")}
+            detail="kcal"
+          />
+        )}
       </div>
       <HeartRateChart detail={w} walks={strava ? day.walks : []} clock={props.clock} />
       {w.sets.length > 0 && <SetTable sets={w.sets} clock={props.clock} />}

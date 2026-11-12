@@ -775,6 +775,7 @@ function workoutView(w: Workout): WorkoutView {
     avgHr: w.averageHeartRate,
     maxHr: w.maxHeartRate,
     strain: w.strain,
+    calories: w.calories,
     distanceMeters: w.distanceMeters,
     stravaActivityId: w.stravaActivityId?.toString(),
   };

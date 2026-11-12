@@ -86,7 +86,7 @@ export type Home = Message<"dashboardify.v1.Home"> & {
   taskGroups: TaskGroup[];
 
   /**
-   * Ten health metrics with trends.
+   * Fifteen health metrics with trends, heart, sleep, activity and vitals in that order.
    *
    * @generated from field: repeated dashboardify.v1.MetricTrend metrics = 9;
    */

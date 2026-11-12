@@ -365,6 +365,10 @@ async function writeHealth(store: DerivedStore): Promise<void> {
       rmssd_ms: 58 + 7 * noise() * 2 - recent * 5,
       resp_rate_bpm: 14.5 + 0.4 * noise() * 2,
       skin_temp_c: 33.4 + 0.3 * noise() * 2 + recent * 0.1,
+      light_min: 250 + 25 * noise() * 2,
+      deep_min: 85 + 12 * noise() * 2 + 4 * wave,
+      rem_min: 100 + 14 * noise() * 2 - recent * 12,
+      stages_plausible: 1,
     });
     await store.write("days", date, {
       date,
@@ -376,6 +380,10 @@ async function writeHealth(store: DerivedStore): Promise<void> {
       zone4_min: 4 * sofar,
       zone5_min: 1 * sofar,
       worn_min: Math.round((900 + 40 * Math.sin(back / 3)) * sofar),
+      kcal: Math.round((2450 + 220 * noise() * 2) * sofar),
+      active_kcal: Math.round((520 + 180 * noise() * 2) * sofar),
+      load_ratio: 1.05 + 0.18 * wave + 0.08 * noise() * 2 + recent * 0.2,
+      vo2max: 47.5 + 1.2 * Math.sin(back / 90) + 0.3 * noise() * 2,
     });
   }
 }

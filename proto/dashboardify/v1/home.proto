@@ -53,7 +53,7 @@ message Home {
   // Overdue, Today, This week, Later, Someday.
   repeated TaskGroup task_groups = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // Ten health metrics with trends.
+  // Fifteen health metrics with trends, heart, sleep, activity and vitals in that order.
   repeated MetricTrend metrics = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // When strap data last arrived. Unset before the first upload.

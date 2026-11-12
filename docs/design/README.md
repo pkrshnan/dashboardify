@@ -49,17 +49,21 @@ https://claude.ai/artifact/Dm3mFqJPttBWpS9VxeYPUD. `home-desktop.dc.html` (1440 
 
 ## Health numbers
 
+- **Rows:** fifteen. Heart: recovery, HRV, resting HR, VO2max. Sleep: score, time asleep, deep,
+  REM. Activity: strain, steps, zone 2+, calories, training load. Vitals: breathing, skin
+  temperature. A row without data (no profile weight, too few nights) shows "–" and no change.
 - **Time basis:** snapshot metrics show this morning's value; cumulative ones (strain, steps,
-  zone 2+) show today so far with yesterday's total beside the change. Partial days never feed a
-  comparison.
+  zone 2+, calories) show today so far with yesterday's total beside the change. Partial days
+  never feed a comparison.
 - **Change:** the 7-day mean against the 60 days before, as a percentage (skin temperature in
   °C). The range switch changes only the chart.
 - **Colour:** green good, red bad, grey under half a standard deviation. Up is good for recovery,
-  HRV, sleep, steps and zone 2+; down for resting HR; strain, breathing and skin temperature are
-  always grey.
+  HRV, VO2max, sleep, deep, REM, steps and zone 2+; down for resting HR; strain, calories,
+  training load, breathing and skin temperature are always grey.
 - **Charts:** fixed y-range of baseline ± 3 SD, a band at ± 1 SD, the 7-day rolling mean, faint
   daily dots, weekly means for 1Y, a solid dot at today.
-- **Order:** heart, sleep, activity, vitals, separated by space, not labels.
+- **Order:** heart, sleep, activity, vitals, separated by space, not labels. Desktop has heart and
+  sleep on the left, activity and vitals on the right; the phone lists them in one column.
 
 ## Activity page
 
@@ -68,8 +72,9 @@ chip per session, 3M is active minutes per week. A day, week or workout opens be
 (below it on the phone). Workouts are activity cyan, walks teal `#66D4CF`; an unsure workout has a
 dashed outline and `?`, and only its detail asks "What was this?" ("It was lifting" or "Not a
 workout"; others have "Not right?"). Dismissed ones stay greyed with Undo. The detail shows HR
-every 15 s; for lifting each set is a band in its exercise's colour (paler for warm-ups). A Strava
-run shows distance and pace in its row and detail, links to Strava, and its HR covers the walks
+every 15 s; for lifting each set is a band in its exercise's colour (paler for warm-ups). A row and
+the detail show calories when the profile allows ("strain 9.6 · 667 kcal"). A Strava run shows
+distance and pace before them, links to Strava, and its HR covers the walks
 either side, shaded teal. A Running total joins the row above when the range has runs.
 
 ## Look

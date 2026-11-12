@@ -6,6 +6,7 @@ import {
   duration,
   heartRateLines,
   heartRateTicks,
+  kcal,
   pace,
   rangeDates,
   totals,
@@ -38,6 +39,11 @@ const day = (date: string, workouts: WorkoutView[], walkMin = 0): ActivityDayVie
 });
 
 describe("activity page", () => {
+  test("workout calories read as whole kcal with thousands separated", () => {
+    expect(kcal(609.6)).toBe("610 kcal");
+    expect(kcal(1240)).toBe("1,240 kcal");
+  });
+
   test("ranges end today: a week, 30 days, or the 13 weeks to this one", () => {
     expect(rangeDates("2026-11-08", "week")).toEqual({ start: "2026-11-02", end: "2026-11-08" });
     expect(rangeDates("2026-11-08", "month")).toEqual({ start: "2026-10-10", end: "2026-11-08" });
