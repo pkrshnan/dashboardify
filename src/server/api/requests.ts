@@ -94,4 +94,5 @@ export interface ApiRequests {
   listDue: { window?: string };
   completeByText: { text: string };
   addToList: { list: string; text: string };
+  tickHabit: { text: string };
 }
