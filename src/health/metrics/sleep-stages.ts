@@ -2,124 +2,81 @@
 //
 // A four-state hidden Markov model decoded with Viterbi. Awake is not inferred here: epochs that
 // scoreEpochs scored awake stay awake and asleep ones can't be, so the model only splits sleep.
-// Each sleep state explains the features with its own Gaussians (deep: low HR, high HRV, regular
-// breathing; REM: higher HR, low HRV, irregular breathing, still), and the transitions carry
-// sleep-lab norms about when each stage comes and how long it lasts. Together they give the
-// 90-minute cycles without hard-coding them. Every number here is a hand-set prior, to be tuned
-// as nights with the strap pile up; nothing checks the result yet except plausibility. See
-// docs/health-metrics.md.
+// Each sleep state explains the features with its own likelihoods, and the transitions, which
+// change with the time since onset, carry when each stage comes and how long it lasts. Together
+// they give the 90-minute cycles without hard-coding them.
+//
+// The HR, movement and transition parts are fitted to sleep-lab-labelled nights by
+// src/health/train-stages.ts (H12) and read from stage-params.json; HRV and breathing are still
+// hand-set, since that data has no beat-to-beat intervals. See docs/health-metrics.md.
 
 import { EPOCH_MS } from "./sleep-epochs";
 import type { EpochFeatures } from "./sleep-features";
+import PARAMS_JSON from "./stage-params.json";
 import { median } from "./stats";
 
 export type Stage = "awake" | "light" | "deep" | "rem";
+export type SleepStage = Exclude<Stage, "awake">;
 
-const STATES: Stage[] = ["awake", "light", "deep", "rem"];
+export const STATES: Stage[] = ["awake", "light", "deep", "rem"];
 const AWAKE = 0;
 const LIGHT = 1;
 const DEEP = 2;
 const REM = 3;
 
-// ---- emissions: what each stage looks like, in z units against the night's asleep epochs ----
+/** What train-stages.ts writes. Probabilities; rows and columns of a matrix in STATES order. */
+export interface StageParams {
+  provenance: Record<string, string | number>;
+  /** Detrended hrZ per stage: a Gaussian. */
+  hr: Record<SleepStage, { mean: number; sd: number }>;
+  /** movementDeg falls in bin i when it is at least edgesDeg[i - 1] and under edgesDeg[i]. */
+  movement: { edgesDeg: number[]; p: Record<SleepStage, number[]> };
+  /** One matrix before onset, then one per binMin minutes since onset; the last runs on. */
+  transitions: { binMin: number; beforeOnset: number[][]; sinceOnset: number[][][] };
+  /** [low, high] share of asleep time outside which a night is flagged. */
+  plausible: Record<SleepStage, number[]>;
+}
 
-type Feature = "hrZ" | "hrvZ" | "breathingZ";
+export const STAGE_PARAMS: StageParams = PARAMS_JSON;
+
+/** A way to score epochs: log likelihoods and log transitions. sleepStages decodes with one. */
+export interface StageModel {
+  /** log P(features | stage) for an asleep epoch. */
+  emission(stage: SleepStage, f: EpochFeatures): number;
+  /** log P(next | this) at `t` minutes since onset. */
+  transitions(t: number): number[][];
+}
+
+// ---- hand-set until H14 fits them per person ----
 
 /**
- * State means, from the direction the literature gives (Fonseca 2017, Walch 2019; breathing:
- * Gutierrez 2016). Deep: vagal drive, so HR down, RMSSD up and breathing very regular. REM:
- * autonomic instability, so HR up, RMSSD down and breathing irregular. Light is the middle and
- * most of the night, so it sits near 0. The sizes are guesses of about one SD, chosen so a
- * typical night's mix (about half light, a fifth deep, a quarter REM) averages to about 0, as
- * z-scores must.
+ * HRV and breathing, from the direction the literature gives (Fonseca 2017; breathing: Gutierrez
+ * 2016). Deep: vagal drive, so RMSSD up and breathing very regular. REM: autonomic instability,
+ * so RMSSD down and breathing irregular. Light sits near 0. The sizes are guesses of about one
+ * SD; nothing has checked them, since the training data has no RR.
  */
-const MEANS: Record<Exclude<Stage, "awake">, Record<Feature, number>> = {
-  light: { hrZ: 0, hrvZ: 0, breathingZ: 0 },
-  deep: { hrZ: -1, hrvZ: 0.8, breathingZ: 0.8 },
-  rem: { hrZ: 0.7, hrvZ: -0.6, breathingZ: -0.8 },
+const HAND_SET: Record<SleepStage, Record<"hrvZ" | "breathingZ", number>> = {
+  light: { hrvZ: 0, breathingZ: 0 },
+  deep: { hrvZ: 0.8, breathingZ: 0.8 },
+  rem: { hrvZ: -0.6, breathingZ: -0.8 },
 };
-/** One spread for every state and feature: under 1, since part of the night's SD is the stages. */
-const SD = 0.8;
-const FEATURES: Feature[] = ["hrZ", "hrvZ", "breathingZ"];
+const HAND_SET_SD = 0.8;
+
 /**
  * HR falls across a night whatever the stage, partly from the circadian low (Burgess 1997), and
- * is still settling for the first half hour or so. Against the whole night, the start then looks
- * like REM and the morning like deep, as the first real nights did. So HR is taken against the
- * median of the asleep epochs within an hour either side: longer than any one bout, so a stage
- * doesn't cancel itself out.
+ * is still settling for the first half hour or so. So HR is taken against the median of the
+ * asleep epochs within an hour either side: longer than any one bout, so a stage doesn't cancel
+ * itself out. Training saw HR the same way.
  */
 const TREND_HALF_EPOCHS = 120;
 
-/** A posture change, as sleep-epochs.ts counts one. */
-const MOVED_DEG = 5;
 /**
- * How likely an asleep epoch is to hold a posture change. Body movements are rarest in deep
- * sleep (Wilde-Frenz & Schulz 1983). REM paralyses the trunk and limbs, so its movements are
- * mostly twitches, under a 5° posture change; posture shifts cluster in light sleep and at stage
- * changes. Stillness is the norm in every stage, so only a movement counts as evidence: scoring
- * stillness too would favour deep on every still epoch. scoreEpochs makes most movements awake,
- * so this mostly decides the lone ones it rescored as sleep.
- */
-const MOVED_P: Record<Exclude<Stage, "awake">, number> = { light: 0.08, deep: 0.02, rem: 0.03 };
-
-// ---- transitions: sleep-lab norms, per 30-second epoch ----
-
-/**
- * Where each stage goes when it changes: the share of all a night's transitions from one stage
- * to another, from 48 healthy adults' second lab night (Lo 2013, table 1a; R&K stages, S1+S2 as
- * light, S3+S4 as deep). Their 0.00 entries, deep↔REM above all, become RARE: direct switches
- * are rare, and REM is reached from light.
- */
-const RARE = 0.002;
-const LEAVE: number[][] = [
-  // to: awake, light, deep, REM
-  [0, 0.24, RARE, 0.01],
-  [0.18, 0, 0.16, 0.11],
-  [0.02, 0.14, 0, RARE],
-  [0.05, 0.07, RARE, 0],
-];
-/**
- * Mean bout lengths in minutes (Lo 2013, fig. 5: light 10.9, deep 12.3, REM 9.9). Awake bouts
- * are fixed by the data, so theirs only needs to be plausible.
- */
-const AWAKE_BOUT_MIN = 2;
-const LIGHT_BOUT_MIN = 10.9;
-/**
- * Deep bouts shorten through the night as slow-wave pressure is spent (Carskadon & Dement 2011):
- * 20 min at onset to 5 by 6 hours, about 15 over the first half, where deep mostly is, against
- * Lo's night-long 12.3. Viterbi favours the longest-lasting state when the features say little, so a
- * fixed deep bout longer than light's would turn a featureless night deep.
- */
-const FIRST_DEEP_BOUT_MIN = 20;
-const LATE_DEEP_BOUT_MIN = 5;
-/**
- * REM bouts lengthen through the night: the first may last only 1–5 min, the last third holds
- * the longest (Carskadon & Dement 2011, Principles and Practice of Sleep Medicine). 5 min at the
- * first, growing to 15 over the next 6 hours, averages about 10.5 over a night, near Lo's 9.9.
- */
-const FIRST_REM_BOUT_MIN = 5;
-const LATE_REM_BOUT_MIN = 15;
-const BOUT_CHANGE_MIN = 360;
-/**
- * Deep sleep falls mostly in the first third of the night (Carskadon & Dement 2011). Entering it
- * is weighted by GAIN × e^(−t / DECAY): 4× at onset, 1× at about 2¾ h, a tenth by 7 h, and about
- * 1 on average over a 7.6-hour night, the length Lo's matrix averages.
- */
-const DEEP_GAIN = 4;
-const DEEP_DECAY_MIN = 120;
-/**
- * The first cycle's NREM lasts 70–100 min (Carskadon & Dement 2011), so REM before 60 min is
- * rare. REM within minutes of onset is a sign of narcolepsy, not healthy sleep, while HR is
- * still settling then and can look like REM; so before 45 min it isn't allowed at all.
+ * REM within minutes of onset is a sign of narcolepsy, not healthy sleep (Carskadon & Dement
+ * 2011), while HR is still settling then and can look like REM. The lab nights agree: 20 of 2,700
+ * epochs in the first 45 min, on one night of 30. The fitted bins are 30 min wide and lean on the
+ * night-wide rate, so they can't say this by themselves.
  */
 const NO_REM_MIN = 45;
-const FIRST_REM_MIN = 60;
-const EARLY_REM_WEIGHT = 0.01;
-
-// ---- plausibility: a healthy adult's night, in shares of asleep time ----
-
-/** About 45–55% N2 plus 2–5% N1, 13–23% N3, 20–25% REM (Carskadon & Dement 2011), widened. */
-const PLAUSIBLE = { light: [0.4, 0.65], deep: [0.1, 0.25], rem: [0.15, 0.3] } as const;
 
 export interface StageRun {
   start: number;
@@ -135,16 +92,81 @@ export interface SleepStages {
   lightMin: number;
   deepMin: number;
   remMin: number;
-  /** False when a share of asleep time falls outside PLAUSIBLE. */
+  /** False when a share of asleep time falls outside STAGE_PARAMS.plausible. */
   plausible: boolean;
 }
 
+/** The model from fitted params, with HRV and breathing hand-set. */
+export function trainedModel(params: StageParams): StageModel {
+  const before = logRows(withoutRem(params.transitions.beforeOnset));
+  const bins = params.transitions.sinceOnset.map(logRows);
+  const noRem = params.transitions.sinceOnset.map((m) => logRows(withoutRem(m)));
+  const logMoved = {
+    light: againstStill(params.movement.p.light),
+    deep: againstStill(params.movement.p.deep),
+    rem: againstStill(params.movement.p.rem),
+  };
+  return {
+    emission(stage, f) {
+      const { mean, sd } = params.hr[stage];
+      const bin = params.movement.edgesDeg.filter((edge) => f.movementDeg >= edge).length;
+      return (
+        gaussian(f.hrZ, mean, sd) +
+        gaussian(f.hrvZ, HAND_SET[stage].hrvZ, HAND_SET_SD) +
+        gaussian(f.breathingZ, HAND_SET[stage].breathingZ, HAND_SET_SD) +
+        (logMoved[stage][bin] ?? 0)
+      );
+    },
+    transitions(t) {
+      if (t < 0) {
+        return before;
+      }
+      const bin = Math.min(Math.floor(t / params.transitions.binMin), bins.length - 1);
+      return t < NO_REM_MIN ? (noRem[bin] ?? before) : (bins[bin] ?? before);
+    },
+  };
+}
+
+const TRAINED = trainedModel(STAGE_PARAMS);
+
+/** log N(z; mean, sd) up to a constant shared by every state; null features add nothing. */
+export function gaussian(z: number | null, mean: number, sd: number): number {
+  return z === null ? 0 : -((z - mean) ** 2) / (2 * sd * sd) - Math.log(sd);
+}
+
+/** The matrix with no way into REM. */
+function withoutRem(matrix: number[][]): number[][] {
+  return matrix.map((row, from) => row.map((p, to) => (to === REM && from !== REM ? 0 : p)));
+}
+
+/**
+ * log P(bin | stage) ÷ P(still | stage). Stillness is the norm in every stage, and a night has
+ * hundreds of still epochs, so scoring it would add up to a steady pull toward whichever stage is
+ * stillest (deep) whatever the heart says; on held-out nights that cost accuracy and turned a
+ * featureless night deep. So only a movement counts as evidence.
+ */
+function againstStill(p: number[]): number[] {
+  const still = p[0] ?? 1;
+  return p.map((v) => Math.log(v / still));
+}
+
+/** Rows normalised (the file rounds them) and logged. */
+function logRows(matrix: number[][]): number[][] {
+  return matrix.map((row) => {
+    const total = row.reduce((sum, p) => sum + p, 0);
+    return row.map((p) => Math.log(p / total));
+  });
+}
+
 /** Stages for the night's epochs; null without an asleep epoch to stage. */
-export function sleepStages(features: EpochFeatures[]): SleepStages | null {
+export function sleepStages(
+  features: EpochFeatures[],
+  model: StageModel = TRAINED,
+): SleepStages | null {
   if (!features.some((f) => f.asleep)) {
     return null;
   }
-  const stages = viterbi(detrendHr(features)).map((s) => STATES[s] ?? "light");
+  const stages = viterbi(detrendHr(features), model).map((s) => STATES[s] ?? "light");
   const minutes = (stage: Stage) => (stages.filter((s) => s === stage).length * EPOCH_MS) / 60_000;
   const lightMin = minutes("light");
   const deepMin = minutes("deep");
@@ -159,21 +181,28 @@ export function sleepStages(features: EpochFeatures[]): SleepStages | null {
   };
 }
 
-/** The most likely state sequence, in log space; one pass forward, one back. */
-function viterbi(features: EpochFeatures[]): number[] {
+/** Minutes since onset, or since the first epoch without an onset, as the transitions use. */
+export function epochTime(features: EpochFeatures[], i: number): number {
+  const f = features[i];
   const start = features[0]?.ts ?? 0;
+  return f?.sinceOnsetMin ?? ((f?.ts ?? start) - start) / 60_000;
+}
+
+/** The most likely state sequence, in log space; one pass forward, one back. */
+function viterbi(features: EpochFeatures[], model: StageModel): number[] {
   const back: number[][] = [];
   // Sleep starts from wake or light, never straight into deep or REM.
   let scores = STATES.map(
-    (_, s) => emission(s, features[0]) + (s === DEEP || s === REM ? Number.NEGATIVE_INFINITY : 0),
+    (_, s) =>
+      emission(model, s, features[0]) + (s === DEEP || s === REM ? Number.NEGATIVE_INFINITY : 0),
   );
   for (let i = 1; i < features.length; i++) {
-    const f = features[i];
-    const step = transitions(f?.sinceOnsetMin ?? ((f?.ts ?? start) - start) / 60_000);
+    const step = model.transitions(epochTime(features, i));
     const from = STATES.map((_, to) => bestFrom(scores, step, to));
     back.push(from);
     scores = from.map(
-      (prev, to) => (scores[prev] ?? 0) + (step[prev]?.[to] ?? 0) + emission(to, f),
+      (prev, to) =>
+        (scores[prev] ?? 0) + (step[prev]?.[to] ?? 0) + emission(model, to, features[i]),
     );
   }
   return backtrack(scores, back);
@@ -203,27 +232,17 @@ function backtrack(scores: number[], back: number[][]): number[] {
   return path.reverse();
 }
 
-/** log P(features | state). Null features add nothing; awake follows scoreEpochs exactly. */
-function emission(state: number, f: EpochFeatures | undefined): number {
+/** The model's likelihood, except that awake follows scoreEpochs exactly. */
+function emission(model: StageModel, state: number, f: EpochFeatures | undefined): number {
   if (!f || f.asleep === (state === AWAKE)) {
     return Number.NEGATIVE_INFINITY;
   }
   const stage = STATES[state];
-  if (stage === undefined || stage === "awake") {
-    return 0;
-  }
-  let log = 0;
-  for (const feature of FEATURES) {
-    const z = f[feature];
-    if (z !== null) {
-      log -= (z - MEANS[stage][feature]) ** 2 / (2 * SD * SD);
-    }
-  }
-  return f.movementDeg > MOVED_DEG ? log + Math.log(MOVED_P[stage]) : log;
+  return stage === undefined || stage === "awake" ? 0 : model.emission(stage, f);
 }
 
 /** HR less the median of the asleep epochs' HR within TREND_HALF_EPOCHS either side. */
-function detrendHr(features: EpochFeatures[]): EpochFeatures[] {
+export function detrendHr(features: EpochFeatures[]): EpochFeatures[] {
   return features.map((f, i) => {
     if (f.hrZ === null) {
       return f;
@@ -237,42 +256,9 @@ function detrendHr(features: EpochFeatures[]): EpochFeatures[] {
   });
 }
 
-/**
- * log P(next | this) at `t` minutes since onset: stay for the stage's bout length, else leave as
- * Lo's matrix says, with entering deep and REM weighted by the time of night.
- */
+/** log P(next | this) at `t` minutes since onset, from the fitted matrices. */
 export function transitions(t: number): number[][] {
-  const entry = [1, 1, deepWeight(t), remWeight(t)];
-  const bouts = [
-    AWAKE_BOUT_MIN,
-    LIGHT_BOUT_MIN,
-    changing(FIRST_DEEP_BOUT_MIN, LATE_DEEP_BOUT_MIN, t),
-    changing(FIRST_REM_BOUT_MIN, LATE_REM_BOUT_MIN, t - FIRST_REM_MIN),
-  ];
-  return LEAVE.map((row, from) => {
-    const stay = 1 - EPOCH_MS / 60_000 / (bouts[from] ?? 1);
-    const weighted = row.map((p, to) => p * (entry[to] ?? 1));
-    const total = weighted.reduce((sum, p) => sum + p, 0);
-    return weighted.map((p, to) => Math.log(to === from ? stay : ((1 - stay) * p) / total));
-  });
-}
-
-/** Before onset is drowsy light sleep: deep and REM are rare then. */
-function deepWeight(t: number): number {
-  return t < 0 ? RARE : DEEP_GAIN * Math.exp(-t / DEEP_DECAY_MIN);
-}
-
-function remWeight(t: number): number {
-  if (t < NO_REM_MIN) {
-    return 0;
-  }
-  return t < FIRST_REM_MIN ? EARLY_REM_WEIGHT : 1;
-}
-
-/** From `first` to `late`, linearly over BOUT_CHANGE_MIN from t = 0. */
-function changing(first: number, late: number, t: number): number {
-  const done = Math.min(1, Math.max(0, t) / BOUT_CHANGE_MIN);
-  return first + done * (late - first);
+  return TRAINED.transitions(t);
 }
 
 function toRuns(features: EpochFeatures[], stages: Stage[]): StageRun[] {
@@ -291,12 +277,13 @@ function toRuns(features: EpochFeatures[], stages: Stage[]): StageRun[] {
 
 function isPlausible(lightMin: number, deepMin: number, remMin: number): boolean {
   const asleep = lightMin + deepMin + remMin;
-  const within = (min: number, [low, high]: readonly [number, number]) =>
+  const within = (min: number, [low = 0, high = 1]: number[]) =>
     min / asleep >= low && min / asleep <= high;
+  const { plausible } = STAGE_PARAMS;
   return (
     asleep > 0 &&
-    within(lightMin, PLAUSIBLE.light) &&
-    within(deepMin, PLAUSIBLE.deep) &&
-    within(remMin, PLAUSIBLE.rem)
+    within(lightMin, plausible.light) &&
+    within(deepMin, plausible.deep) &&
+    within(remMin, plausible.rem)
   );
 }

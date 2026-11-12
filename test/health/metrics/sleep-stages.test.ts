@@ -1,7 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { EPOCH_MS } from "../../../src/health/metrics/sleep-epochs";
 import type { EpochFeatures } from "../../../src/health/metrics/sleep-features";
-import { type Stage, sleepStages, transitions } from "../../../src/health/metrics/sleep-stages";
+import {
+  STAGE_PARAMS,
+  type Stage,
+  sleepStages,
+  transitions,
+} from "../../../src/health/metrics/sleep-stages";
 import { random, T0 } from "./fixtures";
 
 const NIGHT_MIN = 480;
@@ -151,14 +156,15 @@ describe("stage transitions", () => {
     }
   });
 
-  test("deep is entered mostly early, REM only after 45 minutes, and REM bouts grow", () => {
-    const [, light] = transitions(30);
+  test("deep is entered mostly early, REM only after 45 minutes and more late", () => {
+    const [, light] = transitions(45);
     const [, lateLight] = transitions(400);
 
-    expect(p(light?.[2] ?? 0)).toBeGreaterThan(10 * p(lateLight?.[2] ?? 0));
-    expect(p(light?.[3] ?? 0)).toBe(0);
-    expect(p(lateLight?.[3] ?? 0)).toBeGreaterThan(0);
-    expect(p(transitions(400)[3]?.[3] ?? 0)).toBeGreaterThan(p(transitions(70)[3]?.[3] ?? 0));
+    expect(p(light?.[2] ?? 0)).toBeGreaterThan(4 * p(lateLight?.[2] ?? 0));
+    expect(p(transitions(-5)[1]?.[3] ?? 0)).toBe(0);
+    expect(p(transitions(30)[1]?.[3] ?? 0)).toBe(0);
+    expect(p(transitions(30)[0]?.[3] ?? 0)).toBe(0);
+    expect(p(lateLight?.[3] ?? 0)).toBeGreaterThan(2 * p(transitions(100)[1]?.[3] ?? 0));
   });
 
   test("deep and REM rarely switch directly", () => {
@@ -166,5 +172,29 @@ describe("stage transitions", () => {
 
     expect(p(deep?.[3] ?? 0)).toBeLessThan(p(deep?.[1] ?? 0) / 50);
     expect(p(rem?.[2] ?? 0)).toBeLessThan(p(rem?.[1] ?? 0) / 20);
+  });
+});
+
+describe("stage params", () => {
+  const rowsSumToOne = (matrix: number[][]) =>
+    matrix.every((row) => Math.abs(row.reduce((sum, v) => sum + v, 0) - 1) < 1e-3);
+
+  test("the fitted file loads with the shape the model reads", () => {
+    const { hr, movement, transitions: t, plausible, provenance } = STAGE_PARAMS;
+
+    expect(provenance.licence).toContain("ODC-BY 1.0");
+    expect(provenance.version).toBe("1.0.0");
+    for (const stage of ["light", "deep", "rem"] as const) {
+      expect(hr[stage].sd).toBeGreaterThan(0);
+      expect(movement.p[stage]).toHaveLength(movement.edgesDeg.length + 1);
+      expect(plausible[stage]).toHaveLength(2);
+      expect(plausible[stage][0] ?? 1).toBeLessThan(plausible[stage][1] ?? 0);
+    }
+    expect(t.sinceOnset.length).toBeGreaterThan(1);
+    for (const matrix of [t.beforeOnset, ...t.sinceOnset]) {
+      expect(matrix).toHaveLength(4);
+      expect(matrix.every((row) => row.length === 4 && row.every((v) => v > 0))).toBe(true);
+      expect(rowsSumToOne(matrix)).toBe(true);
+    }
   });
 });

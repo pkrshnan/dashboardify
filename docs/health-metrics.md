@@ -42,9 +42,8 @@ neighbours (Webster 1982). Onset is the first 10 min of unbroken sleep; latency,
 
 ## Sleep stages (`sleep-stages.ts`)
 
-Light, deep and REM for each asleep epoch. Estimated: nothing checks them yet but plausibility,
-and the constants are hand-set priors to tune as nights pile up. Wrist staging agrees with a
-sleep lab about 60–65% of the time for 4 stages.
+Light, deep and REM for each asleep epoch. Estimated: the HR, movement and transition parts are
+fitted to sleep-lab nights; HRV and breathing are still hand-set.
 
 - **Features** (`sleep-features.ts`), per epoch, z-scored against the night's asleep epochs:
   mean HR; `ln(RMSSD)` over the 5 min around it (null under 60 differences; Esco & Flatt 2014);
@@ -53,17 +52,49 @@ sleep lab about 60–65% of the time for 4 stages.
   median of the asleep epochs within an hour either side, since it falls across the night
   whatever the stage.
 - **Model:** a 4-state HMM decoded with Viterbi. Awake is `sleep-epochs.ts`'s and fixed; asleep
-  epochs can't be awake. Each state has a Gaussian per feature (SD 0.8; null features add
-  nothing): deep is HR −1, HRV +0.8, breathing +0.8; REM is HR +0.7, HRV −0.6, breathing −0.8;
-  light is 0 (Fonseca 2017, Walch 2019, Gutierrez 2016). A posture change over 5° is unlikely in
-  deep and REM (Wilde-Frenz & Schulz 1983); stillness counts for nothing.
-- **Transitions:** where each stage goes from 48 healthy adults' lab nights (Lo 2013), deep↔REM
-  rare. Bouts: light 10.9 min; deep 20 → 5 and REM 5 → 15 over the night. Entering deep is
-  weighted 4× at onset, decaying with a 2-hour time constant (deep mostly in the first third);
-  REM can't start before 45 min and is rare before 60 (Carskadon & Dement 2011). These give the
-  cycles without hard-coding them.
-- **Plausible** when light is 40–65%, deep 10–25% and REM 15–30% of asleep time; otherwise the
-  note line ends "unusual".
+  epochs can't be awake. Per state: a Gaussian on HR, one on HRV and one on breathing (null
+  features add nothing), and the chance of a movement of 0.5–2°, 2–5° or over 5°, against
+  being still (stillness alone would pull every still epoch toward deep).
+- **Fitted** (`stage-params.json`, by `src/health/train-stages.ts`): the HR Gaussians, the
+  movement chances, and the transitions, one matrix before onset and one per 30 min since,
+  each leaning on the night-wide matrix as if it had 100 more epochs. The time of night (deep
+  early, REM later) is in those matrices. REM can't start before 45 min: the lab nights had it
+  there on one night of 30.
+- **Hand-set** until H14: HRV (deep +0.8, REM −0.6) and breathing (deep +0.8, REM −0.8), SD 0.8
+  (Fonseca 2017, Gutierrez 2016). The lab data has no RR, so nothing has checked them.
+- **Plausible** when light is 35–68%, deep 4–52% and REM 4–38% of asleep time; otherwise the
+  note line ends "unusual". The bounds are mean ± 1.96 SD of the predicted shares on held-out
+  lab nights with 5 h or more asleep, so only nights the model rarely gives are flagged. They
+  are wide because the model's own error is.
+
+### Training data and accuracy
+
+Walch O, Huang Y, Forger D, Goldstein C. *Motion and heart rate from a wrist-worn wearable and
+labeled sleep from polysomnography*, PhysioNet `sleep-accel` 1.0.0
+(https://physionet.org/content/sleep-accel/1.0.0/), under the Open Data Commons Attribution
+License (ODC-BY 1.0). Apple Watch acceleration and heart rate with sleep-lab stages per 30 s,
+for 31 adults; 30 used (one has HR in 13% of epochs). Not checked in.
+
+`train-stages.ts` makes the watch look like the strap: acceleration averaged to a 1 Hz gravity
+vector, HR interpolated to 1 Hz (gaps over 60 s stay gaps). Then it runs our own code over the
+lab's scored span (lights off to lights on, so every epoch has a label): `scoreEpochs`,
+`epochFeatures` (no RR, so HRV and breathing are null), the HR detrend. N1+N2 are light, N3+N4
+deep. Emissions use the epochs we score asleep that the lab put in a sleep stage; transitions
+run over what the decoder can say (our awake, else the lab's stage, lab wake counted as light).
+
+Leave one subject out, pooled over 25,828 held-out epochs:
+
+| Model | Accuracy | κ | κ wake/NREM/REM | Wake | Light | Deep | REM | Shares (L/D/R) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Fitted | 52% | 0.28 | 0.40 | 40% | 55% | 56% | 46% | 51 / 31 / 19 |
+| H9 hand-set | 51% | 0.19 | 0.33 | 40% | 69% | 6% | 38% | 70 / 12 / 18 |
+| Lab | | | | | | | | 60 / 16 / 23 |
+
+Recall per stage; wake is `scoreEpochs` in both. The fitted model mostly finds deep that H9
+missed, at the cost of calling too much of it: 31% against the lab's 16%. In this data deep HR
+is steadier than light's, not lower, so the HR Gaussian for deep is narrow rather than shifted.
+Walch 2019 reports κ 0.13–0.30 for wake/NREM/REM from the same watch with motion and HR; ours
+is above that, and the 4-class κ is at the bottom of the 0.3–0.5 usual for HR and motion.
 
 ## Sleep score (`sleep-score.ts`)
 

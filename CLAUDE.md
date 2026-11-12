@@ -31,7 +31,7 @@ Read the one for the area you change.
 | [settings.md](docs/settings.md) | `settings.db`, secrets, devices, CLI, Settings page |
 | [health-metrics.md](docs/health-metrics.md) | How each health number is computed |
 | [health-feedback.md](docs/health-feedback.md) | Check-ins and re-fitting recovery |
-| [health-extended.md](docs/health-extended.md) | Plan H1–H11: load, calories, VO2max, sleep stages |
+| [health-extended.md](docs/health-extended.md) | Plan H1–H14: load, calories, VO2max, sleep stages |
 | [design/README.md](docs/design/README.md) | Layout rules, colour tokens, type, formats |
 | [style.md](docs/style.md) | Lint rules, conventions, tests |
 | [development.md](docs/development.md) | Demo, PR demos, config |

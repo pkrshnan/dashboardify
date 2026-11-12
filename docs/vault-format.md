@@ -84,10 +84,10 @@ workout_reviews:
   birth date and sex in `profile.md`, and are a running total today; a workout line ends with its
   own. VO2max (`vo2max`, whole ml/kg/min) needs `hr_max_measured`, `sex` and 14 of the last 30
   nights. Stages (`deep_min`, `rem_min`, `light_min`) are estimated from HR, HRV and breathing;
-  the line ends `· unusual` when the night is far from typical shares. An unsure workout ends with
-  `?` (`Lifting?`) until reviewed. A Strava run adds distance and pace: `- Running 10:42–11:14 ·
-  32 min · 5.1 km · 6:16 /km · …`. "Synced" is on today only and turns into `**14h behind**` past
-  two hours.
+  the line ends `· unusual` when a share is outside what held-out lab nights show. An unsure
+  workout ends with `?` (`Lifting?`) until reviewed. A Strava run adds distance and pace:
+  `- Running 10:42–11:14 · 32 min · 5.1 km · 6:16 /km · …`. "Synced" is on today only and turns
+  into `**14h behind**` past two hours.
 - **Agenda** is today's events, rewritten after each calendar sync that changes them.
 - **Journal** entries are `- HH:MM text`, continuation lines indented two spaces.
 - **Workouts** is yours; the server only reads it. A load line is `weight unit, sets x reps`,
