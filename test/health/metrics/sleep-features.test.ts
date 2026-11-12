@@ -218,7 +218,7 @@ describe("z-scores", () => {
     expect(z[3]).toBeNull();
   });
 
-  test("are null when the night doesn't vary", () => {
-    expect(zScores([2, 2, 2], [true, true, true])).toEqual([null, null, null]);
+  test("are 0 when the night doesn't vary, so a flat HR still counts as HR", () => {
+    expect(zScores([2, 2, null], [true, true, true])).toEqual([0, 0, null]);
   });
 });

@@ -1,15 +1,17 @@
 // Fitting the stage model's HR, movement and transition parts to labelled nights, by counting.
 //
-// The decoder can't change awake: scoreEpochs fixes it. So everything is fitted to what the
-// decoder sees. Emissions come from epochs scoreEpochs called asleep whose PSG stage is a sleep
-// stage; asleep-scored epochs the lab called wake are left out, since no sleep state can be right
-// for them. Transitions run over the sequence the decoder could produce: awake where scoreEpochs
-// says so, else the PSG stage, with lab wake inside scored sleep counted as light, the nearest.
+// Everything is fitted to what the decoder can say. After onset it chooses freely, so every
+// labelled epoch there counts as its PSG stage, awake included. Before onset scoreEpochs fixes
+// awake: its awake epochs count only as awake, and its asleep ones only as a sleep stage, with lab
+// wake counted as light, the nearest.
 
+import type { EpochFeatures } from "../metrics/sleep-features";
 import {
+  afterOnset,
   detrendHr,
   epochTime,
-  type SleepStage,
+  HEART_CUES,
+  heartCue,
   STATES,
   type Stage,
   type StageParams,
@@ -39,49 +41,75 @@ export function fit(nights: LabelledNight[]): FittedParts {
   const prepared = nights.map((n) => ({ ...n, features: detrendHr(n.features) }));
   return {
     hr: fitHr(prepared),
-    movement: { edgesDeg: MOVEMENT_EDGES_DEG, p: fitMovement(prepared) },
+    movement: {
+      edgesDeg: MOVEMENT_EDGES_DEG,
+      p: fitBins(prepared, movementBin, MOVEMENT_EDGES_DEG.length + 1),
+    },
+    heartCue: { p: fitBins(prepared, heartCue, HEART_CUES) },
     transitions: fitTransitions(prepared),
   };
 }
 
-/** Each asleep-scored epoch the lab put in a sleep stage, with that stage. */
-function sleepEpochs(nights: LabelledNight[]) {
+/**
+ * Each epoch whose state the decoder chooses, with the lab's stage: after onset all of them,
+ * before it the asleep-scored ones the lab put in a sleep stage.
+ */
+function freeEpochs(nights: LabelledNight[]): { f: EpochFeatures; stage: Stage }[] {
   return nights.flatMap((n) =>
     n.features.flatMap((f, i) => {
       const stage = n.truth[i];
-      return f.asleep && stage && stage !== "awake" ? [{ f, stage }] : [];
+      if (!stage) {
+        return [];
+      }
+      return afterOnset(f) || (f.asleep && stage !== "awake") ? [{ f, stage }] : [];
     }),
   );
 }
 
-function fitHr(nights: LabelledNight[]): FittedParts["hr"] {
-  const epochs = sleepEpochs(nights);
-  const one = (stage: SleepStage) => {
-    const values = epochs.flatMap((e) => (e.stage === stage && e.f.hrZ !== null ? [e.f.hrZ] : []));
-    return { mean: round(mean(values) ?? 0), sd: round(sd(values) ?? 1) };
-  };
-  return { light: one("light"), deep: one("deep"), rem: one("rem") };
+function perStage<T>(one: (stage: Stage) => T): Record<Stage, T> {
+  return { awake: one("awake"), light: one("light"), deep: one("deep"), rem: one("rem") };
 }
 
-/** Share of each stage's epochs in each movement bin, with one added to every bin. */
-function fitMovement(nights: LabelledNight[]): FittedParts["movement"]["p"] {
-  const epochs = sleepEpochs(nights);
-  const one = (stage: SleepStage) => {
-    const counts = new Array<number>(MOVEMENT_EDGES_DEG.length + 1).fill(1);
+/** HR Gaussians over the epochs without an arousal, which heartCue scores instead. */
+function fitHr(nights: LabelledNight[]): FittedParts["hr"] {
+  const epochs = freeEpochs(nights);
+  return perStage((stage) => {
+    const values = epochs.flatMap((e) =>
+      e.stage === stage && e.f.hrZ !== null && !e.f.arousal ? [e.f.hrZ] : [],
+    );
+    return { mean: round(mean(values) ?? 0), sd: round(sd(values) ?? 1) };
+  });
+}
+
+function movementBin(f: EpochFeatures): number {
+  return MOVEMENT_EDGES_DEG.filter((edge) => f.movementDeg >= edge).length;
+}
+
+/** Share of each stage's epochs in each bin of `binOf`, with one added to every bin. */
+function fitBins(
+  nights: LabelledNight[],
+  binOf: (f: EpochFeatures) => number,
+  size: number,
+): Record<Stage, number[]> {
+  const epochs = freeEpochs(nights);
+  return perStage((stage) => {
+    const counts = new Array<number>(size).fill(1);
     for (const e of epochs.filter((x) => x.stage === stage)) {
-      const bin = MOVEMENT_EDGES_DEG.filter((edge) => e.f.movementDeg >= edge).length;
+      const bin = binOf(e.f);
       counts[bin] = (counts[bin] ?? 0) + 1;
     }
     const total = counts.reduce((sum, c) => sum + c, 0);
     return counts.map((c) => round(c / total));
-  };
-  return { light: one("light"), deep: one("deep"), rem: one("rem") };
+  });
 }
 
 /** What the decoder should ideally output per epoch; null where the lab didn't score. */
 export function target(night: LabelledNight): (Stage | null)[] {
   return night.features.map((f, i) => {
     const stage = night.truth[i] ?? null;
+    if (afterOnset(f)) {
+      return stage;
+    }
     if (!f.asleep) {
       return "awake";
     }

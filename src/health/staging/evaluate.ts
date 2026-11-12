@@ -2,6 +2,7 @@
 // and report what a reviewer needs to judge it.
 
 import { EPOCH_MS } from "../metrics/sleep-epochs";
+import type { EpochFeatures } from "../metrics/sleep-features";
 import {
   type SleepStage,
   STATES,
@@ -31,6 +32,25 @@ export function leaveOneOut(
       sleepStages(night.features, model)?.stages ?? night.features.map(() => "awake");
     return { id: night.id, truth: night.truth, predicted };
   });
+}
+
+/**
+ * A model decoded as H12–H14 did: scoreEpochs' awake all night, so the model only splits its
+ * asleep epochs. Kept to score the decoded awake against.
+ */
+export function fixedAwake(model: {
+  emission(stage: SleepStage, f: EpochFeatures): number;
+  transitions(t: number): number[][];
+}): StageModel {
+  return {
+    emission(stage, f) {
+      if (f.asleep === (stage === "awake")) {
+        return Number.NEGATIVE_INFINITY;
+      }
+      return stage === "awake" ? 0 : model.emission(stage, f);
+    },
+    transitions: (t) => model.transitions(t),
+  };
 }
 
 /** confusion[true][predicted], in STATES order, over the epochs the lab scored. */
@@ -96,12 +116,55 @@ export function shares(stages: (Stage | null)[]): Record<SleepStage, number> {
   return { light: share("light"), deep: share("deep"), rem: share("rem") };
 }
 
+export interface WakeBouts {
+  /** Runs of awake between the first and last sleep epoch, per night. */
+  bouts: number;
+  /** Of those, runs of a minute or less. */
+  short: number;
+  /** Minutes awake between the first and last sleep epoch, per night. */
+  wasoMin: number;
+}
+
+/** Wake bouts per night, averaged; `pick` chooses the lab's stages or the model's. */
+export function wakeBouts(
+  nights: HeldOutNight[],
+  pick: (n: HeldOutNight) => (Stage | null)[],
+): WakeBouts {
+  const per = nights.map((n) => boutsOf(pick(n)));
+  const average = (k: keyof WakeBouts) => mean(per.map((p) => p[k])) ?? 0;
+  return { bouts: average("bouts"), short: average("short"), wasoMin: average("wasoMin") };
+}
+
+function boutsOf(stages: (Stage | null)[]): WakeBouts {
+  const isSleep = (s: Stage | null) => s !== null && s !== "awake";
+  const first = stages.findIndex(isSleep);
+  const last = stages.length - 1 - [...stages].reverse().findIndex(isSleep);
+  const runs: number[] = [];
+  let run = 0;
+  for (const s of first === -1 ? [] : [...stages.slice(first, last + 1), null]) {
+    if (s === "awake") {
+      run++;
+    } else if (run > 0) {
+      runs.push(run);
+      run = 0;
+    }
+  }
+  const epochs = runs.reduce((acc, r) => acc + r, 0);
+  return {
+    bouts: runs.length,
+    short: runs.filter((r) => r * EPOCH_MS <= 60_000).length,
+    wasoMin: (epochs * EPOCH_MS) / 60_000,
+  };
+}
+
 export interface Scores {
   accuracy: number;
   kappa: number;
   kappa3: number;
   meanNightKappa: number;
   recall: number[];
+  /** Of the lab's sleep epochs, the share not called awake. Wake sensitivity is recall[0]. */
+  wakeSpecificity: number;
   predicted: Record<SleepStage, number>;
   truth: Record<SleepStage, number>;
 }
@@ -121,6 +184,7 @@ export function score(nights: HeldOutNight[]): Scores {
     kappa3: kappa(confusion(nights, threeClass)),
     meanNightKappa: mean(nights.map((n) => kappa(confusion([n])))) ?? 0,
     recall: recall(matrix),
+    wakeSpecificity: specificity(matrix, 0),
     predicted: both((n) => shares(n.predicted)),
     truth: both((n) => shares(n.truth)),
   };
@@ -149,6 +213,12 @@ export function plausibleBounds(
     ];
   };
   return { light: bounds("light"), deep: bounds("deep"), rem: bounds("rem") };
+}
+
+function specificity(matrix: number[][], cls: number): number {
+  const others = matrix.filter((_, i) => i !== cls);
+  const total = sum(others.flat());
+  return total > 0 ? 1 - sum(others.map((row) => row[cls] ?? 0)) / total : 0;
 }
 
 function sum(values: number[]): number {

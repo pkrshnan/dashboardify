@@ -1,5 +1,6 @@
-// Command line: fit the sleep stage model's HR, movement and transition parts to sleep-lab
-// nights, score it against H9's hand-set model by leaving one subject out, and write
+// Command line: fit the sleep stage model's HR, movement, HR-cue and transition parts to
+// sleep-lab nights, score it by leaving one subject out against the same fit with scoreEpochs'
+// awake fixed (H12–H14) and against H9's hand-set model, and write
 // src/health/metrics/stage-params.json. Run by hand; nothing on the server calls it.
 //
 //   bun src/health/train-stages.ts DATASET_DIR [OUT]
@@ -9,14 +10,22 @@
 // See docs/health-metrics.md.
 
 import { EPOCH_MS } from "./metrics/sleep-epochs";
-import { type SleepStage, STATES, type StageParams, trainedModel } from "./metrics/sleep-stages";
 import {
+  type SleepStage,
+  STATES,
+  type Stage,
+  type StageParams,
+  trainedModel,
+} from "./metrics/sleep-stages";
+import {
+  fixedAwake,
   type HeldOutNight,
   leaveOneOut,
   plausibleBounds,
   type Scores,
   score,
   shares,
+  wakeBouts,
 } from "./staging/evaluate";
 import { type FittedParts, fit } from "./staging/fit";
 import { HAND_SET_MODEL } from "./staging/hand-set";
@@ -38,9 +47,10 @@ async function main(args: string[]): Promise<void> {
   }
   const nights = await loadNights(dir);
   const trained = leaveOneOut(nights, (others) => modelOf(fit(others)));
-  const handSet = leaveOneOut(nights, () => HAND_SET_MODEL);
+  const fixed = leaveOneOut(nights, (others) => fixedAwake(modelOf(fit(others))));
+  const handSet = leaveOneOut(nights, () => fixedAwake(HAND_SET_MODEL));
   const plausible = plausibleBounds(trained, BOUNDS_MIN_ASLEEP_MIN);
-  console.log(report(score(trained), score(handSet)));
+  console.log(report({ trained, fixed, handSet }));
   console.log(nightTable(trained));
   console.log(`Plausible shares: ${JSON.stringify(plausible)}`);
   const params: StageParams = { provenance: provenance(nights), ...fit(nights), plausible };
@@ -83,8 +93,8 @@ function provenance(nights: LabelledNight[]): StageParams["provenance"] {
 const pct = (v: number) => `${Math.round(100 * v)}%`;
 const two = (v: number) => v.toFixed(2);
 
-/** Trained against hand-set, one row each, pooled over every held-out epoch. */
-function report(trained: Scores, handSet: Scores): string {
+/** One row per model, pooled over every held-out epoch, then wake bouts against the lab's. */
+function report(models: Record<string, HeldOutNight[]>): string {
   const row = (name: string, s: Scores) =>
     [
       name.padEnd(9),
@@ -93,6 +103,7 @@ function report(trained: Scores, handSet: Scores): string {
       two(s.meanNightKappa),
       two(s.kappa3),
       ...s.recall.map(pct),
+      pct(s.wakeSpecificity),
       ...(["light", "deep", "rem"] as const).map((k) => pct(s.predicted[k])),
     ].join("\t");
   const header = [
@@ -102,16 +113,36 @@ function report(trained: Scores, handSet: Scores): string {
     "κ/night",
     "κ W/N/R",
     ...STATES.map((s) => `${s} rec`),
+    "wake spec",
     "light",
     "deep",
     "REM",
   ];
-  const truth = (["light", "deep", "rem"] as const).map((k) => pct(trained.truth[k])).join("\t");
+  const first = Object.values(models)[0] ?? [];
+  const truth = (["light", "deep", "rem"] as const).map((k) => pct(score(first).truth[k]));
   return [
     header.join("\t"),
-    row("trained", trained),
-    row("hand-set", handSet),
-    `PSG shares\t${truth}`,
+    ...Object.entries(models).map(([name, nights]) => row(name, score(nights))),
+    `PSG shares\t${truth.join("\t")}`,
+    "",
+    boutTable(models),
+  ].join("\n");
+}
+
+/** Wake bouts per night between first and last sleep, each model's and the lab's. */
+function boutTable(models: Record<string, HeldOutNight[]>): string {
+  const line = (
+    name: string,
+    nights: HeldOutNight[],
+    pick: (n: HeldOutNight) => (Stage | null)[],
+  ) => {
+    const b = wakeBouts(nights, pick);
+    return `${name.padEnd(9)}\t${b.bouts.toFixed(1)}\t${b.short.toFixed(1)}\t${Math.round(b.wasoMin)}`;
+  };
+  return [
+    "wake bouts per night\tbouts\t≤ 1 min\tWASO min",
+    ...Object.entries(models).map(([name, nights]) => line(name, nights, (n) => n.predicted)),
+    line("PSG", Object.values(models)[0] ?? [], (n) => n.truth),
   ].join("\n");
 }
 

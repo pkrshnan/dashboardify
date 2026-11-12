@@ -57,7 +57,7 @@ Apple Reminders.
 | 2 | Tasks page and reminder editing (the API already does it all); starts with N7's task panel | Needs a plan |
 | 3 | Lists (shopping): one note per list in `Lists/`, which tasks skip | Built: [lists.md](lists.md) |
 | 4 | Journal page: the day's journal and check-in | Needs a plan |
-| 5 | The rest of health: training load, calories, VO2max, sleep stages | Done: training load, calories (workouts included), VO2max, sleep stages fitted to lab nights and then to yours, home rows, workout calories and the Health page with the night view ([health-metrics.md](health-metrics.md), [design](design/README.md#health-page)). Next: what moved recovery, on that page. Fitness and biological age dropped: no reference data spans adult ages for South Asians. |
+| 5 | The rest of health: training load, calories, VO2max, sleep stages | Done: training load, calories (workouts included), VO2max, sleep stages fitted to lab nights and then to yours, awake decoded with the stages, home rows, workout calories and the Health page with the night view ([health-metrics.md](health-metrics.md), [design](design/README.md#health-page)). Next: what moved recovery, on that page. Fitness and biological age dropped: no reference data spans adult ages for South Asians. |
 | 6 | Runs from Strava: split walk-run-walk outings, distance and pace | Built: [strava.md](strava.md) |
 | 7 | "Log journal" Shortcut recipe | Not started |
 | 8 | Home screen: unusual health rows first, a strain target from recovery, light mode | Not started |
