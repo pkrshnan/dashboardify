@@ -1,7 +1,7 @@
 // The vault is the source of truth. Every write goes through this module, which only
 // ever builds paths from validated dates and fixed folder names.
 
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { Mutex } from "async-mutex";
 import { upsertCsvRow } from "./csv";
@@ -72,6 +72,18 @@ export class Vault {
   async read(rel: string): Promise<string | null> {
     try {
       return await readFile(join(this.root, rel), "utf8");
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+        return null;
+      }
+      throw err;
+    }
+  }
+
+  /** When the file last changed, in ms since the epoch, or null when there's no such file. */
+  async mtime(rel: string): Promise<number | null> {
+    try {
+      return (await stat(join(this.root, rel))).mtimeMs;
     } catch (err) {
       if ((err as NodeJS.ErrnoException).code === "ENOENT") {
         return null;
