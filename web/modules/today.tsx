@@ -17,6 +17,7 @@ import { Calendar } from "../components/calendar";
 import { Capture } from "../components/capture";
 import { EventPanel } from "../components/event-panel";
 import { Focus } from "../components/focus";
+import { HabitChips } from "../components/habit-chips";
 import { Health } from "../components/health";
 import { TaskList } from "../components/task-list";
 import { type Pending, pendingEvent, withPending } from "../lib/capture";
@@ -64,6 +65,7 @@ function HomeScreen({ home, query }: { home: LoadedHome; query: Record<string, s
   return (
     <main class="home">
       <Focus view={view} now={now} />
+      <HabitChips habits={view.habits} token={token} reload={load} />
       <Calendar
         view={withPending(withTicked(view, ticked), pending)}
         mode={week ? "week" : "day"}

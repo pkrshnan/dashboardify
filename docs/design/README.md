@@ -20,6 +20,8 @@ https://claude.ai/artifact/Dm3mFqJPttBWpS9VxeYPUD. `home-desktop.dc.html` (1440 
    repeating numbers. Recovery, sleep score, HRV and resting HR with their change. The next event,
    with Join for a call and Map for a located place. Pages are in the sidebar on desktop and the
    tab bar on the phone ([navigation.md](../navigation.md)).
+   Under it, today's habits as chips: an outlined dot in the habit's colour, filled with the chip
+   tinted once done ([Habits page](#habits-page)).
 2. **Calendar and tasks.** Day/Week toggle; "Calendar synced 09:10" (orange past 15 min or on an
    account error).
    - **Day:** a timeline from an hour before now to 22:00 with a red now line. It shows at least

@@ -3767,3 +3767,57 @@ button.habit-cell {
   width: 44px;
   height: 44px;
 }
+
+/* Today's habits, under the focus row: quiet chips that fill with the habit's colour when done. */
+.habit-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 16px var(--gutter);
+  border-bottom: 1px solid var(--line-2);
+}
+
+.habit-chips-head {
+  margin-right: 8px;
+  color: var(--text-2);
+  font-size: var(--type-footnote);
+  text-decoration: none;
+}
+
+.habit-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 14px 0 10px;
+  border: 1px solid var(--line-3);
+  border-radius: 16px;
+  background: var(--fill);
+  font-size: var(--type-footnote);
+  cursor: pointer;
+}
+
+.habit-chip-dot {
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid var(--habit-color);
+  border-radius: 50%;
+}
+
+.habit-chip.done {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--habit-color) 22%, var(--fill));
+  color: var(--text);
+}
+
+.habit-chip.done .habit-chip-dot {
+  background: var(--habit-color);
+}
+
+@media (max-width: 899px) {
+  .habit-chip {
+    height: 44px;
+    border-radius: 22px;
+  }
+}

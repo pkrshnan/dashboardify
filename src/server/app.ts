@@ -45,6 +45,7 @@ export function createApp(config: Config, deps: AppDeps): Hono<AuthEnv> {
   const tasks = new TaskStore(vault, general ? () => general.get().tasksInbox : config.tasksInbox);
   const { raw, derived, activity } = healthStores(config, deps, vault);
   const home = storeHomeDeps({
+    vault,
     tasks,
     raw,
     derived,

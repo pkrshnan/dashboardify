@@ -145,6 +145,14 @@ export async function fetchHome(token: Token, asOf?: string): Promise<HomeView> 
           hasErrors: v.calendarSync.hasErrors,
         }
       : null,
+    habits: v.habits.map((h) => ({
+      id: h.habit.replace(/^habits\//, ""),
+      name: h.displayName,
+      color: h.color,
+      day: date(h.day),
+      done: h.done,
+      auto: h.auto,
+    })),
     captureHints: v.captureHints
       ? {
           calendars: v.captureHints.calendars.map((c) => ({

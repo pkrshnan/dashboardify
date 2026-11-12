@@ -64,6 +64,30 @@ message Home {
 
   // What the capture box needs to guess a calendar. Unset with no writable calendar.
   CaptureHints capture_hints = 21 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Habits due today or already done, in Habits.md's order (docs/habits.md).
+  repeated HomeHabit habits = 22 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// A habit on Today.
+message HomeHabit {
+  // `habits/{habit}`.
+  string habit = 1;
+
+  // Such as `Meditate`.
+  string display_name = 2;
+
+  // `#RRGGBB`, or empty.
+  string color = 3;
+
+  // The habit day it's for: until 04:00 it's still yesterday.
+  google.type.Date day = 4;
+
+  // Ticked by hand or by its rule.
+  bool done = 5;
+
+  // Ticks itself from its rule.
+  bool auto = 6;
 }
 
 // When strap data last reached the server.

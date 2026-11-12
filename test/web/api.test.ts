@@ -22,8 +22,10 @@ describe("home UI API adapter", () => {
 
   /** The view the server works out, as JSON, to check the adapter turns GetHome back into it. */
   async function serverView() {
+    const vault = new Vault(join(api.dir, "vault"), "UTC");
     const deps = storeHomeDeps({
-      tasks: new TaskStore(new Vault(join(api.dir, "vault"), "UTC"), "Inbox.md"),
+      vault,
+      tasks: new TaskStore(vault, "Inbox.md"),
       raw: new RawStore(join(api.dir, "raw")),
       derived: new DerivedStore(join(api.dir, "derived")),
       calendar: noCalendar,
@@ -54,6 +56,24 @@ describe("home UI API adapter", () => {
     const { modern, server } = await compare();
 
     expect(modern.healthSync?.latestSample).toBe("2026-11-03T00:00:00.000Z");
+    expect(modern).toEqual(server);
+  });
+
+  test("home UI adapter keeps today's habits", async () => {
+    await api.call("/v1/habits", "POST", { displayName: "Read", schedule: { kind: "KIND_DAILY" } });
+    await api.call("/v1/habits", "POST", {
+      displayName: "Steps",
+      schedule: { kind: "KIND_DAILY" },
+      auto: "steps ≥ 8000",
+    });
+    await api.call("/v1/habits/read:mark", "POST", { done: true });
+
+    const { modern, server } = await compare();
+
+    expect(modern.habits).toEqual([
+      { id: "read", name: "Read", color: "#BF5AF2", day: "2026-11-03", done: true, auto: false },
+      { id: "steps", name: "Steps", color: "#40C8E0", day: "2026-11-03", done: false, auto: true },
+    ]);
     expect(modern).toEqual(server);
   });
 

@@ -25,6 +25,20 @@ export interface HomeView {
   calendarSync: CalendarSyncView | null;
   /** For the capture box's calendar guess, or null with no writable calendar. */
   captureHints: CaptureHints | null;
+  /** Habits due today or done (docs/habits.md), as chips on Today. */
+  habits: HomeHabit[];
+}
+
+export interface HomeHabit {
+  /** "meditate": habits/meditate. */
+  id: string;
+  name: string;
+  color: string;
+  /** The habit day, YYYY-MM-DD: until 04:00 it's still yesterday. */
+  day: string;
+  done: boolean;
+  /** Ticks itself from its rule. */
+  auto: boolean;
 }
 
 export interface CalendarSyncView {

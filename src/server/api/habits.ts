@@ -1,18 +1,11 @@
 // HabitService: habits in Habits.md, ticks in daily notes, and auto ticks from the day's facts
 // (docs/habits.md). Days are habit days, which run until 04:00 in the vault's time zone.
 
-import {
-  autoMarker,
-  type DayFacts,
-  FACTS,
-  type FactDef,
-  type FactReader,
-} from "../../habits/facts";
-import { habitDay } from "../../habits/habit-day";
-import type { Habit, HabitFields, HabitState, Schedule, Weekday } from "../../habits/habit-note";
+import { autoMarker, FACTS, type FactDef } from "../../habits/facts";
+import type { HabitFields, HabitState, Schedule, Weekday } from "../../habits/habit-note";
+import type { HabitProgress } from "../../habits/habit-progress";
 import {
   HabitNotFound,
-  type HabitStore,
   type HabitWithStats,
   InvalidHabit,
   StaleHabits,
@@ -39,9 +32,7 @@ interface HabitInput {
 }
 
 export interface HabitDeps {
-  store: HabitStore;
-  facts: FactReader;
-  timeZone: string;
+  progress: HabitProgress;
   now: () => Date;
 }
 
@@ -55,7 +46,7 @@ export class HabitsService {
 
   listHabits = async (request: { day?: DateParts; showArchived?: boolean }) => {
     const day = this.dayOf(request.day);
-    const { habits, etag } = await this.progress(day);
+    const { habits, etag } = await this.deps.progress.all(day, this.today());
     const shown = habits.filter((h) => request.showArchived || h.habit.state !== "archived");
     return { habits: shown.map((h) => habitView(h, etag, day)) };
   };
@@ -68,13 +59,13 @@ export class HabitsService {
   createHabit = async (request: { habit: HabitInput }) => {
     const input = request.habit;
     const name = (input.displayName ?? "").trim();
-    const existing = (await this.deps.store.read()).habits.find(
+    const existing = (await this.deps.progress.store.read()).habits.find(
       (h) => h.name.toLowerCase() === name.toLowerCase(),
     );
     const habit =
       existing ??
       (await this.guard(() =>
-        this.deps.store.create({
+        this.deps.progress.store.create({
           name,
           schedule: scheduleFrom(input.schedule),
           auto: input.auto?.trim() || null,
@@ -89,7 +80,7 @@ export class HabitsService {
     const id = idFrom(request.habit.name ?? "");
     const fields = requestedFields(request, request.habit, HABIT_FIELDS);
     const patch = habitPatch(request.habit, fields);
-    await this.guard(() => this.deps.store.update(id, request.etag, patch));
+    await this.guard(() => this.deps.progress.store.update(id, request.etag, patch));
     return this.view(id, this.today());
   };
 
@@ -109,7 +100,7 @@ export class HabitsService {
         `start_date must be on or before end_date, and at most ${HISTORY_DAYS} days before`,
       );
     }
-    const { habits } = await this.progress(today);
+    const { habits } = await this.deps.progress.all(today, today);
     const found = habits.find((h) => h.habit.id === id);
     if (!found) {
       throw notFound(`habits/${id}`);
@@ -124,7 +115,7 @@ export class HabitsService {
     if (day > today) {
       invalidArgument("A day that hasn't happened yet can't be ticked.");
     }
-    await this.guard(() => this.deps.store.mark(id, day, request.done === true));
+    await this.guard(() => this.deps.progress.store.mark(id, day, request.done === true));
     return this.view(id, today);
   };
 
@@ -133,30 +124,15 @@ export class HabitsService {
   });
 
   private today(): string {
-    return habitDay(this.deps.now(), this.deps.timeZone);
+    return this.deps.progress.today(this.deps.now());
   }
 
   private dayOf(date: DateParts | undefined): string {
     return date ? fromDateParts(date) : this.today();
   }
 
-  /** Every habit's stats as of `day`, with auto ticks when any habit has a rule. */
-  private async progress(day: string): Promise<{ habits: HabitWithStats[]; etag: string }> {
-    const { habits, etag } = await this.deps.store.read();
-    const facts = await this.factsFor(habits, shift(day, -HISTORY_DAYS), day);
-    return { habits: await this.deps.store.stats(day, autoMarker(facts, this.today())), etag };
-  }
-
-  private async factsFor(
-    habits: Habit[],
-    from: string,
-    to: string,
-  ): Promise<Map<string, DayFacts>> {
-    return habits.some((h) => h.auto) ? this.deps.facts.range(from, to) : new Map();
-  }
-
   private async view(id: string, day: string) {
-    const { habits, etag } = await this.progress(day);
+    const { habits, etag } = await this.deps.progress.all(day, this.today());
     const found = habits.find((h) => h.habit.id === id);
     if (!found) {
       throw notFound(`habits/${id}`);
@@ -166,8 +142,8 @@ export class HabitsService {
 
   private async daysOf(found: HabitWithStats, from: string, to: string, today: string) {
     const { habit, start } = found;
-    const ticks = await this.deps.store.marks(from, to);
-    const auto = autoMarker(await this.factsFor([habit], from, to), today);
+    const ticks = await this.deps.progress.store.marks(from, to);
+    const auto = autoMarker(await this.deps.progress.factsFor([habit], from, to), today);
     const days = [];
     for (let date = from; date <= to; date = shift(date, 1)) {
       const ticked = ticks.get(date)?.has(habit.id) === true;
