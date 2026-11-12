@@ -5,10 +5,13 @@
 // becomes very regular. REM is autonomic instability: heart rate is higher and jumps about,
 // variability falls, and breathing turns irregular, while the body barely moves (Fonseca 2017;
 // Gutierrez 2016 for breathing). Adding HR to motion lifts NREM/REM accuracy by 15–25 points
-// over motion alone, the weakest single signal for it (Walch 2019). Each feature is a z-score against the night's asleep epochs, since
-// the stages are relative to your own night, not to fixed numbers. See docs/health-metrics.md.
+// over motion alone, the weakest single signal for it (Walch 2019). DFA α1 adds how correlated
+// the gaps are, low in deep sleep and high in REM (dfa.ts). Each feature is a z-score against
+// the night's asleep epochs, since the stages are relative to your own night, not to fixed
+// numbers. See docs/health-metrics.md.
 
 import { SAMPLE_HZ, sharpestPeak, windowSpectrum } from "./breathing";
+import { dfaAlpha1 } from "./dfa";
 import { type CleanBeat, MIN_BEATS, timedDiffs } from "./hrv";
 import type { AngleChange } from "./sleep";
 import { EPOCH_MS, type Epoch, epochSignals } from "./sleep-epochs";
@@ -22,6 +25,21 @@ const HRV_HALF_MS = 150_000;
  * clean beats, and RMSSD over 60 s agrees well with 5 min (Esco & Flatt 2014; Munoz 2015).
  */
 const MIN_DIFFS = MIN_BEATS;
+/**
+ * A run of up to this many dropped gaps is left out and the beats either side joined; a longer
+ * one, or a missing beat, ends the run. A lone dropped gap is usually one missed or extra beat;
+ * 1–3% of them bias α1 only a little (Rogers 2021, Sensors 21:821), and they are rarer than
+ * that on the strap's nights. Bridging them lifts the epochs with α1 by about 10 points.
+ */
+const DFA_MAX_BRIDGED = 1;
+/**
+ * The strap stamps its packets to the second, so a beat lands up to a second before its stamp,
+ * and its gaps sum about 2.4% short of the clock (1/1024 s read as ms, perhaps). Hence
+ * hrv.ts's 150 ms join can't tell a missing beat on real nights; continuityBreaks below can.
+ */
+const STAMP_LAG_MS = 1_150;
+const STAMP_EARLY_MS = 150;
+const GAP_SCALE = { low: 0.99, high: 1.03 };
 /** Breathing over the 2 minutes around each epoch: 24–60 breaths, enough for a clear peak. */
 const BREATH_HALF_MS = 60_000;
 /** 110 s of the 120 s window, so every epoch's bins line up (1/110 Hz apart). */
@@ -37,6 +55,11 @@ export interface EpochFeatures {
   hrZ: number | null;
   /** ln(RMSSD) over the surrounding 5 minutes, as a z-score. Null with under 60 differences. */
   hrvZ: number | null;
+  /**
+   * DFA α1 over the longest run of clean, consecutive beats in the surrounding 5 minutes, as a
+   * z-score. Null under 100 beats.
+   */
+  dfaZ: number | null;
   /**
    * ln(peak ÷ median power) of the 2-minute breathing spectrum, as a z-score. Higher is more
    * regular.
@@ -72,12 +95,14 @@ export function epochFeatures(input: FeatureInput): EpochFeatures[] {
   );
   const hrvZ = zScores(epochLnRmssd(input.beats, centres), asleep);
   const breathingZ = zScores(epochBreathing(input.beats, centres), asleep);
+  const dfaZ = zScores(epochDfa(input.beats, centres), asleep);
   const { onset } = input;
   return signals.map((s, i) => ({
     ts: s.ts,
     asleep: asleep[i] === true,
     hrZ: hrZ[i] ?? null,
     hrvZ: hrvZ[i] ?? null,
+    dfaZ: dfaZ[i] ?? null,
     breathingZ: breathingZ[i] ?? null,
     movementDeg: s.movementDeg,
     sinceOnsetMin: onset === null ? null : (s.ts - onset) / 60_000,
@@ -96,6 +121,77 @@ export function epochLnRmssd(beats: CleanBeat[], centres: number[]): (number | n
     }
     return Math.log(Math.sqrt(sum / count));
   });
+}
+
+/** Raw DFA α1 around each centre, over the window's longest run of clean beats. */
+export function epochDfa(
+  beats: CleanBeat[],
+  centres: number[],
+  maxBridged = DFA_MAX_BRIDGED,
+): (number | null)[] {
+  const ids = runIds(beats, continuityBreaks(beats), maxBridged);
+  return windows(beats, centres, HRV_HALF_MS).map(([from, to]) =>
+    dfaAlpha1(longestRun(beats, ids, from, to)),
+  );
+}
+
+/**
+ * breaks[i] is true when a beat must be missing before beats[i]. It tracks the span the current
+ * beat can have happened in: the last span moved on by this gap (scaled by GAP_SCALE), cut to
+ * what this beat's stamp allows. Each stamp narrows the span, so after a few beats a missing
+ * beat leaves it empty.
+ */
+export function continuityBreaks(beats: RrInterval[]): boolean[] {
+  let low = Number.NEGATIVE_INFINITY;
+  let high = Number.POSITIVE_INFINITY;
+  return beats.map((beat, i) => {
+    const nextLow = Math.max(low + beat.ms * GAP_SCALE.low, beat.ts - STAMP_LAG_MS);
+    const nextHigh = Math.min(high + beat.ms * GAP_SCALE.high, beat.ts + STAMP_EARLY_MS);
+    const broken = i > 0 && nextLow > nextHigh;
+    low = broken ? beat.ts - STAMP_LAG_MS : nextLow;
+    high = broken ? beat.ts + STAMP_EARLY_MS : nextHigh;
+    return broken;
+  });
+}
+
+/**
+ * Which run each beat is in: a new run starts at a break and after more than maxBridged
+ * dropped gaps in a row.
+ */
+function runIds(beats: CleanBeat[], breaks: boolean[], maxBridged: number): number[] {
+  let id = 0;
+  let dropped = 0;
+  return beats.map((beat, i) => {
+    if (breaks[i] === true) {
+      id++;
+      dropped = 0;
+    }
+    dropped = beat.kept ? 0 : dropped + 1;
+    if (dropped > maxBridged) {
+      id++;
+    }
+    return id;
+  });
+}
+
+/** The kept gaps of the longest run within beats[from, to). */
+function longestRun(beats: CleanBeat[], ids: number[], from: number, to: number): number[] {
+  let best: number[] = [];
+  let run: number[] = [];
+  let id = -1;
+  for (let i = from; i < to; i++) {
+    const beat = beats[i];
+    if (!beat?.kept) {
+      continue;
+    }
+    if (ids[i] !== id) {
+      id = ids[i] ?? -1;
+      run = [];
+    }
+    run.push(beat.ms);
+    best = run.length > best.length ? run : best;
+  }
+  return best;
 }
 
 /** How sharp the breathing peak is around each centre, as ln(peak ÷ the band's median power). */

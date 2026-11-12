@@ -3,14 +3,25 @@ import { type CleanBeat, cleanRr } from "../../../src/health/metrics/hrv";
 import type { AngleChange } from "../../../src/health/metrics/sleep";
 import { EPOCH_MS, scoreEpochs, sleepTimes } from "../../../src/health/metrics/sleep-epochs";
 import {
+  continuityBreaks,
   type EpochFeatures,
   epochBreathing,
+  epochDfa,
   epochFeatures,
   zScores,
 } from "../../../src/health/metrics/sleep-features";
 import { mean } from "../../../src/health/metrics/stats";
 import type { HeartRate, RrInterval } from "../../../src/health/metrics/types";
-import { breathingBeats, HOUR, heartRate, random, T0 } from "./fixtures";
+import {
+  breathingBeats,
+  HOUR,
+  heartRate,
+  pinkNoise,
+  random,
+  seriesBeats,
+  T0,
+  whiteNoise,
+} from "./fixtures";
 
 const window = { start: T0, end: T0 + 2 * HOUR };
 const half = T0 + HOUR;
@@ -44,7 +55,7 @@ function features(
 /** The mean of a feature over the epochs that have it, from `from` to `to`. */
 function average(
   rows: EpochFeatures[],
-  key: "hrZ" | "hrvZ" | "breathingZ",
+  key: "hrZ" | "hrvZ" | "breathingZ" | "dfaZ",
   from: number,
   to: number,
 ): number {
@@ -131,16 +142,79 @@ describe("epoch features", () => {
     const rows = features(beats, heart);
     const middle = rows[100];
 
-    expect(middle).toMatchObject({ hrZ: null, hrvZ: null, breathingZ: null, asleep: false });
+    expect(middle).toMatchObject({
+      hrZ: null,
+      hrvZ: null,
+      breathingZ: null,
+      dfaZ: null,
+      asleep: false,
+    });
     expect(rows[20]?.hrvZ).not.toBeNull();
     expect(rows[20]?.breathingZ).not.toBeNull();
+    expect(rows[20]?.dfaZ).not.toBeNull();
   });
 
   test("with no beats at all, every beat feature is null", () => {
     const rows = features([]);
 
-    expect(rows.every((r) => r.hrvZ === null && r.breathingZ === null)).toBe(true);
+    expect(rows.every((r) => r.hrvZ === null && r.breathingZ === null && r.dfaZ === null)).toBe(
+      true,
+    );
     expect(rows.every((r) => r.hrZ !== null)).toBe(true);
+  });
+});
+
+/** The beats with each beat at `at` missed: its gap is merged into the next one. */
+function missedBeats(beats: RrInterval[], at: number[]): RrInterval[] {
+  return beats.flatMap((b, i) => {
+    if (at.includes(i)) {
+      return [];
+    }
+    const missed = at.includes(i - 1) ? (beats[i - 1]?.ms ?? 0) : 0;
+    return [{ ts: b.ts, ms: b.ms + missed }];
+  });
+}
+
+describe("DFA α1 per epoch", () => {
+  // First hour uncorrelated (deep-like, α1 about 0.5), second hour 1/f (REM-like, about 1.0).
+  const white = seriesBeats(T0, whiteNoise(3_600, 3), 1000, 20);
+  const last = white[white.length - 1]?.ts ?? T0;
+  const pink = seriesBeats(last, pinkNoise(3_600, 3), 1000, 20);
+  const beats = cleanRr([...white, ...pink]);
+  const centres = Array.from({ length: 240 }, (_, i) => T0 + i * EPOCH_MS + EPOCH_MS / 2);
+
+  test("tells uncorrelated beats from 1/f ones, raw and as a z-score", () => {
+    const alpha = epochDfa(beats, centres);
+    const first = mean(alpha.slice(10, 110).filter((v): v is number => v !== null)) ?? 0;
+    const second = mean(alpha.slice(130, 230).filter((v): v is number => v !== null)) ?? 0;
+    const rows = features(beats.map(({ ts, ms }) => ({ ts, ms })));
+
+    expect(first).toBeGreaterThan(0.4);
+    expect(first).toBeLessThan(0.7);
+    expect(second).toBeGreaterThan(0.85);
+    expect(average(rows, "dfaZ", T0 + 5 * 60_000, half - 5 * 60_000)).toBeLessThan(-0.5);
+    expect(average(rows, "dfaZ", half + 5 * 60_000, window.end - 5 * 60_000)).toBeGreaterThan(0.5);
+  });
+
+  test("a lone dropped gap is bridged; two in a row end the run", () => {
+    // A missed beat merges two gaps into one about twice as long, which cleaning drops.
+    const beats = seriesBeats(T0, whiteNoise(160, 4));
+    const one = missedBeats(beats, [75]);
+    const two = missedBeats(beats, [75, 77]);
+    const centre = [T0 + 80_000];
+
+    expect(epochDfa(cleanRr(one), centre)[0]).not.toBeNull();
+    expect(epochDfa(cleanRr(one), centre, 0)[0]).toBeNull();
+    expect(epochDfa(cleanRr(two), centre)[0]).toBeNull();
+  });
+
+  test("a missing stretch breaks the beats; stamps rounded up to the second and gaps 2.4% short don't", () => {
+    const beats = seriesBeats(T0, whiteNoise(400, 5));
+    const stamped = beats.map((b) => ({ ts: Math.ceil(b.ts / 1000) * 1000, ms: b.ms / 1.024 }));
+    const missing = stamped.filter((_, i) => i < 200 || i >= 205);
+
+    expect(continuityBreaks(stamped).some((b) => b)).toBe(false);
+    expect(continuityBreaks(missing).flatMap((b, i) => (b ? [i] : []))).toEqual([200]);
   });
 });
 

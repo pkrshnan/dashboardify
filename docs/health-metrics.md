@@ -43,16 +43,16 @@ neighbours (Webster 1982). Onset is the first 10 min of unbroken sleep; latency,
 ## Sleep stages (`sleep-stages.ts`)
 
 Light, deep and REM for each asleep epoch. Estimated: the HR, movement and transition parts are
-fitted to sleep-lab nights; HRV and breathing are still hand-set.
+fitted to sleep-lab nights; HRV, breathing and DFA α1 are still hand-set.
 
 - **Features** (`sleep-features.ts`), per epoch, z-scored against the night's asleep epochs:
   mean HR; `ln(RMSSD)` over the 5 min around it (null under 60 differences; Esco & Flatt 2014);
   breathing regularity, `ln(peak ÷ band median)` of the 2-min spectrum (null under 80% kept
-  beats); the largest 5-s arm angle change; minutes since onset. HR is then taken against the
-  median of the asleep epochs within an hour either side, since it falls across the night
-  whatever the stage.
+  beats); DFA α1 (below); the largest 5-s arm angle change; minutes since onset. HR is then
+  taken against the median of the asleep epochs within an hour either side, since it falls
+  across the night whatever the stage.
 - **Model:** a 4-state HMM decoded with Viterbi. Awake is `sleep-epochs.ts`'s and fixed; asleep
-  epochs can't be awake. Per state: a Gaussian on HR, one on HRV and one on breathing (null
+  epochs can't be awake. Per state: a Gaussian on HR, HRV, breathing and DFA α1 (null
   features add nothing), and the chance of a movement of 0.5–2°, 2–5° or over 5°, against
   being still (stillness alone would pull every still epoch toward deep).
 - **Fitted** (`stage-params.json`, by `src/health/train-stages.ts`): the HR Gaussians, the
@@ -60,8 +60,22 @@ fitted to sleep-lab nights; HRV and breathing are still hand-set.
   each leaning on the night-wide matrix as if it had 100 more epochs. The time of night (deep
   early, REM later) is in those matrices. REM can't start before 45 min: the lab nights had it
   there on one night of 30.
-- **Hand-set** until H14: HRV (deep +0.8, REM −0.6) and breathing (deep +0.8, REM −0.8), SD 0.8
-  (Fonseca 2017, Gutierrez 2016). The lab data has no RR, so nothing has checked them.
+- **Hand-set** until H14: HRV (deep +0.8, REM −0.6), breathing (deep +0.8, REM −0.8) and DFA
+  α1 (deep −0.6, REM +0.5), SD 0.8 (Fonseca 2017, Gutierrez 2016, Bunde 2000, Penzel 2003). The
+  lab data has no RR, so nothing has checked HRV and breathing.
+- **DFA α1** (`dfa.ts`): how correlated the gaps are over 4–16 beats, the slope of log F(n)
+  against log n after detrending each box of the integrated series (Peng 1995; the same range as
+  Rogers 2021). About 0.5 is uncorrelated, 1.0 is 1/f. Per epoch, over the longest run of clean
+  beats in the 5 min around it, null under 100 beats (6+ boxes at 16). A single dropped gap is
+  left out and the run goes on; two in a row, or a missing beat, end it. The strap stamps
+  packets to the second and its gaps sum about 2.4% short of the clock, so a missing beat is
+  found by tracking when each beat could have been, not by hrv.ts's 150 ms join. 77–96% of
+  asleep epochs get a value (64–92% without bridging).
+- **DFA check**, on 4–9 Nov without lab labels: mean α1 0.76 in epochs H12 decodes deep, 0.86
+  light and 1.15 REM; 0.83 in the first 90 min against 1.01 in the last 2 h; r −0.15 with
+  `hrvZ`, so it adds something HRV doesn't. It is weighted. Shares (L/D/R) without and with it:
+  40/27/33 → 42/26/31, 69/11/20 → 62/14/24, 46/22/32 → 37/29/34, 53/25/22 → 45/26/30,
+  64/17/19 → 58/20/22, 59/21/20 → 45/30/25; the 5 Nov night stops being unusual.
 - **Plausible** when light is 35–68%, deep 4–52% and REM 4–38% of asleep time; otherwise the
   note line ends "unusual". The bounds are mean ± 1.96 SD of the predicted shares on held-out
   lab nights with 5 h or more asleep, so only nights the model rarely gives are flagged. They

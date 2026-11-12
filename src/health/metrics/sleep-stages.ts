@@ -7,8 +7,8 @@
 // they give the 90-minute cycles without hard-coding them.
 //
 // The HR, movement and transition parts are fitted to sleep-lab-labelled nights by
-// src/health/train-stages.ts (H12) and read from stage-params.json; HRV and breathing are still
-// hand-set, since that data has no beat-to-beat intervals. See docs/health-metrics.md.
+// src/health/train-stages.ts (H12) and read from stage-params.json; HRV, breathing and DFA α1
+// are still hand-set, since that data has no beat-to-beat intervals. See docs/health-metrics.md.
 
 import { EPOCH_MS } from "./sleep-epochs";
 import type { EpochFeatures } from "./sleep-features";
@@ -54,11 +54,15 @@ export interface StageModel {
  * 2016). Deep: vagal drive, so RMSSD up and breathing very regular. REM: autonomic instability,
  * so RMSSD down and breathing irregular. Light sits near 0. The sizes are guesses of about one
  * SD; nothing has checked them, since the training data has no RR.
+ *
+ * DFA α1 (H13): beat-to-beat correlations are lost in deep sleep and strong in REM (Bunde 2000;
+ * Penzel 2003). On six real nights α1 averaged 0.76 in epochs decoded deep, 0.86 light and 1.15
+ * REM, so it agrees with the HR and time parts; the means are kept small until H14 fits them.
  */
-const HAND_SET: Record<SleepStage, Record<"hrvZ" | "breathingZ", number>> = {
-  light: { hrvZ: 0, breathingZ: 0 },
-  deep: { hrvZ: 0.8, breathingZ: 0.8 },
-  rem: { hrvZ: -0.6, breathingZ: -0.8 },
+const HAND_SET: Record<SleepStage, Record<"hrvZ" | "breathingZ" | "dfaZ", number>> = {
+  light: { hrvZ: 0, breathingZ: 0, dfaZ: 0 },
+  deep: { hrvZ: 0.8, breathingZ: 0.8, dfaZ: -0.6 },
+  rem: { hrvZ: -0.6, breathingZ: -0.8, dfaZ: 0.5 },
 };
 const HAND_SET_SD = 0.8;
 
@@ -96,7 +100,7 @@ export interface SleepStages {
   plausible: boolean;
 }
 
-/** The model from fitted params, with HRV and breathing hand-set. */
+/** The model from fitted params, with HRV, breathing and DFA α1 hand-set. */
 export function trainedModel(params: StageParams): StageModel {
   const before = logRows(withoutRem(params.transitions.beforeOnset));
   const bins = params.transitions.sinceOnset.map(logRows);
@@ -114,6 +118,7 @@ export function trainedModel(params: StageParams): StageModel {
         gaussian(f.hrZ, mean, sd) +
         gaussian(f.hrvZ, HAND_SET[stage].hrvZ, HAND_SET_SD) +
         gaussian(f.breathingZ, HAND_SET[stage].breathingZ, HAND_SET_SD) +
+        gaussian(f.dfaZ, HAND_SET[stage].dfaZ, HAND_SET_SD) +
         (logMoved[stage][bin] ?? 0)
       );
     },

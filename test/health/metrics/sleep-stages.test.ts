@@ -11,10 +11,10 @@ import { random, T0 } from "./fixtures";
 
 const NIGHT_MIN = 480;
 
-type Look = Pick<EpochFeatures, "hrZ" | "hrvZ" | "breathingZ">;
+type Look = Pick<EpochFeatures, "hrZ" | "hrvZ" | "breathingZ" | "dfaZ">;
 
-const DEEP: Look = { hrZ: -1.2, hrvZ: 1, breathingZ: 1 };
-const REM: Look = { hrZ: 1, hrvZ: -0.8, breathingZ: -1 };
+const DEEP: Look = { hrZ: -1.2, hrvZ: 1, breathingZ: 1, dfaZ: -0.8 };
+const REM: Look = { hrZ: 1, hrvZ: -0.8, breathingZ: -1, dfaZ: 0.8 };
 
 /**
  * An all-asleep night, onset at the first epoch, with features scattered ±0.3 around 0 (light),
@@ -32,6 +32,7 @@ function night(marked: { from: number; to: number; look: Look }[] = []): EpochFe
       hrZ: (look?.hrZ ?? 0) + jitter(),
       hrvZ: (look?.hrvZ ?? 0) + jitter(),
       breathingZ: (look?.breathingZ ?? 0) + jitter(),
+      dfaZ: (look?.dfaZ ?? 0) + jitter(),
       movementDeg: 0,
       sinceOnsetMin: t,
     };
@@ -122,7 +123,13 @@ describe("sleep stages", () => {
   });
 
   test("with every feature null the night is light, not a crash", () => {
-    const features = night().map((f) => ({ ...f, hrZ: null, hrvZ: null, breathingZ: null }));
+    const features = night().map((f) => ({
+      ...f,
+      hrZ: null,
+      hrvZ: null,
+      breathingZ: null,
+      dfaZ: null,
+    }));
 
     const result = sleepStages(features);
 
