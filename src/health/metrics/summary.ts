@@ -4,6 +4,7 @@
 import { breathingRate } from "./breathing";
 import { type MinuteHr, minuteHr, predictedMaxHr, restingHr, zoneMinutes } from "./heart-rate";
 import { cleanRr, goodWindows, nightHrv } from "./hrv";
+import { type RecordedRun, runSpan, withRuns } from "./runs";
 import { climbs, type SetClimb } from "./sets";
 import { sleepSkinTemp } from "./skin-temp";
 import { rawAngleChanges, sleepWindow } from "./sleep";
@@ -104,6 +105,8 @@ export interface DayInput {
   /** Resting HR from last night, your recent normal if it is missing, or else the closest night's. */
   restingHr: number | null;
   profile: Profile;
+  /** Runs recorded in Strava that start this day. */
+  runs?: RecordedRun[];
 }
 
 export interface DayMetrics {
@@ -135,7 +138,12 @@ export function dayMetrics(input: DayInput): DayMetrics {
     steps: stepsTaken(input.steps),
     ...effort,
     // A walk can't be inside a workout: walking to the court is a walk, the game isn't.
-    walks: walks(perMinute, minutes, [...sleep, ...effort.workouts]),
+    walks: walks(
+      perMinute,
+      minutes,
+      [...sleep, ...effort.workouts],
+      (input.runs ?? []).map(runSpan),
+    ),
   };
 }
 
@@ -159,16 +167,20 @@ function effortMetrics(
     trimp: total,
     strain: strain(total),
     zoneMin: zoneMinutes(minutes, maxHr),
-    workouts: workouts({
-      minutes,
-      climbs: dayClimbs(input.heartRate),
-      steps: perMinute,
-      motion: input.motion,
-      restingHr: input.restingHr,
-      maxHr,
-      sex,
-      exclude: sleep,
-    }),
+    workouts: withRuns(
+      workouts({
+        minutes,
+        climbs: dayClimbs(input.heartRate),
+        steps: perMinute,
+        motion: input.motion,
+        restingHr: input.restingHr,
+        maxHr,
+        sex,
+        exclude: sleep,
+      }),
+      input.runs ?? [],
+      { minutes, steps: perMinute, restingHr: input.restingHr, maxHr, sex },
+    ),
   };
 }
 

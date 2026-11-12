@@ -15,24 +15,44 @@ import { createApp } from "./server/app";
 import { type Config, loadStartup } from "./server/config";
 import { lockPath } from "./settings/rotate";
 import { openSettings } from "./settings/startup";
+import type { SettingsStore } from "./settings/store";
+import { StravaAccounts } from "./strava/account";
+import { RunCache } from "./strava/cache";
+import { StravaClient } from "./strava/client";
+import { StravaSync } from "./strava/sync";
 import { localDate } from "./vault/time";
 import { Vault } from "./vault/vault";
 
 const HOUR_MS = 3_600_000;
 
 /** Health summaries rerun after strap uploads, and hourly for today in case nothing arrives. */
-function startHealthSummaries(config: Config, vault: Vault): SummaryScheduler {
-  const summary = new DailySummary(
-    new RawStore(config.healthRawPath),
-    new DerivedStore(config.healthDerivedPath),
-    vault,
-    config.timeZone,
-  );
+function startHealthSummaries(config: Config, summary: DailySummary): SummaryScheduler {
   const scheduler = new SummaryScheduler(summary, config.timeZone);
   const today = () => localDate(new Date(), config.timeZone);
   scheduler.touchDate(today());
   setInterval(() => scheduler.touchDate(today()), HOUR_MS);
   return scheduler;
+}
+
+/** Strava runs are polled into strava-cache.db; a day whose runs changed is recomputed. */
+function startStrava(
+  store: SettingsStore,
+  config: Config,
+  cache: RunCache,
+  scheduler: SummaryScheduler,
+): void {
+  const accounts = new StravaAccounts(store);
+  new StravaSync({
+    accounts,
+    cache,
+    client: new StravaClient(accounts),
+    timeZone: config.timeZone,
+    onChanged: (dates) => {
+      for (const date of dates) {
+        scheduler.touchDate(date);
+      }
+    },
+  }).start();
 }
 
 /** server.lock holds our pid while we run, so `bun run settings rotate-key` refuses. */
@@ -66,7 +86,17 @@ if (import.meta.main) {
     onPass: () => (accounts.list().length > 0 ? agenda.write() : Promise.resolve(false)),
   });
   calendarSync.start();
-  const scheduler = startHealthSummaries(config, vault);
+  const runs = await RunCache.open(config.dataPath);
+  const summary = new DailySummary(
+    new RawStore(config.healthRawPath),
+    new DerivedStore(config.healthDerivedPath),
+    vault,
+    config.timeZone,
+    Date.now,
+    runs,
+  );
+  const scheduler = startHealthSummaries(config, summary);
+  startStrava(opened.store, config, runs, scheduler);
   const app = createApp(config, {
     devices,
     tailnet,
@@ -80,6 +110,8 @@ if (import.meta.main) {
     },
     vault,
     onSamples: (_stream, day) => scheduler.touchUtcDay(day),
+    // A review recomputes with the same summary, so Strava runs stay in.
+    recompute: (date) => summary.run(date),
   });
   Bun.serve({
     port: config.port,

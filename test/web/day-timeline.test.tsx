@@ -12,16 +12,18 @@ function timeline(
   options: { isPhone?: boolean; nowMin?: number } = {},
 ) {
   const onComplete = mock((_id: string) => undefined);
+  const onReopen = mock((_id: string) => undefined);
   const view = render(
     <DayTimeline
       day={day("2026-11-09", items)}
       nowMin={options.nowMin ?? NINE_TWELVE}
       isPhone={options.isPhone ?? false}
       onComplete={onComplete}
+      onReopen={onReopen}
     />,
   );
   const blocks = [...view.container.querySelectorAll<HTMLElement>(".event")];
-  return { ...view, blocks, onComplete };
+  return { ...view, blocks, onComplete, onReopen };
 }
 
 function text(el: Element | null | undefined): string {
@@ -119,13 +121,27 @@ describe("DayTimeline", () => {
     expect(lines).toEqual(["Workshop", "12:00 · Room 4"]);
   });
 
-  test("events outside the hours shown are left out", () => {
-    const { blocks } = timeline(
-      { events: [event("Early", 6 * 60, 7 * 60), event("Late", 23 * 60, 23 * 60 + 30)] },
+  test("earlier hours are drawn above the view, scrolled out of sight", () => {
+    const { container, blocks } = timeline(
+      { events: [event("Early", 6 * 60, 7 * 60)], reminders: [reminder("Pills", 7 * 60 + 30)] },
       { nowMin: 9 * 60 },
     );
-    // 23:00 stretches the range to 24:00, so only the early one is gone.
-    expect(blocks.map(text).map((t) => t.split(" ")[0])).toEqual(["Late"]);
+    const labels = [...container.querySelectorAll(".hour-label")].map(text);
+    expect(labels[0]).toBe("06");
+    expect(blocks[0]?.style.top).toBe("0px");
+    const scroller = container.querySelector<HTMLElement>(".timeline-scroll");
+    // Opens at 08:00, two hours down; the box is as tall as 08:00 to 22:00.
+    expect(scroller?.scrollTop).toBe(2 * 52);
+    expect(scroller?.style.maxHeight).toBe(`${14 * 52 + 20}px`);
+  });
+
+  test("a past task above the view can still be ticked off", () => {
+    const { getByLabelText, onComplete } = timeline(
+      { reminders: [reminder("Pills", 7 * 60 + 30)] },
+      { nowMin: 14 * 60 },
+    );
+    fireEvent.click(getByLabelText("Mark Pills done"));
+    expect(onComplete).toHaveBeenCalledWith("Pills");
   });
 
   test("all-day events sit in a row above the hours", () => {
@@ -169,21 +185,25 @@ describe("DayTimeline", () => {
   });
 
   test("ticking a reminder pill completes it", () => {
-    const { container, getByLabelText, onComplete } = timeline({
+    const { container, getByLabelText, onComplete, onReopen } = timeline({
       reminders: [reminder("Call the bank", 10 * 60)],
     });
     expect(container.querySelector<HTMLElement>(".reminder")?.style.top).toBe("104px");
     fireEvent.click(getByLabelText("Mark Call the bank done"));
     expect(onComplete).toHaveBeenCalledWith("Call the bank");
+    expect(onReopen).not.toHaveBeenCalled();
   });
 
-  test("a done reminder is ticked and can't be unticked", () => {
-    const { container, getByLabelText } = timeline({
+  test("unticking a done reminder reopens it", () => {
+    const { container, getByLabelText, onComplete, onReopen } = timeline({
       reminders: [reminder("Pay rent", 10 * 60, true)],
     });
-    const box = getByLabelText("Done") as HTMLInputElement;
+    const box = getByLabelText("Mark Pay rent not done") as HTMLInputElement;
     expect(box.checked).toBe(true);
-    expect(box.disabled).toBe(true);
+    expect(box.disabled).toBe(false);
     expect(container.querySelector(".reminder")?.classList.contains("done")).toBe(true);
+    fireEvent.click(box);
+    expect(onReopen).toHaveBeenCalledWith("Pay rent");
+    expect(onComplete).not.toHaveBeenCalled();
   });
 });
