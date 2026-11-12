@@ -68,10 +68,8 @@ to your nights ([health-feedback.md](health-feedback.md#fitting-stages-to-you)).
   against log n after detrending each box of the integrated series (Peng 1995; the same range as
   Rogers 2021). About 0.5 is uncorrelated, 1.0 is 1/f. Per epoch, over the longest run of clean
   beats in the 5 min around it, null under 100 beats (6+ boxes at 16). A single dropped gap is
-  left out and the run goes on; two in a row, or a missing beat, end it. The strap stamps
-  packets to the second and its gaps sum about 2.4% short of the clock, so a missing beat is
-  found by tracking when each beat could have been, not by hrv.ts's 150 ms join. 77–96% of
-  asleep epochs get a value (64–92% without bridging).
+  left out and the run goes on; two in a row, or a missing beat (as HRV below finds it), end
+  it. 77–96% of asleep epochs get a value (64–92% without bridging).
 - **DFA check**, on 4–9 Nov without lab labels: mean α1 0.76 in epochs H12 decodes deep, 0.86
   light and 1.15 REM; 0.83 in the first 90 min against 1.01 in the last 2 h; r −0.15 with
   `hrvZ`, so it adds something HRV doesn't. It is weighted. Shares (L/D/R) without and with it:
@@ -126,8 +124,16 @@ Per-minute HR in the sleep window, rolling 5-minute means, 10th percentile.
 ## HRV (`hrv.ts`)
 
 Drop RR gaps outside 300–2000 ms or 20%+ from their 11-beat median. Successive differences only
-between consecutive kept gaps. RMSSD per 5-minute window (80%+ of beats kept, 60+ beats). The
-night is the median window; recovery uses `ln(RMSSD)`.
+between consecutive kept gaps, and not when one is 20%+ off the one before (an ectopic beat,
+Malik 1989). RMSSD per 5-minute window (80%+ of beats kept, 60+ beats). The night is the median
+window; recovery uses `ln(RMSSD)`.
+
+The strap stamps each 1-second packet to the whole second and counts its beats back from that,
+so a beat happened up to a second before its stamp, and its gaps sum about 2.4% short of the
+clock. `continuityBreaks` tracks the span each beat could have happened in, its gap after the
+last beat's span, cut to what its stamp allows; an empty span means a beat is missing. Until
+algo 13 a beat had to land within 150 ms of where the last gap put it: on 4–9 Nov that used
+70–87% of asleep beats, now 84–98%, and moved RMSSD by −1.9 to +0.8 ms.
 
 ## Breathing rate (`breathing.ts`)
 

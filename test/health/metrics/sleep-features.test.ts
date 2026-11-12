@@ -3,7 +3,6 @@ import { type CleanBeat, cleanRr } from "../../../src/health/metrics/hrv";
 import type { AngleChange } from "../../../src/health/metrics/sleep";
 import { EPOCH_MS, scoreEpochs, sleepTimes } from "../../../src/health/metrics/sleep-epochs";
 import {
-  continuityBreaks,
   type EpochFeatures,
   epochBreathing,
   epochDfa,
@@ -206,15 +205,6 @@ describe("DFA α1 per epoch", () => {
     expect(epochDfa(cleanRr(one), centre)[0]).not.toBeNull();
     expect(epochDfa(cleanRr(one), centre, 0)[0]).toBeNull();
     expect(epochDfa(cleanRr(two), centre)[0]).toBeNull();
-  });
-
-  test("a missing stretch breaks the beats; stamps rounded up to the second and gaps 2.4% short don't", () => {
-    const beats = seriesBeats(T0, whiteNoise(400, 5));
-    const stamped = beats.map((b) => ({ ts: Math.ceil(b.ts / 1000) * 1000, ms: b.ms / 1.024 }));
-    const missing = stamped.filter((_, i) => i < 200 || i >= 205);
-
-    expect(continuityBreaks(stamped).some((b) => b)).toBe(false);
-    expect(continuityBreaks(missing).flatMap((b, i) => (b ? [i] : []))).toEqual([200]);
   });
 });
 

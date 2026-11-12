@@ -12,7 +12,7 @@
 
 import { SAMPLE_HZ, sharpestPeak, windowSpectrum } from "./breathing";
 import { dfaAlpha1 } from "./dfa";
-import { type CleanBeat, MIN_BEATS, timedDiffs } from "./hrv";
+import { type CleanBeat, continuityBreaks, MIN_BEATS, timedDiffs } from "./hrv";
 import type { AngleChange } from "./sleep";
 import { EPOCH_MS, type Epoch, epochSignals } from "./sleep-epochs";
 import { mean, sd } from "./stats";
@@ -32,14 +32,6 @@ const MIN_DIFFS = MIN_BEATS;
  * that on the strap's nights. Bridging them lifts the epochs with α1 by about 10 points.
  */
 const DFA_MAX_BRIDGED = 1;
-/**
- * The strap stamps its packets to the second, so a beat lands up to a second before its stamp,
- * and its gaps sum about 2.4% short of the clock (1/1024 s read as ms, perhaps). Hence
- * hrv.ts's 150 ms join can't tell a missing beat on real nights; continuityBreaks below can.
- */
-const STAMP_LAG_MS = 1_150;
-const STAMP_EARLY_MS = 150;
-const GAP_SCALE = { low: 0.99, high: 1.03 };
 /** Breathing over the 2 minutes around each epoch: 24–60 breaths, enough for a clear peak. */
 const BREATH_HALF_MS = 60_000;
 /** 110 s of the 120 s window, so every epoch's bins line up (1/110 Hz apart). */
@@ -133,25 +125,6 @@ export function epochDfa(
   return windows(beats, centres, HRV_HALF_MS).map(([from, to]) =>
     dfaAlpha1(longestRun(beats, ids, from, to)),
   );
-}
-
-/**
- * breaks[i] is true when a beat must be missing before beats[i]. It tracks the span the current
- * beat can have happened in: the last span moved on by this gap (scaled by GAP_SCALE), cut to
- * what this beat's stamp allows. Each stamp narrows the span, so after a few beats a missing
- * beat leaves it empty.
- */
-export function continuityBreaks(beats: RrInterval[]): boolean[] {
-  let low = Number.NEGATIVE_INFINITY;
-  let high = Number.POSITIVE_INFINITY;
-  return beats.map((beat, i) => {
-    const nextLow = Math.max(low + beat.ms * GAP_SCALE.low, beat.ts - STAMP_LAG_MS);
-    const nextHigh = Math.min(high + beat.ms * GAP_SCALE.high, beat.ts + STAMP_EARLY_MS);
-    const broken = i > 0 && nextLow > nextHigh;
-    low = broken ? beat.ts - STAMP_LAG_MS : nextLow;
-    high = broken ? beat.ts + STAMP_EARLY_MS : nextHigh;
-    return broken;
-  });
 }
 
 /**

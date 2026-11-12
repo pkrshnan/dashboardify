@@ -19,8 +19,21 @@ export const WINDOW_MS = 5 * 60_000;
 const MIN_KEPT_SHARE = 0.8;
 /** And it has enough beats to mean something (about one minute's worth at rest). */
 export const MIN_BEATS = 60;
-/** Two kept gaps are only "consecutive" if no beat is missing between them. */
-const MAX_JOIN_SLACK_MS = 150;
+/**
+ * The strap stamps each packet to the whole second and counts its beats back from that stamp,
+ * so a beat happened up to a second before its stamp, and its gaps sum about 2.4% short of the
+ * clock (1/1024 s read as ms, perhaps). A fixed slack can't follow that: 150 ms split 12–21% of
+ * kept pairs on 4–9 Nov. continuityBreaks tracks when each beat could have been instead.
+ */
+const STAMP_LAG_MS = 1_150;
+const STAMP_EARLY_MS = 150;
+const GAP_SCALE = { low: 0.99, high: 1.03 };
+/**
+ * A gap more than 20% away from the one before is taken as an ectopic or misread beat, the
+ * usual rule since Malik 1989. Cleaning against the median lets a lone short beat through, and
+ * on 4–9 Nov those 0.9% of differences would add 1–5 ms to the night's RMSSD.
+ */
+const MAX_STEP = 0.2;
 
 export interface CleanBeat extends RrInterval {
   /** False for a gap dropped by cleaning: out of range or out of line with its neighbours. */
@@ -55,8 +68,8 @@ function neighbourhood(beats: RrInterval[], inRange: boolean[], i: number): numb
 }
 
 /**
- * Successive differences between kept gaps that really follow each other: the later beat's
- * time minus its own gap lands on the earlier beat (give or take MAX_JOIN_SLACK_MS).
+ * Successive differences between kept gaps that really follow each other (no break between
+ * them, see continuityBreaks) and change by at most MAX_STEP.
  */
 export function successiveDiffs(beats: CleanBeat[]): number[] {
   return timedDiffs(beats).map((d) => d.ms);
@@ -64,15 +77,36 @@ export function successiveDiffs(beats: CleanBeat[]): number[] {
 
 /** successiveDiffs, each stamped with the later beat's time, for sliding windows. */
 export function timedDiffs(beats: CleanBeat[]): RrInterval[] {
+  const breaks = continuityBreaks(beats);
   const diffs: RrInterval[] = [];
   for (let i = 1; i < beats.length; i++) {
     const prev = beats[i - 1];
     const cur = beats[i];
-    if (prev?.kept && cur?.kept && Math.abs(cur.ts - cur.ms - prev.ts) <= MAX_JOIN_SLACK_MS) {
+    if (prev?.kept && cur?.kept && !breaks[i] && Math.abs(cur.ms - prev.ms) <= MAX_STEP * prev.ms) {
       diffs.push({ ts: cur.ts, ms: cur.ms - prev.ms });
     }
   }
   return diffs;
+}
+
+/**
+ * breaks[i] is true when a beat must be missing before beats[i], the one test of "consecutive"
+ * for RMSSD and DFA α1. It tracks the span the current beat can have happened in: the last span
+ * moved on by this gap (scaled by GAP_SCALE), cut to what this beat's stamp allows. Each stamp
+ * narrows the span, so after a few beats a missing beat leaves it empty. Input sorted by ts,
+ * dropped gaps included: they still move time on.
+ */
+export function continuityBreaks(beats: RrInterval[]): boolean[] {
+  let low = Number.NEGATIVE_INFINITY;
+  let high = Number.POSITIVE_INFINITY;
+  return beats.map((beat, i) => {
+    const nextLow = Math.max(low + beat.ms * GAP_SCALE.low, beat.ts - STAMP_LAG_MS);
+    const nextHigh = Math.min(high + beat.ms * GAP_SCALE.high, beat.ts + STAMP_EARLY_MS);
+    const broken = i > 0 && nextLow > nextHigh;
+    low = broken ? beat.ts - STAMP_LAG_MS : nextLow;
+    high = broken ? beat.ts + STAMP_EARLY_MS : nextHigh;
+    return broken;
+  });
 }
 
 /** RMSSD in ms: √(mean of squared successive differences). */

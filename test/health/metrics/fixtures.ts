@@ -52,6 +52,32 @@ export function seriesBeats(
   });
 }
 
+/**
+ * Beats as the strap stamps them: one packet a second, stamped with the next whole second, its
+ * last beat at the stamp and the others counted back from it by their gaps.
+ */
+export function packetStamped(beats: RrInterval[]): RrInterval[] {
+  const stamped: RrInterval[] = [];
+  let i = 0;
+  while (i < beats.length) {
+    const packet = Math.ceil((beats[i]?.ts ?? 0) / 1000) * 1000;
+    let end = i;
+    while (end + 1 < beats.length && (beats[end + 1]?.ts ?? 0) <= packet) {
+      end++;
+    }
+    let t = packet;
+    const group: RrInterval[] = [];
+    for (let j = end; j >= i; j--) {
+      const ms = beats[j]?.ms ?? 0;
+      group.unshift({ ts: t, ms });
+      t -= ms;
+    }
+    stamped.push(...group);
+    i = end + 1;
+  }
+  return stamped;
+}
+
 /** Beats with a gap of `base` ms that swings ± `swing` ms once per breath. */
 export function breathingBeats(
   start: number,
