@@ -195,6 +195,13 @@ export function completeTask(token: Token, id: string): Promise<unknown> {
   });
 }
 
+export function reopenTask(token: Token, id: string): Promise<unknown> {
+  return call(token, `/v1/tasks/${encodeURIComponent(id)}:reopen`, {
+    method: "POST",
+    body: "{}",
+  });
+}
+
 export interface CaptureResult {
   /** "events/{id}" or "tasks/{id}", for Undo. */
   name: string;
@@ -768,6 +775,8 @@ function workoutView(w: Workout): WorkoutView {
     avgHr: w.averageHeartRate,
     maxHr: w.maxHeartRate,
     strain: w.strain,
+    distanceMeters: w.distanceMeters,
+    stravaActivityId: w.stravaActivityId?.toString(),
   };
 }
 
@@ -801,4 +810,108 @@ function pad(n: number | undefined): string {
 
 function ms(t: { seconds: bigint; nanos: number } | undefined): number {
   return Number(t?.seconds ?? 0n) * 1000 + Math.floor((t?.nanos ?? 0) / 1e6);
+}
+
+// ---- Lists (docs/lists.md) ----
+
+export interface ListItemView {
+  /** "lists/shopping/items/k3f9a2"; changes when the text does. */
+  name: string;
+  text: string;
+  note: string;
+  done: boolean;
+  section: string;
+}
+
+export interface ListView {
+  /** "shopping", for the address: #/lists/shopping. */
+  slug: string;
+  title: string;
+  path: string;
+  openCount: number;
+  /** Empty in fetchLists; the sections in note order otherwise. Title "" is before any heading. */
+  sections: { title: string; items: ListItemView[] }[];
+  etag: string;
+}
+
+interface ListJson {
+  name: string;
+  title?: string;
+  path?: string;
+  openCount?: number;
+  sections?: { title?: string; items?: Partial<ListItemView>[] }[];
+  etag?: string;
+}
+
+function listView(json: ListJson): ListView {
+  return {
+    slug: json.name.replace(/^lists\//, ""),
+    title: json.title ?? "",
+    path: json.path ?? "",
+    openCount: json.openCount ?? 0,
+    sections: (json.sections ?? []).map((s) => ({
+      title: s.title ?? "",
+      items: (s.items ?? []).map(listItemView),
+    })),
+    etag: json.etag ?? "",
+  };
+}
+
+function listItemView(json: Partial<ListItemView>): ListItemView {
+  return {
+    name: json.name ?? "",
+    text: json.text ?? "",
+    note: json.note ?? "",
+    done: json.done ?? false,
+    section: json.section ?? "",
+  };
+}
+
+export async function fetchLists(token: Token): Promise<ListView[]> {
+  const body = await call<{ lists?: ListJson[] }>(token, "/v1/lists");
+  return (body.lists ?? []).map(listView);
+}
+
+export async function fetchList(token: Token, slug: string): Promise<ListView> {
+  return listView(await call<ListJson>(token, `/v1/lists/${encodeURIComponent(slug)}`));
+}
+
+export async function createList(token: Token, title: string): Promise<ListView> {
+  const body = JSON.stringify({ title });
+  return listView(await call<ListJson>(token, "/v1/lists", { method: "POST", body }));
+}
+
+/** Adds what was typed; commas add several. `section` "" is before the first heading. */
+export async function addListItems(
+  token: Token,
+  slug: string,
+  text: string,
+  section = "",
+): Promise<unknown> {
+  const body = JSON.stringify({ texts: [text], section });
+  return call(token, `/v1/lists/${encodeURIComponent(slug)}/items`, { method: "POST", body });
+}
+
+/** Moves an item to the end of `section` ("" is before the first heading). */
+export function moveListItem(token: Token, name: string, section: string): Promise<unknown> {
+  return call(token, `/v1/${name}?updateMask=section`, {
+    method: "PATCH",
+    body: JSON.stringify({ section }),
+  });
+}
+
+export function setListItemDone(token: Token, name: string, done: boolean): Promise<unknown> {
+  return call(token, `/v1/${name}?updateMask=done`, {
+    method: "PATCH",
+    body: JSON.stringify({ done }),
+  });
+}
+
+export async function clearDoneItems(token: Token, slug: string): Promise<ListView> {
+  return listView(
+    await call<ListJson>(token, `/v1/lists/${encodeURIComponent(slug)}:clearDone`, {
+      method: "POST",
+      body: "{}",
+    }),
+  );
 }

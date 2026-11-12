@@ -2,7 +2,6 @@
 // calendar; on the phone it is its own section below.
 
 import type { ComponentChildren } from "preact";
-import { useState } from "preact/hooks";
 import type { CalendarSyncView, HomeView } from "../../src/home/types";
 import { nowIn } from "../lib/clock";
 import { STATUS } from "../lib/colors";
@@ -11,13 +10,17 @@ import { DayTimeline } from "./day-timeline";
 import { Segmented } from "./segmented";
 import { WeekColumns, WeekStrip } from "./week";
 
-type View = "day" | "week";
+export type CalendarMode = "day" | "week";
 
 interface Props {
   view: HomeView;
+  /** Day or Week, from the address (`?view=week`). */
+  mode: CalendarMode;
+  onMode: (mode: CalendarMode) => void;
   nowMin: number;
   isPhone: boolean;
   onComplete: (id: string) => void;
+  onReopen: (id: string) => void;
   /** Opens the event panel for "events/{id}". */
   onOpenEvent?: (event: string) => void;
   /** The capture box, under the heading. */
@@ -27,8 +30,7 @@ interface Props {
 }
 
 export function Calendar(props: Props) {
-  const { view, nowMin, isPhone, onComplete, capture, aside } = props;
-  const [mode, setMode] = useState<View>("day");
+  const { view, mode, nowMin, isPhone, onComplete, onReopen, capture, aside } = props;
   const today = view.days[0];
   const last = view.days.at(-1);
   const title = mode === "day" || !last ? shortDate(view.date) : dateSpan(view.date, last.date);
@@ -50,7 +52,7 @@ export function Calendar(props: Props) {
             { value: "week", label: "Week" },
           ]}
           value={mode}
-          onChange={setMode}
+          onChange={props.onMode}
         />
       </div>
       {capture}
@@ -62,11 +64,14 @@ export function Calendar(props: Props) {
               nowMin={nowMin}
               isPhone={isPhone}
               onComplete={onComplete}
+              onReopen={onReopen}
               onOpen={props.onOpenEvent}
             />
           )}
-          {mode === "week" && !isPhone && <WeekColumns days={view.days} nowMin={nowMin} />}
-          {mode === "week" && isPhone && <WeekStrip days={view.days} />}
+          {mode === "week" && !isPhone && (
+            <WeekColumns days={view.days} nowMin={nowMin} onOpen={props.onOpenEvent} />
+          )}
+          {mode === "week" && isPhone && <WeekStrip days={view.days} onOpen={props.onOpenEvent} />}
         </div>
         {aside && <aside>{aside}</aside>}
       </div>

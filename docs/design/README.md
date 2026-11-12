@@ -18,17 +18,21 @@ https://claude.ai/artifact/Dm3mFqJPttBWpS9VxeYPUD. `home-desktop.dc.html` (1440 
 
 1. **Focus.** Date, time and one sentence that judges and names the next action without
    repeating numbers. Recovery, sleep score, HRV and resting HR with their change. The next event,
-   with Join for a call and Map for a located place. A gear opens Settings.
+   with Join for a call and Map for a located place. Pages are in the sidebar on desktop and the
+   tab bar on the phone ([navigation.md](../navigation.md)).
 2. **Calendar and tasks.** Day/Week toggle; "Calendar synced 09:10" (orange past 15 min or on an
    account error).
-   - **Day:** a timeline from an hour before now to 22:00 with a red now line. Short events take
+   - **Day:** a timeline from an hour before now to 22:00 with a red now line. It shows at least
+     eight hours and scrolls up to the day's first event or task, so a past task can still be
+     ticked off. Short events take
      one line. Overlapping events sit side by side. Timed reminders (`⏰`) are dashed pills in a
      lane to the right. All-day events are slim bars in a row above the timeline. Tapping an event
      opens the event panel (view, Edit, Delete with one confirm); repeating and read-only events
      show why they can't be changed.
    - **Week:** desktop has seven columns with dated tasks on top; the phone has a day strip and
      that day's agenda. Events are filled markers, reminders hollow, all-day events hollow
-     squares.
+     squares. Events show their location under the title, as plain text, and open the same
+     event panel as the Day view.
    - **Capture box** under the heading: highlights the time, person and place as you type, shows
      Event or Reminder with the reason and a preview line (title, when, calendar button). A place
      line shows the match with "1 of 5". Return adds; the added line has Undo; `N` focuses it. A
@@ -59,7 +63,7 @@ https://claude.ai/artifact/Dm3mFqJPttBWpS9VxeYPUD. `home-desktop.dc.html` (1440 
 
 ## Activity page
 
-`#activity`, from the Health heading. Week lists each day's sessions, Month is a calendar with a
+`#/activity`, from the sidebar or the Health heading. Week lists each day's sessions, Month is a calendar with a
 chip per session, 3M is active minutes per week. A day, week or workout opens beside the list
 (below it on the phone). Workouts are activity cyan, walks teal `#66D4CF`; an unsure workout has a
 dashed outline and `?`, and only its detail asks "What was this?" ("It was lifting" or "Not a
@@ -106,8 +110,22 @@ colour.
 1.5 px `control` rings that fill when done; touch targets 44 px on the phone; task rows are the
 hit area.
 
-**Type:** the system font, tabular figures. Weight 200 only at 48 px+, 300 for 24–40 px. Sizes 11,
-13, 15, 17. Formats: "3 Nov", 24-hour times, "7h 12m", "3d late".
+**Type:** the system font, tabular figures. Every size is a `--type-*` token in `web/styles.css`
+(a test rejects raw pixels); the phone changes the token, not the element.
+
+| Token | Desktop | Phone | Use |
+|---|---|---|---|
+| caption | 11 | 11 | hour labels, axis ticks, chips, tab bar |
+| footnote | 13 | 13 | metadata, notes, group labels, small buttons |
+| body | 15 | 17 | rows, inputs and their placeholders, buttons |
+| headline | 17 | 17 | group headings, units beside big numbers |
+| title | 22 | 20 | section headings, the next event, dialogs |
+| large | 28 | 34 | page titles |
+| display | 34 | 24 | the sentence, health and activity numbers |
+| hero | 64 | 48 | the focus numbers |
+
+Weight 200 only for hero, 300 for large and display. Formats: "3 Nov", 24-hour times, "7h 12m",
+"3d late".
 
 ## Not done yet
 

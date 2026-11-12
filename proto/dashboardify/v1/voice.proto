@@ -21,6 +21,9 @@ service VoiceService {
 
   // "Mark done": completes the closest matching task.
   rpc CompleteByText(CompleteByTextRequest) returns (CompleteByTextResponse);
+
+  // "Add to list": adds to the list with the spoken name; commas add several.
+  rpc AddToList(AddToListRequest) returns (AddToListResponse);
 }
 
 // Request for AddTask.
@@ -111,4 +114,30 @@ message CompleteByTextResponse {
 
   // The task completed, `tasks/{task}`.
   string task = 2;
+}
+
+// Request for AddToList.
+message AddToListRequest {
+  // The list's name as said, such as "shopping" or "the shopping list".
+  string list = 1 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 200
+    pattern: "(?s).*\\S.*"
+  }];
+
+  // What to add, such as "oat milk and eggs" or "oat milk, eggs".
+  string text = 2 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 2000
+    pattern: "(?s).*\\S.*"
+  }];
+}
+
+// Response for AddToList.
+message AddToListResponse {
+  // Sentence to speak.
+  string message = 1;
+
+  // The list, `lists/{list}`.
+  string list = 2;
 }

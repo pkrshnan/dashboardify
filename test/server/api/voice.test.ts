@@ -34,3 +34,33 @@ describe("voice check-in validation", () => {
     expect(zeroEffort.status).toBe(200);
   });
 });
+
+describe("voice add to list", () => {
+  const api = useApi();
+  const add = (list: string, text: string) =>
+    api.call("/dashboardify.v1.VoiceService/AddToList", "POST", { list, text });
+
+  test("adds what was said to the list it names, and says so", async () => {
+    await Bun.write(`${api.dir}/vault/Lists/Shopping.md`, "- [ ] Bread\n- [x] Eggs\n");
+
+    const { status, body } = await add("the shopping list", "oat milk and eggs, bread");
+
+    expect(status).toBe(200);
+    expect(body).toEqual({
+      list: "lists/shopping",
+      message: "Added oat milk and eggs to Shopping. Bread was already on it.",
+    });
+    expect(await api.vaultFile("Lists/Shopping.md")).toBe(
+      "- [ ] Bread\n- [ ] Eggs\n- [ ] oat milk\n",
+    );
+  });
+
+  test("an unknown list is a 404 Siri can read out", async () => {
+    await Bun.write(`${api.dir}/vault/Lists/Shopping.md`, "");
+
+    const { status, body } = await add("films", "Dune");
+
+    expect(status).toBe(404);
+    expect(body.message).toBe("There's no list called films. Your lists are Shopping.");
+  });
+});
