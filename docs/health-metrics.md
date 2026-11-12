@@ -1,8 +1,9 @@
 # Health metrics
 
 How raw strap data becomes the numbers in the daily note. Code: `src/health/metrics/`, one file
-per idea; each constant has a comment citing its source. Longer explanations with worked
-examples: https://claude.ai/artifact/7nYauS8aMi84xLQfXFXxbu. Everything that compares you with
+per idea; each constant has a comment citing its source. A primer for readers new to all of
+it, with formulas, papers and worked examples: [health-primer.html](health-primer.html)
+([how to keep it current](development.md#health-primer)). Everything that compares you with
 "normal" uses your own history, never population averages; VO2max is the exception, since it is
 a comparison with other people by definition.
 

@@ -21,6 +21,24 @@ to 60 minutes. It only holds made-up data.
 `APPLE_ID=you@icloud.com bun scripts/caldav-check.ts` lists a real iCloud account's calendars and
 saves nothing.
 
+## Health primer
+
+[`health-primer.html`](health-primer.html) explains every health number to someone new to it:
+what it means, the formula, the papers, a worked example. It is published at
+https://claude.ai/artifact/7a89zUGRVaAy9hFDb6BzUL; the file is that page's source, a fragment
+with no `<html>` or `<body>` (the host adds them), and it opens in a browser as it is.
+
+A PR that changes how a health number is computed updates the primer too, and the page is
+republished from the file once the PR merges.
+
+- **Worked examples** have an id (`ex-<section>`). `test/health/primer.test.ts` works them with
+  the real functions, so a changed constant fails until the primer shows the new number. A new
+  example gets a case there.
+- **Sections** name their files in a `<p class="file">` line. The same test fails when a file in
+  `src/health/metrics/` is named nowhere.
+- **Not checked:** the prose, the trust notes and the papers. Read the section you touched.
+- Formulas are TeX in `.eq` and `.tex` elements, drawn by KaTeX. Same writing rules as the docs.
+
 ## Configuration
 
 [`.env.example`](../.env.example) lists the startup values; everything else is in Settings
