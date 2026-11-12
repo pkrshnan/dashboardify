@@ -30,6 +30,34 @@ morning, and proposes new ones only when they would have agreed better on mornin
 
    On the server, prefix `docker compose exec dashboardify`.
 
+## Fitting stages to you
+
+The stage model's HRV, breathing and DFA α1 Gaussians start hand-set; `fit-stages.ts` fits them
+to your nights. HR, movement, transitions and the time of night stay as the lab nights trained
+them, which keeps each state's meaning. Code: `feedback/stage-em.ts`, `feedback/stage-fit.ts`.
+
+- **EM.** Forward–backward in log space over every night in the range with the full model, then
+  posterior-weighted means and SDs (null features skipped), until a round adds under 0.01 nats.
+  MAP updates: the current values count as 200 epochs (100 min, about a night's deep), so one
+  odd night moves a stage at most about halfway and a week outweighs it five to one.
+- **Guardrails.** 5+ nights (some 4,000 epochs, and no night over a fifth of them); the
+  literature's order kept (DFA deep < light < REM, HRV and breathing regularity deep > REM);
+  SDs floored at 0.3; no mean moves over 0.5 per apply (capped, then checked); 75%+ of the nights
+  plausible after. The report names the one that failed.
+- **Params.** A `stages` section in the same `params/current.json`, so the `params_version`
+  each row already records says which emissions staged it. Without one, the hand-set values.
+
+```sh
+bun src/health/fit-stages.ts                        # last 60 nights, report only
+bun src/health/fit-stages.ts 2026-11-04 2026-11-09  # a range
+bun src/health/fit-stages.ts --apply                # save the new version if it passed
+bun src/health/summarize.ts FROM TO                 # then rebuild past days
+```
+
+On 4–9 Nov it was rejected: light fell under 35% on two nights. EM wants deep's HRV at −0.05
+(light's is highest, 0.44) and sharper DFA (deep −0.91, REM 1.04), and calls more deep: shares
+48/24/28 → 38/33/29 (light/deep/REM) after the cap.
+
 ## Next
 
 Expected recovery from yesterday's strain and sleep debt, a "why?" question when a morning

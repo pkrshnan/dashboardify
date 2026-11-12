@@ -10,9 +10,9 @@ import { climbs, type SetClimb } from "./sets";
 import { sleepSkinTemp } from "./skin-temp";
 import { rawAngleChanges, sleepWindow } from "./sleep";
 import { scoreEpochs, sleepTimes } from "./sleep-epochs";
-import { epochFeatures } from "./sleep-features";
+import { type EpochFeatures, epochFeatures } from "./sleep-features";
 import { type PastNight, type SleepScore, sleepScore } from "./sleep-score";
-import { type SleepStages, sleepStages } from "./sleep-stages";
+import { type SleepStages, type StageModel, sleepStages } from "./sleep-stages";
 import { stepsPerMinute, stepsTaken } from "./steps";
 import { type Sex, strain, trimp } from "./strain";
 import type { Accel, HeartRate, Motion, RrInterval, SkinTemp, Span, StepCounter } from "./types";
@@ -30,6 +30,8 @@ export interface NightInput {
   needMin: number;
   /** A time as local minutes after noon (see SleepTiming). */
   minutesAfterNoon: (ts: number) => number;
+  /** The stage model to decode with; the trained one with hand-set emissions by default. */
+  stageModel?: StageModel;
 }
 
 export interface NightMetrics {
@@ -57,19 +59,16 @@ export interface NightMetrics {
 
 /** Last night's sleep and overnight vitals, from samples covering the evening to midday. */
 export function nightMetrics(input: NightInput): NightMetrics | null {
-  const sleep = sleepWindow(input.accel);
-  if (!sleep) {
+  const parts = nightParts(input);
+  if (!parts) {
     return null;
   }
-  const changes = rawAngleChanges(input.accel);
-  const epochs = scoreEpochs(sleep, changes, input.heartRate);
-  const times = sleepTimes(sleep, epochs);
+  const { sleep, times, beats } = parts;
   const onset = times.onset ?? sleep.start;
   const timing = {
     onsetMin: input.minutesAfterNoon(onset),
     wakeMin: input.minutesAfterNoon(sleep.end),
   };
-  const beats = cleanRr(input.rr);
   const hrv = nightHrv(beats, sleep);
   return {
     bed: sleep.start,
@@ -88,11 +87,42 @@ export function nightMetrics(input: NightInput): NightMetrics | null {
     hrvWindows: hrv?.windows ?? 0,
     breathingRate: breathingRate(goodWindows(beats, sleep)),
     skinTemp: sleepSkinTemp(input.skinTemp, sleep),
-    // The same epochs, angle changes and clean beats as above, so nothing is worked out twice.
-    stages: sleepStages(
-      epochFeatures({ ...input, window: sleep, epochs, onset: times.onset, changes, beats }),
-    ),
+    stages: sleepStages(featuresOf(input, parts), input.stageModel),
   };
+}
+
+type FeatureSamples = Pick<NightInput, "accel" | "heartRate" | "rr">;
+
+/** The night's per-epoch stage features, as nightMetrics decodes them; null without a night. */
+export function nightFeatures(input: FeatureSamples): EpochFeatures[] | null {
+  const parts = nightParts(input);
+  return parts ? featuresOf(input, parts) : null;
+}
+
+/** The window, epochs, angle changes and clean beats, worked out once for everything after. */
+function nightParts(input: FeatureSamples) {
+  const sleep = sleepWindow(input.accel);
+  if (!sleep) {
+    return null;
+  }
+  const changes = rawAngleChanges(input.accel);
+  const epochs = scoreEpochs(sleep, changes, input.heartRate);
+  return { sleep, changes, epochs, times: sleepTimes(sleep, epochs), beats: cleanRr(input.rr) };
+}
+
+function featuresOf(
+  input: FeatureSamples,
+  parts: NonNullable<ReturnType<typeof nightParts>>,
+): EpochFeatures[] {
+  const { sleep, epochs, times, changes, beats } = parts;
+  return epochFeatures({
+    heartRate: input.heartRate,
+    window: sleep,
+    epochs,
+    onset: times.onset,
+    changes,
+    beats,
+  });
 }
 
 /** What strain and calories need to know about you. Read from profile.md in the vault. */
