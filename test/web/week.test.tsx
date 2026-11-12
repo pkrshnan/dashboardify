@@ -28,8 +28,8 @@ function text(el: Element | null | undefined): string {
   return el?.textContent?.replace(/\s+/g, " ").trim() ?? "";
 }
 
-function columns(days: DayAgenda[], nowMin = 9 * 60) {
-  const view = render(<WeekColumns days={days} nowMin={nowMin} />);
+function columns(days: DayAgenda[], nowMin = 9 * 60, onOpen?: (event: string) => void) {
+  const view = render(<WeekColumns days={days} nowMin={nowMin} onOpen={onOpen} />);
   const cols = [...view.container.querySelectorAll<HTMLElement>(".week-col")];
   const blocks = (i: number) => [...(cols[i]?.querySelectorAll<HTMLElement>(".week-event") ?? [])];
   return { ...view, cols, blocks };
@@ -152,6 +152,63 @@ describe("WeekColumns", () => {
     expect(cols[0]?.querySelector(".week-body .week-event")).toBeNull();
   });
 
+  test("an event shows its location under the title, without a link", () => {
+    const { blocks } = columns(
+      week({
+        events: [
+          event("Dentist", 15 * 60, 16 * 60, {
+            detail: "Smile Clinic",
+            mapsUrl: "https://maps.apple.com/?q=x",
+          }),
+        ],
+      }),
+    );
+    const [b] = blocks(0);
+    expect([...(b?.children ?? [])].map(text)).toEqual(["Dentist", "Smile Clinic"]);
+    expect(b?.title).toBe("Dentist, Smile Clinic");
+    expect(b?.querySelector("a")).toBeNull();
+  });
+
+  test("a block too short for two lines shows the location only in its tooltip", () => {
+    const { blocks } = columns(
+      week({ events: [event("Lunch", 12 * 60, 12 * 60 + 45, { detail: "Café on Albert St" })] }),
+    );
+    const [b] = blocks(0);
+    expect(text(b)).toBe("Lunch");
+    expect(b?.title).toBe("Lunch, Café on Albert St");
+  });
+
+  test("tapping a calendar event or all-day event opens it", () => {
+    const opened: string[] = [];
+    const { blocks, cols } = columns(
+      week({
+        events: [event("Standup", 9 * 60, 10 * 60, { event: "events/a" })],
+        allDay: [allDay("Holiday", { event: "events/b" })],
+      }),
+      9 * 60,
+      (name) => opened.push(name),
+    );
+    const [b] = blocks(0);
+    fireEvent.click(b as HTMLElement);
+    fireEvent.click(cols[0]?.querySelector(".week-dated [role=button]") as HTMLElement);
+    expect(b?.getAttribute("aria-label")).toBe("Open Standup");
+    expect(opened).toEqual(["events/a", "events/b"]);
+  });
+
+  test("events not from a calendar, or still saving, don't open", () => {
+    const { blocks } = columns(
+      week({
+        events: [
+          event("Imported", 9 * 60, 10 * 60),
+          event("Saving", 11 * 60, 12 * 60, { event: "events/c", pending: true }),
+        ],
+      }),
+      9 * 60,
+      () => undefined,
+    );
+    expect(blocks(0).map((b) => b.getAttribute("role"))).toEqual([null, null]);
+  });
+
   test("reminders sit at their time", () => {
     const { cols } = columns(week({ reminders: [reminder("Call the bank", 12 * 60)] }));
     const r = cols[0]?.querySelector<HTMLElement>(".week-reminder");
@@ -176,8 +233,8 @@ describe("WeekColumns", () => {
 });
 
 describe("WeekStrip", () => {
-  function strip(days: DayAgenda[]) {
-    const view = render(<WeekStrip days={days} />);
+  function strip(days: DayAgenda[], onOpen?: (event: string) => void) {
+    const view = render(<WeekStrip days={days} onOpen={onOpen} />);
     const rows = () =>
       [...view.container.querySelectorAll(".agenda-row")].map((row) => {
         const parts = [...row.querySelectorAll(".agenda-time, .ell")];
@@ -268,5 +325,31 @@ describe("WeekStrip", () => {
       }),
     );
     expect(rows()).toEqual(["10:00 | Focus", "10:00 | Focus"]);
+  });
+
+  test("events show their location under the title", () => {
+    const { rows } = strip(
+      week({
+        events: [event("Dentist", 15 * 60, 16 * 60, { detail: "Smile Clinic" })],
+        allDay: [allDay("Offsite", { detail: "Lisbon" })],
+      }),
+    );
+    expect(rows()).toEqual(["All day | Offsite | Lisbon", "15:00 | Dentist | Smile Clinic"]);
+  });
+
+  test("tapping an event row opens it; task rows don't", () => {
+    const opened: string[] = [];
+    const { container } = strip(
+      week({
+        events: [event("Standup", 9 * 60, 10 * 60, { event: "events/a" })],
+        reminders: [reminder("Call the bank", 10 * 60)],
+        dated: ["Renew passport"],
+      }),
+      (name) => opened.push(name),
+    );
+    const buttons = [...container.querySelectorAll<HTMLElement>(".agenda-row[role=button]")];
+    expect(buttons.map((b) => b.getAttribute("aria-label"))).toEqual(["Open Standup"]);
+    fireEvent.keyDown(buttons[0] as HTMLElement, { key: "Enter" });
+    expect(opened).toEqual(["events/a"]);
   });
 });

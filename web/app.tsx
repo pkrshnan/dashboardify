@@ -1,41 +1,25 @@
-// The home screen: focus, then calendar and tasks, then health trends. It loads everything from
-// GET /v1/home and refreshes every few minutes, when the tab comes back, and at midnight.
+// The web app's shell: sign-in, then the page the address names (web/modules/). The home view
+// (GET /v1/home) is loaded here, once, for every page that needs it, and refreshed every few
+// minutes, when the tab comes back, and at midnight.
 
 import { render } from "preact";
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
-import type { CaptureHints } from "../src/home/calendar";
 import type { HomeView } from "../src/home/types";
-import {
-  capture,
-  completeTask,
-  deleteEvent,
-  deleteTask,
-  fetchHome,
-  randomKey,
-  savedToken,
-  saveToken,
-  type Token,
-  Unauthorized,
-} from "./api";
-import { Activity } from "./components/activity";
-import { Calendar } from "./components/calendar";
-import { Capture } from "./components/capture";
-import { EventPanel } from "./components/event-panel";
-import { Focus } from "./components/focus";
-import { Health } from "./components/health";
+import { fetchHome, savedToken, saveToken, type Token, Unauthorized } from "./api";
+import { Sidebar, TabBar } from "./components/nav";
 import { SignIn } from "./components/sign-in";
-import { TaskList } from "./components/task-list";
-import { type Pending, pendingEvent, withPending } from "./lib/capture";
 import { type Now, nowIn } from "./lib/clock";
-import { sectionFromHash } from "./settings/sections";
-import { Settings } from "./settings/settings";
+import { useRoute } from "./lib/use-route";
+import { AppContext } from "./modules/context";
+import { MODULES, MORE, pageFor } from "./modules/index";
+import type { LoadedHome } from "./modules/types";
 import { tokenFromHash } from "./settings/sign-in-link";
 
 const REFRESH_MS = 5 * 60_000;
 const TICK_MS = 15_000;
 const PHONE_QUERY = "(max-width: 899px)";
 
-/** Straight to the home screen; the sign-in screen only when the server wants a token. */
+/** Straight to the page; the sign-in screen only when the server wants a token. */
 function App() {
   const [token, setToken] = useState<Token>(tokenFromLink);
   const [signIn, setSignIn] = useState<"no" | "ask" | "failed" | "setup">("no");
@@ -61,7 +45,7 @@ function App() {
     }
     setToken(null);
   };
-  return <Routes token={token} onUnauthorized={unauthorized} />;
+  return <Shell token={token} onUnauthorized={unauthorized} />;
 }
 
 /**
@@ -78,164 +62,34 @@ function tokenFromLink(): Token {
   return linked;
 }
 
-/** `#settings…` shows Settings; anything else, the home screen. */
-function Routes(props: { token: Token; onUnauthorized: (setup: boolean) => void }) {
-  const hash = useHash();
+/**
+ * The page for the address, beside the sidebar on desktop and above the tab bar on the phone.
+ * A page that needs the home view waits for it; the nav shows at once.
+ */
+function Shell(props: { token: Token; onUnauthorized: (setup: boolean) => void }) {
+  const { token, onUnauthorized } = props;
+  const route = useRoute();
   const isPhone = useMedia(PHONE_QUERY);
-  if (hash.startsWith("#settings")) {
-    return <Settings {...props} section={sectionFromHash(hash)} isPhone={isPhone} />;
-  }
-  return <Home {...props} />;
-}
-
-/** Loads the home view, then shows the home screen or, at #activity, the Activity page. */
-function Home({
-  token,
-  onUnauthorized,
-}: {
-  token: Token;
-  onUnauthorized: (setup: boolean) => void;
-}) {
   const { view, error, load } = useHome(token, onUnauthorized);
   const now = useNow(view?.timeZone);
-  const isPhone = useMedia(PHONE_QUERY);
-  const hash = useHash();
+  const home: LoadedHome | null = view && now ? { view, now, load } : null;
+  const { module, params } = pageFor(route.path);
+  const View = module.view;
 
-  if (!(view && now)) {
-    return <p class="sign-in muted">{error ? "Can't reach the server." : ""}</p>;
-  }
-  if (hash === "#activity") {
-    return (
-      <Activity
-        token={token}
-        timeZone={view.timeZone}
-        today={view.date}
-        onUnauthorized={onUnauthorized}
-      />
-    );
-  }
-  return <HomeScreen view={view} now={now} isPhone={isPhone} token={token} load={load} />;
-}
-
-function HomeScreen(props: {
-  view: HomeView;
-  now: Now;
-  isPhone: boolean;
-  token: Token;
-  load: () => Promise<void>;
-}) {
-  const { view, now, isPhone, token, load } = props;
-  const [done, setDone] = useState(new Set<string>());
-  const [pending, setPending] = useState<Pending[]>([]);
-  const [panel, openEvent] = useEventPanel(token, view.timeZone, load);
-  const complete = (id: string) => {
-    setDone((d) => new Set(d).add(id));
-    completeTask(token, id).then(load, load);
-  };
-  const capture = (
-    <HomeCapture
-      token={token}
-      timeZone={view.timeZone}
-      hints={view.captureHints}
-      isPhone={isPhone}
-      reload={load}
-      onPending={setPending}
-    />
-  );
-  const tasks = <TaskList groups={view.tasks} done={done} onComplete={complete} />;
   return (
-    <main class="home">
-      <Focus view={view} now={now} />
-      <Calendar
-        view={withPending(withTicked(view, done), pending)}
-        nowMin={now.minutes}
-        isPhone={isPhone}
-        onComplete={complete}
-        onOpenEvent={openEvent}
-        capture={capture}
-        aside={isPhone ? undefined : tasks}
-      />
-      {isPhone && (
-        <section class="section">
-          <div class="section-head">
-            <h2>Tasks</h2>
-          </div>
-          {tasks}
-        </section>
-      )}
-      <Health
-        metrics={view.health}
-        date={view.date}
-        sync={view.healthSync}
-        timeZone={view.timeZone}
-        isPhone={isPhone}
-      />
-      {panel}
-    </main>
-  );
-}
-
-/** The event panel for the event last tapped, and the function that opens one. */
-function useEventPanel(token: Token, timeZone: string, load: () => Promise<void>) {
-  const [opened, setOpened] = useState<string | null>(null);
-  const panel = opened && (
-    <EventPanel
-      token={token}
-      name={opened}
-      timeZone={timeZone}
-      onClose={() => setOpened(null)}
-      onChanged={load}
-    />
-  );
-  return [panel, setOpened] as const;
-}
-
-/**
- * The capture box. An event is drawn on the timeline at once ("Saving to iCloud…") until the
- * refresh after saving brings the real one. Undo deletes the event or the task again.
- */
-function HomeCapture(props: {
-  token: Token;
-  timeZone: string;
-  hints: CaptureHints | null;
-  isPhone: boolean;
-  reload: () => Promise<void>;
-  onPending: (update: (pending: Pending[]) => Pending[]) => void;
-}) {
-  const { token, reload, onPending } = props;
-  return (
-    <Capture
-      token={token}
-      timeZone={props.timeZone}
-      hints={props.hints}
-      isPhone={props.isPhone}
-      newRequestId={randomKey}
-      onAdd={async (box, shown, requestId) => {
-        const drawn = pendingEvent(shown, props.timeZone, requestId);
-        if (drawn) {
-          onPending((list) => [...list.filter((p) => p.key !== requestId), drawn]);
-        }
-        try {
-          const result = await capture(token, {
-            text: box.text,
-            requestId,
-            kind: box.override,
-            calendar: box.calendar,
-            place: shown.place,
-          });
-          await reload();
-          return result;
-        } finally {
-          onPending((list) => list.filter((p) => p.key !== requestId));
-        }
-      }}
-      onUndo={async (result) => {
-        await (result.kind === "event"
-          ? deleteEvent(token, result.name)
-          : deleteTask(token, result.name));
-        await reload();
-      }}
-    />
+    <AppContext.Provider value={{ token, onUnauthorized, isPhone }}>
+      <div class="frame">
+        {!isPhone && <Sidebar modules={MODULES} current={module.id} />}
+        <div class="frame-page">
+          {module.needsHome && !home ? (
+            <p class="sign-in muted">{error ? "Can't reach the server." : ""}</p>
+          ) : (
+            <View route={route} params={params} home={home} />
+          )}
+        </div>
+        {isPhone && <TabBar modules={MODULES} current={module.id} more={MORE} />}
+      </div>
+    </AppContext.Provider>
   );
 }
 
@@ -282,15 +136,6 @@ function useHome(token: Token, onUnauthorized: (setup: boolean) => void) {
   return { view, error, load };
 }
 
-/** Reminders ticked in this session show as done before the refresh confirms it. */
-function withTicked(view: HomeView, done: Set<string>): HomeView {
-  const days = view.days.map((d) => ({
-    ...d,
-    reminders: d.reminders.map((r) => ({ ...r, done: r.done || done.has(r.id) })),
-  }));
-  return { ...view, days };
-}
-
 /** The live clock in the server's time zone, updated every few seconds. */
 function useNow(timeZone: string | undefined): Now | null {
   const [at, setAt] = useState(() => new Date());
@@ -299,20 +144,6 @@ function useNow(timeZone: string | undefined): Now | null {
     return () => clearInterval(timer);
   }, []);
   return timeZone ? nowIn(timeZone, at) : null;
-}
-
-/** The page's #hash, so the Activity page has its own address and the back button works. */
-function useHash(): string {
-  const [hash, setHash] = useState(() => window.location.hash);
-  useEffect(() => {
-    const onChange = () => {
-      setHash(window.location.hash);
-      window.scrollTo(0, 0);
-    };
-    window.addEventListener("hashchange", onChange);
-    return () => window.removeEventListener("hashchange", onChange);
-  }, []);
-  return hash;
 }
 
 function useMedia(query: string): boolean {

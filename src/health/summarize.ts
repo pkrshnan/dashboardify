@@ -6,6 +6,7 @@
 
 import { loadStartup } from "../server/config";
 import { configFromSettings } from "../settings/startup";
+import { RunCache } from "../strava/cache";
 import { isIsoDate } from "../vault/time";
 import { Vault } from "../vault/vault";
 import { DailySummary } from "./daily-summary";
@@ -24,6 +25,8 @@ async function main(args: string[]): Promise<void> {
     new DerivedStore(config.healthDerivedPath),
     new Vault(config.vaultPath, config.timeZone),
     config.timeZone,
+    Date.now,
+    await RunCache.open(config.dataPath),
   );
   const last = Temporal.PlainDate.from(to);
   for (let day = Temporal.PlainDate.from(from); Temporal.PlainDate.compare(day, last) <= 0; ) {
