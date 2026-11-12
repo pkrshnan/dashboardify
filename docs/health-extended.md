@@ -1,7 +1,7 @@
 # Health: the rest
 
 Plan for the health numbers still missing: training load, calories, VO2max, fitness and
-biological age, and sleep stages. Status: H1–H3 done, H4–H11 planned; H11 waits for artboards. As each PR
+biological age, and sleep stages. Status: H1–H4 done, H5–H11 planned; H11 waits for artboards. As each PR
 lands, its section moves into [health-metrics.md](health-metrics.md). This file goes when the
 last one does.
 
@@ -87,7 +87,7 @@ Light, deep and REM for each asleep epoch; awake stays as `sleep-epochs.ts` scor
 | H1 | Training load | Done; now in [health-metrics.md](health-metrics.md#training-load-loadts) |
 | H2 | Body fields | Done; now in [vault-format.md](vault-format.md#profilemd) |
 | H3 | Calories | Done; now in [health-metrics.md](health-metrics.md#calories-caloriests) |
-| H4 | Workout calories | `kcal` in `workouts/` from the same minutes; `Workout.calories` in `activity.proto` |
+| H4 | Workout calories | Done; now in [health-metrics.md](health-metrics.md#calories-caloriests) |
 | H5 | VO2max | `vo2max.ts` on the 30-night resting HR |
 | H6 | Fitness age | `age.ts`, Nes constants |
 | H7 | Biological age | factors, hazard ratios, Gompertz years; per-factor columns |

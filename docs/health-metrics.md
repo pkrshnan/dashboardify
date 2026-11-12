@@ -85,6 +85,8 @@ first day of up to 56. Ratio = acute ÷ chronic.
   "load", never "risk".
 - **Gaps:** a day with no row, no TRIMP or under 16 h worn gets the median TRIMP of the well-worn
   days in the 28 before. Days before the first row aren't gaps.
+- **Workouts** get their own total: the same minutes summed over the workout (`kcal` in
+  `workouts/`).
 - **Today** is a running total, so it counts as at least that median until the day ends and is
   never a gap. Otherwise the ratio would sag to about 0.8 every morning.
 - **Missing:** no acute with more than 2 gaps in the last 7 days or under 7 days of history; no

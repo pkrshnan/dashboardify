@@ -63,6 +63,8 @@ function runWorkout(run: RecordedRun, ctx: RunContext): Workout {
     strain: strain(total),
     distanceMeters: run.distanceMeters,
     stravaId: run.stravaId,
+    // dayMetrics fills it in from the run's own window, as for any workout.
+    kcal: null,
   };
 }
 

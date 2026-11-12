@@ -5,6 +5,7 @@ import {
   dayCalories,
   keytelKcal,
   minuteKcal,
+  spanKcal,
   walkingKcal,
 } from "../../../src/health/metrics/calories";
 import { minuteHr } from "../../../src/health/metrics/heart-rate";
@@ -120,6 +121,27 @@ describe("dayCalories", () => {
 
     expect(result.kcal).toBeCloseTo(PER_MIN * 0.95 * 360, 6);
     expect(result.activeKcal).toBe(0);
+  });
+});
+
+describe("spanKcal", () => {
+  const minutes = minuteHr(heartRate(T0, T0 + HOUR, () => 150));
+  const input = { minutes, steps: NO_STEPS, sleep: null, ...HR, body: MAN };
+
+  test("sums the minutes of a workout", () => {
+    expect(spanKcal({ start: T0, end: T0 + HOUR }, input)).toBeCloseTo(
+      60 * keytelKcal(150, MAN),
+      6,
+    );
+  });
+
+  test("a day is its parts added up", () => {
+    const day = { start: T0, end: T0 + 24 * HOUR };
+    const parts =
+      spanKcal({ start: T0, end: T0 + HOUR }, input) +
+      spanKcal({ start: T0 + HOUR, end: day.end }, input);
+
+    expect(dayCalories({ ...input, day }).kcal).toBeCloseTo(parts, 6);
   });
 });
 

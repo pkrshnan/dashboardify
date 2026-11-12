@@ -62,6 +62,8 @@ export interface Workout {
   cadence: number;
   trimp: number;
   strain: number;
+  /** Null here; dayMetrics fills it in when calories can be worked out. */
+  kcal: number | null;
   /** Runs recorded in Strava only (see runs.ts). */
   distanceMeters?: number;
   stravaId?: number;
@@ -266,6 +268,7 @@ function describe(s: Session, rhythm: boolean, input: WorkoutInput): Workout {
     cadence: median(s.inside.map((m) => m.steps)) ?? 0,
     trimp: total,
     strain: strain(total),
+    kcal: null,
   };
 }
 

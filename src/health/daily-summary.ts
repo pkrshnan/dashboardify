@@ -41,7 +41,7 @@ import { type DaySummary, frontmatter, healthBlock, syncLine } from "./render";
 import { counted, type ReviewedWorkout, reviewFor, reviewWorkouts } from "./reviews";
 
 /** Bump when a calculation changes, so old rows can be told apart and rebuilt. */
-export const ALGO_VERSION = "9";
+export const ALGO_VERSION = "10";
 
 /** Strava runs, as strava-cache.db holds them (see src/strava/cache.ts). */
 export interface RunSource {
@@ -442,6 +442,7 @@ function workoutRow(w: ReviewedWorkout): DerivedRow {
     cadence_spm: w.cadence,
     trimp: w.trimp,
     strain: w.strain,
+    kcal: w.kcal === null ? null : Math.round(w.kcal),
     distance_m: w.distanceMeters ?? null,
     strava_id: w.stravaId ?? null,
   };

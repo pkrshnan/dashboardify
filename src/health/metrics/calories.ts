@@ -155,11 +155,20 @@ export function minuteKcal(
  * 1,440 minutes, so a 23- or 25-hour day (clocks changing) counts its real minutes.
  */
 export function dayCalories(input: CalorieInput): Calories {
-  const bpm = new Map(input.minutes.map((m) => [m.ts, m.bpm]));
+  const kcal = spanKcal(input.day, input);
   const count = Math.max(0, Math.floor((input.day.end - input.day.start) / MINUTE_MS));
+  const base = (bmr(input.body) / DAY_MIN) * count;
+  // Early on a day that started asleep the total can be just under BMR; that isn't negative work.
+  return { kcal, activeKcal: Math.max(0, kcal - base) };
+}
+
+/** The kcal of every whole minute of `span`, worn or not: a day, or one workout in it. */
+export function spanKcal(span: Span, input: Omit<CalorieInput, "day">): number {
+  const bpm = new Map(input.minutes.map((m) => [m.ts, m.bpm]));
+  const count = Math.max(0, Math.floor((span.end - span.start) / MINUTE_MS));
   let kcal = 0;
   for (let i = 0; i < count; i++) {
-    const ts = input.day.start + i * MINUTE_MS;
+    const ts = span.start + i * MINUTE_MS;
     const asleep = input.sleep !== null && ts >= input.sleep.start && ts < input.sleep.end;
     kcal += minuteKcal(
       { bpm: bpm.get(ts) ?? null, steps: input.steps.get(ts) ?? 0 },
@@ -167,7 +176,5 @@ export function dayCalories(input: CalorieInput): Calories {
       input,
     );
   }
-  const base = (bmr(input.body) / DAY_MIN) * count;
-  // Early on a day that started asleep the total can be just under BMR; that isn't negative work.
-  return { kcal, activeKcal: Math.max(0, kcal - base) };
+  return kcal;
 }

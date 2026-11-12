@@ -153,8 +153,8 @@ const KIND_NAMES: Record<Workout["kind"], string> = {
 };
 
 /**
- * "- Volleyball 20:30–21:15 · 45 min · 138 avg / 179 max · strain 8.3"; a Strava run adds
- * "· 5.1 km · 6:16 /km" after the minutes.
+ * "- Volleyball 20:30–21:15 · 45 min · 138 avg / 179 max · strain 8.3 · 410 kcal"; a Strava run
+ * adds "· 5.1 km · 6:16 /km" after the minutes.
  */
 function workoutLine(w: ReviewedWorkout, clock: (ts: number) => string): string {
   const hr = `${Math.round(w.avgHr)} avg / ${Math.round(w.maxHr)} max`;
@@ -168,6 +168,9 @@ function workoutLine(w: ReviewedWorkout, clock: (ts: number) => string): string 
     );
   }
   parts.push(...(w.avgHr > 0 ? [hr] : []), `strain ${w.strain.toFixed(1)}`);
+  if (w.kcal !== null) {
+    parts.push(`${Math.round(w.kcal).toLocaleString("en-US")} kcal`);
+  }
   return `- ${parts.join(" · ")}`;
 }
 

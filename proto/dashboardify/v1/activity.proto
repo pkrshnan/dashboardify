@@ -123,6 +123,9 @@ message Workout {
 
   // Runs recorded in Strava: the activity, at strava.com/activities/{id}.
   optional int64 strava_activity_id = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Kcal burned over the workout. Unset without weight, height, age and sex in the profile.
+  optional double calories = 16 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // A walk: steady stepping outside workouts.
