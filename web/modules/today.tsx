@@ -1,5 +1,5 @@
 // Today, the home screen: focus, then calendar and tasks, then health trends, all from the home
-// view the shell loads. Day or Week is the address's `?view=week`.
+// view the shell loads. Day or Week is the address's `?view=week`; an open night is `?night=`.
 
 import { useRef, useState } from "preact/hooks";
 import type { CaptureHints } from "../../src/home/calendar";
@@ -18,9 +18,12 @@ import { Capture } from "../components/capture";
 import { EventPanel } from "../components/event-panel";
 import { Focus } from "../components/focus";
 import { Health } from "../components/health";
+import { Night } from "../components/night";
 import { TaskList } from "../components/task-list";
 import { type Pending, pendingEvent, withPending } from "../lib/capture";
-import { setQuery } from "../lib/use-route";
+import { NIGHT_ROWS } from "../lib/night";
+import { href } from "../lib/router";
+import { navigate, setQuery } from "../lib/use-route";
 import { useApp } from "./context";
 import type { LoadedHome, Module, PageProps } from "./types";
 
@@ -37,10 +40,11 @@ export const today: Module = {
 
 function TodayPage({ route, home }: PageProps) {
   // The shell shows a module with needsHome only once the home view is loaded.
-  return home ? <HomeScreen home={home} week={route.query.view === "week"} /> : null;
+  return home ? <HomeScreen home={home} query={route.query} /> : null;
 }
 
-function HomeScreen({ home, week }: { home: LoadedHome; week: boolean }) {
+function HomeScreen({ home, query }: { home: LoadedHome; query: Record<string, string> }) {
+  const week = query.view === "week";
   const { view, now, load } = home;
   const { token, isPhone } = useApp();
   const { ticked, complete, reopen } = useTicks(token, load);
@@ -81,15 +85,43 @@ function HomeScreen({ home, week }: { home: LoadedHome; week: boolean }) {
           {tasks}
         </section>
       )}
-      <Health
-        metrics={view.health}
-        date={view.date}
-        sync={view.healthSync}
-        timeZone={view.timeZone}
-        isPhone={isPhone}
-      />
+      <HomeHealth home={home} query={query} />
       {panel}
     </main>
+  );
+}
+
+/**
+ * Health trends, with last night beside them once a sleep row is tapped. Opening adds a history
+ * entry, so Back closes the night; stepping between nights replaces it.
+ */
+function HomeHealth({ home, query }: { home: LoadedHome; query: Record<string, string> }) {
+  const { view } = home;
+  const { token, isPhone, onUnauthorized } = useApp();
+  const { night } = query;
+  const side = night && (
+    <Night
+      token={token}
+      date={night}
+      today={view.date}
+      timeZone={view.timeZone}
+      onStep={(date) => setQuery({ night: date })}
+      onClose={() => setQuery({ night: "" })}
+      onUnauthorized={onUnauthorized}
+    />
+  );
+  return (
+    <Health
+      metrics={view.health}
+      date={view.date}
+      sync={view.healthSync}
+      timeZone={view.timeZone}
+      isPhone={isPhone}
+      opens={NIGHT_ROWS}
+      open={Boolean(night)}
+      onOpen={() => navigate(href("/", { ...query, night: view.date }))}
+      side={side}
+    />
   );
 }
 

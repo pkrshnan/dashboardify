@@ -64,6 +64,7 @@ https://claude.ai/artifact/Dm3mFqJPttBWpS9VxeYPUD. `home-desktop.dc.html` (1440 
   daily dots, weekly means for 1Y, a solid dot at today.
 - **Order:** heart, sleep, activity, vitals, separated by space, not labels. Desktop has heart and
   sleep on the left, activity and vitals on the right; the phone lists them in one column.
+- **Sleep rows** (score, time asleep, deep, REM) open the night view.
 
 ## Activity page
 
@@ -76,6 +77,15 @@ every 15 s; for lifting each set is a band in its exercise's colour (paler for w
 the detail show calories when the profile allows ("strain 9.6 · 667 kcal"). A Strava run shows
 distance and pace before them, links to Strava, and its HR covers the walks
 either side, shaded teal. A Running total joins the row above when the range has runs.
+
+## Night view
+
+`#/?night=2026-11-12`, from a sleep row; Back or Close shuts it. It opens beside the rows on
+desktop, which then stack in one column, and below them on the phone. It shows the night's
+times ("23:41–07:05"), time asleep and score, then a hypnogram: awake, REM, light and deep lanes,
+top to bottom, in shades of the sleep colour, with hour ticks in the server's time zone. Under it
+are the stage totals ("Deep 1h 25m · REM 1h 40m · Light 4h 07m") and "Estimated", plus
+"· unusual night" when the stages look unlike yours. Links step to the night before or after.
 
 ## Look
 

@@ -1,6 +1,7 @@
 // Health trends: fifteen metrics in four groups (heart, sleep, activity, vitals), one line colour per
 // group. The range switch changes only the charts, never the numbers.
 
+import type { ComponentChildren } from "preact";
 import { useState } from "preact/hooks";
 import { LOW_BATTERY_PCT } from "../../src/health/battery";
 import { lag, shortDuration } from "../../src/health/sync";
@@ -31,12 +32,23 @@ export function Health({
   sync,
   timeZone,
   isPhone,
+  opens = new Set(),
+  open = false,
+  onOpen,
+  side,
 }: {
   metrics: MetricTrend[];
   date: string;
   sync: HealthSyncView | null;
   timeZone: string;
   isPhone: boolean;
+  /** Keys of the rows that open a detail when tapped, such as the sleep rows. */
+  opens?: Set<string>;
+  /** Whether that detail is open, so its rows show as pressed. */
+  open?: boolean;
+  onOpen?: (key: string) => void;
+  /** The open detail: beside the rows on desktop, below them on the phone. */
+  side?: ComponentChildren;
 }) {
   const [range, setRange] = useState<Range>("1m");
   const group = (g: HealthGroup) => (
@@ -44,7 +56,14 @@ export function Health({
       {metrics
         .filter((m) => m.group === g)
         .map((m) => (
-          <Metric key={m.key} metric={m} range={range} isPhone={isPhone} />
+          <Metric
+            key={m.key}
+            metric={m}
+            range={range}
+            isPhone={isPhone}
+            pressed={opens.has(m.key) && onOpen ? open : undefined}
+            onOpen={onOpen && opens.has(m.key) ? () => onOpen(m.key) : undefined}
+          />
         ))}
     </div>
   );
@@ -64,12 +83,19 @@ export function Health({
         </div>
         <Segmented label="Trend range" segments={RANGES} value={range} onChange={setRange} />
       </div>
-      <div class="health-cols">
-        {COLUMNS.map((col) => (
-          <div key={col.join()} class="health-col">
-            {col.map(group)}
-          </div>
-        ))}
+      <div class={`health-body${side ? " with-side" : ""}`}>
+        <div class="health-cols">
+          {COLUMNS.map((col) => (
+            <div key={col.join()} class="health-col">
+              {col.map(group)}
+            </div>
+          ))}
+        </div>
+        {side && (
+          <aside class="health-side" aria-live="polite">
+            {side}
+          </aside>
+        )}
       </div>
     </section>
   );
@@ -113,16 +139,20 @@ function Metric({
   metric,
   range,
   isPhone,
+  pressed,
+  onOpen,
 }: {
   metric: MetricTrend;
   range: Range;
   isPhone: boolean;
+  pressed?: boolean;
+  onOpen?: () => void;
 }) {
   const value = (
-    <div class="metric-value">
+    <span class="metric-value">
       {metric.value ?? "–"}
       {metric.unit && metric.value && <span class="unit">{metric.unit}</span>}
-    </div>
+    </span>
   );
   const delta = (
     <span>
@@ -135,23 +165,31 @@ function Metric({
       )}
     </span>
   );
-  return (
-    <div class="metric">
+  const body = (
+    <>
       {isPhone ? (
-        <div class="metric-row">
+        <span class="metric-row">
           <span class="metric-name">{metric.name}</span>
           <span class="metric-delta">{delta}</span>
           {value}
-        </div>
+        </span>
       ) : (
-        <div>
-          <div class="metric-name">{metric.name}</div>
+        <span class="metric-text">
+          <span class="metric-name">{metric.name}</span>
           {value}
-          <div class="metric-delta">{delta}</div>
-        </div>
+          <span class="metric-delta">{delta}</span>
+        </span>
       )}
       <Sparkline metric={metric} range={range} isPhone={isPhone} />
-    </div>
+    </>
+  );
+  // A row that opens a detail is a button; the others are plain, so they don't look tappable.
+  return onOpen ? (
+    <button type="button" class="metric opens" aria-pressed={pressed} onClick={onOpen}>
+      {body}
+    </button>
+  ) : (
+    <div class="metric">{body}</div>
   );
 }
 

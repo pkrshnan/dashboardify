@@ -273,6 +273,7 @@ Bands: red under 34, yellow 34–66, green 67+. Sleep counts at a small weight (
 Garmin do). The weights are versioned params tuned against check-ins
 ([health-feedback.md](health-feedback.md)).
 
-## Still to build
+## Open questions
 
-The stage API and UI: planned in [health-extended.md](health-extended.md).
+- [ ] Is a fixed `weight_kg` in the profile enough for calories and VO2max, or log weight over
+  time?

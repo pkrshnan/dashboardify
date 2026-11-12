@@ -7,7 +7,7 @@ folders and never touch your vault (the `vault` symlink is git-ignored). Convent
 
 ## Demo
 
-`bun run demo` serves the app on port 8788 with temporary notes, health history, an Activity page
+`bun run demo` serves the app on port 8788 with temporary notes, health history with a year of nights and their sleep stages, an Activity page
 with three months of sessions, and calendars on the fake iCloud server
 (`test/calendar/fake-caldav.ts`: Personal, Work, Fitness and a read-only shared calendar, synced
 every 30 seconds), so capture, Undo and Settings all work. `DEMO_TIME=09:12` pins the clock for

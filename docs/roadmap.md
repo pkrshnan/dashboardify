@@ -43,9 +43,9 @@ Apple Reminders.
 | Capture | One box: a line becomes an event or a reminder, with the calendar guessed and the place looked up; Undo; Siri "Add to command center" |
 | Calendar | iCloud sync every 2 min, ICS links every 15; Day and Week, all-day row, overlap layout; event panel edits and deletes from Day or Week; Week shows locations; agenda block in the daily note |
 | Settings | `settings.db`, hashed devices, sealed secrets, setup code, `bun run settings`, Settings page (General, Devices, Calendars) |
-| Health | Sleep, sleep score, resting HR, HRV, breathing, skin temperature, strain, zones, steps, recovery, workouts, walks, lifting sets, battery; daily summary in the note; recovery tuning |
+| Health | Sleep, sleep score, sleep stages, resting HR, HRV, breathing, skin temperature, strain, zones, training load, steps, calories, VO2max, recovery, workouts, walks, lifting sets, battery; daily summary in the note; recovery tuning |
 | Activity page | Workouts and walks by week, month and 3 months; detail with HR and sets; reviews |
-| Home screen | Focus sentence and snapshot, next event, calendar, tasks, health trends with sync labels |
+| Home screen | Focus sentence and snapshot, next event, calendar, tasks, health trends with sync labels, the night view |
 | Journal, check-ins, messages | API and Siri only, no page yet |
 
 ## Next
@@ -56,7 +56,7 @@ Apple Reminders.
 | 2 | Tasks page and reminder editing (the API already does it all); starts with N7's task panel | Needs a plan |
 | 3 | Lists (shopping): one note per list in `Lists/`, which tasks skip | Built: [lists.md](lists.md) |
 | 4 | Journal page: the day's journal and check-in | Needs a plan |
-| 5 | The rest of health: training load, calories, VO2max, sleep stages | Training load, calories (workouts included) and VO2max built (H1–H5), sleep stages (H8–H9, fitted to lab nights in H12, DFA α1 in H13, fitted to your nights in H14), trends and `GetNight` (H10), home rows and workout calories (H11a); the night view next ([health-extended.md](health-extended.md), H11b) |
+| 5 | The rest of health: training load, calories, VO2max, sleep stages | Done: training load, calories (workouts included), VO2max, sleep stages fitted to lab nights and then to yours, home rows, workout calories and the night view ([health-metrics.md](health-metrics.md), [design](design/README.md#night-view)). Fitness and biological age dropped: no reference data spans adult ages for South Asians. |
 | 6 | Runs from Strava: split walk-run-walk outings, distance and pace | Built: [strava.md](strava.md) |
 | 7 | "Log journal" Shortcut recipe | Not started |
 | 8 | Home screen: unusual health rows first, a strain target from recovery, light mode | Not started |
