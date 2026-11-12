@@ -84,8 +84,8 @@ Days are habit days: until 04:00 it's still the day before. Writes to `Habits.md
 ## Home
 
 `GET /v1/home`: everything the home screen shows: sentence, next event, seven days of agenda,
-task groups, health metrics (`dailyValues` with `missingDays`), sync times, the strap's battery
-and capture hints. A located event has a `mapsUri` for Apple Maps. `?asOfDate.year=…` ends the
+task groups, health metrics (`dailyValues` with `missingDays`), sync times, the strap's battery,
+capture hints, and today's `habits` (due or done, for the habit day). A located event has a `mapsUri` for Apple Maps. `?asOfDate.year=…` ends the
 metrics on that day as if it were today (a later day is today); the rest stays as of now.
 
 ## Sample streams

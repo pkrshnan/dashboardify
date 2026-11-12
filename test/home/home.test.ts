@@ -27,8 +27,10 @@ const ninePastNine = () => NOW;
 
 /** The home screen's sources over this test's vault and stores. */
 function deps(calendar: CalendarSource = noCalendar): HomeDeps {
+  const vault = new Vault(join(dir, "vault"), TZ);
   return storeHomeDeps({
-    tasks: new TaskStore(new Vault(join(dir, "vault"), TZ), "Inbox.md"),
+    vault,
+    tasks: new TaskStore(vault, "Inbox.md"),
     raw: new RawStore(join(dir, "raw")),
     derived: new DerivedStore(join(dir, "derived")),
     calendar,
@@ -100,6 +102,33 @@ describe("homeView", () => {
       "breathing",
       "skinTemp",
     ]);
+  });
+
+  test("lists the habits due today or done today, before 04:00 as yesterday's", async () => {
+    await Bun.write(
+      join(dir, "vault/Habits.md"),
+      [
+        "- Read · daily <!-- id:read -->",
+        "- Lift · 1 a week <!-- id:lift -->",
+        "- Floss · daily · paused <!-- id:floss -->",
+        "- Gym · Sat <!-- id:gym -->",
+        "- Swim · 1 a week <!-- id:swim -->",
+        "",
+      ].join("\n"),
+    );
+    // Swim met its week on Monday, so it isn't due; Lift is done today.
+    await Bun.write(join(dir, "vault/daily/2026/2026-11-02.md"), "---\nhabits: [swim]\n---\n");
+    await Bun.write(join(dir, "vault/daily/2026/2026-11-03.md"), "---\nhabits: [lift]\n---\n");
+
+    const morning = await homeView(deps(), NOW);
+    const lateNight = await homeView(deps(), new Date("2026-11-04T02:30:00Z"));
+
+    expect(morning.habits.map((h) => [h.id, h.done, h.day])).toEqual([
+      ["read", false, "2026-11-03"],
+      ["lift", true, "2026-11-03"],
+    ]);
+    expect(lateNight.date).toBe("2026-11-04");
+    expect(lateNight.habits[0]?.day).toBe("2026-11-03");
   });
 
   test("works with no health data and no calendar", async () => {

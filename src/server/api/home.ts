@@ -33,6 +33,14 @@ export class HomeService {
       nextEvent: view.next ? nextEventResource(view.next) : undefined,
       days: view.days.map(dayResource),
       taskGroups: view.tasks.map(taskGroupResource),
+      habits: view.habits.map((h) => ({
+        habit: `habits/${h.id}`,
+        displayName: h.name,
+        color: h.color,
+        day: toDateParts(h.day),
+        done: h.done,
+        auto: h.auto,
+      })),
       metrics: view.health.map(metricResource),
       healthSync: view.healthSync
         ? {

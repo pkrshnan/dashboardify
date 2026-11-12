@@ -18,8 +18,6 @@ import { SampleService as SampleSchema } from "../../gen/dashboardify/v1/sample_
 import { SettingsService as SettingsSchema } from "../../gen/dashboardify/v1/settings_pb";
 import { TaskService as TaskSchema } from "../../gen/dashboardify/v1/task_pb";
 import { VoiceService as VoiceSchema } from "../../gen/dashboardify/v1/voice_pb";
-import { FactReader } from "../../habits/facts";
-import { HabitStore } from "../../habits/habit-store";
 import type { RawStore } from "../../health/raw-store";
 import type { HomeDeps } from "../../home/home";
 import { ListStore } from "../../lists/list-store";
@@ -91,12 +89,7 @@ export function v1Services(
   const journalService = new JournalService(vault, now);
   const listStore = new ListStore(vault);
   const listsService = new ListsService(listStore);
-  const habitsService = new HabitsService({
-    store: new HabitStore(vault),
-    facts: new FactReader(vault, activity.derived),
-    timeZone: vault.timeZone,
-    now,
-  });
+  const habitsService = new HabitsService({ progress: home.habits, now });
   const voiceService = new VoiceService(
     taskService,
     dayService,

@@ -2,7 +2,8 @@
 
 Things you mean to do regularly (meditate, read, floss, lift three times a week, 8,000 steps) and
 a record of whether you did. Design: https://claude.ai/artifact/PQe6S6nfjyGt242ui4udNK.
-Status: HB1–HB6 built (Habits.md, ticks, streaks, day facts, HabitService, Siri: [shortcuts/did-habit.md](../shortcuts/did-habit.md), the Habits page). Next, HB7.
+Status: built (HB1–HB7): Habits.md, ticks, streaks, day facts, HabitService, Siri
+([shortcuts/did-habit.md](../shortcuts/did-habit.md)), the Habits page and Today's chips.
 
 ## Goals
 
@@ -115,8 +116,9 @@ keys `g b`. Look: [design/README.md](design/README.md#habits-page).
 - Phone: the list with 23 weeks per grid (read-only) and a 22 px tick beside the name (44 px to
   tap); "+" opens a New habit screen with the same fields. A habit's own screen has this week's
   seven days to tap, to fix one.
-- Today: a row of today's due habits as chips; tap ticks. Auto ones tick themselves.
-- Command bar: "Mark habit" takes a habit; "did meditate" works as text.
+- Today: a row of chips under the focus row, one per habit due today or done; tap ticks or
+  unticks it for the habit day. Auto ones tick themselves. A weekly habit already met is left off.
+- Command bar: "Mark habit" once the command bar's commands land (navigation.md, N4).
 
 ## Build plan
 
@@ -128,7 +130,7 @@ keys `g b`. Look: [design/README.md](design/README.md#habits-page).
 | HB4 | HabitService | `habit.proto`, `src/server/api/habits.ts`, REST bindings, api.md | Each method; facts list; stale `Habits.md` etag `409`; unknown habit `404`; `requestId` retry |
 | HB5 | Siri | `VoiceService.TickHabit`, `shortcuts/did-habit.md` | Fuzzy name, unknown habit, spoken streak |
 | HB6 | Habits page | `web/modules/habits.tsx`, `web/api.ts`, styles, demo habits | Grid cells per cadence, the week's dots, fix a past day, cadence form; the module in the nav; Return in the new-habit form in real Firefox |
-| HB7 | Today row | Home's due habits, Today's chips, the command bar's "Mark habit" | Tick, auto chip, done state |
+| HB7 | Today row | Home's due habits (`HabitProgress` shared with the service), Today's chips | Tick, auto chip, done state |
 
 ## Open questions
 
