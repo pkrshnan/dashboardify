@@ -3,7 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DerivedStore } from "../../src/health/derived-store";
-import { EXTENDED_METRICS, HealthHistory, lastDays, METRICS } from "../../src/home/health-history";
+import { HealthHistory, lastDays, METRICS } from "../../src/home/health-history";
 
 const TODAY = "2026-11-03";
 let dir: string;
@@ -30,17 +30,20 @@ async function seed() {
 }
 
 const byKey = async () => {
-  const trends = await new HealthHistory(derived).trends(TODAY, EXTENDED_METRICS);
+  const trends = await new HealthHistory(derived).trends(TODAY);
   return new Map(trends.map((t) => [t.key, t]));
 };
 
-describe("extended health trends", () => {
-  test("are grouped in the design's order and kept off the home list", () => {
-    const groups = EXTENDED_METRICS.map((m) => m.group);
-    const homeKeys = new Set(METRICS.map((m) => m.key));
+describe("home health trends", () => {
+  test("keep the design's group order, with the newer five in their groups", () => {
+    const groups = METRICS.map((m) => m.group);
+    const order = ["heart", "sleep", "activity", "vitals"];
 
-    expect(groups).toEqual(["heart", "sleep", "sleep", "activity", "activity"]);
-    expect(EXTENDED_METRICS.filter((m) => homeKeys.has(m.key))).toEqual([]);
+    expect(groups).toEqual([...groups].sort((a, b) => order.indexOf(a) - order.indexOf(b)));
+    expect(METRICS.map((m) => m.key)).toEqual(
+      expect.arrayContaining(["vo2max", "deep", "rem", "loadRatio", "calories"]),
+    );
+    expect(new Set(METRICS.map((m) => m.key)).size).toBe(METRICS.length);
   });
 
   test("VO2max, deep and REM are coloured by which way is good", async () => {
@@ -61,6 +64,14 @@ describe("extended health trends", () => {
     expect(trends.get("loadRatio")).toMatchObject({ value: "1.5", tone: "neutral" });
     expect(trends.get("loadRatio")?.delta).toMatch(/^\+/);
     expect(trends.get("calories")).toMatchObject({ tone: "neutral", partial: true });
+  });
+
+  test("a metric with no rows has no value, as without a profile weight", async () => {
+    await seed();
+
+    const trends = await byKey();
+
+    expect(trends.get("recovery")).toMatchObject({ value: null, delta: null, tone: "neutral" });
   });
 
   test("calories show today so far beside yesterday's total", async () => {

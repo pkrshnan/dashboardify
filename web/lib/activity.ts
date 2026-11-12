@@ -16,6 +16,8 @@ export interface WorkoutView {
   avgHr: number;
   maxHr: number;
   strain: number;
+  /** Unset without weight, height, age and sex in the profile. */
+  calories?: number;
   /** Runs recorded in Strava only. */
   distanceMeters?: number;
   stravaActivityId?: string;
@@ -86,6 +88,11 @@ export function workoutName(w: Pick<WorkoutView, "kind" | "status">): string {
 
 export function kindLabel(kind: string): string {
   return NAMES[kind] ?? kind;
+}
+
+/** "610 kcal", "1,240 kcal". */
+export function kcal(calories: number): string {
+  return `${Math.round(calories).toLocaleString("en-US")} kcal`;
 }
 
 /** "45m", "1h 05m". */

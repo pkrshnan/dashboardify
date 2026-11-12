@@ -26,17 +26,30 @@ function zone2Plus(row: DerivedRow): number | null {
   return zones.every((z) => z === null) ? null : zones.reduce<number>((s, z) => s + (z ?? 0), 0);
 }
 
-/** The home screen's ten, in the design's order: heart, sleep, activity, vitals. */
+/** The home screen's fifteen, in the design's order: heart, sleep, activity, vitals. */
 export const METRICS: MetricSource[] = [
   metric("recovery", "Recovery", "%", "heart", "days", column("recovery_pct"), { better: "up" }),
   metric("hrv", "HRV", "ms", "heart", "nights", column("rmssd_ms"), { better: "up" }),
   metric("restingHr", "Resting HR", "bpm", "heart", "nights", column("rhr_bpm"), {
     better: "down",
   }),
+  // No unit: "ml/kg/min" crowds the phone row, and the number is read on its own scale anyway.
+  metric("vo2max", "VO2max", "", "heart", "days", column("vo2max"), {
+    better: "up",
+    format: "dec1",
+  }),
   metric("sleepScore", "Sleep score", "", "sleep", "nights", column("sleep_score"), {
     better: "up",
   }),
   metric("asleep", "Time asleep", "", "sleep", "nights", column("tst_min"), {
+    better: "up",
+    format: "duration",
+  }),
+  metric("deep", "Deep sleep", "", "sleep", "nights", column("deep_min"), {
+    better: "up",
+    format: "duration",
+  }),
+  metric("rem", "REM sleep", "", "sleep", "nights", column("rem_min"), {
     better: "up",
     format: "duration",
   }),
@@ -53,40 +66,21 @@ export const METRICS: MetricSource[] = [
     better: "up",
     cumulative: true,
   }),
+  // Burning more isn't better or worse in itself, so grey like strain.
+  metric("calories", "Calories", "kcal", "activity", "days", column("kcal"), {
+    format: "thousands",
+    cumulative: true,
+  }),
+  // Both ways can be wrong: under 0.8 is easing off, over 1.5 a spike. So always grey.
+  metric("loadRatio", "Training load", "", "activity", "days", column("load_ratio"), {
+    format: "dec1",
+  }),
   metric("breathing", "Breathing rate", "/min", "vitals", "nights", column("resp_rate_bpm"), {
     format: "dec1",
   }),
   metric("skinTemp", "Skin temperature", "°C", "vitals", "nights", column("skin_temp_c"), {
     format: "dec1",
     absoluteDelta: true,
-  }),
-];
-
-/**
- * Built since the design's ten (H1–H9), in the same group order. The design fixes the home list
- * and its two-column layout, so these stay off the home screen until its artboards (H11).
- */
-export const EXTENDED_METRICS: MetricSource[] = [
-  metric("vo2max", "VO2max", "ml/kg/min", "heart", "days", column("vo2max"), {
-    better: "up",
-    format: "dec1",
-  }),
-  metric("deep", "Deep sleep", "", "sleep", "nights", column("deep_min"), {
-    better: "up",
-    format: "duration",
-  }),
-  metric("rem", "REM sleep", "", "sleep", "nights", column("rem_min"), {
-    better: "up",
-    format: "duration",
-  }),
-  // Both ways can be wrong: under 0.8 is easing off, over 1.5 a spike. So always grey.
-  metric("loadRatio", "Training load", "", "activity", "days", column("load_ratio"), {
-    format: "dec1",
-  }),
-  // Burning more isn't better or worse in itself, so grey like strain.
-  metric("calories", "Calories", "kcal", "activity", "days", column("kcal"), {
-    format: "thousands",
-    cumulative: true,
   }),
 ];
 

@@ -1,4 +1,4 @@
-// Health trends: ten metrics in four groups (heart, sleep, activity, vitals), one line colour per
+// Health trends: fifteen metrics in four groups (heart, sleep, activity, vitals), one line colour per
 // group. The range switch changes only the charts, never the numbers.
 
 import { useState } from "preact/hooks";
