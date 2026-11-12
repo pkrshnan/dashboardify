@@ -5,9 +5,9 @@ Tasks, Journal) joins: one module file, which the sidebar, tab bar, command bar,
 search and Settings all read. Design canvas, with every page and state on desktop and phone:
 https://claude.ai/artifact/XuhyWehLi6CPS3yFr4paUU.
 
-Status: N1, N2 and N8 built: the sidebar, icon rail and tab bar list Today, Lists, Activity and
-Settings. While four pages or fewer exist, each is a phone tab; past that, More (`#/more`) takes
-the rest. Next, N3–N7.
+Status: N1, N2 and N8 built: the sidebar, icon rail and tab bar list Today, Lists, Health,
+Activity and Settings. Past four pages, the phone keeps Today and Lists as tabs and More
+(`#/more`) takes the rest. Next, N3–N7.
 
 ## Where it started
 
@@ -53,7 +53,7 @@ The nav lists only pages that exist.
 | Calendar | `#/calendar/<date>` | `g c` | 2 | More | Planned |
 | Tasks | `#/tasks` | `g k` | 2 | Tab | Planned |
 | Lists | `#/lists/<list>` | `g l` | 2 | Tab | Built ([lists.md](lists.md)) |
-| Health | `#/health` | `g h` | 3 | More | Designed: recovery and what moved it, sleep, heart, vitals |
+| Health | `#/health` (`?night=`, `?range=`) | `g h` | 3 | More | Built: recovery, the night and sleep trends, heart, vitals. Next: what moved recovery |
 | Activity | `#/activity` (`?range=month`) | `g a` | 3 | More | Built: workouts, walks, lifting; strain, steps, zone 2 |
 | Journal | `#/journal/<date>` | `g j` | 4 | More | Planned |
 | Settings | `#/settings/<section>` | `g s` | bottom | More | Built |

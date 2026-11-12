@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { NightView } from "../../web/api";
-import { hourTicks, stageTotals } from "../../web/lib/night";
+import { hourTicks, nightDate, stageTotals } from "../../web/lib/night";
 
 const night = (more: Partial<NightView> = {}): NightView => ({
   name: "days/2026-11-03/night",
@@ -44,5 +44,16 @@ describe("night view", () => {
       bed + 3_600_000,
       bed + 7_200_000,
     ]);
+  });
+});
+
+describe("nightDate", () => {
+  test.each([
+    [undefined, "2026-11-12"],
+    ["2026-11-09", "2026-11-09"],
+    ["2026-11-13", "2026-11-12"],
+    ["9 Nov", "2026-11-12"],
+  ])("?night=%s shows the night ending %s", (value, want) => {
+    expect(nightDate(value, "2026-11-12")).toBe(want);
   });
 });

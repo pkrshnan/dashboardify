@@ -1,7 +1,7 @@
-// Health trends: fifteen metrics in four groups (heart, sleep, activity, vitals), one line colour per
-// group. The range switch changes only the charts, never the numbers.
+// Home's health trends: fifteen metrics in four groups (heart, sleep, activity, vitals), one line
+// colour per group. The range switch changes only the charts, never the numbers. The Health page
+// (web/modules/health.tsx) reuses the row and the status line.
 
-import type { ComponentChildren } from "preact";
 import { useState } from "preact/hooks";
 import { LOW_BATTERY_PCT } from "../../src/health/battery";
 import { lag, shortDuration } from "../../src/health/sync";
@@ -13,7 +13,7 @@ import { dayMonth } from "../lib/format";
 import { href } from "../lib/router";
 import { Segmented } from "./segmented";
 
-const RANGES: { value: Range; label: string }[] = [
+export const RANGES: { value: Range; label: string }[] = [
   { value: "2w", label: "2W" },
   { value: "1m", label: "1M" },
   { value: "3m", label: "3M" },
@@ -33,9 +33,7 @@ export function Health({
   timeZone,
   isPhone,
   opens = new Set(),
-  open = false,
   onOpen,
-  side,
 }: {
   metrics: MetricTrend[];
   date: string;
@@ -44,11 +42,7 @@ export function Health({
   isPhone: boolean;
   /** Keys of the rows that open a detail when tapped, such as the sleep rows. */
   opens?: Set<string>;
-  /** Whether that detail is open, so its rows show as pressed. */
-  open?: boolean;
   onOpen?: (key: string) => void;
-  /** The open detail: beside the rows on desktop, below them on the phone. */
-  side?: ComponentChildren;
 }) {
   const [range, setRange] = useState<Range>("1m");
   const group = (g: HealthGroup) => (
@@ -61,7 +55,6 @@ export function Health({
             metric={m}
             range={range}
             isPhone={isPhone}
-            pressed={opens.has(m.key) && onOpen ? open : undefined}
             onOpen={onOpen && opens.has(m.key) ? () => onOpen(m.key) : undefined}
           />
         ))}
@@ -71,33 +64,43 @@ export function Health({
     <section class="section">
       <div class="section-head">
         <div class="health-title">
-          <h2>Health</h2>
+          <h2>
+            <a class="title-link" href={href("/health")}>
+              Health
+            </a>
+          </h2>
           <a class="section-link" href={href("/activity")}>
             Activity ›
           </a>
-          <div class="range-label">
-            {rangeLabel(date, range)}
-            {sync && <Synced sync={sync} timeZone={timeZone} />}
-            {sync?.battery && <Battery battery={sync.battery} timeZone={timeZone} />}
-          </div>
+          <HealthStatus date={date} range={range} sync={sync} timeZone={timeZone} />
         </div>
         <Segmented label="Trend range" segments={RANGES} value={range} onChange={setRange} />
       </div>
-      <div class={`health-body${side ? " with-side" : ""}`}>
-        <div class="health-cols">
-          {COLUMNS.map((col) => (
-            <div key={col.join()} class="health-col">
-              {col.map(group)}
-            </div>
-          ))}
-        </div>
-        {side && (
-          <aside class="health-side" aria-live="polite">
-            {side}
-          </aside>
-        )}
+      <div class="health-cols">
+        {COLUMNS.map((col) => (
+          <div key={col.join()} class="health-col">
+            {col.map(group)}
+          </div>
+        ))}
       </div>
     </section>
+  );
+}
+
+/** The range's dates, then when the strap last synced and its battery. */
+export function HealthStatus(props: {
+  date: string;
+  range: Range;
+  sync: HealthSyncView | null;
+  timeZone: string;
+}) {
+  const { sync, timeZone } = props;
+  return (
+    <div class="range-label">
+      {rangeLabel(props.date, props.range)}
+      {sync && <Synced sync={sync} timeZone={timeZone} />}
+      {sync?.battery && <Battery battery={sync.battery} timeZone={timeZone} />}
+    </div>
   );
 }
 
@@ -135,17 +138,16 @@ function Battery({ battery, timeZone }: { battery: BatteryView; timeZone: string
   );
 }
 
-function Metric({
+/** One trend row: name, value and change, then its chart. The Health page reuses it. */
+export function Metric({
   metric,
   range,
   isPhone,
-  pressed,
   onOpen,
 }: {
   metric: MetricTrend;
   range: Range;
   isPhone: boolean;
-  pressed?: boolean;
   onOpen?: () => void;
 }) {
   const value = (
@@ -185,7 +187,7 @@ function Metric({
   );
   // A row that opens a detail is a button; the others are plain, so they don't look tappable.
   return onOpen ? (
-    <button type="button" class="metric opens" aria-pressed={pressed} onClick={onOpen}>
+    <button type="button" class="metric opens" onClick={onOpen}>
       {body}
     </button>
   ) : (

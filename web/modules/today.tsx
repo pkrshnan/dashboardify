@@ -1,5 +1,5 @@
 // Today, the home screen: focus, then calendar and tasks, then health trends, all from the home
-// view the shell loads. Day or Week is the address's `?view=week`; an open night is `?night=`.
+// view the shell loads. Day or Week is the address's `?view=week`.
 
 import { useRef, useState } from "preact/hooks";
 import type { CaptureHints } from "../../src/home/calendar";
@@ -18,7 +18,6 @@ import { Capture } from "../components/capture";
 import { EventPanel } from "../components/event-panel";
 import { Focus } from "../components/focus";
 import { Health } from "../components/health";
-import { Night } from "../components/night";
 import { TaskList } from "../components/task-list";
 import { type Pending, pendingEvent, withPending } from "../lib/capture";
 import { NIGHT_ROWS } from "../lib/night";
@@ -85,31 +84,16 @@ function HomeScreen({ home, query }: { home: LoadedHome; query: Record<string, s
           {tasks}
         </section>
       )}
-      <HomeHealth home={home} query={query} />
+      <HomeHealth home={home} />
       {panel}
     </main>
   );
 }
 
-/**
- * Health trends, with last night beside them once a sleep row is tapped. Opening adds a history
- * entry, so Back closes the night; stepping between nights replaces it.
- */
-function HomeHealth({ home, query }: { home: LoadedHome; query: Record<string, string> }) {
+/** Health trends. A sleep row goes to last night on the Health page, as a new history entry. */
+function HomeHealth({ home }: { home: LoadedHome }) {
   const { view } = home;
-  const { token, isPhone, onUnauthorized } = useApp();
-  const { night } = query;
-  const side = night && (
-    <Night
-      token={token}
-      date={night}
-      today={view.date}
-      timeZone={view.timeZone}
-      onStep={(date) => setQuery({ night: date })}
-      onClose={() => setQuery({ night: "" })}
-      onUnauthorized={onUnauthorized}
-    />
-  );
+  const { isPhone } = useApp();
   return (
     <Health
       metrics={view.health}
@@ -118,9 +102,7 @@ function HomeHealth({ home, query }: { home: LoadedHome; query: Record<string, s
       timeZone={view.timeZone}
       isPhone={isPhone}
       opens={NIGHT_ROWS}
-      open={Boolean(night)}
-      onOpen={() => navigate(href("/", { ...query, night: view.date }))}
-      side={side}
+      onOpen={() => navigate(href("/health", { night: view.date }))}
     />
   );
 }

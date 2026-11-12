@@ -45,7 +45,8 @@ Apple Reminders.
 | Settings | `settings.db`, hashed devices, sealed secrets, setup code, `bun run settings`, Settings page (General, Devices, Calendars) |
 | Health | Sleep, sleep score, sleep stages, resting HR, HRV, breathing, skin temperature, strain, zones, training load, steps, calories, VO2max, recovery, workouts, walks, lifting sets, battery; daily summary in the note; recovery tuning |
 | Activity page | Workouts and walks by week, month and 3 months; detail with HR and sets; reviews |
-| Home screen | Focus sentence and snapshot, next event, calendar, tasks, health trends with sync labels, the night view |
+| Health page | Recovery, a night's stages over the sleep trends, heart and vitals; home's sleep rows link to the night |
+| Home screen | Focus sentence and snapshot, next event, calendar, tasks, health trends with sync labels |
 | Journal, check-ins, messages | API and Siri only, no page yet |
 
 ## Next
@@ -56,7 +57,7 @@ Apple Reminders.
 | 2 | Tasks page and reminder editing (the API already does it all); starts with N7's task panel | Needs a plan |
 | 3 | Lists (shopping): one note per list in `Lists/`, which tasks skip | Built: [lists.md](lists.md) |
 | 4 | Journal page: the day's journal and check-in | Needs a plan |
-| 5 | The rest of health: training load, calories, VO2max, sleep stages | Done: training load, calories (workouts included), VO2max, sleep stages fitted to lab nights and then to yours, home rows, workout calories and the night view ([health-metrics.md](health-metrics.md), [design](design/README.md#night-view)). Fitness and biological age dropped: no reference data spans adult ages for South Asians. |
+| 5 | The rest of health: training load, calories, VO2max, sleep stages | Done: training load, calories (workouts included), VO2max, sleep stages fitted to lab nights and then to yours, home rows, workout calories and the Health page with the night view ([health-metrics.md](health-metrics.md), [design](design/README.md#health-page)). Next: what moved recovery, on that page. Fitness and biological age dropped: no reference data spans adult ages for South Asians. |
 | 6 | Runs from Strava: split walk-run-walk outings, distance and pace | Built: [strava.md](strava.md) |
 | 7 | "Log journal" Shortcut recipe | Not started |
 | 8 | Home screen: unusual health rows first, a strain target from recovery, light mode | Not started |

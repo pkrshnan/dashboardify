@@ -971,42 +971,11 @@ button.link {
   content: " · ";
 }
 
-.health-body {
-  --sleep: #7d7aff;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 48px;
-  align-items: flex-start;
-  margin-top: 28px;
-}
-
-.health-side {
-  --accent: var(--sleep);
-  flex: 1 1 440px;
-  min-width: 0;
-  position: sticky;
-  top: calc(24px + env(safe-area-inset-top));
-  scroll-margin-top: calc(16px + env(safe-area-inset-top));
-}
-
 .health-cols {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   column-gap: 72px;
   margin-top: 28px;
-}
-
-.health-body > .health-cols {
-  flex: 999 1 560px;
-  min-width: 0;
-  margin-top: 0;
-}
-
-/* With the night open, the rows stack in one column so their charts keep their width. The sleep
-   rows stay where they were, under heart, and the night sits beside them. */
-.health-body.with-side > .health-cols {
-  grid-template-columns: minmax(0, 1fr);
-  row-gap: 48px;
 }
 
 .health-col {
@@ -1033,7 +1002,7 @@ button.link {
   display: block;
 }
 
-/* The sleep rows open the night: a plain row that happens to be a button. */
+/* Home's sleep rows go to the night: a plain row that happens to be a button. */
 .metric.opens {
   width: 100%;
   padding: 0;
@@ -1048,10 +1017,6 @@ button.link {
 .metric-name {
   font-size: var(--type-footnote);
   color: var(--text-2);
-}
-
-.metric.opens[aria-pressed="true"] .metric-name {
-  color: var(--sleep);
 }
 
 .metric-value {
@@ -1897,15 +1862,6 @@ button.link {
   .health-cols {
     display: block;
     margin-top: 20px;
-  }
-
-  .health-body {
-    margin-top: 20px;
-    gap: 24px;
-  }
-
-  .health-side {
-    position: static;
   }
 
   .health-group {
@@ -3103,7 +3059,70 @@ button.link {
   height: 24px;
 }
 
+/* ---- Health page ---- */
+
+.title-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.health-page {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding-bottom: env(safe-area-inset-bottom);
+  --sleep: #7d7aff;
+}
+
+.health-page > .section:first-child {
+  padding-top: calc(32px + env(safe-area-inset-top));
+}
+
+.health-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* The page has the width home splits in two, so each chart gets the full line. */
+@media (min-width: 900px) {
+  .health-rows .metric {
+    grid-template-columns: 200px minmax(0, 1fr);
+    gap: 40px;
+  }
+
+  .health-rows .metric svg {
+    height: 96px;
+  }
+}
+
+@media (max-width: 899px) {
+  .health-page > .section:first-child .section-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .health-page .activity-range {
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .health-rows {
+    gap: 18px;
+  }
+}
+
 /* ---- Night ---- */
+
+.night {
+  --accent: var(--sleep);
+  margin-bottom: 24px;
+}
+
+.night-title {
+  margin: 0;
+  font-size: var(--type-headline);
+  font-weight: 500;
+}
 
 .night-times {
   margin: 4px 0 16px;

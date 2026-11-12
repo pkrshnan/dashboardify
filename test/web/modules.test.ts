@@ -19,6 +19,7 @@ describe("pageFor", () => {
   test.each([
     ["/", "today", {}],
     ["/activity", "activity", {}],
+    ["/health", "health", {}],
     ["/settings", "settings", {}],
     ["/settings/devices", "settings", { section: "devices" }],
     ["/nowhere", "today", {}],

@@ -1,6 +1,6 @@
-// The night view: a night's sleep stages as a hypnogram, from GET /v1/days/{date}/night. It
-// opens from the home screen's sleep rows, beside them on desktop and below them on the phone.
-// Stages are estimated from the strap, so the view says so, and marks nights that look unusual.
+// The night view: a night's sleep stages as a hypnogram, from GET /v1/days/{date}/night. It heads
+// the Health page's sleep section, and home's sleep rows link to it. Stages are estimated from
+// the strap, so the view says so, and marks nights that look unusual.
 
 import { useEffect, useState } from "preact/hooks";
 import { fetchNight, type NightView, type Token, Unauthorized } from "../api";
@@ -16,7 +16,6 @@ interface Props {
   today: string;
   timeZone: string;
   onStep: (date: string) => void;
-  onClose: () => void;
   onUnauthorized: (setup: boolean) => void;
 }
 
@@ -43,22 +42,11 @@ export function Night(props: Props) {
       live = false;
     };
   }, [token, date, onUnauthorized]);
-  useEffect(() => {
-    if (loaded?.date === date) {
-      reveal(document.querySelector(".health-side"));
-    }
-  }, [loaded, date]);
-
   const clock = (ms: number) => nowIn(props.timeZone, new Date(ms)).time;
   const night = loaded?.date === date ? loaded.night : undefined;
   return (
-    <div class="panel night">
-      <div class="panel-head">
-        <h2>Night, {dateSpan(addDays(date, -1), date)}</h2>
-        <button type="button" class="link-button" onClick={props.onClose}>
-          Close
-        </button>
-      </div>
+    <div class="night">
+      <h3 class="night-title">Night, {dateSpan(addDays(date, -1), date)}</h3>
       {night === undefined && <p class="muted">Loading…</p>}
       {night === null && <p class="muted">No night recorded.</p>}
       {night && <NightBody night={night} clock={clock} timeZone={props.timeZone} />}
@@ -74,14 +62,6 @@ export function Night(props: Props) {
       </div>
     </div>
   );
-}
-
-/** On the phone the night opens below every row, out of sight; bring it up. */
-function reveal(el: Element | null) {
-  const top = el?.getBoundingClientRect().top ?? 0;
-  if (el && (top < 0 || top > window.innerHeight * 0.6)) {
-    el.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
 }
 
 function NightBody(props: { night: NightView; clock: (ms: number) => string; timeZone: string }) {
@@ -119,7 +99,7 @@ const LANE_H = 30;
 const H = LANES.length * LANE_H;
 
 /**
- * Each stage run as a bar in its lane, joined by faint steps. The SVG stretches to the panel's
+ * Each stage run as a bar in its lane, joined by faint steps. The SVG stretches to the page's
  * width, so the lane names and hours are HTML and stay readable on a phone.
  */
 function Hypnogram(props: { night: NightView; clock: (ms: number) => string; timeZone: string }) {

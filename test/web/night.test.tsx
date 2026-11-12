@@ -50,7 +50,6 @@ afterEach(() => {
 
 function showNight(date = "2026-11-03", today = "2026-11-03") {
   const onStep = mock((_: string) => undefined);
-  const onClose = mock(() => undefined);
   const page = render(
     <Night
       token="t"
@@ -58,11 +57,10 @@ function showNight(date = "2026-11-03", today = "2026-11-03") {
       today={today}
       timeZone="Europe/London"
       onStep={onStep}
-      onClose={onClose}
       onUnauthorized={() => undefined}
     />,
   );
-  return { page, onStep, onClose };
+  return { page, onStep };
 }
 
 describe("night view", () => {
@@ -104,20 +102,12 @@ describe("night view", () => {
     expect(onStep).toHaveBeenCalledWith("2026-11-02");
     expect(page.queryByRole("button", { name: /›$/ })).toBeNull();
   });
-
-  test("Close closes it", async () => {
-    const { page, onClose } = showNight();
-
-    fireEvent.click(page.getByRole("button", { name: "Close" }));
-
-    expect(onClose).toHaveBeenCalled();
-  });
 });
 
 describe("sleep rows", () => {
   const metrics = METRICS.map((def) => trend(def, [], "2026-11-03"));
 
-  test("only the sleep rows open the night", async () => {
+  test("only the sleep rows link to the night", async () => {
     const onOpen = mock((_: string) => undefined);
     const page = render(
       <Health
@@ -143,28 +133,5 @@ describe("sleep rows", () => {
       "REM sleep",
     ]);
     expect(onOpen).toHaveBeenCalledWith("deep");
-  });
-
-  test("the night shows beside the rows, and they show as pressed", () => {
-    const page = render(
-      <Health
-        metrics={metrics}
-        date="2026-11-03"
-        sync={null}
-        timeZone="UTC"
-        isPhone={false}
-        opens={NIGHT_ROWS}
-        open
-        onOpen={() => undefined}
-        side={<p>the night</p>}
-      />,
-    );
-
-    expect(page.container.querySelector(".health-body.with-side .health-side")?.textContent).toBe(
-      "the night",
-    );
-    expect(page.getByRole("button", { name: /^Sleep score/ }).getAttribute("aria-pressed")).toBe(
-      "true",
-    );
   });
 });

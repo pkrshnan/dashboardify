@@ -1,12 +1,21 @@
-// The night view's rules: which rows open it, the hypnogram's lanes and shades, its hour ticks
-// in the server's time zone, and the stage totals line. Times are epoch ms.
+// The night view's rules: which night the address names, which home rows link to it, the
+// hypnogram's lanes and shades, its hour ticks in the server's time zone, and the stage totals
+// line. Times are epoch ms.
 
 import type { NightView, SleepStage } from "../api";
 import { duration } from "./activity";
 import { nowIn } from "./clock";
 
-/** The home rows that open the night: the sleep group's. */
+/** The home rows that link to the night: the sleep group's. */
 export const NIGHT_ROWS = new Set(["sleepScore", "asleep", "deep", "rem"]);
+
+/**
+ * The night `?night=` names, by the day it ends on; last night when it is missing, malformed or
+ * still to come.
+ */
+export function nightDate(value: string | undefined, today: string): string {
+  return value && /^\d{4}-\d{2}-\d{2}$/.test(value) && value <= today ? value : today;
+}
 
 /** Top to bottom, as hypnograms are read: lighter sleep higher. */
 export const LANES: SleepStage[] = ["awake", "rem", "light", "deep"];
