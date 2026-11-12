@@ -197,5 +197,5 @@ Garmin do). The weights are versioned params tuned against check-ins
 
 ## Still to build
 
-Fitness and biological age, and sleep stages: planned in
+Sleep stages: planned in
 [health-extended.md](health-extended.md).
