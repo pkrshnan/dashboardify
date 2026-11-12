@@ -79,8 +79,8 @@ A `habits` module at `#/habits` (`?habit=` opens one), sidebar group 2, More on 
 - Habits page: a row per habit with its name, cadence and source, the streak with the 30-day
   count (orange "Missed yesterday" when today decides it), a GitHub-style grid of the last 26
   weeks (Monday to Sunday, top to bottom), and a 40 px tick for today. Cells: the habit's colour
-  when done, grey when missed, outlined when not scheduled, a ring on today. A `N a week` habit
-  gets a bar under each week that fills when the week is met. Tapping a cell fixes that day.
+  when done, grey when missed, outlined when not scheduled, a ring on today. Tapping a cell fixes
+  that day. A `N a week` habit shows this week as N dots under its streak, one filled per day done.
 - Beside the list, the selected habit's settings: name, "How often" (Every day, Times a week
   with − and +, Set days with seven day buttons), "Ticks itself from", colour, Pause, Archive.
   "+ New habit" opens the same form empty.
@@ -98,7 +98,7 @@ A `habits` module at `#/habits` (`?habit=` opens one), sidebar group 2, More on 
 | HB2 | Streaks and auto habits | Streak, rate, weekly counts; the auto sources over notes and derived tables; the mtime cache | Never-miss-twice; weekday and `N a week` edges; paused days; DST week; each source |
 | HB3 | HabitService | `habit.proto`, `src/server/api/habits.ts`, REST bindings, Home's habits, api.md | Each method; stale `Habits.md` etag `409`; unknown habit `404`; `requestId` retry |
 | HB4 | Siri | `VoiceService.MarkHabit`, `shortcuts/mark-habit.md` | Fuzzy name, unknown habit, spoken streak |
-| HB5 | Habits page | `web/modules/habits.tsx`, `web/api.ts`, styles, demo habits | Grid cells per cadence, week bars, fix a past day, cadence form; the module in the nav; Return in the new-habit form in real Firefox |
+| HB5 | Habits page | `web/modules/habits.tsx`, `web/api.ts`, styles, demo habits | Grid cells per cadence, the week's dots, fix a past day, cadence form; the module in the nav; Return in the new-habit form in real Firefox |
 | HB6 | Today row | Today's chips, the command bar's "Mark habit" | Tick, auto chip, done state |
 
 ## Open questions
