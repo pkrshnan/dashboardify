@@ -15,6 +15,11 @@ import { createApp } from "./server/app";
 import { type Config, loadStartup } from "./server/config";
 import { lockPath } from "./settings/rotate";
 import { openSettings } from "./settings/startup";
+import type { SettingsStore } from "./settings/store";
+import { StravaAccounts } from "./strava/account";
+import { RunCache } from "./strava/cache";
+import { StravaClient } from "./strava/client";
+import { StravaSync } from "./strava/sync";
 import { localDate } from "./vault/time";
 import { Vault } from "./vault/vault";
 
@@ -33,6 +38,28 @@ function startHealthSummaries(config: Config, vault: Vault): SummaryScheduler {
   scheduler.touchDate(today());
   setInterval(() => scheduler.touchDate(today()), HOUR_MS);
   return scheduler;
+}
+
+/** Strava runs are polled into strava-cache.db; a day whose runs changed is recomputed. */
+async function startStrava(
+  store: SettingsStore,
+  config: Config,
+  scheduler: SummaryScheduler,
+): Promise<RunCache> {
+  const accounts = new StravaAccounts(store);
+  const cache = await RunCache.open(config.dataPath);
+  new StravaSync({
+    accounts,
+    cache,
+    client: new StravaClient(accounts),
+    timeZone: config.timeZone,
+    onChanged: (dates) => {
+      for (const date of dates) {
+        scheduler.touchDate(date);
+      }
+    },
+  }).start();
+  return cache;
 }
 
 /** server.lock holds our pid while we run, so `bun run settings rotate-key` refuses. */
@@ -67,6 +94,7 @@ if (import.meta.main) {
   });
   calendarSync.start();
   const scheduler = startHealthSummaries(config, vault);
+  await startStrava(opened.store, config, scheduler);
   const app = createApp(config, {
     devices,
     tailnet,

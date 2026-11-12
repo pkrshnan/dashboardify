@@ -168,6 +168,15 @@ export class StravaAccounts {
       );
   }
 
+  /** A sync went through: the account works. */
+  synced(): void {
+    this.store.db
+      .query(
+        "UPDATE strava_account SET last_sync_time = ?, status = 'ok', status_detail = NULL WHERE id = ?",
+      )
+      .run(this.now().toISOString(), ID);
+  }
+
   setStatus(status: StravaStatus, detail?: string): void {
     this.store.db
       .query("UPDATE strava_account SET status = ?, status_detail = ? WHERE id = ?")
