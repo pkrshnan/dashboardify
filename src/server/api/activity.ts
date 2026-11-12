@@ -106,6 +106,9 @@ export class ActivityService {
       maxHeartRate: num(row.max_hr),
       cadence: num(row.cadence_spm),
       strain: num(row.strain),
+      // Rows from before Strava have no such columns; null is "not from Strava" too.
+      distanceMeters: typeof row.distance_m === "number" ? row.distance_m : undefined,
+      stravaActivityId: typeof row.strava_id === "number" ? row.strava_id : undefined,
     };
   }
 

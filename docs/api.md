@@ -92,8 +92,9 @@ healthstrap is the client.
 | GET | `/v1/days/{date}/workouts/{HHMM}` | One workout: HR every 15 s, and sets for lifting |
 | POST | `/v1/days/{date}/workouts/{HHMM}:review` | `{"kind": "lifting"}`: `running`, `walking`, `volleyball`, `lifting`, `workout`, `none`, or `""` to undo |
 
-`status` is `DETECTED` (strap only), `POSSIBLE` (worth asking), `CONFIRMED` (reviewed or matched a
-lifting log) or `DISMISSED`. A review is written to the daily note and the day is recomputed.
+`status` is `DETECTED` (strap only), `POSSIBLE` (worth asking), `CONFIRMED` (reviewed, matched a
+lifting log, or a Strava run) or `DISMISSED`. Strava runs also have `distanceMeters` and
+`stravaActivityId`. A review is written to the daily note and the day is recomputed.
 
 ## Captures
 
