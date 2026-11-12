@@ -93,4 +93,5 @@ export interface ApiRequests {
   checkIn: { feel?: string; rpe?: string; tags?: string };
   listDue: { window?: string };
   completeByText: { text: string };
+  addToList: { list: string; text: string };
 }

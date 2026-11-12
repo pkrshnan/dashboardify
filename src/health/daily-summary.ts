@@ -18,6 +18,7 @@ import {
   recovery,
   tempDeviation,
 } from "./metrics/recovery";
+import type { RecordedRun } from "./metrics/runs";
 import type { EpochFeatures } from "./metrics/sleep-features";
 import { DEFAULT_NEED_MIN, type PastNight } from "./metrics/sleep-score";
 import {
@@ -55,7 +56,22 @@ import { type DaySummary, frontmatter, healthBlock, syncLine } from "./render";
 import { counted, type ReviewedWorkout, reviewFor, reviewWorkouts } from "./reviews";
 
 /** Bump when a calculation changes, so old rows can be told apart and rebuilt. */
-export const ALGO_VERSION = "12";
+export const ALGO_VERSION = "14";
+
+/** Strava runs, as strava-cache.db holds them (see src/strava/cache.ts). */
+export interface RunSource {
+  between(
+    from: number,
+    to: number,
+  ): {
+    id: number;
+    start: number;
+    elapsedSeconds: number;
+    distanceMeters: number;
+  }[];
+}
+
+const noRuns: RunSource = { between: () => [] };
 
 /** How far either way to look for a night with resting HR when there is no recent one. */
 const NEAREST_NIGHT_DAYS = 7;
@@ -69,6 +85,7 @@ export class DailySummary {
     private readonly vault: Vault,
     private readonly timeZone: string,
     private readonly now: () => number = Date.now,
+    private readonly runs: RunSource = noRuns,
   ) {
     this.params = new ParamsStore(derived.root);
   }
@@ -115,6 +132,7 @@ export class DailySummary {
       sleep,
       restingHr: await this.restingHr(date, night, history),
       profile,
+      runs: this.dayRuns(date),
     });
     return {
       night,
@@ -193,6 +211,17 @@ export class DailySummary {
     const midnight = Temporal.PlainDate.from(date).toZonedDateTime(this.timeZone);
     const end = midnight.add({ days: 1 }).epochMilliseconds;
     return { start: midnight.epochMilliseconds, end: Math.min(this.now(), end) };
+  }
+
+  /** Runs that start on `date`, local midnight to midnight. */
+  private dayRuns(date: string): RecordedRun[] {
+    const next = Temporal.PlainDate.from(date).add({ days: 1 }).toString();
+    return this.runs.between(this.at(date, "00:00"), this.at(next, "00:00")).map((run) => ({
+      start: run.start,
+      end: run.start + run.elapsedSeconds * 1000,
+      distanceMeters: run.distanceMeters,
+      stravaId: run.id,
+    }));
   }
 
   /** A local HH:MM on `date` as epoch ms. */
@@ -484,6 +513,8 @@ function workoutRow(w: ReviewedWorkout): DerivedRow {
     trimp: w.trimp,
     strain: w.strain,
     kcal: w.kcal === null ? null : Math.round(w.kcal),
+    distance_m: w.distanceMeters ?? null,
+    strava_id: w.stravaId ?? null,
   };
 }
 

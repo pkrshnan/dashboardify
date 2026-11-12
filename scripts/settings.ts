@@ -7,6 +7,9 @@
 //   devices revoke <id>   its token stops working on the server's next request
 //   key show              the key as base64, for your password manager
 //   rotate-key            a new key; every secret is re-sealed. Stop the server first.
+//   strava connect        asks for your Strava API app, then the address Strava sends you to
+//   strava disconnect     revokes the app's access and forgets the account
+//   strava status         who is connected and whether it is working
 
 import { join, resolve } from "node:path";
 import "../src/calendar/accounts";
@@ -17,6 +20,14 @@ import { loadKey } from "../src/settings/key";
 import { rotateKey, serverRunning } from "../src/settings/rotate";
 import { SecretBox } from "../src/settings/secret-box";
 import { SettingsStore } from "../src/settings/store";
+import { StravaAccounts } from "../src/strava/account";
+import {
+  authorizeUrl,
+  codeFrom,
+  StravaAuthFailed,
+  StravaClient,
+  StravaUnavailable,
+} from "../src/strava/client";
 
 const dataPath = resolve(process.env.DATA_PATH ?? "data");
 const keyFile = process.env.SECRET_KEY_FILE ? resolve(process.env.SECRET_KEY_FILE) : undefined;
@@ -48,9 +59,15 @@ async function run(store: SettingsStore, key: Uint8Array): Promise<number> {
       return 0;
     case "rotate-key":
       return rotate(store);
+    case "strava connect":
+      return stravaConnect(store);
+    case "strava disconnect":
+      return stravaDisconnect(store);
+    case "strava status":
+      return stravaStatus(store);
     default:
       console.error(
-        "Usage: bun run settings export [--out file] | devices add <name> | devices list | devices revoke <id> | key show | rotate-key",
+        "Usage: bun run settings export [--out file] | devices add <name> | devices list | devices revoke <id> | key show | rotate-key | strava connect | strava disconnect | strava status",
       );
       return 2;
   }
@@ -108,6 +125,73 @@ async function rotate(store: SettingsStore): Promise<number> {
   console.log("Save the new key in your password manager:");
   console.log(Buffer.from(key).toString("base64"));
   return 0;
+}
+
+async function stravaConnect(store: SettingsStore): Promise<number> {
+  const accounts = new StravaAccounts(store);
+  const current = accounts.get();
+  if (current) {
+    console.error(`Strava is already connected as ${current.athleteName}. Disconnect it first.`);
+    return 1;
+  }
+  console.log("Make an app at https://www.strava.com/settings/api with callback domain localhost.");
+  const clientId = prompt("Client ID:")?.trim() ?? "";
+  const clientSecret = prompt("Client secret:")?.trim() ?? "";
+  if (!(clientId && clientSecret)) {
+    console.error("Both the client ID and secret are needed.");
+    return 2;
+  }
+  console.log("Open this, approve, and copy the address you land on (the page won't load):");
+  console.log(authorizeUrl(clientId));
+  const pasted = prompt("Address:") ?? "";
+  return stravaErrors(async () => {
+    const app = { clientId, clientSecret };
+    const { athlete, tokens } = await new StravaClient(accounts).exchange(app, codeFrom(pasted));
+    accounts.create(athlete, app, tokens);
+    console.log(`Connected ${athlete.name}.`);
+  });
+}
+
+async function stravaDisconnect(store: SettingsStore): Promise<number> {
+  const accounts = new StravaAccounts(store);
+  if (!accounts.get()) {
+    console.error("Strava isn't connected.");
+    return 1;
+  }
+  try {
+    await new StravaClient(accounts).deauthorize();
+  } catch (error) {
+    // Forget it anyway: you can revoke the app on strava.com/settings/apps.
+    console.error(`Couldn't revoke access (${(error as Error).message}); forgetting it anyway.`);
+  }
+  accounts.delete();
+  console.log("Disconnected Strava.");
+  return 0;
+}
+
+function stravaStatus(store: SettingsStore): number {
+  const account = new StravaAccounts(store).get();
+  if (!account) {
+    console.log("Strava isn't connected. Run: bun run settings strava connect");
+    return 0;
+  }
+  const synced = account.lastSyncTime ? `last synced ${account.lastSyncTime}` : "not synced yet";
+  const state = account.status === "ok" ? "working" : `${account.status}: ${account.statusDetail}`;
+  console.log(`${account.athleteName} (athlete ${account.athleteId}), ${state}, ${synced}`);
+  return 0;
+}
+
+async function stravaErrors(fn: () => Promise<void>): Promise<number> {
+  try {
+    await fn();
+    return 0;
+  } catch (error) {
+    if (error instanceof StravaAuthFailed || error instanceof StravaUnavailable) {
+      console.error(error.message);
+      return 1;
+    }
+    throw error;
+  }
 }
 
 process.exit(await main());

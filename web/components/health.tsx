@@ -9,6 +9,7 @@ import { chartShape, type Range, rangeLabel, WIDTH } from "../lib/chart";
 import { nowIn } from "../lib/clock";
 import { HEALTH, STATUS, toneColor } from "../lib/colors";
 import { dayMonth } from "../lib/format";
+import { href } from "../lib/router";
 import { Segmented } from "./segmented";
 
 const RANGES: { value: Range; label: string }[] = [
@@ -52,7 +53,7 @@ export function Health({
       <div class="section-head">
         <div class="health-title">
           <h2>Health</h2>
-          <a class="section-link" href="#activity">
+          <a class="section-link" href={href("/activity")}>
             Activity ›
           </a>
           <div class="range-label">
