@@ -13,3 +13,6 @@ node_modules/
 
 # Settings, secret key and caches (settings.db, secret.key). Private; the key is never backed up.
 /data
+
+# Claude Code worktrees.
+/.claude/worktrees/

@@ -133,4 +133,5 @@ Garmin do). The weights are versioned params tuned against check-ins
 
 ## Still to build
 
-Sleep stages, calories, training load, VO2max and biological age.
+Training load, calories, VO2max, fitness and biological age, and sleep stages: planned in
+[health-extended.md](health-extended.md).
