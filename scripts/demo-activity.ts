@@ -141,16 +141,18 @@ export class DemoActivity {
       this.heartRate.set(utc, [...(this.heartRate.get(utc) ?? []), sample]);
     }
     const during = bpm.filter((s) => s.ts >= start && s.ts < end).map((s) => Number(s.values[0]));
+    const avgHr = Math.round(during.reduce((sum, v) => sum + v, 0) / during.length);
     return {
       status: plan.status,
       start_ts: start,
       end_ts: end,
       kind: plan.kind,
       duration_min: plan.minutes,
-      avg_hr: Math.round(during.reduce((sum, v) => sum + v, 0) / during.length),
+      avg_hr: avgHr,
       max_hr: Math.max(...during),
       cadence_spm: plan.kind === "running" ? Math.round(162 + 8 * this.noise()) : 0,
       strain: round1(strainFor(plan) + this.noise()),
+      kcal: kcalFor(plan.minutes, avgHr),
       distance_m: plan.meters ?? null,
       strava_id: plan.meters ? 16_000_000_000 + (Math.round(start / 60_000) % 1_000_000) : null,
     };
@@ -409,6 +411,11 @@ function samples(start: number, end: number, heartRate: (s: number) => number): 
 function strainFor(plan: Plan): number {
   const perHour: Record<string, number> = { running: 11, volleyball: 8, lifting: 7, workout: 6 };
   return Math.min(18, (perHour[plan.kind] ?? 6) * Math.sqrt(plan.minutes / 60));
+}
+
+/** Roughly what Keytel's equation gives a 75 kg man at this heart rate. */
+function kcalFor(minutes: number, avgHr: number): number {
+  return Math.round(minutes * Math.max(2, (avgHr - 70) * 0.13));
 }
 
 /** From `from` to `to` over `seconds`, then `to`. */
