@@ -56,7 +56,7 @@ import { type DaySummary, frontmatter, healthBlock, syncLine } from "./render";
 import { counted, type ReviewedWorkout, reviewFor, reviewWorkouts } from "./reviews";
 
 /** Bump when a calculation changes, so old rows can be told apart and rebuilt. */
-export const ALGO_VERSION = "14";
+export const ALGO_VERSION = "15";
 
 /** Strava runs, as strava-cache.db holds them (see src/strava/cache.ts). */
 export interface RunSource {
