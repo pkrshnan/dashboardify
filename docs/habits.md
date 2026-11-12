@@ -2,7 +2,7 @@
 
 Things you mean to do regularly (meditate, read, floss, lift three times a week, 8,000 steps) and
 a record of whether you did. Design: https://claude.ai/artifact/PQe6S6nfjyGt242ui4udNK.
-Status: HB1–HB4 built (Habits.md, ticks, streaks, day facts, HabitService).
+Status: HB1–HB5 built (Habits.md, ticks, streaks, day facts, HabitService, Siri: [shortcuts/did-habit.md](../shortcuts/did-habit.md)).
 
 ## Goals
 
@@ -93,8 +93,9 @@ registry lists each fact's label, kind, day and default; the page's "Ticks itsel
 `proto/dashboardify/v1/habit.proto`, `HabitService`; paths in [api.md](api.md#habits).
 `ListHabits` and `GetHabit` give each habit's progress as of a day, `ListHabitDays` how each day
 went for the grid, `MarkHabit` ticks a day by hand, and `ListHabitFacts` lists the facts. Create
-is safe to retry: a habit with the same name is returned. `VoiceService/MarkHabit` takes `text`,
-finds the habit by its spoken name, marks it, and speaks back the streak ("Meditate: 12 days").
+is safe to retry: a habit with the same name is returned. `VoiceService/TickHabit` takes `text`
+("I meditated"), finds the habit whose every word was said, whatever the ending, ticks it (the
+day before for "yesterday" or "last night"), and speaks the streak ("Ticked Meditate. 12 days.").
 `Home` gains today's due habits, so Today needs no second call.
 
 ## Web
@@ -126,7 +127,7 @@ A `habits` module at `#/habits` (`?habit=` opens one), sidebar group 2, More on 
 | HB2 | Streaks | Streak, rate, weekly counts, pending days; the mtime cache | Never-miss-twice; weekday and `N a week` edges; paused days; pending doesn't break; DST week |
 | HB3 | Day facts | `facts.ts`: `dayFacts`, the registry, parsing and checking `auto` rules; auto ticks in streaks | Each fact from a fixture day; night facts read the next note; 00:20 later than 23:30; missing is pending; bare fact uses its default |
 | HB4 | HabitService | `habit.proto`, `src/server/api/habits.ts`, REST bindings, api.md | Each method; facts list; stale `Habits.md` etag `409`; unknown habit `404`; `requestId` retry |
-| HB5 | Siri | `VoiceService.MarkHabit`, `shortcuts/mark-habit.md` | Fuzzy name, unknown habit, spoken streak |
+| HB5 | Siri | `VoiceService.TickHabit`, `shortcuts/did-habit.md` | Fuzzy name, unknown habit, spoken streak |
 | HB6 | Habits page | `web/modules/habits.tsx`, `web/api.ts`, styles, demo habits | Grid cells per cadence, the week's dots, fix a past day, cadence form; the module in the nav; Return in the new-habit form in real Firefox |
 | HB7 | Today row | Home's due habits, Today's chips, the command bar's "Mark habit" | Tick, auto chip, done state |
 

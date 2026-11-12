@@ -7,11 +7,13 @@ import type { ListStore } from "../../lists/list-store";
 import type { TaskStore } from "../../vault/task-store";
 import { localDate } from "../../vault/time";
 import { parseWhen } from "../../vault/when";
+import { findHabit, noHabitSentence, spokenDaysBack, tickedSentence } from "../habit-messages";
 import { addedSentence, findList, noListSentence, spokenEntries } from "../list-messages";
 import { addedMessage, completedMessage, type DueFilter, listMessage } from "../task-messages";
-import { toDateParts, toTimeParts } from "./date-time";
+import { fromDateParts, toDateParts, toTimeParts } from "./date-time";
 import type { DaysService } from "./days";
 import { ApiError, invalidArgument } from "./errors";
+import type { HabitsService } from "./habits";
 import type { JournalService } from "./journal";
 import type { ListsService } from "./lists";
 import { validateMessage } from "./protobuf-validation";
@@ -28,6 +30,7 @@ export class VoiceService {
     private readonly timeZone: string,
     private readonly now: () => Date,
     private readonly lists: { service: ListsService; store: ListStore },
+    private readonly habits: HabitsService,
   ) {}
 
   private today() {
@@ -153,6 +156,24 @@ export class VoiceService {
     return {
       task: completed.task.name,
       message: completedMessage(stored.task, undefined, this.today()),
+    };
+  };
+
+  tickHabit = async (request: ApiRequests["tickHabit"]) => {
+    const { habits } = await this.habits.listHabits({});
+    const habit = findHabit(request.text, habits);
+    if (!habit) {
+      throw new ApiError(404, noHabitSentence(request.text, habits), "not_found");
+    }
+    const daysBack = spokenDaysBack(request.text);
+    const today = Temporal.PlainDate.from(fromDateParts(habit.progress.day));
+    const day = toDateParts(today.subtract({ days: daysBack }).toString());
+    const ticked = await this.habits.markHabit({ name: habit.name, day, done: true });
+    const weekly =
+      ticked.schedule.kind === "KIND_WEEKLY" ? ticked.schedule.timesPerWeek : undefined;
+    return {
+      habit: ticked.name,
+      message: tickedSentence(ticked.displayName, ticked.progress, weekly, daysBack),
     };
   };
 }

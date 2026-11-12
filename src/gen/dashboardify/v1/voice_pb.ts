@@ -11,7 +11,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file dashboardify/v1/voice.proto.
  */
 export const file_dashboardify_v1_voice: GenFile = /*@__PURE__*/
-  fileDesc("ChtkYXNoYm9hcmRpZnkvdjEvdm9pY2UucHJvdG8SD2Rhc2hib2FyZGlmeS52MSJLCg5BZGRUYXNrUmVxdWVzdBIlCgR0ZXh0GAEgASgJQhe6SBRyEhABGKCcATIKKD9zKS4qXFMuKhISCgpyZXF1ZXN0X2lkGAIgASgJIjAKD0FkZFRhc2tSZXNwb25zZRIPCgdtZXNzYWdlGAEgASgJEgwKBHRhc2sYAiABKAkiMwoKTG9nUmVxdWVzdBIlCgR0ZXh0GAEgASgJQhe6SBRyEhABGKCcATIKKD9zKS4qXFMuKiI1CgtMb2dSZXNwb25zZRIPCgdtZXNzYWdlGAEgASgJEhUKDWpvdXJuYWxfZW50cnkYAiABKAkiZAoOQ2hlY2tJblJlcXVlc3QSHwoEZmVlbBgBIAEoCUIRukgOcgwyCl4kfF5bMS01XSQSIwoDcnBlGAIgASgJQha6SBNyETIPXiR8XigxMHxbMC05XSkkEgwKBHRhZ3MYAyABKAkiIgoPQ2hlY2tJblJlc3BvbnNlEg8KB21lc3NhZ2UYASABKAkiIAoOTGlzdER1ZVJlcXVlc3QSDgoGd2luZG93GAEgASgJIiIKD0xpc3REdWVSZXNwb25zZRIPCgdtZXNzYWdlGAEgASgJIj4KFUNvbXBsZXRlQnlUZXh0UmVxdWVzdBIlCgR0ZXh0GAEgASgJQhe6SBRyEhABGKCcATIKKD9zKS4qXFMuKiI3ChZDb21wbGV0ZUJ5VGV4dFJlc3BvbnNlEg8KB21lc3NhZ2UYASABKAkSDAoEdGFzaxgCIAEoCSJeChBBZGRUb0xpc3RSZXF1ZXN0EiQKBGxpc3QYASABKAlCFrpIE3IREAEYyAEyCig/cykuKlxTLioSJAoEdGV4dBgCIAEoCUIWukgTchEQARjQDzIKKD9zKS4qXFMuKiIyChFBZGRUb0xpc3RSZXNwb25zZRIPCgdtZXNzYWdlGAEgASgJEgwKBGxpc3QYAiABKAky8QMKDFZvaWNlU2VydmljZRJMCgdBZGRUYXNrEh8uZGFzaGJvYXJkaWZ5LnYxLkFkZFRhc2tSZXF1ZXN0GiAuZGFzaGJvYXJkaWZ5LnYxLkFkZFRhc2tSZXNwb25zZRJACgNMb2cSGy5kYXNoYm9hcmRpZnkudjEuTG9nUmVxdWVzdBocLmRhc2hib2FyZGlmeS52MS5Mb2dSZXNwb25zZRJMCgdDaGVja0luEh8uZGFzaGJvYXJkaWZ5LnYxLkNoZWNrSW5SZXF1ZXN0GiAuZGFzaGJvYXJkaWZ5LnYxLkNoZWNrSW5SZXNwb25zZRJMCgdMaXN0RHVlEh8uZGFzaGJvYXJkaWZ5LnYxLkxpc3REdWVSZXF1ZXN0GiAuZGFzaGJvYXJkaWZ5LnYxLkxpc3REdWVSZXNwb25zZRJhCg5Db21wbGV0ZUJ5VGV4dBImLmRhc2hib2FyZGlmeS52MS5Db21wbGV0ZUJ5VGV4dFJlcXVlc3QaJy5kYXNoYm9hcmRpZnkudjEuQ29tcGxldGVCeVRleHRSZXNwb25zZRJSCglBZGRUb0xpc3QSIS5kYXNoYm9hcmRpZnkudjEuQWRkVG9MaXN0UmVxdWVzdBoiLmRhc2hib2FyZGlmeS52MS5BZGRUb0xpc3RSZXNwb25zZWIGcHJvdG8z", [file_buf_validate_validate]);
+  fileDesc("ChtkYXNoYm9hcmRpZnkvdjEvdm9pY2UucHJvdG8SD2Rhc2hib2FyZGlmeS52MSJLCg5BZGRUYXNrUmVxdWVzdBIlCgR0ZXh0GAEgASgJQhe6SBRyEhABGKCcATIKKD9zKS4qXFMuKhISCgpyZXF1ZXN0X2lkGAIgASgJIjAKD0FkZFRhc2tSZXNwb25zZRIPCgdtZXNzYWdlGAEgASgJEgwKBHRhc2sYAiABKAkiMwoKTG9nUmVxdWVzdBIlCgR0ZXh0GAEgASgJQhe6SBRyEhABGKCcATIKKD9zKS4qXFMuKiI1CgtMb2dSZXNwb25zZRIPCgdtZXNzYWdlGAEgASgJEhUKDWpvdXJuYWxfZW50cnkYAiABKAkiZAoOQ2hlY2tJblJlcXVlc3QSHwoEZmVlbBgBIAEoCUIRukgOcgwyCl4kfF5bMS01XSQSIwoDcnBlGAIgASgJQha6SBNyETIPXiR8XigxMHxbMC05XSkkEgwKBHRhZ3MYAyABKAkiIgoPQ2hlY2tJblJlc3BvbnNlEg8KB21lc3NhZ2UYASABKAkiIAoOTGlzdER1ZVJlcXVlc3QSDgoGd2luZG93GAEgASgJIiIKD0xpc3REdWVSZXNwb25zZRIPCgdtZXNzYWdlGAEgASgJIj4KFUNvbXBsZXRlQnlUZXh0UmVxdWVzdBIlCgR0ZXh0GAEgASgJQhe6SBRyEhABGKCcATIKKD9zKS4qXFMuKiI3ChZDb21wbGV0ZUJ5VGV4dFJlc3BvbnNlEg8KB21lc3NhZ2UYASABKAkSDAoEdGFzaxgCIAEoCSJeChBBZGRUb0xpc3RSZXF1ZXN0EiQKBGxpc3QYASABKAlCFrpIE3IREAEYyAEyCig/cykuKlxTLioSJAoEdGV4dBgCIAEoCUIWukgTchEQARjQDzIKKD9zKS4qXFMuKiIyChFBZGRUb0xpc3RSZXNwb25zZRIPCgdtZXNzYWdlGAEgASgJEgwKBGxpc3QYAiABKAkiOAoQVGlja0hhYml0UmVxdWVzdBIkCgR0ZXh0GAEgASgJQha6SBNyERABGMgBMgooP3MpLipcUy4qIjMKEVRpY2tIYWJpdFJlc3BvbnNlEg8KB21lc3NhZ2UYASABKAkSDQoFaGFiaXQYAiABKAkyxQQKDFZvaWNlU2VydmljZRJMCgdBZGRUYXNrEh8uZGFzaGJvYXJkaWZ5LnYxLkFkZFRhc2tSZXF1ZXN0GiAuZGFzaGJvYXJkaWZ5LnYxLkFkZFRhc2tSZXNwb25zZRJACgNMb2cSGy5kYXNoYm9hcmRpZnkudjEuTG9nUmVxdWVzdBocLmRhc2hib2FyZGlmeS52MS5Mb2dSZXNwb25zZRJMCgdDaGVja0luEh8uZGFzaGJvYXJkaWZ5LnYxLkNoZWNrSW5SZXF1ZXN0GiAuZGFzaGJvYXJkaWZ5LnYxLkNoZWNrSW5SZXNwb25zZRJMCgdMaXN0RHVlEh8uZGFzaGJvYXJkaWZ5LnYxLkxpc3REdWVSZXF1ZXN0GiAuZGFzaGJvYXJkaWZ5LnYxLkxpc3REdWVSZXNwb25zZRJhCg5Db21wbGV0ZUJ5VGV4dBImLmRhc2hib2FyZGlmeS52MS5Db21wbGV0ZUJ5VGV4dFJlcXVlc3QaJy5kYXNoYm9hcmRpZnkudjEuQ29tcGxldGVCeVRleHRSZXNwb25zZRJSCglBZGRUb0xpc3QSIS5kYXNoYm9hcmRpZnkudjEuQWRkVG9MaXN0UmVxdWVzdBoiLmRhc2hib2FyZGlmeS52MS5BZGRUb0xpc3RSZXNwb25zZRJSCglUaWNrSGFiaXQSIS5kYXNoYm9hcmRpZnkudjEuVGlja0hhYml0UmVxdWVzdBoiLmRhc2hib2FyZGlmeS52MS5UaWNrSGFiaXRSZXNwb25zZWIGcHJvdG8z", [file_buf_validate_validate]);
 
 /**
  * Request for AddTask.
@@ -322,6 +322,55 @@ export const AddToListResponseSchema: GenMessage<AddToListResponse> = /*@__PURE_
   messageDesc(file_dashboardify_v1_voice, 11);
 
 /**
+ * Request for TickHabit.
+ *
+ * @generated from message dashboardify.v1.TickHabitRequest
+ */
+export type TickHabitRequest = Message<"dashboardify.v1.TickHabitRequest"> & {
+  /**
+   * What was said, such as "I meditated" or "read last night".
+   *
+   * @generated from field: string text = 1;
+   */
+  text: string;
+};
+
+/**
+ * Describes the message dashboardify.v1.TickHabitRequest.
+ * Use `create(TickHabitRequestSchema)` to create a new message.
+ */
+export const TickHabitRequestSchema: GenMessage<TickHabitRequest> = /*@__PURE__*/
+  messageDesc(file_dashboardify_v1_voice, 12);
+
+/**
+ * Response for TickHabit.
+ *
+ * @generated from message dashboardify.v1.TickHabitResponse
+ */
+export type TickHabitResponse = Message<"dashboardify.v1.TickHabitResponse"> & {
+  /**
+   * Sentence to speak.
+   *
+   * @generated from field: string message = 1;
+   */
+  message: string;
+
+  /**
+   * The habit ticked, `habits/{habit}`.
+   *
+   * @generated from field: string habit = 2;
+   */
+  habit: string;
+};
+
+/**
+ * Describes the message dashboardify.v1.TickHabitResponse.
+ * Use `create(TickHabitResponseSchema)` to create a new message.
+ */
+export const TickHabitResponseSchema: GenMessage<TickHabitResponse> = /*@__PURE__*/
+  messageDesc(file_dashboardify_v1_voice, 13);
+
+/**
  * Siri Shortcuts only. Takes loose spoken input, calls the other services and
  * returns one sentence to speak. Not AIP resource methods, on purpose.
  *
@@ -387,6 +436,17 @@ export const VoiceService: GenService<{
     methodKind: "unary";
     input: typeof AddToListRequestSchema;
     output: typeof AddToListResponseSchema;
+  },
+  /**
+   * "Did a habit": ticks the habit with the spoken name, today or, with "yesterday" or "last
+   * night", the day before.
+   *
+   * @generated from rpc dashboardify.v1.VoiceService.TickHabit
+   */
+  tickHabit: {
+    methodKind: "unary";
+    input: typeof TickHabitRequestSchema;
+    output: typeof TickHabitResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_dashboardify_v1_voice, 0);

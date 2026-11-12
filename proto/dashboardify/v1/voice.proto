@@ -24,6 +24,10 @@ service VoiceService {
 
   // "Add to list": adds to the list with the spoken name; commas add several.
   rpc AddToList(AddToListRequest) returns (AddToListResponse);
+
+  // "Did a habit": ticks the habit with the spoken name, today or, with "yesterday" or "last
+  // night", the day before.
+  rpc TickHabit(TickHabitRequest) returns (TickHabitResponse);
 }
 
 // Request for AddTask.
@@ -140,4 +144,23 @@ message AddToListResponse {
 
   // The list, `lists/{list}`.
   string list = 2;
+}
+
+// Request for TickHabit.
+message TickHabitRequest {
+  // What was said, such as "I meditated" or "read last night".
+  string text = 1 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 200
+    pattern: "(?s).*\\S.*"
+  }];
+}
+
+// Response for TickHabit.
+message TickHabitResponse {
+  // Sentence to speak.
+  string message = 1;
+
+  // The habit ticked, `habits/{habit}`.
+  string habit = 2;
 }

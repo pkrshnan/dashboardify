@@ -105,6 +105,7 @@ export function v1Services(
     vault.timeZone,
     now,
     { service: listsService, store: listStore },
+    habitsService,
   );
   const events = eventService(settings?.calendars, now, vault.timeZone);
   const captureService = new CaptureService(

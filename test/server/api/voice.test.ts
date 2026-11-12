@@ -63,4 +63,39 @@ describe("voice add to list", () => {
     expect(status).toBe(404);
     expect(body.message).toBe("There's no list called films. Your lists are Shopping.");
   });
+
+  describe("TickHabit", () => {
+    const tick = (text: string) =>
+      api.call("/dashboardify.v1.VoiceService/TickHabit", "POST", { text });
+    const habit = (displayName: string, schedule: object) =>
+      api.call("/v1/habits", "POST", { displayName, schedule });
+
+    test("ticks the habit said today and speaks the streak", async () => {
+      await habit("Meditate", { kind: "KIND_DAILY" });
+
+      const { status, body } = await tick("I meditated");
+
+      expect(status).toBe(200);
+      expect(body).toEqual({ habit: "habits/meditate", message: "Ticked Meditate. 1 day." });
+      expect(await api.vaultFile("daily/2026/2026-11-03.md")).toContain("habits:\n  - meditate");
+    });
+
+    test("last night ticks yesterday; a weekly habit says how the week is going", async () => {
+      await habit("Lift", { kind: "KIND_WEEKLY", timesPerWeek: 3 });
+
+      const { body } = await tick("lifted last night");
+
+      expect(body.message).toBe("Ticked Lift for yesterday. 1 of 3 this week.");
+      expect(await api.vaultFile("daily/2026/2026-11-02.md")).toContain("habits:\n  - lift");
+    });
+
+    test("a habit that isn't there comes back as a sentence", async () => {
+      await habit("Read", { kind: "KIND_DAILY" });
+
+      const { status, body } = await tick("juggled");
+
+      expect(status).toBe(404);
+      expect(body.message).toBe("There's no habit called juggled. Your habits are Read.");
+    });
+  });
 });

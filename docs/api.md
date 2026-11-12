@@ -190,3 +190,4 @@ RPC only, for Siri. Each response has a `message` to speak.
 | `…/ListDue` | `window`: `today`, `overdue`, `week` | Summarise open tasks |
 | `…/CompleteByText` | `text` | Complete the closest open task |
 | `…/AddToList` | `list`, `text` | Add to the list with that spoken name; commas and "and" separate items |
+| `…/TickHabit` | `text` | Tick the habit said ("I meditated"), the day before with "yesterday" or "last night"; speaks the streak |
