@@ -197,7 +197,11 @@ function HabitRow(props: {
       style={{ "--habit-color": habit.color || "var(--control)" }}
     >
       <div class="habit-label">
-        <TickButton habit={habit} onTick={(done) => tick(habit.progress.day, done)} />
+        <TickButton
+          habit={habit}
+          done={doneOn(days, habit.progress.day) ?? habit.progress.done}
+          onTick={(done) => tick(habit.progress.day, done)}
+        />
         <a class="habit-name" href={href(`/habits/${habit.id}`)}>
           <span class="habit-title">{habit.displayName}</span>
           <span class="habit-sub">{subLine(habit, props.facts)}</span>
@@ -218,9 +222,18 @@ function subLine(habit: HabitView, facts: FactView[]): string {
   return [scheduleLabel(habit.schedule), rule].filter(Boolean).join(" · ");
 }
 
-function TickButton(props: { habit: HabitView; onTick: (done: boolean) => void }) {
-  const { habit } = props;
-  const done = habit.progress.done;
+/** Whether the row's days say `date` is done, or null before they've loaded. */
+function doneOn(days: HabitDayView[], date: string): boolean | null {
+  const day = days.find((d) => d.date === date);
+  return day ? day.mark === "done" : null;
+}
+
+/**
+ * Today's tick. `done` comes from the row's days, which a tick changes at once, so the button
+ * doesn't wait for the habits list to reload.
+ */
+function TickButton(props: { habit: HabitView; done: boolean; onTick: (done: boolean) => void }) {
+  const { habit, done } = props;
   return (
     <button
       type="button"

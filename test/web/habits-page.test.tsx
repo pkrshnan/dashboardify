@@ -104,6 +104,23 @@ describe("Habits page", () => {
     ]);
   });
 
+  test("the tick shows at once, before the server answers", async () => {
+    const page = showHabits();
+    await page.findAllByText("Read");
+    await waitFor(() => expect(page.container.querySelectorAll(".habit-cell.done").length).toBe(2));
+    let answer: () => void = () => undefined;
+    const slow = globalThis.fetch;
+    globalThis.fetch = ((url: string, init?: RequestInit) =>
+      new Promise<Response>((resolve) => {
+        answer = () => resolve(slow(url, init));
+      })) as typeof fetch;
+
+    fireEvent.click(page.getByRole("button", { name: "Tick Read for today" }));
+
+    expect(page.getByRole("button", { name: "Untick Read for today" })).toBeTruthy();
+    answer();
+  });
+
   test("adds a habit three times a week that ticks itself from steps", async () => {
     const page = showHabits({ habit: "new" });
     await page.findByText("New habit");
