@@ -43,11 +43,13 @@ interface Props {
   token: Token;
   timeZone: string;
   today: string;
+  /** Week, month or 3M, from the address (`?range=month`). */
+  range: Range;
+  onRange: (range: Range) => void;
   onUnauthorized: (setup: boolean) => void;
 }
 
-export function Activity({ token, timeZone, today, onUnauthorized }: Props) {
-  const [range, setRange] = useState<Range>("week");
+export function Activity({ token, timeZone, today, range, onRange, onUnauthorized }: Props) {
   const [days, setDays] = useState<ActivityDayView[] | null>(null);
   const [selected, setSelected] = useState<Selection>({ day: today });
   const side = useRef<HTMLElement>(null);
@@ -73,7 +75,7 @@ export function Activity({ token, timeZone, today, onUnauthorized }: Props) {
     await load();
   };
   const changeRange = (r: Range) => {
-    setRange(r);
+    onRange(r);
     setSelected(r === "3m" ? { week: monday(today) } : { day: today });
   };
   const select = (s: Selection) => {
@@ -93,9 +95,6 @@ export function Activity({ token, timeZone, today, onUnauthorized }: Props) {
       <section class="section">
         <div class="section-head">
           <div class="activity-title">
-            <a class="back" href="#home">
-              ‹ Home
-            </a>
             <h1>Activity</h1>
           </div>
           <div class="activity-range">

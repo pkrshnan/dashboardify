@@ -1,7 +1,8 @@
-// The Settings page, a `#settings` view (the web app has no router). Desktop: a section list
-// beside the section. Phone: the list, which pushes to each section.
+// The Settings page, at `#/settings/<section>`. Desktop: a section list beside the section.
+// Phone: the list, which pushes to each section; the tab bar is the way out.
 
 import type { Token } from "../api";
+import { href } from "../lib/router";
 import { Calendars } from "./calendars";
 import { Devices } from "./devices";
 import { General } from "./general";
@@ -32,11 +33,6 @@ export function Settings({ section, isPhone, ...props }: Props) {
   const View = shown ? VIEWS[shown] : undefined;
   return (
     <main class="settings">
-      <header class="settings-top">
-        <a class="settings-back" href="#home">
-          ‹ Home
-        </a>
-      </header>
       <div class="settings-grid">
         <nav aria-label="Settings sections">
           <h1>Settings</h1>
@@ -54,9 +50,6 @@ function PhoneSettings({ section, ...props }: SectionProps & { section?: string 
   if (!View) {
     return (
       <main class="settings phone">
-        <a class="settings-back" href="#home">
-          ‹ Home
-        </a>
         <h1>Settings</h1>
         <SectionList current={undefined} />
       </main>
@@ -64,7 +57,7 @@ function PhoneSettings({ section, ...props }: SectionProps & { section?: string 
   }
   return (
     <main class="settings phone">
-      <a class="settings-back" href="#settings">
+      <a class="settings-back" href={href("/settings")}>
         ‹ Settings
       </a>
       <View {...props} />
@@ -78,7 +71,7 @@ function SectionList({ current }: { current: string | undefined }) {
       {SECTIONS.map((s) => (
         <a
           key={s.id}
-          href={`#settings/${s.id}`}
+          href={href(`/settings/${s.id}`)}
           aria-current={s.id === current ? "page" : undefined}
         >
           {s.title}

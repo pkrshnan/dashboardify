@@ -1,23 +1,34 @@
 // The Day view: all-day events in a row on top, then hour lines from an hour before now to 22:00,
-// event blocks on the left, timed tasks as dashed pills in a lane on the right, and a red line for
-// now. An event the capture box is still saving has a stronger fill and a ring. Tapping a
-// calendar event opens it.
+// scrollable up to the day's first event or task so past ones can still be ticked off. Event
+// blocks on the left, timed tasks as dashed pills in a lane on the right, and a red line for now.
+// An event the capture box is still saving has a stronger fill and a ring. Tapping a calendar
+// event opens it; tapping a pill's ring ticks it off or, once done, opens it again.
 
+import type { ComponentChildren } from "preact";
+import { useLayoutEffect, useRef } from "preact/hooks";
 import type { AgendaEvent, DayAgenda } from "../../src/home/types";
 import { alpha, CATEGORY, TEXT, TEXT_2, TEXT_3 } from "../lib/colors";
 import { hourLabel } from "../lib/format";
-import { type Block, hourRange, layoutBlocks, layoutPills, type Pill } from "../lib/timeline";
+import {
+  type Block,
+  type HourRange,
+  hourRange,
+  layoutBlocks,
+  layoutPills,
+  type Pill,
+} from "../lib/timeline";
 
 interface Props {
   day: DayAgenda;
   nowMin: number;
   isPhone: boolean;
   onComplete: (id: string) => void;
+  onReopen: (id: string) => void;
   /** Opens the event panel for "events/{id}". */
   onOpen?: (event: string) => void;
 }
 
-export function DayTimeline({ day, nowMin, isPhone, onComplete, onOpen }: Props) {
+export function DayTimeline({ day, nowMin, isPhone, onComplete, onReopen, onOpen }: Props) {
   const hourPx = isPhone ? 56 : 52;
   const range = hourRange(nowMin, day.events, day.reminders);
   const hours = Array.from(
@@ -31,36 +42,73 @@ export function DayTimeline({ day, nowMin, isPhone, onComplete, onOpen }: Props)
   return (
     <>
       <AllDayRow events={day.allDay} onOpen={onOpen} />
-      <div class="timeline" style={{ height: `${(range.endHour - range.startHour) * hourPx}px` }}>
-        {hours.map((h) => (
-          <div key={h}>
-            <span class="hour-label" style={{ top: `${(h - range.startHour) * hourPx}px` }}>
-              {hourLabel(h)}
-            </span>
-            <div class="hour-line" style={{ top: `${(h - range.startHour) * hourPx}px` }} />
-          </div>
-        ))}
-        {pills.map((p) => (
-          <div key={`g${p.reminder.id}`} class="reminder-guide" style={{ top: `${p.lineTop}px` }} />
-        ))}
-        {blocks.map((b, i) => (
-          <EventBlock
-            key={`${b.event.start}-${i}`}
-            block={b}
-            width={eventWidth}
-            isPhone={isPhone}
-            onOpen={onOpen}
-          />
-        ))}
-        {pills.map((p) => (
-          <ReminderPill key={p.reminder.id} pill={p} isPhone={isPhone} onComplete={onComplete} />
-        ))}
-        {blocks.length === 0 && pills.length === 0 && day.allDay.length === 0 && (
-          <div class="empty-day">Nothing on the calendar.</div>
-        )}
-        {nowTop >= 0 && <div class="now-line" style={{ top: `${nowTop}px` }} />}
-      </div>
+      <TimelineScroll range={range} hourPx={hourPx}>
+        <div class="timeline" style={{ height: `${(range.endHour - range.startHour) * hourPx}px` }}>
+          {hours.map((h) => (
+            <div key={h}>
+              <span class="hour-label" style={{ top: `${(h - range.startHour) * hourPx}px` }}>
+                {hourLabel(h)}
+              </span>
+              <div class="hour-line" style={{ top: `${(h - range.startHour) * hourPx}px` }} />
+            </div>
+          ))}
+          {pills.map((p) => (
+            <div
+              key={`g${p.reminder.id}`}
+              class="reminder-guide"
+              style={{ top: `${p.lineTop}px` }}
+            />
+          ))}
+          {blocks.map((b, i) => (
+            <EventBlock
+              key={`${b.event.start}-${i}`}
+              block={b}
+              width={eventWidth}
+              isPhone={isPhone}
+              onOpen={onOpen}
+            />
+          ))}
+          {pills.map((p) => (
+            <ReminderPill
+              key={p.reminder.id}
+              pill={p}
+              isPhone={isPhone}
+              onComplete={onComplete}
+              onReopen={onReopen}
+            />
+          ))}
+          {blocks.length === 0 && pills.length === 0 && day.allDay.length === 0 && (
+            <div class="empty-day">Nothing on the calendar.</div>
+          )}
+          {nowTop >= 0 && <div class="now-line" style={{ top: `${nowTop}px` }} />}
+        </div>
+      </TimelineScroll>
     </>
+  );
+}
+
+/** Room above the first hour and below the last, so their labels aren't cut off. */
+const SCROLL_PAD_PX = 10;
+
+/** As tall as the hours from `viewHour` on, and opened scrolled down to it. */
+function TimelineScroll(props: { range: HourRange; hourPx: number; children: ComponentChildren }) {
+  const { range, hourPx } = props;
+  const scroller = useRef<HTMLDivElement>(null);
+  const hiddenPx = (range.viewHour - range.startHour) * hourPx;
+  // Again when the view hour or the earliest item moves, so it never opens on the early hours.
+  useLayoutEffect(() => {
+    if (scroller.current) {
+      scroller.current.scrollTop = hiddenPx;
+    }
+  }, [hiddenPx]);
+  return (
+    <div
+      ref={scroller}
+      class="timeline-scroll"
+      style={{ maxHeight: `${(range.endHour - range.viewHour) * hourPx + 2 * SCROLL_PAD_PX}px` }}
+    >
+      {props.children}
+    </div>
   );
 }
 
@@ -99,7 +147,7 @@ interface Opener {
 }
 
 /** Makes an event's block open the panel, for a calendar event that has finished saving. */
-function opener(event: AgendaEvent, onOpen?: (event: string) => void): Partial<Opener> {
+export function opener(event: AgendaEvent, onOpen?: (event: string) => void): Partial<Opener> {
   const name = event.event;
   if (!(name && onOpen) || event.pending) {
     return {};
@@ -176,7 +224,7 @@ function EventBlock(props: {
         </>
       )}
       {isPhone && !block.oneLine && (
-        <div class="ell" style={{ color: detailColor, fontSize: "12px", lineHeight: "16px" }}>
+        <div class="ell event-detail" style={{ color: detailColor }}>
           {detail}
         </div>
       )}
@@ -210,7 +258,12 @@ function blockFill(block: Block): number {
   return block.next ? 0.25 : 0.15;
 }
 
-function ReminderPill(props: { pill: Pill; isPhone: boolean; onComplete: (id: string) => void }) {
+function ReminderPill(props: {
+  pill: Pill;
+  isPhone: boolean;
+  onComplete: (id: string) => void;
+  onReopen: (id: string) => void;
+}) {
   const { reminder, top } = props.pill;
   return (
     <label class={`reminder${reminder.done ? " done" : ""}`} style={{ top: `${top}px` }}>
@@ -218,9 +271,10 @@ function ReminderPill(props: { pill: Pill; isPhone: boolean; onComplete: (id: st
         type="checkbox"
         class="ring sm"
         checked={reminder.done}
-        disabled={reminder.done}
-        aria-label={reminder.done ? "Done" : `Mark ${reminder.text} done`}
-        onChange={() => props.onComplete(reminder.id)}
+        aria-label={`Mark ${reminder.text} ${reminder.done ? "not done" : "done"}`}
+        onChange={() =>
+          reminder.done ? props.onReopen(reminder.id) : props.onComplete(reminder.id)
+        }
       />
       {props.isPhone ? (
         <span class="reminder-body">

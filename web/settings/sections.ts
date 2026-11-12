@@ -11,9 +11,8 @@ export const SECTIONS: SettingsSection[] = [
   { id: "calendars", title: "Calendars" },
 ];
 
-/** "#settings", "#settings/general" → the section to show, or undefined for the list (phone). */
-export function sectionFromHash(hash: string): string | undefined {
-  const [, id] = hash.replace(/^#/, "").split("/");
+/** The address's section ("general"), or undefined for the list (phone) or an unknown one. */
+export function knownSection(id: string | undefined): string | undefined {
   return SECTIONS.some((s) => s.id === id) ? id : undefined;
 }
 
