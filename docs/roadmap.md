@@ -28,6 +28,7 @@ Apple Reminders.
 | Calendar | One iCloud account over CalDAV, read and write, plus read-only ICS links ([calendar.md](calendar.md)) |
 | Tasks | Obsidian Tasks lines anywhere in the vault; new ones go to the inbox note |
 | Health | Raw data off the Whoop strap through healthstrap, metrics computed here ([health-metrics.md](health-metrics.md)) |
+| Runs | From the Strava API, polled; you record only the running part ([strava.md](strava.md)) |
 | Design | Apple-native, dark mode only for now ([design/README.md](design/README.md)) |
 | Delivery | Small stacked PRs, each passing `bun run check` with tests and doc updates. A feature first gets a plan doc with a numbered PR list; UI waits for approved artboards. |
 
@@ -56,7 +57,7 @@ Apple Reminders.
 | 3 | Lists (shopping): one note per list in `Lists/`, which tasks skip | Built: [lists.md](lists.md) |
 | 4 | Journal page: the day's journal and check-in | Needs a plan |
 | 5 | The rest of health: sleep stages, calories, training load, VO2max, biological age | Needs a plan |
-| 6 | Runs: distance, pace and route. Apple Health through a Shortcut, or the Strava API. | Open question |
+| 6 | Runs from Strava: split walk-run-walk outings, distance and pace | Planned: [strava.md](strava.md) (ST1–ST5) |
 | 7 | "Log journal" Shortcut recipe | Not started |
 | 8 | Home screen: unusual health rows first, a strain target from recovery, light mode | Not started |
 | 9 | Recovery feedback, next steps ([health-feedback.md](health-feedback.md#next)) | Not started |
@@ -66,7 +67,6 @@ Apple Reminders.
 
 ## Open questions
 
-- [ ] Runs: Apple Health or Strava?
 - [ ] Which mail accounts (iCloud, Gmail, work)?
 - [ ] Which local model fits the server?
 - [ ] Capture "Dentist Friday" (no time) as an all-day event or a dated task?

@@ -27,6 +27,7 @@ Read the one for the area you change.
 | [api.md](docs/api.md) | Every v1 endpoint and its conventions |
 | [vault-format.md](docs/vault-format.md) | What the server writes into notes |
 | [calendar.md](docs/calendar.md) | CalDAV, ICS links, cache and sync, capture |
+| [strava.md](docs/strava.md) | Plan ST1–ST5: Strava runs, splitting walk-run-walk |
 | [settings.md](docs/settings.md) | `settings.db`, secrets, devices, CLI, Settings page |
 | [health-metrics.md](docs/health-metrics.md) | How each health number is computed |
 | [health-feedback.md](docs/health-feedback.md) | Check-ins and re-fitting recovery |
