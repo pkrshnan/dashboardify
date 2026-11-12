@@ -394,6 +394,59 @@ describe("DailySummary", () => {
     expect((await derived.readAll("workouts", DATE))[0]?.kcal).toBe(Math.round(kcal));
   });
 
+  test("a Strava run inside the strap's session takes its window, distance and pace", async () => {
+    await putNight();
+    await writeProfile();
+    await putRun();
+    const start = Date.parse("2026-11-02T18:05:00-08:00");
+    const runs = {
+      between: (from: number, to: number) =>
+        [{ id: 42, start, elapsedSeconds: 30 * 60, distanceMeters: 5000 }].filter(
+          (r) => r.start >= from && r.start < to,
+        ),
+    };
+    const now = () => Date.parse("2026-11-03T12:00:00-08:00");
+
+    await new DailySummary(raw, derived, vault, TZ, now, runs).run(DATE);
+
+    const note = await vault.readDaily(DATE);
+    expect(note?.body).toMatch(
+      /- Running 18:05–18:35 · 30 min · 5\.0 km · 6:00 \/km · 165 avg \/ 165 max · strain \d/,
+    );
+    const rows = await derived.readAll("workouts", DATE);
+    expect(rows).toEqual([
+      expect.objectContaining({ status: "confirmed", strava_id: 42, distance_m: 5000 }),
+    ]);
+    // The strap's minutes either side of the run are free again: five each, next to the run.
+    const walks = await derived.readAll("walks", DATE);
+    expect(walks.map((w) => w.duration_min)).toEqual([5, 5]);
+  });
+
+  test("a Strava run's calories cover only its own window", async () => {
+    await putNight();
+    await writeProfile("weight_kg: 75\nheight_cm: 180\n");
+    await putRun();
+    const start = Date.parse("2026-11-02T18:05:00-08:00");
+    const runs = {
+      between: (from: number, to: number) =>
+        [{ id: 42, start, elapsedSeconds: 30 * 60, distanceMeters: 5000 }].filter(
+          (r) => r.start >= from && r.start < to,
+        ),
+    };
+    const now = () => Date.parse("2026-11-03T12:00:00-08:00");
+    const whole = (await summary.run(DATE))?.day.workouts[0]?.kcal ?? 0;
+
+    const result = await new DailySummary(raw, derived, vault, TZ, now, runs).run(DATE);
+
+    // 30 of the strap's 40 minutes, all at the same heart rate.
+    const kcal = result?.day.workouts[0]?.kcal ?? 0;
+    expect(kcal).toBeCloseTo((whole * 30) / 40, 0);
+    const note = await vault.readDaily(DATE);
+    expect(note?.body).toMatch(
+      new RegExp(`- Running 18:05–18:35 · 30 min · 5\\.0 km · .* · ${Math.round(kcal)} kcal\n`),
+    );
+  });
+
   test("a day with no night before borrows the closest night's resting HR", async () => {
     // No night before DATE and no earlier nights, as on the day the strap was first worn.
     await writeProfile();

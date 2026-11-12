@@ -121,6 +121,9 @@ export class ActivityService {
       cadence: num(row.cadence_spm),
       strain: num(row.strain),
       calories: typeof row.kcal === "number" ? row.kcal : undefined,
+      // Rows from before Strava have no such columns; null is "not from Strava" too.
+      distanceMeters: typeof row.distance_m === "number" ? row.distance_m : undefined,
+      stravaActivityId: typeof row.strava_id === "number" ? row.strava_id : undefined,
     };
   }
 

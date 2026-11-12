@@ -26,11 +26,15 @@ export interface SetClimb {
 }
 
 /**
- * Every distinct HR climb of at least `minClimb` bpm in `span`, oldest first. Where two peak within
- * a minute of each other, the bigger one is kept. `samples` is HR about once a second, sorted.
+ * Every distinct HR climb of at least `minClimb` bpm peaking in `span`, oldest first. Where two
+ * peak within a minute of each other, the bigger one is kept. `samples` is HR about once a second,
+ * sorted. A session starts at its first peak, so the low point before it is looked for before the
+ * span.
  */
 export function climbs(samples: HeartRate[], span: Span, minClimb = MIN_CLIMB_BPM): SetClimb[] {
-  return distinct(peaks(smoothed(samples.filter((s) => s.ts >= span.start && s.ts < span.end))))
+  const from = span.start - LOOK_BACK_MS - SMOOTH_MS;
+  const series = smoothed(samples.filter((s) => s.ts >= from && s.ts < span.end));
+  return distinct(peaks(series).filter((c) => c.peak >= span.start))
     .filter((c) => c.climb >= minClimb)
     .sort((a, b) => a.peak - b.peak);
 }

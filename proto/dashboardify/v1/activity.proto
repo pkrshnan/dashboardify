@@ -114,9 +114,6 @@ message Workout {
   // Strain on the 0–21 scale.
   double strain = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // Kcal burned over the workout. Unset without weight, height, age and sex in the profile.
-  optional double calories = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
-
   // GetWorkout only: heart rate every 15 seconds from `heart_rate_start_time`, from 5 minutes
   // before the start to 5 after the end. 0 where the strap had nothing.
   repeated float heart_rate = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -126,6 +123,15 @@ message Workout {
 
   // GetWorkout only, for lifting: the logged sets, in order.
   repeated LiftingSet sets = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Runs recorded in Strava: the distance it measured.
+  optional double distance_meters = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Runs recorded in Strava: the activity, at strava.com/activities/{id}.
+  optional int64 strava_activity_id = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Kcal burned over the workout. Unset without weight, height, age and sex in the profile.
+  optional double calories = 16 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // A walk: steady stepping outside workouts.
