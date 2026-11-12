@@ -62,6 +62,9 @@ export interface Workout {
   cadence: number;
   trimp: number;
   strain: number;
+  /** Runs recorded in Strava only (see runs.ts). */
+  distanceMeters?: number;
+  stravaId?: number;
 }
 
 export interface WorkoutInput {

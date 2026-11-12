@@ -30,6 +30,17 @@ describe("reviewed workouts", () => {
     expect(found.map((w) => w.status)).toEqual(["possible", "possible", "detected"]);
   });
 
+  test("a run recorded in Strava is confirmed, unless you reviewed it", () => {
+    const run = { ...workout("running", 0, 30), stravaId: 42, distanceMeters: 5000 };
+    const review = { span: { start: T0, end: T0 + 30 * MIN }, kind: "walking" as const };
+
+    const [plain] = reviewWorkouts([run], [], noLog);
+    const [reviewed] = reviewWorkouts([run], [review], noLog);
+
+    expect(plain).toMatchObject({ kind: "running", status: "confirmed" });
+    expect(reviewed).toMatchObject({ kind: "walking", status: "confirmed" });
+  });
+
   test("the session the lifting log matched is confirmed lifting", () => {
     const [found] = reviewWorkouts([workout("workout", 0, 45)], [], {
       session: { start: T0, end: T0 + 45 * MIN },

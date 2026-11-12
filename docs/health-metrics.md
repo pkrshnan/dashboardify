@@ -94,6 +94,9 @@ healthstrap, so steps are provisional.
    volleyball (30%+ at 20–89 steps and 20%+ with motion ≥ 0.35), lifting (spiking and calming,
    60%+ under 20 steps, under 20% bursts), else workout.
 7. Each gets its own TRIMP and strain.
+8. **Strava runs** ([strava.md](strava.md)): a run's window, rounded to the nearest minute,
+   replaces any workout it overlaps and is `CONFIRMED` running with its distance. The rest of that
+   workout goes back to the walk finder.
 
 Checked against only a few sessions, and no runs yet, so names are provisional. Uncertain ones
 are `POSSIBLE` and asked about on the Activity page.
@@ -114,7 +117,8 @@ Volume is weight × reps, in pounds.
 ## Walks (`walks.ts`)
 
 From steps alone: minutes at 60+ steps, joined across stops up to 3 min, 10+ min long, outside
-workouts and sleep. Each has steps, median cadence and brisk minutes (100+ steps, about 3 METs).
+workouts and sleep (5+ min when it ends or starts within 3 min of a Strava run). Each has steps,
+median cadence and brisk minutes (100+ steps, about 3 METs).
 
 ## Recovery (`recovery.ts`)
 
