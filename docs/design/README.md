@@ -89,6 +89,18 @@ ticks in the server's time zone), the stage totals and "Estimated", plus "· unu
 the stages look unlike yours. Links step to the night before or after and replace the history
 entry, so Back leaves the page. Every row and the range label are as of that night's day.
 
+## Habits page
+
+`#/habits`; canvas https://claude.ai/artifact/PQe6S6nfjyGt242ui4udNK. A row per habit: a 20 px
+tick for today beside the name (22 px, 44 px to tap, on the phone), the schedule and what ticks
+it, the streak in large type with the 30-day count under it, or this week as dots for a weekly
+habit. To the right, a GitHub-style grid of 36 weeks (23 on the phone), Monday at the top: the
+habit's colour when done, `#2A2A2E` when missed, an outline when not scheduled, a dashed outline
+while its fact is pending, a ring on today. Narrow windows drop the oldest weeks. On desktop a
+square is a button that fixes its day; on the phone a habit's screen has this week's seven days
+to tap. The selected habit's settings sit beside the list. A streak at risk is `warn` orange; a
+paused habit's done squares are its colour at 40%.
+
 ## Look
 
 Dark mode only (`color-scheme: dark`), Apple's dark system colours. Past items dim by colour and
@@ -125,7 +137,8 @@ No explanatory labels.
 Recovery's band colour shows only in the focus row, always beside its number. The sentence has no
 colour.
 
-**Controls:** segmented controls on `fill` with a `control` selected segment; checkboxes are
+**Controls:** segmented controls on `fill` with a `control` selected segment; dropdowns are
+`PickMenu` (a `fill` pill and a menu with a tick by the current choice), never a bare `<select>`; checkboxes are
 1.5 px `control` rings that fill when done; touch targets 44 px on the phone; task rows are the
 hit area.
 

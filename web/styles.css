@@ -45,7 +45,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
   color: inherit;
 }
@@ -2727,13 +2728,13 @@ button.link {
   gap: 8px;
 }
 
-/* The section to add to: a quiet pill, and the menu it opens over the list. */
-.list-pick {
+/* The app's dropdown (components/pick-menu.tsx): a pill and the menu it opens. */
+.pick {
   position: relative;
   flex: none;
 }
 
-.list-pick-button {
+.pick-button {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2748,12 +2749,12 @@ button.link {
   cursor: pointer;
 }
 
-.list-pick-button:hover,
-.list-pick-button[aria-expanded="true"] {
+.pick-button:hover,
+.pick-button[aria-expanded="true"] {
   color: var(--text);
 }
 
-.list-pick-button svg {
+.pick-button svg {
   flex: none;
   fill: none;
   stroke: currentColor;
@@ -2762,7 +2763,7 @@ button.link {
   stroke-linejoin: round;
 }
 
-.list-pick-menu {
+.pick-menu {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
@@ -2773,6 +2774,8 @@ button.link {
   max-width: 280px;
   max-height: 320px;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-3) transparent;
   padding: 5px;
   border: 1px solid var(--line-3);
   border-radius: 12px;
@@ -2780,7 +2783,7 @@ button.link {
   box-shadow: 0 12px 32px rgb(0 0 0 / 0.5);
 }
 
-.list-pick-menu button {
+.pick-menu button {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -2796,14 +2799,14 @@ button.link {
   position: relative;
 }
 
-.list-pick-menu button:hover,
-.list-pick-menu button:focus-visible {
+.pick-menu button:hover,
+.pick-menu button:focus-visible {
   background: var(--line-2);
   outline: none;
 }
 
-/* A tick beside the section items go to now. */
-.list-pick-menu button[aria-checked="true"]::before {
+/* A tick beside the current choice. */
+.pick-menu button[aria-checked="true"]::before {
   content: "";
   position: absolute;
   left: 12px;
@@ -2815,11 +2818,27 @@ button.link {
   transform: translateY(-65%) rotate(45deg);
 }
 
-.list-pick-menu .list-pick-new {
+.pick-menu .pick-apart {
   margin-top: 5px;
   border-top: 1px solid var(--line-3);
   border-radius: 0 0 7px 7px;
   color: var(--text-2);
+}
+
+.pick.wide .pick-button {
+  width: 100%;
+  max-width: none;
+  justify-content: space-between;
+  border: 1px solid var(--line-2);
+  color: var(--text);
+  font-size: var(--type-body);
+}
+
+.pick.wide .pick-menu {
+  left: 0;
+  right: 0;
+  max-width: none;
+  max-height: 420px;
 }
 
 .list-new-section {
@@ -3038,12 +3057,12 @@ button.link {
   min-height: 52px;
 }
 
-.lists.phone .list-pick-button {
+.lists.phone .pick-button {
   height: 44px;
   max-width: 120px;
 }
 
-.lists.phone .list-pick-menu button {
+.lists.phone .pick-menu button {
   min-height: 44px;
 }
 
@@ -3205,4 +3224,546 @@ button.link {
 .night-steps .link-button {
   font-size: var(--type-footnote);
   min-height: 44px;
+}
+
+/* ---- Habits (docs/habits.md#web) ---- */
+
+.habits {
+  max-width: 1320px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  min-height: 100vh;
+}
+
+.habit-list {
+  padding: 32px 40px 64px;
+  min-width: 0;
+}
+
+.habit-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.habit-heading {
+  margin: 0;
+  font-size: var(--type-large);
+  font-weight: 300;
+}
+
+.habit-head p {
+  margin: 4px 0 0;
+  font-size: var(--type-footnote);
+}
+
+.habit-new {
+  padding: 7px 14px;
+  border: 1px solid var(--line-3);
+  border-radius: 8px;
+  background: var(--fill);
+  color: var(--text);
+  font-size: var(--type-footnote);
+  text-decoration: none;
+}
+
+/* The grid and the months over it are right-aligned and clip on the left, so a narrow window
+   drops the oldest weeks instead of scrolling. */
+.habit-months {
+  display: flex;
+  justify-content: flex-end;
+  gap: 3px;
+  margin-left: 248px;
+  padding-right: 14px;
+  height: 16px;
+  overflow: hidden;
+}
+
+.habit-months span {
+  flex: 0 0 12px;
+  font-size: var(--type-caption);
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+.habit-row {
+  display: flex;
+  gap: 24px;
+  padding: 14px 12px;
+  border-radius: 12px;
+}
+
+.habit-row.selected {
+  background: #161618;
+}
+
+.habit-label {
+  flex: 0 0 212px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.habit-tick {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin: -4px -4px 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.habit-tick-ring {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid var(--control);
+  border-radius: 50%;
+}
+
+.habit-tick[aria-pressed="true"] .habit-tick-ring {
+  border-color: var(--habit-color);
+  background: var(--habit-color);
+}
+
+.habit-tick svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: var(--bg);
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.habit-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.habit-title {
+  font-size: var(--type-headline);
+  font-weight: 600;
+}
+
+.habit-sub,
+.habit-note {
+  font-size: var(--type-footnote);
+  color: var(--text-2);
+}
+
+.habit-note {
+  color: var(--text-3);
+}
+
+.habit-streak {
+  margin-top: 8px;
+  font-size: var(--type-footnote);
+  color: var(--text-2);
+}
+
+.habit-streak-n {
+  font-size: var(--type-large);
+  font-weight: 300;
+  color: var(--text);
+}
+
+.habit-streak.at-risk .habit-streak-n,
+.habit-note.at-risk {
+  color: var(--warn);
+}
+
+.habit-dots {
+  display: flex;
+  gap: 5px;
+  height: 17px;
+  align-items: center;
+}
+
+.habit-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--line-3);
+}
+
+.habit-dots span.on {
+  background: var(--habit-color);
+}
+
+.habit-row.paused .habit-title {
+  color: var(--text-3);
+}
+
+.habit-grid {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 3px;
+  align-self: center;
+  margin: 0;
+  padding: 2px;
+  border: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.habit-week {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.habit-cell {
+  display: block;
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+}
+
+button.habit-cell {
+  cursor: pointer;
+}
+
+.habit-cell.done {
+  background: var(--habit-color);
+}
+
+.habit-row.paused .habit-cell.done {
+  background: color-mix(in srgb, var(--habit-color) 40%, transparent);
+}
+
+.habit-cell.missed {
+  background: #2a2a2e;
+}
+
+.habit-cell.off {
+  outline: 1px solid var(--line-3);
+  outline-offset: -1px;
+}
+
+.habit-cell.pending {
+  outline: 1px dashed var(--control);
+  outline-offset: -1px;
+}
+
+.habit-cell.today {
+  box-shadow: 0 0 0 1.5px var(--text);
+}
+
+.habit-panel {
+  padding: 32px 28px 64px;
+  border-left: 1px solid var(--line-2);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.habit-panel-title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.habit-path {
+  margin: -14px 0 0;
+  font-size: var(--type-footnote);
+  color: var(--text-3);
+}
+
+.habit-back {
+  color: var(--link);
+  font-size: var(--type-body);
+  text-decoration: none;
+}
+
+.habit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.habit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.habit-field > span,
+.habit-rule > span {
+  font-size: var(--type-footnote);
+  color: var(--text-2);
+}
+
+.habit-input {
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  background: var(--fill);
+  font-size: var(--type-body);
+  color-scheme: dark;
+  appearance: none;
+}
+
+.habit-stepper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: var(--type-headline);
+}
+
+.habit-step {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line-3);
+  border-radius: 50%;
+  background: var(--fill);
+  font-size: var(--type-headline);
+  cursor: pointer;
+}
+
+.habit-stepper span {
+  min-width: 130px;
+  text-align: center;
+}
+
+.habit-days,
+.habit-colours,
+.habit-this-week {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.habit-day {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--fill);
+  color: var(--text-2);
+  font-size: var(--type-footnote);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.habit-day[aria-pressed="true"] {
+  background: var(--control);
+  color: var(--text);
+}
+
+.habit-hint {
+  margin: 0;
+  font-size: var(--type-footnote);
+  color: var(--text-3);
+  line-height: 1.4;
+}
+
+.habit-rule {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.habit-rule .habit-input {
+  width: 120px;
+}
+
+.habit-colours {
+  gap: 12px;
+  padding-left: 4px;
+}
+
+.habit-swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--swatch);
+  cursor: pointer;
+}
+
+.habit-swatch[aria-pressed="true"] {
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 4px var(--swatch);
+}
+
+.habit-save {
+  align-self: flex-start;
+  height: 38px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: var(--type-body);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.habit-save:disabled {
+  background: var(--fill);
+  color: var(--text-3);
+  cursor: default;
+}
+
+.habit-error {
+  margin: 0;
+  color: var(--bad);
+  font-size: var(--type-footnote);
+}
+
+.habit-actions {
+  display: flex;
+  gap: 10px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line-2);
+}
+
+.habit-action {
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--line-3);
+  border-radius: 8px;
+  background: var(--fill);
+  font-size: var(--type-footnote);
+  cursor: pointer;
+}
+
+.habit-week-day {
+  flex: 1;
+  width: auto;
+  height: 44px;
+  border-radius: 10px;
+  background: #2a2a2e;
+  color: var(--text-2);
+  font-size: var(--type-footnote);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.habit-week-day.done {
+  background: var(--habit-color);
+  color: var(--bg);
+}
+
+.habit-week-day:disabled {
+  background: transparent;
+  cursor: default;
+}
+
+.habits.phone {
+  display: block;
+  padding-top: env(safe-area-inset-top);
+}
+
+.habits.phone .habit-list {
+  padding: 56px var(--gutter) 120px;
+}
+
+.habits.phone .habit-new {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  font-size: var(--type-title);
+}
+
+.habits.phone .habit-months {
+  display: none;
+}
+
+.habits.phone .habit-row {
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line-2);
+  border-radius: 0;
+}
+
+.habits.phone .habit-label {
+  flex: none;
+  width: 100%;
+}
+
+/* The streak sits on the right of the name, as on the design canvas. */
+.habits.phone .habit-name {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 12px;
+}
+
+.habits.phone .habit-title,
+.habits.phone .habit-sub {
+  grid-column: 1;
+}
+
+.habits.phone .habit-streak {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  margin-top: 0;
+}
+
+.habits.phone .habit-note,
+.habits.phone .habit-dots {
+  grid-column: 1 / span 2;
+  margin-top: 4px;
+}
+
+.habits.phone .habit-tick {
+  width: 44px;
+  height: 44px;
+  margin: -12px -8px -12px -12px;
+}
+
+.habits.phone .habit-tick-ring {
+  width: 22px;
+  height: 22px;
+}
+
+.habits.phone .habit-panel {
+  padding: 56px var(--gutter) 120px;
+  border-left: 0;
+}
+
+.habits.phone .habit-input,
+.habits.phone .pick-button {
+  height: 44px;
+}
+
+.habits.phone .pick-menu button {
+  min-height: 44px;
+}
+
+.habits.phone .habit-days {
+  justify-content: space-between;
+}
+
+.habits.phone .habit-day {
+  width: 44px;
+  height: 44px;
 }

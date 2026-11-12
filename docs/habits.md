@@ -2,7 +2,7 @@
 
 Things you mean to do regularly (meditate, read, floss, lift three times a week, 8,000 steps) and
 a record of whether you did. Design: https://claude.ai/artifact/PQe6S6nfjyGt242ui4udNK.
-Status: HB1–HB5 built (Habits.md, ticks, streaks, day facts, HabitService, Siri: [shortcuts/did-habit.md](../shortcuts/did-habit.md)).
+Status: HB1–HB6 built (Habits.md, ticks, streaks, day facts, HabitService, Siri: [shortcuts/did-habit.md](../shortcuts/did-habit.md), the Habits page). Next, HB7.
 
 ## Goals
 
@@ -100,8 +100,8 @@ day before for "yesterday" or "last night"), and speaks the streak ("Ticked Medi
 
 ## Web
 
-A `habits` module at `#/habits` (`?habit=` opens one), sidebar group 2, More on the phone, keys
-`g b`. UI waits for approved artboards on the design canvas.
+A `habits` module at `#/habits/<habit>` (`new` for a new one), sidebar group 2, More on the phone,
+keys `g b`. Look: [design/README.md](design/README.md#habits-page).
 
 - Habits page: a row per habit with its name, cadence and source, the streak with the 30-day
   count (orange "Missed yesterday" when today decides it), a 20 px tick for today beside the
@@ -109,13 +109,12 @@ A `habits` module at `#/habits` (`?habit=` opens one), sidebar group 2, More on 
   right edge. Cells: the habit's colour
   when done, grey when missed, outlined when not scheduled, a ring on today. Tapping a cell fixes
   that day. A `N a week` habit shows this week as N dots under its streak, one filled per day done.
-- Beside the list, the selected habit's settings: name, "How often" (Every day, Times a week
+- Beside the list, the selected habit's settings: name, "How often" (Every day, Weekly
   with − and +, Set days with seven day buttons), "Ticks itself from", colour, Pause, Archive.
   "+ New habit" opens the same form empty.
 - Phone: the list with 23 weeks per grid (read-only) and a 22 px tick beside the name (44 px to
-  tap); "+" opens a New habit
-  sheet with the same fields and a preview grid in the chosen cadence. Fixing a past day is in
-  the habit's own view.
+  tap); "+" opens a New habit screen with the same fields. A habit's own screen has this week's
+  seven days to tap, to fix one.
 - Today: a row of today's due habits as chips; tap ticks. Auto ones tick themselves.
 - Command bar: "Mark habit" takes a habit; "did meditate" works as text.
 
