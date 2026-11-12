@@ -16,7 +16,7 @@ Things I mean to do.
 - Meditate · daily <!-- id:meditate -->
 - Lift · 3 a week · auto lifting · #40C8E0 <!-- id:lift -->
 - Lights out · Sun Mon Tue Wed Thu · auto lights_out ≤ 23:30 <!-- id:lights-out -->
-- Read · daily · paused · since spring
+- Read · daily · since 2026-09-01 · paused · from a book club
 - [ ] Not a habit, a task
   - an indented note
 
@@ -46,7 +46,8 @@ describe("parseHabits", () => {
     const read = parseHabits(HABITS).find((h) => h.name === "Read");
 
     expect(read?.id).toBe("read");
-    expect(read?.extra).toEqual(["since spring"]);
+    expect(read?.since).toBe("2026-09-01");
+    expect(read?.extra).toEqual(["from a book club"]);
   });
 
   test("skips checkboxes, indented lines and empty names", () => {
@@ -78,19 +79,20 @@ describe("editing", () => {
       schedule: { kind: "days", days: [1, 3] },
       auto: null,
       color: "#66D4CF",
+      since: null,
       state: "active",
       extra: [],
     });
 
     expect(habit.id).toBe("floss");
     expect(text).toContain(
-      "- Read · daily · paused · since spring\n- Floss · Mon Wed · #66D4CF <!-- id:floss -->\n- [ ]",
+      "- Read · daily · since 2026-09-01 · paused · from a book club\n- Floss · Mon Wed · #66D4CF <!-- id:floss -->\n- [ ]",
     );
     expect(text.replace("- Floss · Mon Wed · #66D4CF <!-- id:floss -->\n", "")).toBe(HABITS);
   });
 
   test("puts the first habit after a blank line and never reuses an id", () => {
-    const fields = { schedule: { kind: "daily" as const }, auto: null, color: null };
+    const fields = { schedule: { kind: "daily" as const }, auto: null, color: null, since: null };
     const first = addHabit("# Habits\n", { ...fields, name: "Read", state: "active", extra: [] });
     const second = addHabit(first.text, { ...fields, name: "read", state: "active", extra: [] });
 
@@ -104,7 +106,7 @@ describe("editing", () => {
 
     expect(again?.id).toBe("read");
     expect(renamed?.text).toContain(
-      "- Read fiction · daily · paused · since spring <!-- id:read -->\n",
+      "- Read fiction · daily · since 2026-09-01 · paused · from a book club <!-- id:read -->\n",
     );
     expect(updateHabit(HABITS, "nope", { name: "x" })).toBeNull();
   });

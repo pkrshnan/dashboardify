@@ -16,6 +16,7 @@ import {
   parseHabits,
   updateHabit,
 } from "./habit-note";
+import { type DayMark, type HabitStats, HISTORY_DAYS, habitStats } from "./streaks";
 
 export const HABITS_PATH = "Habits.md";
 
@@ -25,6 +26,13 @@ export interface HabitsDoc {
   etag: string;
 }
 
+export interface HabitWithStats {
+  habit: Habit;
+  stats: HabitStats;
+  /** Its first day: `since`, else its first tick, else today. */
+  start: string;
+}
+
 export type NewHabit = Pick<HabitFields, "name" | "schedule"> & Partial<HabitFields>;
 
 export class HabitNotFound extends Error {}
@@ -32,6 +40,9 @@ export class StaleHabits extends Error {}
 export class InvalidHabit extends Error {}
 
 export class HabitStore {
+  /** Each daily note's ticks with the mtime they were read at, so a stats call reads only changes. */
+  private cache = new Map<string, { mtime: number | null; ids: string[] }>();
+
   constructor(private readonly vault: Vault) {}
 
   async read(): Promise<HabitsDoc> {
@@ -49,7 +60,14 @@ export class HabitStore {
     await this.vault.update(HABITS_PATH, (current) => {
       const text = current ?? "# Habits\n";
       const color = fields.color ?? nextColor(parseHabits(text));
-      const full = { auto: null, state: "active" as const, extra: [], ...fields, color };
+      const full = {
+        auto: null,
+        since: null,
+        state: "active" as const,
+        extra: [],
+        ...fields,
+        color,
+      };
       const result = addHabit(text, checked(full));
       added = result.habit;
       return result.text;
@@ -101,14 +119,57 @@ export class HabitStore {
   async marks(from: string, to: string): Promise<Map<string, Set<string>>> {
     const marks = new Map<string, Set<string>>();
     for (const date of datesBetween(from, to)) {
-      const note = await this.vault.readDaily(date);
-      const ids = note ? habitIds(note.frontmatter) : [];
+      const ids = await this.ticksOn(date);
       if (ids.length > 0) {
         marks.set(date, new Set(ids));
       }
     }
     return marks;
   }
+
+  /**
+   * Every habit with its streak and counts as of `today`. A hand tick always counts; on a day
+   * without one, `mark` can say how it went (auto ticks), or null for not done.
+   */
+  async stats(
+    today: string,
+    mark: (habit: Habit, date: string) => DayMark | null = () => null,
+  ): Promise<HabitWithStats[]> {
+    const from = Temporal.PlainDate.from(today).subtract({ days: HISTORY_DAYS }).toString();
+    const marks = await this.marks(from, today);
+    return (await this.read()).habits.map((habit) => {
+      const start = startOf(habit, marks, today);
+      const days = {
+        start,
+        today,
+        mark: (date: string): DayMark =>
+          marks.get(date)?.has(habit.id) ? "done" : (mark(habit, date) ?? "open"),
+      };
+      return { habit, stats: habitStats(habit, days), start };
+    });
+  }
+
+  private async ticksOn(date: string): Promise<string[]> {
+    const path = this.vault.dailyPath(date);
+    const mtime = await this.vault.mtime(path);
+    const cached = this.cache.get(date);
+    if (cached && cached.mtime === mtime) {
+      return cached.ids;
+    }
+    const note = mtime === null ? null : await this.vault.readDaily(date);
+    const ids = note ? habitIds(note.frontmatter) : [];
+    this.cache.set(date, { mtime, ids });
+    return ids;
+  }
+}
+
+/** The earlier of `since` and the first tick, so fixing a day before `since` counts; else today. */
+function startOf(habit: Habit, marks: Map<string, Set<string>>, today: string): string {
+  const first = [...marks.keys()].sort().find((date) => marks.get(date)?.has(habit.id));
+  const earliest = [habit.since, first, today].filter(
+    (d): d is string => d !== null && d !== undefined,
+  );
+  return earliest.sort()[0] ?? today;
 }
 
 function checked<T extends HabitFields>(fields: T): T {

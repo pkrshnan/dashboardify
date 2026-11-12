@@ -92,4 +92,50 @@ describe("HabitStore", () => {
     await expect(habits.mark("nope", "2026-11-12", true)).rejects.toBeInstanceOf(HabitNotFound);
     await expect(habits.mark("read", "2026-02-30", true)).rejects.toBeInstanceOf(InvalidHabit);
   });
+
+  test("stats start at the first tick and follow edits made in Obsidian", async () => {
+    await habits.create({ name: "Read", schedule: { kind: "daily" } });
+    await habits.mark("read", "2026-11-10", true);
+    await habits.mark("read", "2026-11-11", true);
+
+    const before = await habits.stats("2026-11-12");
+    await Bun.write(join(dir, daily), "---\nhabits: [read]\n---\n# 2026-11-12\n");
+    const after = await habits.stats("2026-11-12");
+
+    expect(before[0]).toMatchObject({
+      start: "2026-11-10",
+      stats: { streak: 2, doneToday: false },
+    });
+    expect(after[0]?.stats).toMatchObject({
+      streak: 3,
+      doneToday: true,
+      recent: { done: 3, of: 3 },
+    });
+  });
+
+  test("a habit's since date makes earlier days count as missed", async () => {
+    await habits.create({ name: "Read", schedule: { kind: "daily" }, since: "2026-11-01" });
+    await habits.mark("read", "2026-11-11", true);
+
+    const [read] = await habits.stats("2026-11-12");
+
+    await habits.mark("read", "2026-10-30", true);
+    const [fixed] = await habits.stats("2026-11-12");
+
+    expect(read?.start).toBe("2026-11-01");
+    expect(read?.stats.recent).toEqual({ done: 1, of: 11 });
+    expect(fixed?.start).toBe("2026-10-30");
+    expect(await file("Habits.md")).toContain("· since 2026-11-01 <!-- id:read -->");
+  });
+
+  test("a hand tick wins; on other days the mark callback says how it went", async () => {
+    await habits.create({ name: "Steps", schedule: { kind: "daily" }, since: "2026-11-10" });
+    await habits.mark("steps", "2026-11-10", true);
+
+    const [steps] = await habits.stats("2026-11-12", (_, date) =>
+      date === "2026-11-11" ? "done" : "open",
+    );
+
+    expect(steps?.stats).toMatchObject({ streak: 2, recent: { done: 2, of: 2 } });
+  });
 });

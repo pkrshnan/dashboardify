@@ -3,6 +3,7 @@
 // Pure: habit-store.ts reads and writes the file.
 
 import { slugOf } from "../lists/list-store";
+import { isIsoDate } from "../vault/time";
 
 /** 1 is Monday and 7 is Sunday, as Temporal counts them. */
 export type Weekday = 1 | 2 | 3 | 4 | 5 | 6 | 7;
@@ -22,6 +23,8 @@ export interface Habit {
   /** The rule after `auto`, as written: "steps ≥ 8000". Checked by facts.ts. */
   auto: string | null;
   color: string | null;
+  /** The day it began, so earlier days aren't misses; without one, its first tick. */
+  since: string | null;
   state: HabitState;
   /** Fields this version doesn't know, kept so rewriting the line doesn't drop them. */
   extra: string[];
@@ -47,6 +50,7 @@ const HABIT = /^[-*] (?!\[[ xX]\] )(.+)$/;
 const ID = /\s*<!--\s*id:([a-z0-9-]+)\s*-->\s*$/;
 const WEEKLY = /^([1-7])\s*(?:×|x|times)?\s*(?:a|per)\s+week$/i;
 const COLOR = /^#[0-9a-f]{6}$/i;
+const SINCE = /^since (\S+)$/i;
 const SEPARATOR = " · ";
 const MAX_TIMES = 7;
 
@@ -84,6 +88,7 @@ function parseLine(entry: string, line: number): Habit | null {
     schedule: { kind: "daily" },
     auto: null,
     color: null,
+    since: null,
     state: "active",
     extra: [],
     line,
@@ -97,12 +102,15 @@ function parseLine(entry: string, line: number): Habit | null {
 function readField(habit: Habit, field: string): void {
   const schedule = parseSchedule(field);
   const lower = field.toLowerCase();
+  const since = SINCE.exec(field)?.[1];
   if (schedule) {
     habit.schedule = schedule;
   } else if (lower.startsWith("auto ")) {
     habit.auto = field.slice(5).trim();
   } else if (COLOR.test(field)) {
     habit.color = field.toUpperCase();
+  } else if (since && isIsoDate(since)) {
+    habit.since = since;
   } else if (lower === "paused" || lower === "archived") {
     habit.state = lower;
   } else {
@@ -155,6 +163,9 @@ export function habitLine(habit: HabitFields & { id: string }): string {
   }
   if (habit.color) {
     fields.push(habit.color);
+  }
+  if (habit.since) {
+    fields.push(`since ${habit.since}`);
   }
   if (habit.state !== "active") {
     fields.push(habit.state);

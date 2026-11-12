@@ -122,8 +122,8 @@ is left alone, and no ids are written into the note.
 ## `Habits.md`
 
 At the vault root ([habits.md](habits.md)). Each top-level `- ` line that isn't a checkbox is a
-habit: its name, then `·`-separated fields (a schedule, `auto <rule>`, a colour, `paused` or
-`archived`), then its id. The server appends new habits after the last one and rewrites a habit's
+habit: its name, then `·`-separated fields (a schedule, `auto <rule>`, a colour, `since
+YYYY-MM-DD`, `paused` or `archived`), then its id. The server appends new habits after the last one and rewrites a habit's
 line when it's edited, writing its id so a rename keeps its history; a line without an id is
 named by its slug. Fields it doesn't know and every other line are left alone.
 
