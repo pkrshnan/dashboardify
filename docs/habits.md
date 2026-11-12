@@ -2,7 +2,7 @@
 
 Things you mean to do regularly (meditate, read, floss, lift three times a week, 8,000 steps) and
 a record of whether you did. Design: https://claude.ai/artifact/PQe6S6nfjyGt242ui4udNK.
-Status: HB1–HB2 built (Habits.md, ticks in daily notes, streaks).
+Status: HB1–HB3 built (Habits.md, ticks in daily notes, streaks, day facts).
 
 ## Goals
 
@@ -58,8 +58,9 @@ habits: [meditate, read]
 
 ## Auto ticks
 
-One function, `dayFacts(day)` in `src/habits/facts.ts`, reads a day's note and derived rows once
-and returns named values. A habit's rule compares one of them: `≥` or `≤` (`>=`, `<=` also
+`FactReader` in `src/habits/facts.ts` reads a day's note, the next morning's, and the derived
+`days`, `nights` and `workouts` rows once, keeps the facts until one of those files changes, and
+returns named values. A habit's rule compares one of them: `≥` or `≤` (`>=`, `<=` also
 read), against a number, minutes or a time. A bare fact (`auto lifting`) uses its default. A
 registry lists each fact's label, kind, day and default; the page's "Ticks itself from" menu and
 `ListHabitFacts` come from it. A new source is one fact, not a new resolver.
@@ -70,8 +71,8 @@ registry lists each fact's label, kind, day and default; the page's "Ticks itsel
 | `active_kcal` | kcal | `active_kcal` | `≥ 500` |
 | `strain` | number | `strain` | `≥ 12` |
 | `zone2_min` | minutes | `days/`, zone 2 and up | `≥ 30` |
-| `lifting`, `running`, `volleyball`, `walking`, `workouts` | count | workouts after reviews; `workouts` is any kind | `≥ 1` |
-| `lights_out` | time, night | start of the sleep window: lying down and still, not sleep onset, so a slow night doesn't break it | `≤ 23:30` |
+| `lifting`, `running`, `volleyball`, `walking`, `workouts` | count | workouts after reviews (an unsure one waits for its review); `workouts` is any kind | `≥ 1` |
+| `lights_out` | time, night | the night's `bed_ts`, the start of the sleep window: lying down and still, not sleep onset, so a slow night doesn't break it | `≤ 23:30` |
 | `asleep_min` | minutes, night | `tst_min` | `≥ 420` |
 | `journal` | count | entries under `## Journal` | `≥ 1` |
 | `feel` | 1–5 | the morning check-in | `≥ 1` (checked in at all) |

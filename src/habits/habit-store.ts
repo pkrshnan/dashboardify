@@ -5,6 +5,7 @@
 import { createHash } from "node:crypto";
 import { isIsoDate } from "../vault/time";
 import { habitIds, type Vault } from "../vault/vault";
+import { parseRule } from "./facts";
 import { datesBetween } from "./habit-day";
 import {
   addHabit,
@@ -175,6 +176,9 @@ function startOf(habit: Habit, marks: Map<string, Set<string>>, today: string): 
 function checked<T extends HabitFields>(fields: T): T {
   if (!isValidName(fields.name)) {
     throw new InvalidHabit("A habit's name can't be empty or hold · or comment markers.");
+  }
+  if (fields.auto && !parseRule(fields.auto)) {
+    throw new InvalidHabit(`"${fields.auto}" isn't a rule: a fact, then ≥ or ≤ and a value.`);
   }
   if (!isValidSchedule(fields.schedule)) {
     throw new InvalidHabit("A habit runs every day, 1–7 times a week, or on at least one weekday.");
