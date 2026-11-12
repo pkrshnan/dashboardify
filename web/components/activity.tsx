@@ -9,15 +9,18 @@ import {
   addDays,
   calendarWeeks,
   datesFrom,
+  distance,
   duration,
   heartRateLines,
   heartRateTicks,
   kindLabel,
   monday,
+  pace,
   type Range,
   REVIEW_CHOICES,
   rangeDates,
   type SetView,
+  stravaUrl,
   totals,
   type WorkoutDetail,
   type WorkoutView,
@@ -149,6 +152,13 @@ function TotalsRow({ days, range }: { days: ActivityDayView[]; range: Range }) {
         value={String(t.workouts)}
         detail={`${duration(t.workoutMin)}${t.toConfirm ? ` · ${t.toConfirm} to confirm` : ""}`}
       />
+      {t.runs > 0 && (
+        <Stat
+          name="Running"
+          value={distance(t.runMeters)}
+          detail={`${t.runs} ${t.runs === 1 ? "run" : "runs"} · ${pace(t.runMin, t.runMeters)}`}
+        />
+      )}
       <Stat name="Walks" value={String(t.walks)} detail={duration(t.walkMin)} />
       <Stat
         name="Walking steps"
@@ -403,10 +413,6 @@ function WorkoutRow(
 ) {
   const { w, day } = props;
   const dismissed = w.status === "dismissed";
-  const lifting = w.kind === "lifting" && day.lifting;
-  const stat = lifting
-    ? `${Math.round(day.lifting?.volumeLb ?? 0).toLocaleString("en-US")} lb`
-    : `strain ${w.strain.toFixed(1)}`;
   return (
     <div class={`session${dismissed ? " dismissed" : ""}`}>
       <button type="button" class="row" onClick={() => props.select({ workout: w.name })}>
@@ -416,16 +422,37 @@ function WorkoutRow(
         <span class="row-main">
           {dismissed ? kindLabel(w.kind) : workoutName(w)}
           <span class="row-sub">
-            {dismissed
-              ? "Not a workout · hidden from your totals"
-              : `${props.clock(w.start)}–${props.clock(w.end)} · ${duration(w.minutes)}${lifting ? ` · ${day.lifting?.sets} sets from your note` : ""}`}
+            {dismissed ? "Not a workout · hidden from your totals" : rowWhen(w, day, props.clock)}
           </span>
         </span>
-        <span class="muted">{stat}</span>
+        <span class="muted">{rowStat(w, day)}</span>
       </button>
       {props.children}
     </div>
   );
+}
+
+/** "10:42–11:14 · 32m · Strava", or "· 15 sets from your note" for logged lifting. */
+function rowWhen(w: WorkoutView, day: ActivityDayView, clock: (ms: number) => string): string {
+  const parts = [`${clock(w.start)}–${clock(w.end)}`, duration(w.minutes)];
+  if (w.kind === "lifting" && day.lifting) {
+    parts.push(`${day.lifting.sets} sets from your note`);
+  }
+  if (w.stravaActivityId) {
+    parts.push("Strava");
+  }
+  return parts.join(" · ");
+}
+
+/** Lifting's volume, a run's distance and pace, else strain. */
+function rowStat(w: WorkoutView, day: ActivityDayView): string {
+  if (w.kind === "lifting" && day.lifting) {
+    return `${Math.round(day.lifting.volumeLb).toLocaleString("en-US")} lb`;
+  }
+  if (w.distanceMeters) {
+    return `${distance(w.distanceMeters)} · ${pace(w.minutes, w.distanceMeters)}`;
+  }
+  return `strain ${w.strain.toFixed(1)}`;
 }
 
 /** What this was: asked of a possible workout, or after "Change", and undoable once answered. */
@@ -498,6 +525,8 @@ function WorkoutPanel(props: SideProps & { name: string }) {
     return <p class="muted">Loading…</p>;
   }
   const w = { ...detail, kind: listed.kind, status: listed.status };
+  const meters = listed.distanceMeters;
+  const strava = listed.stravaActivityId;
   return (
     <div class="panel">
       <button type="button" class="link-button back" onClick={() => props.onShowDay({ day: date })}>
@@ -508,8 +537,15 @@ function WorkoutPanel(props: SideProps & { name: string }) {
         <span class="muted">
           {props.clock(w.start)}–{props.clock(w.end)}
         </span>
+        {strava && (
+          <a class="strava-link" href={stravaUrl(strava)} target="_blank" rel="noreferrer">
+            Open in Strava
+          </a>
+        )}
       </div>
       <div class="detail-stats">
+        {meters && <Stat name="Distance" value={distance(meters)} detail="" />}
+        {meters && <Stat name="Pace" value={pace(w.minutes, meters)} detail="" />}
         <Stat name="Duration" value={duration(w.minutes)} detail="" />
         <Stat
           name="Avg HR"
@@ -518,8 +554,14 @@ function WorkoutPanel(props: SideProps & { name: string }) {
         />
         <Stat name="Strain" value={w.strain.toFixed(1)} detail="" />
       </div>
-      <HeartRateChart detail={w} clock={props.clock} />
+      <HeartRateChart detail={w} walks={strava ? day.walks : []} clock={props.clock} />
       {w.sets.length > 0 && <SetTable sets={w.sets} clock={props.clock} />}
+      {strava && (
+        <p class="muted panel-note">
+          The run's start, length and distance are from Strava. The walks either side are from the
+          strap's steps. Pace is over the whole run, stops included.
+        </p>
+      )}
       <WorkoutRow {...props} w={listed} day={day}>
         <Review
           w={listed}
@@ -541,9 +583,12 @@ function WorkoutPanel(props: SideProps & { name: string }) {
  */
 function HeartRateChart({
   detail,
+  walks,
   clock,
 }: {
   detail: WorkoutDetail;
+  /** Walks to shade beside the session, as around a run. */
+  walks: { start: number; end: number }[];
   clock: (ms: number) => string;
 }) {
   const W = 600;
@@ -572,6 +617,7 @@ function HeartRateChart({
             height={H}
             class="session-shade"
           />
+          <WalkShades walks={walks} x={x} width={W} height={H} />
           <SetBands sets={detail.sets} x={x} height={H} />
           {ticks.map((bpm) => (
             <line key={bpm} x1={0} x2={W} y1={y(bpm)} y2={y(bpm)} class="hr-grid" />
@@ -593,6 +639,29 @@ function HeartRateChart({
       </div>
     </figure>
   );
+}
+
+/** The walks either side of a run, shaded where they fall inside the chart. */
+function WalkShades(props: {
+  walks: { start: number; end: number }[];
+  x: (ms: number) => number;
+  width: number;
+  height: number;
+}) {
+  return props.walks.map((w) => {
+    const from = Math.max(0, props.x(w.start));
+    const to = Math.min(props.width, props.x(w.end));
+    return to > from ? (
+      <rect
+        key={w.start}
+        x={from}
+        y={0}
+        width={to - from}
+        height={props.height}
+        class="walk-shade"
+      />
+    ) : null;
+  });
 }
 
 /** Each matched set as a band from its start to its HR peak, in its exercise's colour. */

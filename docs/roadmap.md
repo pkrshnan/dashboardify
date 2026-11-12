@@ -57,7 +57,7 @@ Apple Reminders.
 | 3 | Lists (shopping): one note per list in `Lists/`, which tasks skip | Built: [lists.md](lists.md) |
 | 4 | Journal page: the day's journal and check-in | Needs a plan |
 | 5 | The rest of health: training load, calories, VO2max, fitness and biological age, sleep stages | Training load and calories built (H1–H3); the rest planned in [health-extended.md](health-extended.md) (H4–H11) |
-| 6 | Runs from Strava: split walk-run-walk outings, distance and pace | Building: ST1–ST5 done, the Activity page (ST6) waits for artboards; [strava.md](strava.md) |
+| 6 | Runs from Strava: split walk-run-walk outings, distance and pace | Built: [strava.md](strava.md) |
 | 7 | "Log journal" Shortcut recipe | Not started |
 | 8 | Home screen: unusual health rows first, a strain target from recovery, light mode | Not started |
 | 9 | Recovery feedback, next steps ([health-feedback.md](health-feedback.md#next)) | Not started |
