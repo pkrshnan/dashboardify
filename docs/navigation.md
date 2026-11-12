@@ -53,6 +53,7 @@ The nav lists only pages that exist.
 | Calendar | `#/calendar/<date>` | `g c` | 2 | More | Planned |
 | Tasks | `#/tasks` | `g k` | 2 | Tab | Planned |
 | Lists | `#/lists/<list>` | `g l` | 2 | Tab | Built ([lists.md](lists.md)) |
+| Habits | `#/habits` (`?habit=`) | `g b` | 2 | More | Planned ([habits.md](habits.md)) |
 | Health | `#/health` (`?night=`, `?range=`) | `g h` | 3 | More | Built: recovery, the night and sleep trends, heart, vitals. Next: what moved recovery |
 | Activity | `#/activity` (`?range=month`) | `g a` | 3 | More | Built: workouts, walks, lifting; strain, steps, zone 2 |
 | Journal | `#/journal/<date>` | `g j` | 4 | More | Planned |
