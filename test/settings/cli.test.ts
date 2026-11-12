@@ -7,6 +7,7 @@ import { DeviceStore } from "../../src/settings/devices";
 import { loadKey } from "../../src/settings/key";
 import { SecretBox } from "../../src/settings/secret-box";
 import { KeyMismatch, SettingsStore } from "../../src/settings/store";
+import { StravaAccounts } from "../../src/strava/account";
 
 const CLI = join(import.meta.dir, "../../scripts/settings.ts");
 let dir: string;
@@ -150,5 +151,48 @@ describe("bun run settings key and rotate-key", () => {
     await writeFile(join(dir, "server.lock"), "999999");
 
     expect((await settings("rotate-key")).code).toBe(0);
+  });
+});
+
+describe("bun run settings strava", () => {
+  async function withStrava(): Promise<void> {
+    const store = await open();
+    new StravaAccounts(store).create(
+      { id: 777, name: "Pat Runner" },
+      { clientId: "12345", clientSecret: "app-secret" },
+      { accessToken: "access", refreshToken: "refresh", expireTime: new Date("2026-11-11T18:00Z") },
+    );
+    store.close();
+  }
+
+  test("status and disconnect say when nothing is connected", async () => {
+    const status = await settings("strava", "status");
+    const disconnect = await settings("strava", "disconnect");
+
+    expect(status.stdout).toContain("Strava isn't connected");
+    expect(disconnect.code).toBe(1);
+  });
+
+  test("status shows the athlete; connect refuses a second account before asking", async () => {
+    await withStrava();
+
+    const status = await settings("strava", "status");
+    const connect = await settings("strava", "connect");
+
+    expect(status.stdout).toBe("Pat Runner (athlete 777), working, not synced yet\n");
+    expect(connect.code).toBe(1);
+    expect(connect.stderr).toContain("already connected as Pat Runner");
+  });
+
+  test("rotate-key re-seals the Strava secrets", async () => {
+    await withStrava();
+
+    const { stdout } = await settings("rotate-key");
+    const store = await open();
+    const credentials = new StravaAccounts(store).credentials();
+    store.close();
+
+    expect(stdout).toContain("Re-sealed 3 secrets");
+    expect(credentials).toMatchObject({ clientSecret: "app-secret", refreshToken: "refresh" });
   });
 });
