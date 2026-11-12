@@ -145,7 +145,7 @@ describe("DailySummary", () => {
     expect(note?.body.indexOf("## Health")).toBeLessThan(note?.body.indexOf("## Journal") ?? 0);
 
     expect((await derived.read("nights", DATE))?.rhr_bpm).toBeCloseTo(52, 0);
-    expect((await derived.read("days", DATE))?.algo_version).toBe("10");
+    expect((await derived.read("days", DATE))?.algo_version).toBe("11");
     // No earlier days, so no training load yet.
     expect(note?.body).not.toContain("- Load");
     expect(note?.frontmatter.load_ratio).toBeUndefined();
@@ -208,6 +208,45 @@ describe("DailySummary", () => {
       /- Strain \*\*[\d.]+\*\* · Zones [\d /]+ min\n- Load [a-z ]+ · \d\.\d\d \(7 d vs 28 d\)/,
     );
     expect((await derived.read("days", DATE))?.load_ratio).toBeCloseTo(ratio, 6);
+  });
+
+  test("VO2max appears after the calories line with a measured max and two weeks of nights", async () => {
+    await putNight();
+    await writeProfile("weight_kg: 75\nheight_cm: 180\nhr_max_measured: 205\n");
+    // 13 stored nights at 58, then last night's 52: median 58 of 14.
+    for (let i = 1; i <= 13; i++) {
+      const date = Temporal.PlainDate.from(DATE).subtract({ days: i }).toString();
+      await derived.write("nights", date, { rhr_bpm: 58 });
+    }
+
+    const result = await summary.run(DATE);
+
+    const expected = (15.3 * 205) / 58;
+    expect(result?.vo2max).toBeCloseTo(expected, 6);
+    const note = await vault.readDaily(DATE);
+    expect(note?.frontmatter.vo2max).toBe(54);
+    expect(note?.body).toMatch(/- Calories [\d,]+ · [\d,]+ active\n- VO2max 54 \(estimate\)\n/);
+    expect((await derived.read("days", DATE))?.vo2max).toBe(Math.round(expected * 10) / 10);
+  });
+
+  test("no VO2max with too few nights or only a predicted max", async () => {
+    await putNight();
+    await writeProfile("hr_max_measured: 205\n");
+    for (let i = 1; i <= 12; i++) {
+      const date = Temporal.PlainDate.from(DATE).subtract({ days: i }).toString();
+      await derived.write("nights", date, { rhr_bpm: 58 });
+    }
+    expect((await summary.run(DATE))?.vo2max).toBeNull();
+
+    // A 14th night, but with no measured max HR in the profile.
+    await derived.write("nights", "2026-10-19", { rhr_bpm: 58 });
+    await writeProfile();
+
+    expect((await summary.run(DATE))?.vo2max).toBeNull();
+    const note = await vault.readDaily(DATE);
+    expect(note?.body).not.toContain("- VO2max");
+    expect(note?.frontmatter.vo2max).toBeUndefined();
+    expect((await derived.read("days", DATE))?.vo2max).toBeNull();
   });
 
   test("recovery appears once there are two weeks of nights", async () => {
