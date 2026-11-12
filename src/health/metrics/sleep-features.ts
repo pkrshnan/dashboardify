@@ -14,7 +14,7 @@ import { SAMPLE_HZ, sharpestPeak, windowSpectrum } from "./breathing";
 import { dfaAlpha1 } from "./dfa";
 import { type CleanBeat, continuityBreaks, MIN_BEATS, timedDiffs } from "./hrv";
 import type { AngleChange } from "./sleep";
-import { EPOCH_MS, type Epoch, epochSignals } from "./sleep-epochs";
+import { arousals, EPOCH_MS, type Epoch, epochSignals } from "./sleep-epochs";
 import { mean, sd } from "./stats";
 import type { HeartRate, RrInterval, Span } from "./types";
 
@@ -41,8 +41,10 @@ const MIN_BREATH_COVERAGE = 0.8;
 
 export interface EpochFeatures {
   ts: number;
-  /** As scoreEpochs scored it. Awake epochs stay awake in H9. */
+  /** As scoreEpochs scored it. Before onset its awake epochs stay awake. */
   asleep: boolean;
+  /** HR jumped above its surroundings or sat well above sleeping level, as scoreEpochs saw it. */
+  arousal: boolean;
   /** Mean HR, as a z-score. Null with no HR. */
   hrZ: number | null;
   /** ln(RMSSD) over the surrounding 5 minutes, as a z-score. Null with under 60 differences. */
@@ -80,6 +82,7 @@ export interface FeatureInput {
 export function epochFeatures(input: FeatureInput): EpochFeatures[] {
   const signals = epochSignals(input.window, input.changes, input.heartRate);
   const asleep = signals.map((_, i) => input.epochs[i]?.asleep === true);
+  const aroused = arousals(signals);
   const centres = signals.map((s) => s.ts + EPOCH_MS / 2);
   const hrZ = zScores(
     signals.map((s) => s.hr),
@@ -92,6 +95,7 @@ export function epochFeatures(input: FeatureInput): EpochFeatures[] {
   return signals.map((s, i) => ({
     ts: s.ts,
     asleep: asleep[i] === true,
+    arousal: aroused[i] === true,
     hrZ: hrZ[i] ?? null,
     hrvZ: hrvZ[i] ?? null,
     dfaZ: dfaZ[i] ?? null,
@@ -212,13 +216,21 @@ function runningSums(values: number[]): number[] {
   return sums;
 }
 
-/** Each value against the mean and SD of the asleep epochs' values. Null where it can't be. */
+/**
+ * Each value against the mean and SD of the asleep epochs' values. Null where it can't be. With
+ * no spread every value is at the mean, so 0: null would read as no HR, a cue for awake.
+ */
 export function zScores(values: (number | null)[], asleep: boolean[]): (number | null)[] {
   const reference = values.filter((v, i): v is number => v !== null && asleep[i] === true);
   const m = mean(reference);
   const s = sd(reference);
-  if (m === null || s === null || s === 0) {
+  if (m === null || s === null) {
     return values.map(() => null);
   }
-  return values.map((v) => (v === null ? null : (v - m) / s));
+  return values.map((v) => {
+    if (v === null) {
+      return null;
+    }
+    return s === 0 ? 0 : (v - m) / s;
+  });
 }

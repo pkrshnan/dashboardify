@@ -60,7 +60,8 @@ function syntheticNight(seed: number, levels: Levels, minutes = 480): EpochFeatu
     return {
       ts: T0 + i * EPOCH_MS,
       asleep: true,
-      hrZ: null,
+      arousal: false,
+      hrZ: 0,
       hrvZ: value(0),
       breathingZ: value(1),
       dfaZ: value(2),

@@ -82,8 +82,11 @@ function epochMovement(window: Span, changes: AngleChange[], count: number): num
   return movement;
 }
 
-/** Whether each epoch's HR jumps above its surroundings, or sits well above sleeping level. */
-function arousals(epochs: EpochSignals[]): boolean[] {
+/**
+ * Whether each epoch's HR jumps above its surroundings, or sits well above sleeping level. The
+ * stage model reads it too, as one cue among others for awake after onset.
+ */
+export function arousals(epochs: EpochSignals[]): boolean[] {
   const half = LOCAL_HR_EPOCHS / 2;
   const hrs = epochs.map((e) => e.hr).filter((hr): hr is number => hr !== null);
   const sleeping = percentile(hrs, SLEEPING_HR_PERCENTILE) ?? 0;
@@ -143,14 +146,24 @@ export interface SleepTimes {
   efficiency: number;
 }
 
-export function sleepTimes(window: Span, epochs: Epoch[]): SleepTimes {
-  const onsetIndex = epochs.findIndex((_, i) =>
-    epochs.slice(i, i + ONSET_EPOCHS).every((e) => e.asleep),
-  );
+/** The first epoch of 10 minutes of unbroken sleep; -1 if there is none. */
+export function onsetIndex(epochs: Epoch[]): number {
+  return epochs.findIndex((_, i) => epochs.slice(i, i + ONSET_EPOCHS).every((e) => e.asleep));
+}
+
+/**
+ * Times from scored epochs. `onset` is where sleep began, by default from these epochs; the
+ * decoded stages pass scoreEpochs' own, since they keep it and only change awake after it.
+ */
+export function sleepTimes(
+  window: Span,
+  epochs: Epoch[],
+  onset: number = onsetIndex(epochs),
+): SleepTimes {
   const asleep = epochs.filter((e) => e.asleep).length;
   const minutes = (n: number) => (n * EPOCH_MS) / 60_000;
   const totalMin = (window.end - window.start) / 60_000;
-  if (onsetIndex === -1 || epochs.length < ONSET_EPOCHS) {
+  if (onset === -1 || epochs.length < ONSET_EPOCHS) {
     return {
       onset: null,
       asleepMin: minutes(asleep),
@@ -160,11 +173,11 @@ export function sleepTimes(window: Span, epochs: Epoch[]): SleepTimes {
       efficiency: totalMin > 0 ? minutes(asleep) / totalMin : 0,
     };
   }
-  const afterOnset = epochs.slice(onsetIndex);
+  const afterOnset = epochs.slice(onset);
   return {
-    onset: epochs[onsetIndex]?.ts ?? null,
+    onset: epochs[onset]?.ts ?? null,
     asleepMin: minutes(asleep),
-    latencyMin: minutes(onsetIndex),
+    latencyMin: minutes(onset),
     wakeAfterOnsetMin: minutes(afterOnset.filter((e) => !e.asleep).length),
     awakenings: countAwakenings(afterOnset),
     efficiency: minutes(asleep) / totalMin,

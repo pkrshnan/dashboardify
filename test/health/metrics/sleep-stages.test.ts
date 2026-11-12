@@ -29,6 +29,7 @@ function night(marked: { from: number; to: number; look: Look }[] = []): EpochFe
     return {
       ts: T0 + i * EPOCH_MS,
       asleep: true,
+      arousal: false,
       hrZ: (look?.hrZ ?? 0) + jitter(),
       hrvZ: (look?.hrvZ ?? 0) + jitter(),
       breathingZ: (look?.breathingZ ?? 0) + jitter(),
@@ -72,32 +73,49 @@ describe("sleep stages", () => {
     expect(share(result?.stages ?? [], "rem", 205, 220)).toBeGreaterThan(0.9);
   });
 
-  test("awake epochs stay awake and asleep ones are never awake", () => {
-    const awake = (i: number) => (i >= 300 && i < 310) || i === 500;
-    const features = night([{ from: 140, to: 160, look: DEEP }]).map((f, i) =>
-      awake(i) ? { ...f, asleep: false } : f,
-    );
+  test("before onset, scoreEpochs' awake stays awake and its asleep epochs are never awake", () => {
+    const awake = (i: number) => i < 6 || i === 12;
+    const features = night([{ from: 140, to: 160, look: DEEP }]).map((f, i) => ({
+      ...f,
+      asleep: !awake(i),
+      sinceOnsetMin: (i - 20) / 2,
+    }));
 
     const stages = sleepStages(features)?.stages ?? [];
 
     expect(stages).toHaveLength(features.length);
-    expect(stages.map((s) => s === "awake")).toEqual(features.map((f) => !f.asleep));
+    expect(stages.slice(0, 20).map((s) => s === "awake")).toEqual(
+      features.slice(0, 20).map((f) => !f.asleep),
+    );
   });
 
-  test("minutes add up to the asleep minutes, and the runs cover the night", () => {
+  test("after onset, one fast-HR epoch scoreEpochs called awake is decoded with the rest", () => {
+    const features = night([{ from: 200, to: 230, look: REM }]).map((f, i) =>
+      i === 430 ? { ...f, asleep: false, arousal: true, hrZ: 2.5 } : f,
+    );
+
+    const stages = sleepStages(features)?.stages ?? [];
+
+    expect(stages[430]).toBe("rem");
+    expect(stages.filter((s) => s === "awake")).toHaveLength(0);
+  });
+
+  test("stage and awake minutes add up to the night, and the runs cover it", () => {
     const features = night([
       { from: 30, to: 70, look: DEEP },
       { from: 150, to: 170, look: REM },
-    ]).map((f, i) => (i < 6 ? { ...f, asleep: false } : f));
+    ]).map((f, i) => ({ ...f, asleep: i >= 6, sinceOnsetMin: (i - 6) / 2 }));
 
     const result = sleepStages(features);
     const runs = result?.runs ?? [];
 
-    const asleepMin = (features.filter((f) => f.asleep).length * EPOCH_MS) / 60_000;
-    expect((result?.lightMin ?? 0) + (result?.deepMin ?? 0) + (result?.remMin ?? 0)).toBe(
-      asleepMin,
-    );
-    expect(runs[0]).toEqual({ start: T0, end: T0 + 6 * EPOCH_MS, stage: "awake" });
+    const awakeMin = ((result?.stages ?? []).filter((s) => s === "awake").length * EPOCH_MS) / 6e4;
+    expect(
+      (result?.lightMin ?? 0) + (result?.deepMin ?? 0) + (result?.remMin ?? 0) + awakeMin,
+    ).toBe(NIGHT_MIN);
+    // Awake before onset is fixed; after it, the decoder may carry it on an epoch or two.
+    expect(runs[0]).toMatchObject({ start: T0, stage: "awake" });
+    expect(runs[0]?.end ?? 0).toBeGreaterThanOrEqual(T0 + 6 * EPOCH_MS);
     expect(runs[runs.length - 1]?.end).toBe(T0 + NIGHT_MIN * 60_000);
     expect(runs.every((r, i) => i === 0 || r.start === runs[i - 1]?.end)).toBe(true);
     expect(runs.every((r, i) => i === 0 || r.stage !== runs[i - 1]?.stage)).toBe(true);
@@ -122,7 +140,7 @@ describe("sleep stages", () => {
     expect(sleepStages(night())?.plausible).toBe(false);
   });
 
-  test("with every feature null the night is light, not a crash", () => {
+  test("with every feature null after onset the night reads as a strap gap, awake", () => {
     const features = night().map((f) => ({
       ...f,
       hrZ: null,
@@ -131,10 +149,10 @@ describe("sleep stages", () => {
       dfaZ: null,
     }));
 
-    const result = sleepStages(features);
+    const stages = sleepStages(features)?.stages ?? [];
 
-    expect(result?.lightMin).toBe(NIGHT_MIN);
-    expect(result?.plausible).toBe(false);
+    expect(stages).toHaveLength(features.length);
+    expect(stages.filter((s) => s === "awake").length).toBeGreaterThan(0.95 * stages.length);
   });
 
   test("without onset, time counts from the first epoch", () => {

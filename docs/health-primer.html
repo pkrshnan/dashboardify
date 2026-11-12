@@ -99,7 +99,7 @@ pre.mermaid { overflow-x: auto; }
 <p class="standfirst">Every health number dashboardify works out from the strap: what it means for your body, how it is calculated step by step, the research behind it, and a small worked example.</p>
 
 <h2 id="read">How to read this</h2>
-<p>The strap sends six raw streams. Everything else on the Health page is arithmetic on top of them. This page follows that arithmetic as it stands on <code>main</code> at 12 Nov 2026, up to fitting the sleep stages to your own nights (H14). It lives in the repo as <code>docs/health-primer.html</code> and changes with the code: a test recomputes the worked examples.</p>
+<p>The strap sends six raw streams. Everything else on the Health page is arithmetic on top of them. This page follows that arithmetic as it stands on <code>main</code> at 12 Nov 2026, up to decoding awake together with the sleep stages (H15). It lives in the repo as <code>docs/health-primer.html</code> and changes with the code: a test recomputes the worked examples.</p>
 <div class="scroll"><table>
 <thead><tr><th>Raw stream</th><th>What it is</th><th>Feeds</th></tr></thead>
 <tbody>
@@ -206,21 +206,22 @@ threshold                        15 × 0.012 = 0.18°</p>
 
 <h2 id="epochs">Asleep or awake</h2>
 <p class="file">src/health/metrics/sleep-epochs.ts</p>
-<p>Lying still is not sleeping. Inside the window, the night is cut into 30-second <strong>epochs</strong>, the unit sleep labs use, and each is scored asleep or awake. The heart helps here. Each arousal from sleep comes with a burst of sympathetic activity that lifts heart rate for a few beats to a minute, even if you do not move.</p>
+<p>Lying still is not sleeping. Inside the window, the night is cut into 30-second <strong>epochs</strong>, the unit sleep labs use, and each is scored asleep or awake. This happens in two passes: simple rules first, which find when you fell asleep, then the <a href="#stages">sleep-stage model</a>, which decides awake for the rest of the night. The heart helps in both. Each arousal from sleep comes with a burst of sympathetic activity that lifts heart rate for a few beats to a minute, even if you do not move.</p>
 <h3>How it is calculated</h3>
-<p>An epoch is <strong>awake</strong> if any one of these is true:</p>
+<p><strong>First pass: rules.</strong> An epoch is <strong>awake</strong> if any one of these is true:</p>
 <ul>
 <li><strong>Posture change:</strong> the arm angle moved more than 5° between 5-second steps.</li>
 <li><strong>Arousal:</strong> heart rate is 8 bpm or more above the median of the surrounding 10 minutes.</li>
 <li><strong>Lying awake:</strong> heart rate is 20% or more above the night's sleeping level (its 10th percentile). REM sleep also raises heart rate, but typically by 5–10%, so it stays under this line.</li>
 <li><strong>No heart rate:</strong> the strap was off or lost contact.</li>
 </ul>
-<p>Then one clean-up pass: a lone awake epoch between two asleep ones becomes asleep, and the reverse. One fast beat is not waking up.</p>
-<p>From the scored epochs come the standard sleep-lab measures:</p>
+<p>Then one clean-up pass: a lone awake epoch between two asleep ones becomes asleep, and the reverse. One fast beat is not waking up. <strong>Sleep onset</strong> is the start of the first 10 unbroken minutes of sleep in this scoring.</p>
+<p><strong>Second pass: the stage model.</strong> After onset the rules' verdict is no longer final. Scored one epoch at a time, a minute of fast beats during REM looked like an awakening: on 3–11 Nov the rules alone gave 21–39 awakenings a night, and 6–13 times a night the pattern REM, awake, REM. The stage model weighs each epoch against its neighbours instead, so a blip inside steady REM stays REM, while a long stretch of high heart rate and movement is still awake. The rules' findings (an arousal, and how big) go in as evidence.</p>
+<p>From the result come the standard sleep-lab measures:</p>
 <div class="scroll"><table>
 <thead><tr><th>Measure</th><th>Definition</th></tr></thead>
 <tbody>
-<tr><td>Sleep onset</td><td>The start of the first 10 unbroken minutes of sleep</td></tr>
+<tr><td>Sleep onset</td><td>The start of the first 10 unbroken minutes of sleep (first pass)</td></tr>
 <tr><td>Latency</td><td>Start of the window to onset: how long you took to fall asleep</td></tr>
 <tr><td>WASO</td><td>"Wake after sleep onset": awake minutes after onset</td></tr>
 <tr><td>Awakenings</td><td>Separate awake runs of a minute or more after onset</td></tr>
@@ -235,13 +236,16 @@ epoch A   HR 61                        →  awake (over 60)
 epoch B   HR 58, local median 49       →  awake (9 above, arousal)
 epoch C   HR 55, local median 52, still →  asleep
 
+Before onset those verdicts stand. After onset, A and B are
+"arousal" cues for the stage model, which has the last word.
+
 window      23:38–07:20   = 462 min
 latency     12 min        → onset 23:50
 asleep      410 min
 WASO        462 − 12 − 410 = 40 min
 efficiency  410 ÷ 462     = 88.7%</p>
 </div>
-<p class="trust"><strong>How far to trust it.</strong> Total sleep time from movement and heart rate is usually within tens of minutes of a sleep lab for healthy sleepers. Quiet wakefulness with a calm heart is the usual miss, so sleep tends to be slightly overcounted.</p>
+<p class="trust"><strong>How far to trust it.</strong> Total sleep time from movement and heart rate is usually within tens of minutes of a sleep lab for healthy sleepers. Quiet wakefulness with a calm heart is the usual miss. Against the sleep lab, the model finds about 4 in 10 awake epochs and wrongly calls 1 in 20 sleeping epochs awake. Those errors pull in opposite directions: time awake after onset came to 29 minutes a night against the lab's 21. Most of the lab's awakenings last a minute or less, and those are rarely seen.</p>
 <p class="src">Sources: Webster 1982 (rescoring lone epochs); van Hees 2015 (the 5° posture change).</p>
 
 <h2 id="stages">Sleep stages</h2>
@@ -256,7 +260,7 @@ efficiency  410 ÷ 462     = 88.7%</p>
 </tbody></table></div>
 <p>A sleep lab tells them apart from brain waves. The strap cannot, so the stages are <strong>inferred</strong> from how the heart, lungs and arm behave. This is the least certain number on the page.</p>
 <h3>Step 1: describe each epoch</h3>
-<p>Each epoch gets six features. The first four are z-scores against the night's own asleep epochs, since stages are relative to your night, not to fixed numbers.</p>
+<p>Each epoch gets seven features. The first four are z-scores against the night's own asleep epochs, since stages are relative to your night, not to fixed numbers.</p>
 <div class="scroll"><table>
 <thead><tr><th>Feature</th><th>How</th><th>Deep</th><th>REM</th></tr></thead>
 <tbody>
@@ -264,35 +268,38 @@ efficiency  410 ÷ 462     = 88.7%</p>
 <tr><td>HRV</td><td>ln(RMSSD) over the 5 minutes around the epoch (<a href="#hrv">see HRV</a>)</td><td>Higher</td><td>Lower</td></tr>
 <tr><td>Breathing regularity</td><td>How sharply one breathing frequency stands out in the 2 minutes around the epoch (<a href="#breathing">see breathing</a>)</td><td>Very regular</td><td>Irregular</td></tr>
 <tr><td>DFA α1</td><td>How correlated consecutive beat gaps are (<a href="#dfa">next section</a>)</td><td>Lower</td><td>Higher</td></tr>
+<tr><td>Heart-rate cue</td><td>Whether the <a href="#epochs">asleep-or-awake rules</a> saw an arousal, and how big (heart rate z under 2, 2–4, 4–8 or over 8), or no heart rate at all</td><td>About 1 epoch in 18</td><td>About 1 in 5</td></tr>
 <tr><td>Movement</td><td>The largest 5-second arm angle change in the epoch</td><td>Rare</td><td>Rare</td></tr>
 <tr><td>Time since onset</td><td>Minutes since falling asleep</td><td>Early</td><td>Late</td></tr>
 </tbody></table></div>
 <h3>Step 2: a hidden Markov model</h3>
 <p>A hidden Markov model (HMM) is a way to guess a hidden sequence (the stages) from a visible one (the features). It has two parts.</p>
 <ul>
-<li><strong>Emissions:</strong> for each stage, how likely are these features? Each z-scored feature is scored against a bell curve for that stage. A missing feature adds nothing.
+<li><strong>Emissions:</strong> for each stage, how likely are these features? Each z-scored feature is scored against a bell curve for that stage. A missing feature adds nothing. The heart-rate cue and movement are scored from tables of how often each happens in each stage.
 <div class="eq">\ln P(z \mid \text{stage}) = -\frac{(z - \mu_{\text{stage}})^2}{2\sigma_{\text{stage}}^2} - \ln \sigma_{\text{stage}}</div></li>
 <li><strong>Transitions:</strong> given the stage now, how likely is each stage 30 seconds later? Stages are sticky: light stays light about 95% of the time. There is one transition table before onset and one per 30 minutes since, which is how "deep early, REM late" gets in.</li>
 </ul>
 <p>The <strong>Viterbi algorithm</strong> then finds the single most likely path through the whole night. It walks forward keeping, for each stage, the best-scoring route that ends there, then traces back from the best ending. Because stages are sticky, one odd epoch does not flip the stage. Sustained evidence does.</p>
-<p>Three rules are fixed. Awake epochs stay awake, and asleep epochs cannot become awake. Sleep starts in light, never straight into deep or REM. REM cannot start in the first 45 minutes: the heart is still settling then and can look like REM, and REM that early is a sign of narcolepsy rather than healthy sleep.</p>
+<p><strong>Awake is the fourth state.</strong> Before sleep onset the rules decide it. After onset it is decoded like the others. In the lab data an awake epoch moves far more (44% of them, against 8% in light sleep) and shows a heart-rate cue more often (28%, against 5%). Big jumps are counted in the cue table and kept out of the bell curve: with one curve over both, its thin tail would decide what a heart rate of 150 means. Nobody has measured how HRV, breathing regularity or DFA look when awake on this strap, so awake borrows light's levels for those.</p>
+<p>Three rules are fixed. Before onset, awake is whatever the first pass said. Sleep starts in light, never straight into deep or REM. REM cannot start in the first 45 minutes: the heart is still settling then and can look like REM, and REM that early is a sign of narcolepsy rather than healthy sleep.</p>
 <h3>Where the numbers in the model come from</h3>
 <div class="scroll"><table>
 <thead><tr><th>Part</th><th>Source</th></tr></thead>
 <tbody>
-<tr><td>Heart-rate bell curves, movement chances, transitions</td><td><strong>Fitted</strong> to 30 adults who wore an Apple Watch in a sleep lab (Walch 2019, 25,828 labelled epochs)</td></tr>
+<tr><td>Heart-rate bell curves, heart-rate cue and movement chances, transitions, for all four states</td><td><strong>Fitted</strong> to 30 adults who wore an Apple Watch in a sleep lab (Walch 2019, 25,828 labelled epochs)</td></tr>
 <tr><td>HRV: deep +0.8, REM −0.6<br>Breathing: deep +0.8, REM −0.8<br>DFA α1: deep −0.6, REM +0.5<br>(all in z units, spread 0.8)</td><td><strong>Hand-set</strong> from the direction the papers give, since the lab data has no beat-to-beat gaps. These are the starting values. They can be <a href="#stagefit">fitted to your own nights</a>.</td></tr>
 </tbody></table></div>
-<p>Fitted heart-rate curves, in z units after removing the drift: light −0.13 ± 0.76, deep +0.12 ± 0.59, REM +0.52 ± 1.02. In the lab data deep-sleep heart rate is <em>steadier</em> than light's rather than lower, so its curve is narrow instead of shifted.</p>
-<p>Movement counts only when it happens. Stillness is normal in every stage, and scoring hundreds of still epochs would add up to a steady pull toward deep.</p>
+<p>Fitted heart-rate curves, in z units after removing the drift, on epochs with no arousal: awake +0.29 ± 0.96, light −0.14 ± 0.70, deep +0.12 ± 0.58, REM +0.47 ± 0.95. In the lab data deep-sleep heart rate is <em>steadier</em> than light's rather than lower, so its curve is narrow instead of shifted.</p>
+<p>Between the sleep stages, movement and the cue count only when they happen. Stillness is normal in every sleep stage, and scoring hundreds of still epochs would add up to a steady pull toward deep. Awake is the exception: lying still with a calm heart is real evidence against being awake, so for awake it does count.</p>
 <div class="ex" id="ex-stages">
 <h3>Worked example: one epoch</h3>
 <p>A still epoch three hours in, with heart rate z = +0.9, HRV z = −0.5, breathing z = −0.7 and DFA z = +0.6. Log scores with the hand-set values (higher is more likely):</p>
 <p class="calc">          HR      HRV     breathing   DFA      total
-light    −0.64   +0.03    −0.16      −0.06    −0.83
-deep     −0.35   −1.10    −1.53      −0.90    −3.88
-REM      −0.09   +0.22    +0.22      +0.22    +0.56</p>
-<p>REM beats light by 1.39, so on this evidence alone REM is about e<sup>1.39</sup> ≈ 4 times more likely. But if the previous epoch was light, switching costs: light→REM has a chance near 0.010 against 0.951 for staying, a penalty of ln(0.010 ÷ 0.951) ≈ −4.5. One such epoch is not enough (1.39 &lt; 4.5). About four in a row are (4 × 1.39 = 5.6), so two minutes of REM-like signals flips the path to REM.</p>
+light    −0.74   +0.03    −0.16      −0.06    −0.93
+deep     −0.37   −1.10    −1.53      −0.90    −3.91
+REM      −0.05   +0.22    +0.22      +0.22    +0.60</p>
+<p>REM beats light by 1.53, so on this evidence alone REM is about e<sup>1.53</sup> ≈ 4.6 times more likely. But if the previous epoch was light, switching costs: three hours in, light→REM has a chance of 0.018 against 0.947 for staying, a penalty of ln(0.018 ÷ 0.947) = −3.95. One such epoch is not enough (1.53 &lt; 3.95). Three in a row are (3 × 1.53 = 4.59), so a minute and a half of REM-like signals flips the path to REM.</p>
+<p>Awake is not in the table. For this epoch it scores −1.13: light's score on HRV, breathing and DFA, −0.17 on heart rate, and −0.78 for being still with no arousal. That puts it behind REM and light, and well ahead of deep.</p>
 </div>
 <h3 id="stagefit">Fitting the stages to you</h3>
 <p>The hand-set HRV, breathing and DFA curves are guesses about an average person. <code>fit-stages.ts</code> replaces them with curves learned from your own nights. No night has lab labels, so it uses <strong>expectation–maximisation</strong> (EM, here called Baum–Welch), which takes turns at two steps.</p>
@@ -310,19 +317,21 @@ REM      −0.09   +0.22    +0.22      +0.22    +0.56</p>
 <li>75% or more of the nights still have a plausible split afterwards.</li>
 </ul>
 <p>A saved fit gets a new params version, the same one recovery's weights use, so every stored night records which model staged it.</p>
-<p><strong>So far it has been rejected.</strong> On 4–9 Nov the fit left light sleep under 35% on four of six nights, shifting the shares from 48 / 24 / 28 to 36 / 27 / 37 (light / deep / REM). So the hand-set values are still the ones in use. Six nights is thin evidence, and the guardrails are doing their job.</p>
+<p><strong>The hand-set values are still the ones in use.</strong> The first try, on 4–9 Nov, was rejected: it left light sleep too low on four of six nights, shifting the shares from 48 / 24 / 28 to 36 / 27 / 37 (light / deep / REM). Since awake has been decoded with the stages, a report-only run on 3–11 Nov passes, with all nine nights plausible. Nothing changes until that fit is applied.</p>
 <h3>How good is it?</h3>
 <p>Tested by leaving each lab subject out in turn, fitting on the others, and scoring the one left out.</p>
 <div class="scroll"><table>
-<thead><tr><th>Model</th><th class="n">Accuracy</th><th class="n">κ</th><th class="n">Light</th><th class="n">Deep</th><th class="n">REM</th><th>Shares L/D/R</th></tr></thead>
+<thead><tr><th>Model</th><th class="n">Accuracy</th><th class="n">κ</th><th class="n">Awake</th><th class="n">Light</th><th class="n">Deep</th><th class="n">REM</th><th>Shares L/D/R</th></tr></thead>
 <tbody>
-<tr><td>Fitted (current)</td><td class="n">52%</td><td class="n">0.28</td><td class="n">55%</td><td class="n">56%</td><td class="n">46%</td><td>51 / 31 / 19</td></tr>
-<tr><td>Earlier hand-set model</td><td class="n">51%</td><td class="n">0.19</td><td class="n">69%</td><td class="n">6%</td><td class="n">38%</td><td>70 / 12 / 18</td></tr>
-<tr><td>The lab's own scoring</td><td class="n"></td><td class="n"></td><td class="n"></td><td class="n"></td><td class="n"></td><td>60 / 16 / 23</td></tr>
+<tr><td>Awake decoded (current)</td><td class="n">56%</td><td class="n">0.34</td><td class="n">38%</td><td class="n">55%</td><td class="n">55%</td><td class="n">66%</td><td>46 / 29 / 25</td></tr>
+<tr><td>Awake from the rules alone</td><td class="n">52%</td><td class="n">0.28</td><td class="n">40%</td><td class="n">55%</td><td class="n">56%</td><td class="n">46%</td><td>51 / 31 / 19</td></tr>
+<tr><td>Earlier hand-set model</td><td class="n">51%</td><td class="n">0.19</td><td class="n">40%</td><td class="n">69%</td><td class="n">6%</td><td class="n">38%</td><td>70 / 12 / 18</td></tr>
+<tr><td>The lab's own scoring</td><td class="n"></td><td class="n"></td><td class="n"></td><td class="n"></td><td class="n"></td><td class="n"></td><td>60 / 16 / 23</td></tr>
 </tbody></table></div>
-<p>The stage columns are recall: of the epochs the lab called deep, the share the model also called deep. <strong>κ</strong> (Cohen's kappa) is agreement beyond chance: 0 is guessing, 1 is perfect. Two human scorers reading the same lab recording reach about 0.8. Heart-rate-and-motion models usually land at 0.3–0.5, and this one is at the bottom of that range. Its main error is calling too much sleep deep (31% against the lab's 16%).</p>
-<p>A night is flagged "unusual" when light falls outside 35–68%, deep outside 4–52% or REM outside 4–38% of asleep time. The bounds are wide because the model's own error is wide.</p>
-<p class="trust"><strong>How far to trust it.</strong> Treat one night's split as a rough sketch. Roughly half of individual epochs are right. Trends over weeks ("less deep sleep since I started late dinners") are more believable than any single night, and even those rest on HRV, breathing and DFA settings that are hand-set, and that the first fit to real nights did not pass.</p>
+<p>The stage columns are recall: of the epochs the lab called deep, the share the model also called deep. <strong>κ</strong> (Cohen's kappa) is agreement beyond chance: 0 is guessing, 1 is perfect. Two human scorers reading the same lab recording reach about 0.8. Heart-rate-and-motion models usually land at 0.3–0.5, and this one is at the low end of that range. Its main error is calling too much sleep deep (29% against the lab's 16%).</p>
+<p>Decoding awake mostly helped REM. In the lab data 19% of REM epochs carry a heart-rate arousal, and the rules alone called those awake. Awake stretches per night fell from 20.4 to 8.8 (the lab has 14.9), and time awake after onset from 49 to 29 minutes (the lab has 21). On real nights, 3–11 Nov, awakenings fell from 32 to 16 a night on average, time awake after onset from 62 to 53 minutes, and REM, awake, REM from 6–13 times a night to 0–1. Long awakenings stay: of 43 minutes of raised heart rate from 02:05 on 4 Nov, 28 are still awake.</p>
+<p>A night is flagged "unusual" when light falls outside 33–61%, deep outside 2–48% or REM outside 5–51% of asleep time. The bounds are wide because the model's own error is wide.</p>
+<p class="trust"><strong>How far to trust it.</strong> Treat one night's split as a rough sketch. A little over half of individual epochs are right. Trends over weeks ("less deep sleep since I started late dinners") are more believable than any single night, and even those rest on HRV, breathing and DFA settings that are hand-set.</p>
 <p class="src">Sources: Walch 2019 (training data and benchmark); Fonseca 2017 (heart-based staging); Gutierrez 2016 (breathing regularity by stage); Burgess 1997 (heart rate falling across the night); Carskadon &amp; Dement 2011 (no early REM); Esco &amp; Flatt 2014 and Munoz 2015 (HRV from a minute of beats); Baum 1970 and Rabiner 1989 (EM for hidden Markov models, background).</p>
 
 <h2 id="dfa">DFA α1</h2>
@@ -760,8 +769,8 @@ wrap: 12 − 65,530 + 65,536 = 18 steps</p>
 <tr><td>HRV</td><td>Measured</td><td>High for your own trend</td><td>Weekly averages; never against other people</td></tr>
 <tr><td>Breathing rate</td><td>Derived from beats</td><td>Good</td><td>Spotting a rise of 1+ breaths a minute</td></tr>
 <tr><td>Skin temperature</td><td>Measured</td><td>Fair, as a deviation</td><td>Spotting +0.5 °C nights</td></tr>
-<tr><td>Sleep time, efficiency</td><td>Inferred</td><td>Good</td><td>Night totals, within tens of minutes</td></tr>
-<tr><td>Sleep stages</td><td>Modelled</td><td>Low (52% of epochs, κ 0.28); can be fitted to you</td><td>Rough multi-week trends only</td></tr>
+<tr><td>Sleep time, efficiency</td><td>Inferred, then modelled after onset</td><td>Good</td><td>Night totals, within tens of minutes</td></tr>
+<tr><td>Sleep stages</td><td>Modelled</td><td>Low (56% of epochs, κ 0.34); can be fitted to you</td><td>Rough multi-week trends only</td></tr>
 <tr><td>Sleep score</td><td>Designed index</td><td>As good as its inputs</td><td>A quick read of the night</td></tr>
 <tr><td>Recovery</td><td>Designed index</td><td>Moderate; tuned to you over time</td><td>Deciding how hard to go today</td></tr>
 <tr><td>Strain</td><td>Published formula, designed scale</td><td>Good for cardio, low for lifting</td><td>Comparing your own days</td></tr>

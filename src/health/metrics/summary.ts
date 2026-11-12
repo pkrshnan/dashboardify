@@ -9,7 +9,7 @@ import { type RecordedRun, runSpan, withRuns } from "./runs";
 import { climbs, type SetClimb } from "./sets";
 import { sleepSkinTemp } from "./skin-temp";
 import { rawAngleChanges, sleepWindow } from "./sleep";
-import { scoreEpochs, sleepTimes } from "./sleep-epochs";
+import { type Epoch, onsetIndex, type SleepTimes, scoreEpochs, sleepTimes } from "./sleep-epochs";
 import { type EpochFeatures, epochFeatures } from "./sleep-features";
 import { type PastNight, type SleepScore, sleepScore } from "./sleep-score";
 import { type SleepStages, type StageModel, sleepStages } from "./sleep-stages";
@@ -53,7 +53,7 @@ export interface NightMetrics {
   hrvWindows: number;
   breathingRate: number | null;
   skinTemp: number | null;
-  /** Light, deep and REM; null without an asleep epoch. Estimated, checked for plausibility only. */
+  /** Awake, light, deep and REM; null without an asleep epoch. Estimated, checked for plausibility. */
   stages: SleepStages | null;
 }
 
@@ -63,7 +63,9 @@ export function nightMetrics(input: NightInput): NightMetrics | null {
   if (!parts) {
     return null;
   }
-  const { sleep, times, beats } = parts;
+  const { sleep, beats } = parts;
+  const stages = sleepStages(featuresOf(input, parts), input.stageModel);
+  const times = decodedTimes(parts, stages);
   const onset = times.onset ?? sleep.start;
   const timing = {
     onsetMin: input.minutesAfterNoon(onset),
@@ -87,8 +89,26 @@ export function nightMetrics(input: NightInput): NightMetrics | null {
     hrvWindows: hrv?.windows ?? 0,
     breathingRate: breathingRate(goodWindows(beats, sleep)),
     skinTemp: sleepSkinTemp(input.skinTemp, sleep),
-    stages: sleepStages(featuresOf(input, parts), input.stageModel),
+    stages,
   };
+}
+
+/**
+ * Asleep, WASO, awakenings and efficiency from the decoded stages, which decide awake after
+ * onset; onset and latency stay scoreEpochs'. Without stages, scoreEpochs' own.
+ */
+function decodedTimes(
+  parts: NonNullable<ReturnType<typeof nightParts>>,
+  stages: SleepStages | null,
+): SleepTimes {
+  if (!stages) {
+    return parts.times;
+  }
+  const decoded: Epoch[] = stages.stages.map((stage, i) => ({
+    ts: parts.epochs[i]?.ts ?? 0,
+    asleep: stage !== "awake",
+  }));
+  return sleepTimes(parts.sleep, decoded, onsetIndex(parts.epochs));
 }
 
 type FeatureSamples = Pick<NightInput, "accel" | "heartRate" | "rr">;

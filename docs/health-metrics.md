@@ -36,29 +36,38 @@ bicep, so the threshold may need tuning.
 ## Sleep epochs (`sleep-epochs.ts`)
 
 30-second epochs in the window. Awake if any: posture moved over 5° between 5-second steps; HR 8+
-bpm above the median of the surrounding 10 min (arousal); HR 20%+ above the night's 10th
-percentile (lying awake; REM stays under this); no HR. Lone flips are rescored to match their
-neighbours (Webster 1982). Onset is the first 10 min of unbroken sleep; latency, WASO, awakenings
-(awake runs of 1+ min) and efficiency (asleep ÷ window) follow.
+bpm above the median of the surrounding 10 min, or 20%+ above the night's 10th percentile
+(arousal); no HR. Lone flips are rescored to match their neighbours (Webster 1982). Onset is the
+first 10 min of unbroken sleep, and latency follows from it.
+
+This decides awake only up to onset. After it, the stage model decodes awake with the other
+stages (algo 16), and asleep time, WASO, awakenings (awake runs of 1+ min) and efficiency (asleep
+÷ window) come from its stages. Scored one epoch at a time, a minute of fast beats in REM was an
+awakening: on 3–11 Nov that gave 21–39 awakenings a night, and 6–13 REM → awake → REM.
 
 ## Sleep stages (`sleep-stages.ts`)
 
-Light, deep and REM for each asleep epoch. Estimated: the HR, movement and transition parts are
-fitted to sleep-lab nights; HRV, breathing and DFA α1 are hand-set until `fit-stages.ts` fits them
+Awake, light, deep and REM for each epoch. Estimated: the HR, movement, HR-cue and transition
+parts are fitted to sleep-lab nights; HRV, breathing and DFA α1 are hand-set until `fit-stages.ts` fits them
 to your nights ([health-feedback.md](health-feedback.md#fitting-stages-to-you)).
 
 - **Features** (`sleep-features.ts`), per epoch, z-scored against the night's asleep epochs:
   mean HR; `ln(RMSSD)` over the 5 min around it (null under 60 differences; Esco & Flatt 2014);
   breathing regularity, `ln(peak ÷ band median)` of the 2-min spectrum (null under 80% kept
-  beats); DFA α1 (below); the largest 5-s arm angle change; minutes since onset. HR is then
-  taken against the median of the asleep epochs within an hour either side, since it falls
-  across the night whatever the stage.
-- **Model:** a 4-state HMM decoded with Viterbi. Awake is `sleep-epochs.ts`'s and fixed; asleep
-  epochs can't be awake. Per state: a Gaussian on HR, HRV, breathing and DFA α1 (null
-  features add nothing), and the chance of a movement of 0.5–2°, 2–5° or over 5°, against
-  being still (stillness alone would pull every still epoch toward deep).
+  beats); DFA α1 (below); the largest 5-s arm angle change; whether `sleep-epochs.ts` saw an
+  arousal; minutes since onset. HR is then taken against the median of the asleep epochs within
+  an hour either side, since it falls across the night whatever the stage.
+- **Model:** a 4-state HMM decoded with Viterbi. Before onset awake is `sleep-epochs.ts`'s and
+  fixed; after it, awake is decoded like the rest. Per state: a Gaussian on HRV, breathing and
+  DFA α1 (null features add nothing), and on HR when there is no arousal; the chance of an HR
+  cue (none, an arousal with HR z under 2, 2–4, 4–8 or 8+, or no HR); and the chance of a
+  movement of 0.5–2°, 2–5° or over 5°. Sleep stages score the cue and movement against their
+  own "none" and "still" (stillness alone would pull every still epoch toward deep); awake
+  against light's, since being still is evidence against awake. Jumps are binned, not in the
+  HR Gaussian: one Gaussian over both would let its tail decide an HR of 150. Awake has
+  light's HRV, breathing and DFA levels: nothing says how it looks in RR.
 - **Fitted** (`stage-params.json`, by `src/health/train-stages.ts`): the HR Gaussians, the
-  movement chances, and the transitions, one matrix before onset and one per 30 min since,
+  cue and movement chances, and the transitions, one matrix before onset and one per 30 min since,
   each leaning on the night-wide matrix as if it had 100 more epochs. The time of night (deep
   early, REM later) is in those matrices. REM can't start before 45 min: the lab nights had it
   there on one night of 30.
@@ -76,7 +85,7 @@ to your nights ([health-feedback.md](health-feedback.md#fitting-stages-to-you)).
   `hrvZ`, so it adds something HRV doesn't. It is weighted. Shares (L/D/R) without and with it:
   40/27/33 → 42/26/31, 69/11/20 → 62/14/24, 46/22/32 → 37/29/34, 53/25/22 → 45/26/30,
   64/17/19 → 58/20/22, 59/21/20 → 45/30/25; the 5 Nov night stops being unusual.
-- **Plausible** when light is 35–68%, deep 4–52% and REM 4–38% of asleep time; otherwise the
+- **Plausible** when light is 33–61%, deep 2–48% and REM 5–51% of asleep time; otherwise the
   note line ends "unusual". The bounds are mean ± 1.96 SD of the predicted shares on held-out
   lab nights with 5 h or more asleep, so only nights the model rarely gives are flagged. They
   are wide because the model's own error is.
@@ -93,22 +102,34 @@ for 31 adults; 30 used (one has HR in 13% of epochs). Not checked in.
 vector, HR interpolated to 1 Hz (gaps over 60 s stay gaps). Then it runs our own code over the
 lab's scored span (lights off to lights on, so every epoch has a label): `scoreEpochs`,
 `epochFeatures` (no RR, so HRV and breathing are null), the HR detrend. N1+N2 are light, N3+N4
-deep. Emissions use the epochs we score asleep that the lab put in a sleep stage; transitions
-run over what the decoder can say (our awake, else the lab's stage, lab wake counted as light).
+deep. Everything is fitted to what the decoder can say: after onset each epoch counts as the
+lab's stage, awake included; before it, our awake epochs count as awake and our asleep ones as
+the lab's sleep stage, lab wake as light.
 
 Leave one subject out, pooled over 25,828 held-out epochs:
 
-| Model | Accuracy | κ | κ wake/NREM/REM | Wake | Light | Deep | REM | Shares (L/D/R) |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Fitted | 52% | 0.28 | 0.40 | 40% | 55% | 56% | 46% | 51 / 31 / 19 |
-| H9 hand-set | 51% | 0.19 | 0.33 | 40% | 69% | 6% | 38% | 70 / 12 / 18 |
-| Lab | | | | | | | | 60 / 16 / 23 |
+| Model | Accuracy | κ | κ W/N/R | Wake | Light | Deep | REM | Wake spec. | Shares (L/D/R) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Awake decoded (16) | 56% | 0.34 | 0.46 | 38% | 55% | 55% | 66% | 95% | 46 / 29 / 25 |
+| Awake fixed, same fit | 54% | 0.30 | 0.40 | 40% | 61% | 51% | 44% | 90% | 56 / 26 / 18 |
+| Awake fixed, algo 15 | 52% | 0.28 | 0.40 | 40% | 55% | 56% | 46% | 90% | 51 / 31 / 19 |
+| H9 hand-set | 51% | 0.19 | 0.33 | 40% | 69% | 6% | 38% | 90% | 70 / 12 / 18 |
+| Lab | | | | | | | | | 60 / 16 / 23 |
 
-Recall per stage; wake is `scoreEpochs` in both. The fitted model mostly finds deep that H9
-missed, at the cost of calling too much of it: 31% against the lab's 16%. In this data deep HR
-is steadier than light's, not lower, so the HR Gaussian for deep is narrow rather than shifted.
-Walch 2019 reports κ 0.13–0.30 for wake/NREM/REM from the same watch with motion and HR; ours
-is above that, and the 4-class κ is at the bottom of the 0.3–0.5 usual for HR and motion.
+Recall per stage. Decoding awake mostly stops REM being called awake: 19% of lab REM epochs
+have an HR arousal. Wake bouts per night between first and last sleep, decoded against fixed:
+8.8 against 20.4 (3.0 against 10.7 of a minute or less), WASO 29 against 49 min; the lab has
+14.9 (11.7) and 21 min, so most of its bouts are a minute or less, and those are rarely seen. Webster
+1982 rescoring on top (the first minute of wake after 4 min of sleep is sleep) cut wake recall
+to 31% and κ to 0.33, so it isn't used. In this data deep HR is steadier than light's, not
+lower, so the HR Gaussian for deep is narrow rather than shifted. Walch 2019 reports κ
+0.13–0.30 for wake/NREM/REM from the same watch with motion and HR; ours is above that, and the
+4-class κ is in the 0.3–0.5 usual for HR and motion.
+
+On 3–11 Nov (no labels), algo 15 → 16: awakenings 21–39 → 6–23 a night (mean 32 → 16), of a
+minute or less 12–26 → 2–8, WASO 28–91 → 16–90 min (mean 62 → 53), REM → awake → REM 6–13 →
+0–1; shares 47/25/28 → 43/25/31. Long awakenings stay: of 43 min of HR up to 166 from 02:05 on
+4 Nov, 28 stay awake and the middle 15, at 64–114 bpm, read as REM.
 
 ## Sleep score (`sleep-score.ts`)
 

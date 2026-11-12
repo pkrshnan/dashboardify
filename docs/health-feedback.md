@@ -60,6 +60,8 @@ On 4–9 Nov it was rejected: light fell under 35% on two nights. EM wants deep'
 With algo 13's beat joining (more beats in RMSSD, [health-metrics.md](health-metrics.md#hrv-hrvts))
 it is still rejected, now with light under 35% on four nights: EM puts light's HRV at −0.50
 (capped), deep's at 0.97 and REM's at −0.21, and calls more REM: 48/24/28 → 36/27/37.
+With algo 16's decoded awake it passes on 3–11 Nov: all nine nights stay plausible. It isn't
+applied yet; run it with `--apply` to use it.
 
 ## Next
 

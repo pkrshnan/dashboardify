@@ -1,12 +1,14 @@
-// Light, deep and REM for each asleep epoch, from the night's per-epoch features (H8).
+// Awake, light, deep and REM for each epoch, from the night's features (H8; awake since algo 16).
 //
-// A four-state hidden Markov model decoded with Viterbi. Awake is not inferred here: epochs that
-// scoreEpochs scored awake stay awake and asleep ones can't be, so the model only splits sleep.
-// Each sleep state explains the features with its own likelihoods, and the transitions, which
-// change with the time since onset, carry when each stage comes and how long it lasts. Together
-// they give the 90-minute cycles without hard-coding them.
+// A four-state hidden Markov model decoded with Viterbi. Before sleep onset, scoreEpochs decides
+// awake and the model only splits its asleep epochs. After onset awake is a state like the
+// others, decoded with them: one fast epoch in REM is far likelier REM with a blip than a
+// 30-second awakening, which scoring each epoch alone couldn't weigh. Each state explains the
+// features with its own likelihoods, and the transitions, which change with the time since
+// onset, carry when each stage comes and how long it lasts. Together they give the 90-minute
+// cycles without hard-coding them.
 //
-// The HR, movement and transition parts are fitted to sleep-lab-labelled nights by
+// The HR, movement, HR-cue and transition parts are fitted to sleep-lab-labelled nights by
 // src/health/train-stages.ts (H12) and read from stage-params.json. That data has no beat-to-beat
 // intervals, so HRV, breathing and DFA α1 start hand-set, and src/health/fit-stages.ts can fit
 // them to your own nights (H14). See docs/health-metrics.md.
@@ -28,10 +30,12 @@ const REM = 3;
 /** What train-stages.ts writes. Probabilities; rows and columns of a matrix in STATES order. */
 export interface StageParams {
   provenance: Record<string, string | number>;
-  /** Detrended hrZ per stage: a Gaussian. */
-  hr: Record<SleepStage, { mean: number; sd: number }>;
+  /** Detrended hrZ per stage, in epochs without an arousal: a Gaussian. */
+  hr: Record<Stage, { mean: number; sd: number }>;
   /** movementDeg falls in bin i when it is at least edgesDeg[i - 1] and under edgesDeg[i]. */
-  movement: { edgesDeg: number[]; p: Record<SleepStage, number[]> };
+  movement: { edgesDeg: number[]; p: Record<Stage, number[]> };
+  /** The chance of each HR cue (heartCue) per stage. */
+  heartCue: { p: Record<Stage, number[]> };
   /** One matrix before onset, then one per binMin minutes since onset; the last runs on. */
   transitions: { binMin: number; beforeOnset: number[][]; sinceOnset: number[][][] };
   /** [low, high] share of asleep time outside which a night is flagged. */
@@ -42,8 +46,8 @@ export const STAGE_PARAMS: StageParams = PARAMS_JSON;
 
 /** A way to score epochs: log likelihoods and log transitions. sleepStages decodes with one. */
 export interface StageModel {
-  /** log P(features | stage) for an asleep epoch. */
-  emission(stage: SleepStage, f: EpochFeatures): number;
+  /** log P(features | stage), up to a constant shared by every stage. */
+  emission(stage: Stage, f: EpochFeatures): number;
   /** log P(next | this) at `t` minutes since onset. */
   transitions(t: number): number[][];
 }
@@ -63,6 +67,24 @@ export interface Gaussian {
 export type StageEmissions = Record<SleepStage, Record<FittedFeature, Gaussian>>;
 
 export const SLEEP_STAGES: SleepStage[] = ["light", "deep", "rem"];
+
+/**
+ * What scoreEpochs' heart rule saw in an epoch: nothing (0), an arousal binned by its detrended
+ * hrZ at these edges (1–4), or no HR at all (5). A Gaussian fits a stage's calm HR, but not the
+ * jumps: one over both would be wide enough to let every stage explain any epoch, and its tail
+ * would decide an HR of 150 by whichever stage the lab data happened to give the widest spread.
+ * Bins say only how often each stage has a jump that size.
+ */
+export const AROUSAL_EDGES_Z = [2, 4, 8];
+export const HEART_CUES = AROUSAL_EDGES_Z.length + 3;
+
+export function heartCue(f: EpochFeatures): number {
+  if (f.hrZ === null) {
+    return HEART_CUES - 1;
+  }
+  const z = f.hrZ;
+  return f.arousal ? 1 + AROUSAL_EDGES_Z.filter((edge) => z >= edge).length : 0;
+}
 
 /**
  * HRV and breathing, from the direction the literature gives (Fonseca 2017; breathing: Gutierrez
@@ -130,22 +152,22 @@ export function trainedModel(
   const before = logRows(withoutRem(params.transitions.beforeOnset));
   const bins = params.transitions.sinceOnset.map(logRows);
   const noRem = params.transitions.sinceOnset.map((m) => logRows(withoutRem(m)));
-  const logMoved = {
-    light: againstStill(params.movement.p.light),
-    deep: againstStill(params.movement.p.deep),
-    rem: againstStill(params.movement.p.rem),
-  };
+  const logMoved = againstUsual(params.movement.p);
+  const logCue = againstUsual(params.heartCue.p);
   return {
     emission(stage, f) {
       const { mean, sd } = params.hr[stage];
       const bin = params.movement.edgesDeg.filter((edge) => f.movementDeg >= edge).length;
-      const own = emissions[stage];
+      // Nothing says how awake looks in HRV, breathing or DFA: the lab data has no RR, and
+      // moving smears the beats. So awake borrows light's levels, and RR can't tell them apart.
+      const own = emissions[stage === "awake" ? "light" : stage];
       return (
-        gaussian(f.hrZ, mean, sd) +
+        (f.arousal ? 0 : gaussian(f.hrZ, mean, sd)) +
         gaussian(f.hrvZ, own.hrvZ.mean, own.hrvZ.sd) +
         gaussian(f.breathingZ, own.breathingZ.mean, own.breathingZ.sd) +
         gaussian(f.dfaZ, own.dfaZ.mean, own.dfaZ.sd) +
-        (logMoved[stage][bin] ?? 0)
+        (logMoved[stage][bin] ?? 0) +
+        (logCue[stage][heartCue(f)] ?? 0)
       );
     },
     transitions(t) {
@@ -176,14 +198,21 @@ function withoutRem(matrix: number[][]): number[][] {
 }
 
 /**
- * log P(bin | stage) ÷ P(still | stage). Stillness is the norm in every stage, and a night has
- * hundreds of still epochs, so scoring it would add up to a steady pull toward whichever stage is
- * stillest (deep) whatever the heart says; on held-out nights that cost accuracy and turned a
- * featureless night deep. So only a movement counts as evidence.
+ * log P(bin | stage) ÷ P(bin 0 | stage) for a sleep stage, where bin 0 is the usual (still, no
+ * HR cue). Stillness is the norm in every sleep stage, and a night has hundreds of still epochs,
+ * so scoring it would add up to a steady pull toward whichever stage is stillest (deep) whatever
+ * the heart says; on held-out nights that cost accuracy and turned a featureless night deep. So
+ * only a movement counts as evidence between them. Awake is against light's usual instead: being
+ * still is real evidence against being awake.
  */
-function againstStill(p: number[]): number[] {
-  const still = p[0] ?? 1;
-  return p.map((v) => Math.log(v / still));
+function againstUsual(p: Record<Stage, number[]>): Record<Stage, number[]> {
+  const against = (v: number[], usual: number) => v.map((x) => Math.log(x / usual));
+  return {
+    awake: against(p.awake, p.light[0] ?? 1),
+    light: against(p.light, p.light[0] ?? 1),
+    deep: against(p.deep, p.deep[0] ?? 1),
+    rem: against(p.rem, p.rem[0] ?? 1),
+  };
 }
 
 /** Rows normalised (the file rounds them) and logged. */
@@ -271,13 +300,24 @@ export function startScore(model: StageModel, state: number, f: EpochFeatures | 
   );
 }
 
-/** The model's likelihood, except that awake follows scoreEpochs exactly. */
+/** The model's likelihood, except that before onset awake follows scoreEpochs exactly. */
 export function emission(model: StageModel, state: number, f: EpochFeatures | undefined): number {
-  if (!f || f.asleep === (state === AWAKE)) {
+  const stage = STATES[state];
+  if (!f || stage === undefined) {
     return Number.NEGATIVE_INFINITY;
   }
-  const stage = STATES[state];
-  return stage === undefined || stage === "awake" ? 0 : model.emission(stage, f);
+  if (afterOnset(f)) {
+    return model.emission(stage, f);
+  }
+  if (f.asleep === (state === AWAKE)) {
+    return Number.NEGATIVE_INFINITY;
+  }
+  return stage === "awake" ? 0 : model.emission(stage, f);
+}
+
+/** Onset and the window's end stay scoreEpochs' and sleep.ts's; awake is decoded in between. */
+export function afterOnset(f: EpochFeatures): boolean {
+  return f.sinceOnsetMin !== null && f.sinceOnsetMin >= 0;
 }
 
 /** HR less the median of the asleep epochs' HR within TREND_HALF_EPOCHS either side. */

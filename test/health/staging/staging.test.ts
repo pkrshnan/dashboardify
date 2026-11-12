@@ -78,6 +78,7 @@ function labelled(stages: Stage[], hrBy: Record<Stage, number>): LabelledNight {
   const features: EpochFeatures[] = stages.map((s, i) => ({
     ts: T0 + i * EPOCH_MS,
     asleep: s !== "awake",
+    arousal: false,
     hrZ: hrBy[s] + (i % 2 === 0 ? 0.1 : -0.1),
     hrvZ: null,
     dfaZ: null,
@@ -112,14 +113,26 @@ describe("fitting", () => {
     expect(deep?.reduce((sum, v) => sum + v, 0)).toBeCloseTo(1, 3);
   });
 
-  test("the target keeps scoreEpochs' awake and counts lab wake in scored sleep as light", () => {
+  test("before onset the target keeps scoreEpochs' awake and counts lab wake as light", () => {
+    const n: LabelledNight = {
+      ...night,
+      features: night.features
+        .slice(0, 3)
+        .map((f, i) => ({ ...f, asleep: i !== 0, sinceOnsetMin: -1 })),
+      truth: ["light", "awake", null],
+    };
+
+    expect(target(n)).toEqual(["awake", "light", null]);
+  });
+
+  test("after onset the target is the lab's stage, awake included", () => {
     const n: LabelledNight = {
       ...night,
       features: night.features.slice(0, 3).map((f, i) => ({ ...f, asleep: i !== 0 })),
       truth: ["light", "awake", null],
     };
 
-    expect(target(n)).toEqual(["awake", "light", null]);
+    expect(target(n)).toEqual(["light", "awake", null]);
   });
 });
 
