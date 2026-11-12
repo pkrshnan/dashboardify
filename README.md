@@ -106,7 +106,7 @@ Derived health tables can be rebuilt from the raw samples.
 
 The home screen is a Preact app served by the same process. The server combines tasks, health
 history, and calendar events into a home view, and the UI renders it. The Activity page
-(`#activity`) lists detected workouts and walks for review. Sign-in uses device tokens or, when
+(`#/activity`) lists detected workouts and walks for review. Sign-in uses device tokens or, when
 configured behind Tailscale Serve, an allowed tailnet login.
 
 Calendars sync every two minutes over CalDAV into `data/calendar-cache.db`, so the home screen

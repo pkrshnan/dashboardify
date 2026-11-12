@@ -23,9 +23,11 @@ Read the one for the area you change.
 | [roadmap.md](docs/roadmap.md) | Decisions, what is built, what is next |
 | [architecture.md](docs/architecture.md) | Code map, request flow, data on disk, security |
 | [navigation.md](docs/navigation.md) | Plan N1–N8: router, modules, command bar, search, sidebar |
+| [lists.md](docs/lists.md) | Plan LS1–LS4: list notes, ListService, the Lists page, Siri |
 | [api.md](docs/api.md) | Every v1 endpoint and its conventions |
 | [vault-format.md](docs/vault-format.md) | What the server writes into notes |
 | [calendar.md](docs/calendar.md) | CalDAV, ICS links, cache and sync, capture |
+| [strava.md](docs/strava.md) | Plan ST1–ST6: Strava runs, splitting walk-run-walk |
 | [settings.md](docs/settings.md) | `settings.db`, secrets, devices, CLI, Settings page |
 | [health-metrics.md](docs/health-metrics.md) | How each health number is computed |
 | [health-feedback.md](docs/health-feedback.md) | Check-ins and re-fitting recovery |
@@ -39,8 +41,9 @@ Read the one for the area you change.
 1. A plan in `docs/<feature>.md`: goals, decisions, data, API, a numbered PR list.
 2. Proto → store in `src/<feature>/` → service in `src/server/api/<feature>.ts` → register in
    `src/server/routes/v1.ts` and `rest-bindings.ts` → calls in `web/api.ts` → UI.
-3. After navigation N2, the UI is one `web/modules/<feature>.tsx`
-   ([navigation.md](docs/navigation.md#adding-a-module)).
+3. The page is one `web/modules/<feature>.tsx`, listed in `web/modules/index.ts`
+   ([navigation.md](docs/navigation.md#adding-a-module)). It reads the token and phone flag
+   with `useApp()` and the home view from its props.
 4. Update `docs/api.md`, `docs/vault-format.md` if it writes notes, and the roadmap.
 
 ## Rules that are easy to miss

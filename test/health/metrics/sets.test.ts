@@ -49,6 +49,16 @@ describe("set climbs", () => {
     expect(setClimbs(samples, { start: T0, end: T0 + 3_600_000 }, 4)).toHaveLength(4);
   });
 
+  test("a session that starts at its first peak still sees that set's whole climb", () => {
+    const samples = session(4, () => 30);
+    const first = setClimbs(samples, { start: T0, end: T0 + 3_600_000 }, 4)?.[0];
+
+    const climbs = setClimbs(samples, { start: first?.peak ?? 0, end: T0 + 3_600_000 }, 4);
+
+    expect(climbs?.[0]?.peak).toBe(first?.peak ?? -1);
+    expect(climbs?.[0]?.climb).toBeGreaterThan(25);
+  });
+
   test("fewer clear climbs than logged sets is no match", () => {
     const samples = session(8, () => 20);
 

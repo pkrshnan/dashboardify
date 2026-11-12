@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { getSettings, ServiceError, updateSettings } from "../../web/api";
-import { SECTIONS, sectionFromHash, timeZones } from "../../web/settings/sections";
+import { knownSection, SECTIONS, timeZones } from "../../web/settings/sections";
 import { useApi } from "../server/api/helpers";
 
 function through<T>(api: ReturnType<typeof useApi>, run: () => Promise<T>): Promise<T> {
@@ -55,10 +55,10 @@ describe("sections", () => {
     expect(SECTIONS.map((s) => s.id)[0]).toBe("general");
   });
 
-  test("the hash picks a section, or none for the phone's list", () => {
-    expect(sectionFromHash("#settings/general")).toBe("general");
-    expect(sectionFromHash("#settings")).toBeUndefined();
-    expect(sectionFromHash("#settings/nope")).toBeUndefined();
+  test("the address picks a section, or none for the phone's list", () => {
+    expect(knownSection("general")).toBe("general");
+    expect(knownSection(undefined)).toBeUndefined();
+    expect(knownSection("nope")).toBeUndefined();
   });
 
   test("time zones come from the runtime", () => {
