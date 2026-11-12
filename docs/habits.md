@@ -31,7 +31,7 @@ So habits never write `- [ ]` lines, never appear in Tasks, and Tasks aren't con
 | Schedules | `daily`, `N a week` (Monday–Sunday weeks), or weekdays (`Mon Wed Fri`). No "every N days". |
 | Done | The daily note's `habits:` frontmatter, a list of ids: `habits: [meditate, floss]`. A plain list shows as chips in Obsidian's Properties. The server owns only this key. |
 | Auto habits | `auto <source>` on the line. Computed on read from what's already in the note or the derived tables, never written to `habits:`, so a health sync doesn't rewrite every note. Ticking one by hand (strap off) writes it to `habits:` like any other. |
-| Auto sources | `steps ≥ N` (`steps`), a workout kind (`lifting`, `running`, `volleyball`, `workout`, after reviews), `asleep before HH:MM` (the night that ended that morning), `journal` (an entry under `## Journal`), `checkin` (`feel` set) |
+| Auto sources | `steps ≥ N` (`steps`), a workout kind (`lifting`, `running`, `volleyball`, `workout`, after reviews), `asleep before HH:MM` (the night that starts that evening, so Wednesday's square is Wednesday night; unknown until the next morning's sync), `journal` (an entry under `## Journal`), `checkin` (`feel` set) |
 | Day | The server's time zone. Until 04:00, Today and Siri tick the day before, so "read" at 00:40 counts for the evening it was. The Habits page's grid can fix any past day. |
 | Streaks | Daily and weekday habits: consecutive scheduled days done; today unticked doesn't break it, and one missed day is forgiven but two in a row end it ("never miss twice"). `N a week`: consecutive weeks met; the current week counts once met. |
 | Rate | Done ÷ scheduled over the last 30 days, shown beside the streak, so one miss doesn't erase a month. |
