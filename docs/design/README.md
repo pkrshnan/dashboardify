@@ -1,6 +1,6 @@
 # Design
 
-The home screen, Activity page and the rules every screen follows. Canvases: home
+The home screen, Health and Activity pages and the rules every screen follows. Canvases: home
 https://claude.ai/artifact/UfZhR2WaR4YVkhaPHHsVv3, capture and Settings
 https://claude.ai/artifact/YNnwtKHE7AAzjLswS4JnSc, Activity
 https://claude.ai/artifact/Dm3mFqJPttBWpS9VxeYPUD. `home-desktop.dc.html` (1440 wide) and
@@ -64,6 +64,8 @@ https://claude.ai/artifact/Dm3mFqJPttBWpS9VxeYPUD. `home-desktop.dc.html` (1440 
   daily dots, weekly means for 1Y, a solid dot at today.
 - **Order:** heart, sleep, activity, vitals, separated by space, not labels. Desktop has heart and
   sleep on the left, activity and vitals on the right; the phone lists them in one column.
+- **Sleep rows** (score, time asleep, deep, REM) go to that night on the Health page. The
+  "Health" heading links there too.
 
 ## Activity page
 
@@ -76,6 +78,16 @@ every 15 s; for lifting each set is a band in its exercise's colour (paler for w
 the detail show calories when the profile allows ("strain 9.6 · 667 kcal"). A Strava run shows
 distance and pace before them, links to Strava, and its HR covers the walks
 either side, shaded teal. A Running total joins the row above when the range has runs.
+
+## Health page
+
+`#/health`, with the same heading, range switch and sync labels as home. Recovery heads it, then
+Sleep, Heart and Vitals, each a column of home's rows given the full width. Sleep starts with a
+night, last night unless `?night=2026-11-12` names one: its times ("23:41–07:05"), time asleep
+and score, then a hypnogram (awake, REM, light and deep lanes in shades of the sleep colour, hour
+ticks in the server's time zone), the stage totals and "Estimated", plus "· unusual night" when
+the stages look unlike yours. Links step to the night before or after and replace the history
+entry, so Back leaves the page.
 
 ## Look
 

@@ -20,7 +20,9 @@ import { Focus } from "../components/focus";
 import { Health } from "../components/health";
 import { TaskList } from "../components/task-list";
 import { type Pending, pendingEvent, withPending } from "../lib/capture";
-import { setQuery } from "../lib/use-route";
+import { NIGHT_ROWS } from "../lib/night";
+import { href } from "../lib/router";
+import { navigate, setQuery } from "../lib/use-route";
 import { useApp } from "./context";
 import type { LoadedHome, Module, PageProps } from "./types";
 
@@ -37,10 +39,11 @@ export const today: Module = {
 
 function TodayPage({ route, home }: PageProps) {
   // The shell shows a module with needsHome only once the home view is loaded.
-  return home ? <HomeScreen home={home} week={route.query.view === "week"} /> : null;
+  return home ? <HomeScreen home={home} query={route.query} /> : null;
 }
 
-function HomeScreen({ home, week }: { home: LoadedHome; week: boolean }) {
+function HomeScreen({ home, query }: { home: LoadedHome; query: Record<string, string> }) {
+  const week = query.view === "week";
   const { view, now, load } = home;
   const { token, isPhone } = useApp();
   const { ticked, complete, reopen } = useTicks(token, load);
@@ -81,15 +84,26 @@ function HomeScreen({ home, week }: { home: LoadedHome; week: boolean }) {
           {tasks}
         </section>
       )}
-      <Health
-        metrics={view.health}
-        date={view.date}
-        sync={view.healthSync}
-        timeZone={view.timeZone}
-        isPhone={isPhone}
-      />
+      <HomeHealth home={home} />
       {panel}
     </main>
+  );
+}
+
+/** Health trends. A sleep row goes to last night on the Health page, as a new history entry. */
+function HomeHealth({ home }: { home: LoadedHome }) {
+  const { view } = home;
+  const { isPhone } = useApp();
+  return (
+    <Health
+      metrics={view.health}
+      date={view.date}
+      sync={view.healthSync}
+      timeZone={view.timeZone}
+      isPhone={isPhone}
+      opens={NIGHT_ROWS}
+      onOpen={() => navigate(href("/health", { night: view.date }))}
+    />
   );
 }
 
