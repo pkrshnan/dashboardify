@@ -50,10 +50,17 @@ describe("nav rules", () => {
   });
 
   test("while every page fits, each is a tab and there is no More", () => {
+    const { tabs, more } = phoneTabs(FIVE.slice(0, 4));
+
+    expect(tabs.map((m) => m.id)).toEqual(["today", "tasks", "lists", "activity"]);
+    expect(more).toEqual([]);
+  });
+
+  test("Health and Activity go under More, with Settings", () => {
     const { tabs, more } = phoneTabs(MODULES);
 
-    expect(tabs.map((m) => m.id)).toEqual(["today", "lists", "activity", "settings"]);
-    expect(more).toEqual([]);
+    expect(tabs.map((m) => m.id)).toEqual(["today", "lists"]);
+    expect(more.map((m) => m.id)).toEqual(["health", "activity", "settings"]);
   });
 
   test("past four pages, the tab pages stay and the rest go under More", () => {
@@ -66,30 +73,32 @@ describe("nav rules", () => {
 
 describe("Sidebar", () => {
   test("links every page and marks the one showing", () => {
-    const { getAllByRole } = render(<Sidebar modules={MODULES} current="activity" />);
+    const { getAllByRole } = render(<Sidebar modules={MODULES} current="health" />);
     const links = getAllByRole("link");
 
     expect(links.map((a) => a.getAttribute("href"))).toEqual([
       "#/",
       "#/lists",
+      "#/health",
       "#/activity",
       "#/settings",
     ]);
-    expect(links.map((a) => a.getAttribute("aria-current"))).toEqual([null, null, "page", null]);
-    expect(links[2]?.getAttribute("title")).toBe("Activity (g a)");
+    expect(links.map((a) => a.getAttribute("aria-current"))).toEqual([
+      null,
+      null,
+      "page",
+      null,
+      null,
+    ]);
+    expect(links[2]?.getAttribute("title")).toBe("Health (g h)");
   });
 });
 
 describe("TabBar", () => {
-  test("shows today's pages as tabs, with no More", () => {
+  test("shows Today and Lists as tabs, and More for the rest", () => {
     const { getAllByRole } = render(<TabBar modules={MODULES} current="today" more={MORE} />);
 
-    expect(getAllByRole("link").map((a) => a.textContent)).toEqual([
-      "Today",
-      "Lists",
-      "Activity",
-      "Settings",
-    ]);
+    expect(getAllByRole("link").map((a) => a.textContent)).toEqual(["Today", "Lists", "More"]);
   });
 
   test("adds More when pages don't fit, and marks it for a page under it", () => {

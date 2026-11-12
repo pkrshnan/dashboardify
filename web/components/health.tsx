@@ -1,5 +1,6 @@
-// Health trends: fifteen metrics in four groups (heart, sleep, activity, vitals), one line colour per
-// group. The range switch changes only the charts, never the numbers.
+// Home's health trends: fifteen metrics in four groups (heart, sleep, activity, vitals), one line
+// colour per group. The range switch changes only the charts, never the numbers. The Health page
+// (web/modules/health.tsx) reuses the row and the status line.
 
 import { useState } from "preact/hooks";
 import { LOW_BATTERY_PCT } from "../../src/health/battery";
@@ -12,7 +13,7 @@ import { dayMonth } from "../lib/format";
 import { href } from "../lib/router";
 import { Segmented } from "./segmented";
 
-const RANGES: { value: Range; label: string }[] = [
+export const RANGES: { value: Range; label: string }[] = [
   { value: "2w", label: "2W" },
   { value: "1m", label: "1M" },
   { value: "3m", label: "3M" },
@@ -31,12 +32,17 @@ export function Health({
   sync,
   timeZone,
   isPhone,
+  opens = new Set(),
+  onOpen,
 }: {
   metrics: MetricTrend[];
   date: string;
   sync: HealthSyncView | null;
   timeZone: string;
   isPhone: boolean;
+  /** Keys of the rows that open a detail when tapped, such as the sleep rows. */
+  opens?: Set<string>;
+  onOpen?: (key: string) => void;
 }) {
   const [range, setRange] = useState<Range>("1m");
   const group = (g: HealthGroup) => (
@@ -44,7 +50,13 @@ export function Health({
       {metrics
         .filter((m) => m.group === g)
         .map((m) => (
-          <Metric key={m.key} metric={m} range={range} isPhone={isPhone} />
+          <Metric
+            key={m.key}
+            metric={m}
+            range={range}
+            isPhone={isPhone}
+            onOpen={onOpen && opens.has(m.key) ? () => onOpen(m.key) : undefined}
+          />
         ))}
     </div>
   );
@@ -52,15 +64,15 @@ export function Health({
     <section class="section">
       <div class="section-head">
         <div class="health-title">
-          <h2>Health</h2>
+          <h2>
+            <a class="title-link" href={href("/health")}>
+              Health
+            </a>
+          </h2>
           <a class="section-link" href={href("/activity")}>
             Activity ›
           </a>
-          <div class="range-label">
-            {rangeLabel(date, range)}
-            {sync && <Synced sync={sync} timeZone={timeZone} />}
-            {sync?.battery && <Battery battery={sync.battery} timeZone={timeZone} />}
-          </div>
+          <HealthStatus date={date} range={range} sync={sync} timeZone={timeZone} />
         </div>
         <Segmented label="Trend range" segments={RANGES} value={range} onChange={setRange} />
       </div>
@@ -72,6 +84,23 @@ export function Health({
         ))}
       </div>
     </section>
+  );
+}
+
+/** The range's dates, then when the strap last synced and its battery. */
+export function HealthStatus(props: {
+  date: string;
+  range: Range;
+  sync: HealthSyncView | null;
+  timeZone: string;
+}) {
+  const { sync, timeZone } = props;
+  return (
+    <div class="range-label">
+      {rangeLabel(props.date, props.range)}
+      {sync && <Synced sync={sync} timeZone={timeZone} />}
+      {sync?.battery && <Battery battery={sync.battery} timeZone={timeZone} />}
+    </div>
   );
 }
 
@@ -109,20 +138,23 @@ function Battery({ battery, timeZone }: { battery: BatteryView; timeZone: string
   );
 }
 
-function Metric({
+/** One trend row: name, value and change, then its chart. The Health page reuses it. */
+export function Metric({
   metric,
   range,
   isPhone,
+  onOpen,
 }: {
   metric: MetricTrend;
   range: Range;
   isPhone: boolean;
+  onOpen?: () => void;
 }) {
   const value = (
-    <div class="metric-value">
+    <span class="metric-value">
       {metric.value ?? "–"}
       {metric.unit && metric.value && <span class="unit">{metric.unit}</span>}
-    </div>
+    </span>
   );
   const delta = (
     <span>
@@ -135,23 +167,31 @@ function Metric({
       )}
     </span>
   );
-  return (
-    <div class="metric">
+  const body = (
+    <>
       {isPhone ? (
-        <div class="metric-row">
+        <span class="metric-row">
           <span class="metric-name">{metric.name}</span>
           <span class="metric-delta">{delta}</span>
           {value}
-        </div>
+        </span>
       ) : (
-        <div>
-          <div class="metric-name">{metric.name}</div>
+        <span class="metric-text">
+          <span class="metric-name">{metric.name}</span>
           {value}
-          <div class="metric-delta">{delta}</div>
-        </div>
+          <span class="metric-delta">{delta}</span>
+        </span>
       )}
       <Sparkline metric={metric} range={range} isPhone={isPhone} />
-    </div>
+    </>
+  );
+  // A row that opens a detail is a button; the others are plain, so they don't look tappable.
+  return onOpen ? (
+    <button type="button" class="metric opens" onClick={onOpen}>
+      {body}
+    </button>
+  ) : (
+    <div class="metric">{body}</div>
   );
 }
 

@@ -30,6 +30,7 @@ import { FakeCalDav } from "../test/calendar/fake-caldav";
 import { DISHOOM, FakePhoton } from "../test/places/fake-photon";
 import homepage from "../web/index.html";
 import { DemoActivity } from "./demo-activity";
+import { demoNight } from "./demo-sleep";
 
 /** Which demo calendar holds each category's events. */
 const CALENDAR_FOR: Record<Category, string> = {
@@ -357,19 +358,19 @@ async function writeHealth(store: DerivedStore): Promise<void> {
     // Today's activity is a running total, part way through the day.
     const sofar = back === 0 ? 0.4 : 1;
     const wave = Math.sin(back / 40);
+    const night = demoNight(date, TIME_ZONE, Math.round(420 + 40 * noise() * 2), noise);
     await store.write("nights", date, {
       date,
+      ...night.row,
       sleep_score: 76 + 8 * noise() * 2 + 2 * wave,
-      tst_min: 420 + 40 * noise() * 2,
       rhr_bpm: 50 + 2 * noise() * 2 + recent * 1.5,
       rmssd_ms: 58 + 7 * noise() * 2 - recent * 5,
       resp_rate_bpm: 14.5 + 0.4 * noise() * 2,
       skin_temp_c: 33.4 + 0.3 * noise() * 2 + recent * 0.1,
-      light_min: 250 + 25 * noise() * 2,
-      deep_min: 85 + 12 * noise() * 2 + 4 * wave,
-      rem_min: 100 + 14 * noise() * 2 - recent * 12,
-      stages_plausible: 1,
+      // Three nights ago looked unlike the rest, so the night view marks it.
+      stages_plausible: back === 3 ? 0 : 1,
     });
+    await store.writeAll("stages", date, night.runs);
     await store.write("days", date, {
       date,
       recovery_pct: back === 0 ? 62 : 68 + 11 * noise() * 2 - recent * 10,
