@@ -2,6 +2,7 @@
 // Health block for reading. Units are in the frontmatter key names, so values are plain numbers.
 
 import type { LiftingDay } from "./lifting";
+import { type Load, loadBand } from "./metrics/load";
 import type { Recovery } from "./metrics/recovery";
 import type { DayMetrics, NightMetrics } from "./metrics/summary";
 import type { Walk } from "./metrics/walks";
@@ -22,6 +23,7 @@ export interface DaySummary {
   workouts: ReviewedWorkout[];
   /** The note's lifting log, joined to the strap; null without a log. */
   lifting: LiftingDay | null;
+  load: Load;
 }
 
 type Fields = Record<string, number | null | undefined>;
@@ -31,6 +33,9 @@ export function frontmatter(s: DaySummary): Record<string, number> {
   const fields: Fields = {
     recovery_pct: round(s.recovery?.pct, 0),
     strain: round(s.day.strain, 1),
+    load_acute: round(s.load.acute, 1),
+    load_chronic: round(s.load.chronic, 1),
+    load_ratio: round(s.load.ratio, 2),
     sleep_score: round(s.night?.sleep.score, 0),
     sleep_performance_pct: round(s.night?.sleep.sufficiency, 0),
     tst_min: round(s.night?.asleepMin, 0),
@@ -71,6 +76,7 @@ export function healthBlock(
         s.night ? sleepLine(s.night, clock) : null,
         s.night ? vitalsLine(s.night, s.tempDevC) : null,
         strainLine(s.day),
+        loadLine(s.load),
         ...counted(s.workouts).map((w) => workoutLine(w, clock)),
         ...s.day.walks.map((w) => walkLine(w, clock)),
         s.lifting ? liftingLine(s.lifting, clock) : null,
@@ -115,6 +121,15 @@ function strainLine(day: DayMetrics): string | null {
     return day.wornMin > 0 ? `- Worn ${duration(day.wornMin)}` : null;
   }
   return `- Strain **${day.strain.toFixed(1)}** · Zones ${day.zoneMin.join(" / ")} min`;
+}
+
+/** "- Load steady · 1.08 (7 d vs 28 d)". The band is read from the ratio as shown. */
+function loadLine(load: Load): string | null {
+  const ratio = round(load.ratio, 2);
+  if (ratio === null) {
+    return null;
+  }
+  return `- Load ${loadBand(ratio)} · ${ratio.toFixed(2)} (7 d vs 28 d)`;
 }
 
 const KIND_NAMES: Record<Workout["kind"], string> = {

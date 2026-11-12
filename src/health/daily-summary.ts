@@ -10,6 +10,7 @@ import type { Vault } from "../vault/vault";
 import { readReviews } from "../vault/workout-reviews";
 import type { DerivedRow, DerivedStore } from "./derived-store";
 import { type LiftingSet, liftingDay } from "./lifting";
+import { LOOKBACK_DAYS, type Load, type LoadDay, trainingLoad } from "./metrics/load";
 import {
   BASELINE_NIGHTS,
   MIN_BASELINE_NIGHTS,
@@ -40,7 +41,7 @@ import { type DaySummary, frontmatter, healthBlock, syncLine } from "./render";
 import { counted, type ReviewedWorkout, reviewFor, reviewWorkouts } from "./reviews";
 
 /** Bump when a calculation changes, so old rows can be told apart and rebuilt. */
-export const ALGO_VERSION = "6";
+export const ALGO_VERSION = "7";
 
 /** Strava runs, as strava-cache.db holds them (see src/strava/cache.ts). */
 export interface RunSource {
@@ -115,6 +116,7 @@ export class DailySummary {
       night,
       day,
       ...(await this.reviewed(date, day, { heartRate, steps, motion, sleep })),
+      load: await this.trainingLoad(date, day),
       recovery: signals ? recovery(signals, history, params.recovery) : null,
       paramsVersion: params.version,
       baselineNights: history.filter((n) => n.lnRmssd !== null).length,
@@ -150,6 +152,19 @@ export class DailySummary {
       logged: lifting !== null,
     });
     return { workouts, lifting };
+  }
+
+  /** Load through `date`: the stored days before it, then this run's own TRIMP. */
+  private async trainingLoad(date: string, day: DayMetrics): Promise<Load> {
+    const start = Temporal.PlainDate.from(date);
+    const past: (LoadDay | null)[] = [];
+    for (let back = LOOKBACK_DAYS; back >= 1; back--) {
+      const row = await this.derived.read("days", start.subtract({ days: back }).toString());
+      past.push(row ? toLoadDay(row) : null);
+    }
+    // Today's TRIMP is still a running total; see trainingLoad.
+    const today = date === localDate(new Date(this.now()), this.timeZone);
+    return trainingLoad([...past, { trimp: day.trimp, wornMin: day.wornMin }], today);
   }
 
   /** Runs that start on `date`, local midnight to midnight. */
@@ -372,6 +387,13 @@ export function fromNightRow(row: DerivedRow): NightSignals {
   };
 }
 
+function toLoadDay(row: DerivedRow): LoadDay {
+  return {
+    trimp: typeof row.trimp === "number" ? row.trimp : null,
+    wornMin: typeof row.worn_min === "number" ? row.worn_min : 0,
+  };
+}
+
 function dayRow(s: DaySummary): DerivedRow {
   const zones = s.day.zoneMin ?? [];
   return {
@@ -387,6 +409,9 @@ function dayRow(s: DaySummary): DerivedRow {
     workout_min: counted(s.workouts).reduce((sum, w) => sum + w.minutes, 0),
     walk_min: s.day.walks.reduce((sum, w) => sum + w.minutes, 0),
     walk_steps: s.day.walks.reduce((sum, w) => sum + w.steps, 0),
+    load_acute: s.load.acute,
+    load_chronic: s.load.chronic,
+    load_ratio: s.load.ratio,
     ...Object.fromEntries([0, 1, 2, 3, 4].map((i) => [`zone${i + 1}_min`, zones[i] ?? null])),
   };
 }

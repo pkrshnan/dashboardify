@@ -1,7 +1,7 @@
 # Health: the rest
 
 Plan for the health numbers still missing: training load, calories, VO2max, fitness and
-biological age, and sleep stages. Status: planned (H1–H11); H11 waits for artboards. As each PR
+biological age, and sleep stages. Status: H1 done, H2–H11 planned; H11 waits for artboards. As each PR
 lands, its section moves into [health-metrics.md](health-metrics.md). This file goes when the
 last one does.
 
@@ -26,20 +26,6 @@ Not goals: SpO2 from the raw `ppg` stream, runs with pace and route (roadmap #6)
 | Recovery | No new number feeds recovery or the sleep score in this plan |
 | Versions | Each PR that changes rows bumps `ALGO_VERSION`; rebuild with `summarize.ts` |
 | UI | Note and API first. Home rows, Activity calories and a sleep view wait for artboards (H11). |
-
-## Training load (`load.ts`)
-
-From each day's TRIMP, already in `days/` (TRIMP, not strain: strain is squashed, so it can't be
-summed).
-
-- Acute = 7-day and chronic = 28-day exponentially weighted means (Williams 2017; EWMA over
-  rolling sums because it weights recent days more and has no cliff when a day drops out).
-- Ratio = acute ÷ chronic. Bands: under 0.8 easing off, 0.8–1.3 steady, 1.3–1.5 building fast,
-  over 1.5 a spike. The injury-risk claims for these bands are disputed (Impellizzeri 2020), so
-  the note says "load", never "risk".
-- A day with under 16 h worn gets the median TRIMP of the last 28 well-worn days. More than 2 such
-  days in the last 7, or under 28 days of history: no ratio.
-- Keys: `load_acute`, `load_chronic`, `load_ratio`.
 
 ## Calories (`calories.ts`)
 
@@ -112,7 +98,7 @@ Light, deep and REM for each asleep epoch; awake stays as `sleep-epochs.ts` scor
 
 | # | PR | Holds |
 | --- | --- | --- |
-| H1 | Training load | `load.ts`; reads `days/` history; keys, note line |
+| H1 | Training load | Done; now in [health-metrics.md](health-metrics.md#training-load-loadts) |
 | H2 | Body fields | `weight_kg`, `height_cm` in `profile.ts`; vault-format |
 | H3 | Calories | `calories.ts`; day keys, note line |
 | H4 | Workout calories | `kcal` in `workouts/`; `Workout.calories` in `activity.proto` |
