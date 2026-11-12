@@ -13,6 +13,8 @@ import type { ApiRequests } from "./requests";
 const MAX_DAYS = 92;
 const HR_STEP_MS = 15_000;
 const HR_MARGIN_MS = 5 * 60_000;
+/** A walk this close to a Strava run is the same outing (as walks.ts counts it). */
+const OUTING_GAP_MS = 3 * 60_000;
 const LB_PER_KG = 2.20462;
 
 export interface ActivityDeps {
@@ -47,8 +49,9 @@ export class ActivityService {
 
   getWorkout = async (request: ApiRequests["getWorkout"]) => {
     const { date, row } = await this.find(request.name);
-    const start = num(row.start_ts) - HR_MARGIN_MS;
-    const end = num(row.end_ts) + HR_MARGIN_MS;
+    const outing = await this.outing(date, row);
+    const start = outing.start - HR_MARGIN_MS;
+    const end = outing.end + HR_MARGIN_MS;
     const samples = await this.deps.raw.readRange("heart_rate", start, end);
     const sets = row.kind === "lifting" ? await this.deps.derived.readAll("sets", date) : [];
     return {
@@ -127,6 +130,27 @@ export class ActivityService {
       throw new ApiError(404, "workout not found");
     }
     return { date, row };
+  }
+
+  /**
+   * The workout's span, widened over the walks either side of a Strava run, so its heart rate
+   * shows the whole outing.
+   */
+  private async outing(date: string, row: DerivedRow): Promise<{ start: number; end: number }> {
+    let start = num(row.start_ts);
+    let end = num(row.end_ts);
+    if (typeof row.strava_id !== "number") {
+      return { start, end };
+    }
+    for (const walk of await this.deps.derived.readAll("walks", date)) {
+      if (Math.abs(num(walk.end_ts) - start) <= OUTING_GAP_MS) {
+        start = Math.min(start, num(walk.start_ts));
+      }
+      if (Math.abs(num(walk.start_ts) - end) <= OUTING_GAP_MS) {
+        end = Math.max(end, num(walk.end_ts));
+      }
+    }
+    return { start, end };
   }
 
   private clock(ts: number): string {
