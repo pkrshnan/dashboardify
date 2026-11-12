@@ -12,6 +12,7 @@ import {
   mergeFrontmatter,
   type Note,
   parseNote,
+  renderNote,
   replaceBlockAtTop,
 } from "./markdown";
 import { localDate, localTime } from "./time";
@@ -176,6 +177,26 @@ export class Vault {
     return { path: this.dailyPath(date) };
   }
 
+  /**
+   * Edit the daily note's `habits:` list of habit ids (docs/habits.md). An empty list removes
+   * the key, and a day without a note gets one only when a habit is ticked.
+   */
+  async editHabitMarks(date: string, edit: (ids: string[]) => string[]): Promise<boolean> {
+    return this.update(this.dailyPath(date), (text) => {
+      const note = text === null ? this.newDaily(date) : parseNote(text);
+      const before = habitIds(note.frontmatter);
+      const after = [...new Set(edit(before))];
+      if (after.length === before.length && after.every((id, i) => id === before[i])) {
+        return null;
+      }
+      const rest = Object.fromEntries(
+        Object.entries(note.frontmatter).filter(([key]) => key !== "habits"),
+      );
+      const frontmatter = after.length > 0 ? { ...rest, habits: after } : rest;
+      return renderNote({ ...note, frontmatter });
+    });
+  }
+
   /** Replace the daily note's `<!-- cc:name -->` region, placing it under the title if new. */
   async setDailyBlock(date: string, name: string, content: string): Promise<boolean> {
     return this.updateDaily(date, (note) => ({
@@ -219,6 +240,12 @@ function newMessagesNote(date: string): Note {
     frontmatter: { date, source: "ios-shortcut", privacy: "local-only", tags: ["messages"] },
     body: `# Messages ${date}\n`,
   };
+}
+
+/** The habit ids ticked in a daily note's frontmatter; anything that isn't a string is skipped. */
+export function habitIds(frontmatter: Frontmatter): string[] {
+  const value = frontmatter.habits;
+  return Array.isArray(value) ? value.filter((id): id is string => typeof id === "string") : [];
 }
 
 /** Collapse whitespace and strip comment markers so user text can't break the file structure. */
