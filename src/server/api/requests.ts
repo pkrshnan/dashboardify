@@ -87,6 +87,7 @@ export interface ApiRequests {
   listActivityDays: { startDate: DateParts; endDate: DateParts };
   getWorkout: NamedRequest;
   reviewWorkout: NamedRequest & { kind: string };
+  getNight: NamedRequest;
   addTask: { text: string; requestId?: string };
   log: { text: string };
   checkIn: { feel?: string; rpe?: string; tags?: string };

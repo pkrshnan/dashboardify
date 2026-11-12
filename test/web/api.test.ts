@@ -7,7 +7,14 @@ import { homeView, storeHomeDeps } from "../../src/home/home";
 import { SetupCode } from "../../src/settings/setup-code";
 import { TaskStore } from "../../src/vault/task-store";
 import { Vault } from "../../src/vault/vault";
-import { completeTask, fetchHome, reopenTask, setUpDevice, Unauthorized } from "../../web/api";
+import {
+  completeTask,
+  fetchHome,
+  fetchNight,
+  reopenTask,
+  setUpDevice,
+  Unauthorized,
+} from "../../web/api";
 import { useApi } from "../server/api/helpers";
 
 describe("home UI API adapter", () => {
@@ -68,6 +75,43 @@ describe("home UI API adapter", () => {
       at: "2026-11-03T00:00:00.000Z",
     });
     expect(modern).toEqual(server);
+  });
+
+  test("night adapter turns stage enums back into names", async () => {
+    const derived = new DerivedStore(join(api.dir, "derived"));
+    await derived.write("nights", "2026-11-03", {
+      bed_ts: 1793660400000,
+      onset_ts: 1793661300000,
+      wake_ts: 1793689200000,
+      tst_min: 440,
+      sleep_score: 80,
+      light_min: null,
+      deep_min: 90,
+      rem_min: 100,
+      stages_plausible: 1,
+    });
+    await derived.writeAll("stages", "2026-11-03", [
+      { start_ts: 1793660400000, end_ts: 1793661300000, stage: "awake" },
+      { start_ts: 1793661300000, end_ts: 1793689200000, stage: "deep" },
+    ]);
+    const original = globalThis.fetch;
+    globalThis.fetch = ((url: string, init?: RequestInit) =>
+      api.app.request(url, init)) as typeof fetch;
+
+    const night = await fetchNight("secret", "2026-11-03").finally(() => {
+      globalThis.fetch = original;
+    });
+
+    expect(night).toMatchObject({
+      asleepMin: 440,
+      lightMin: null,
+      deepMin: 90,
+      stagesPlausible: true,
+    });
+    expect(night.stages).toEqual([
+      { start: 1793660400000, end: 1793661300000, stage: "awake" },
+      { start: 1793661300000, end: 1793689200000, stage: "deep" },
+    ]);
   });
 
   test("home UI adapter preserves the presentation model", async () => {

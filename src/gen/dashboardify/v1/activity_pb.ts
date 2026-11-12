@@ -19,7 +19,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file dashboardify/v1/activity.proto.
  */
 export const file_dashboardify_v1_activity: GenFile = /*@__PURE__*/
-  fileDesc("Ch5kYXNoYm9hcmRpZnkvdjEvYWN0aXZpdHkucHJvdG8SD2Rhc2hib2FyZGlmeS52MSLkAQoLQWN0aXZpdHlEYXkSHwoEZGF0ZRgBIAEoCzIRLmdvb2dsZS50eXBlLkRhdGUSDQoFc3RlcHMYAiABKAUSFAoMd29ybl9taW51dGVzGAMgASgFEioKCHdvcmtvdXRzGAQgAygLMhguZGFzaGJvYXJkaWZ5LnYxLldvcmtvdXQSJAoFd2Fsa3MYBSADKAsyFS5kYXNoYm9hcmRpZnkudjEuV2FsaxIxCgdsaWZ0aW5nGAYgASgLMhsuZGFzaGJvYXJkaWZ5LnYxLkxpZnRpbmdMb2dIAIgBAUIKCghfbGlmdGluZyLbBQoHV29ya291dBISCgRuYW1lGAEgASgJQgTiQQEIEhIKBGtpbmQYAiABKAlCBOJBAQMSNAoGc3RhdHVzGAMgASgOMh4uZGFzaGJvYXJkaWZ5LnYxLldvcmtvdXRTdGF0dXNCBOJBAQMSNAoKc3RhcnRfdGltZRgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBOJBAQMSMgoIZW5kX3RpbWUYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgTiQQEDEh4KEGR1cmF0aW9uX21pbnV0ZXMYBiABKAFCBOJBAQMSIAoSYXZlcmFnZV9oZWFydF9yYXRlGAcgASgBQgTiQQEDEhwKDm1heF9oZWFydF9yYXRlGAggASgBQgTiQQEDEhUKB2NhZGVuY2UYCSABKAFCBOJBAQMSFAoGc3RyYWluGAogASgBQgTiQQEDEhgKCmhlYXJ0X3JhdGUYCyADKAJCBOJBAQMSPwoVaGVhcnRfcmF0ZV9zdGFydF90aW1lGAwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIE4kEBAxIvCgRzZXRzGA0gAygLMhsuZGFzaGJvYXJkaWZ5LnYxLkxpZnRpbmdTZXRCBOJBAQMSIgoPZGlzdGFuY2VfbWV0ZXJzGA4gASgBQgTiQQEDSACIAQESJQoSc3RyYXZhX2FjdGl2aXR5X2lkGA8gASgDQgTiQQEDSAGIAQESGwoIY2Fsb3JpZXMYECABKAFCBOJBAQNIAogBATpP6kFMChhkYXNoYm9hcmRpZnkuYXBwL1dvcmtvdXQSHWRheXMve2RheX0vd29ya291dHMve3dvcmtvdXR9Kgh3b3Jrb3V0czIHd29ya291dEISChBfZGlzdGFuY2VfbWV0ZXJzQhUKE19zdHJhdmFfYWN0aXZpdHlfaWRCCwoJX2NhbG9yaWVzIu0BCgRXYWxrEi4KCnN0YXJ0X3RpbWUYASABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEiwKCGVuZF90aW1lGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIYChBkdXJhdGlvbl9taW51dGVzGAMgASgBEg0KBXN0ZXBzGAQgASgFEg8KB2NhZGVuY2UYBSABKAESFQoNYnJpc2tfbWludXRlcxgGIAEoBRIfChJhdmVyYWdlX2hlYXJ0X3JhdGUYByABKAFIAIgBAUIVChNfYXZlcmFnZV9oZWFydF9yYXRlIlUKCkxpZnRpbmdMb2cSEQoJZXhlcmNpc2VzGAEgASgFEgwKBHNldHMYAiABKAUSFQoNdm9sdW1lX3BvdW5kcxgDIAEoARIPCgdtYXRjaGVkGAQgASgIIrsCCgpMaWZ0aW5nU2V0EhAKCGV4ZXJjaXNlGAEgASgJEhYKDmV4ZXJjaXNlX2luZGV4GAIgASgFEhMKBndlaWdodBgDIAEoAUgAiAEBEgwKBHVuaXQYBCABKAkSDAoEcmVwcxgFIAEoBRIPCgd3YXJtX3VwGAYgASgIEjMKCnN0YXJ0X3RpbWUYByABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wSAGIAQESMgoJcGVha190aW1lGAggASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgCiAEBEhwKD3BlYWtfaGVhcnRfcmF0ZRgJIAEoAUgDiAEBQgkKB193ZWlnaHRCDQoLX3N0YXJ0X3RpbWVCDAoKX3BlYWtfdGltZUISChBfcGVha19oZWFydF9yYXRlIn0KF0xpc3RBY3Rpdml0eURheXNSZXF1ZXN0EjEKCnN0YXJ0X2RhdGUYASABKAsyES5nb29nbGUudHlwZS5EYXRlQgriQQECukgDyAEBEi8KCGVuZF9kYXRlGAIgASgLMhEuZ29vZ2xlLnR5cGUuRGF0ZUIK4kEBArpIA8gBASJGChhMaXN0QWN0aXZpdHlEYXlzUmVzcG9uc2USKgoEZGF5cxgBIAMoCzIcLmRhc2hib2FyZGlmeS52MS5BY3Rpdml0eURheSJ+ChFHZXRXb3Jrb3V0UmVxdWVzdBJpCgRuYW1lGAEgASgJQlviQQEC+kEaChhkYXNoYm9hcmRpZnkuYXBwL1dvcmtvdXS6SDdyNTIzXmRheXMvWzAtOV17NH0tWzAtOV17Mn0tWzAtOV17Mn0vd29ya291dHMvWzAtOV17NH0kItABChRSZXZpZXdXb3Jrb3V0UmVxdWVzdBJpCgRuYW1lGAEgASgJQlviQQEC+kEaChhkYXNoYm9hcmRpZnkuYXBwL1dvcmtvdXS6SDdyNTIzXmRheXMvWzAtOV17NH0tWzAtOV17Mn0tWzAtOV17Mn0vd29ya291dHMvWzAtOV17NH0kEk0KBGtpbmQYAiABKAlCP+JBAQK6SDhyNjI0XihydW5uaW5nfHdhbGtpbmd8dm9sbGV5YmFsbHxsaWZ0aW5nfHdvcmtvdXR8bm9uZXwpJCqlAQoNV29ya291dFN0YXR1cxIeChpXT1JLT1VUX1NUQVRVU19VTlNQRUNJRklFRBAAEhsKF1dPUktPVVRfU1RBVFVTX0RFVEVDVEVEEAESGwoXV09SS09VVF9TVEFUVVNfUE9TU0lCTEUQAhIcChhXT1JLT1VUX1NUQVRVU19DT05GSVJNRUQQAxIcChhXT1JLT1VUX1NUQVRVU19ESVNNSVNTRUQQBDKdAwoPQWN0aXZpdHlTZXJ2aWNlEoEBChBMaXN0QWN0aXZpdHlEYXlzEiguZGFzaGJvYXJkaWZ5LnYxLkxpc3RBY3Rpdml0eURheXNSZXF1ZXN0GikuZGFzaGJvYXJkaWZ5LnYxLkxpc3RBY3Rpdml0eURheXNSZXNwb25zZSIYgtPkkwISEhAvdjEvYWN0aXZpdHlEYXlzEncKCkdldFdvcmtvdXQSIi5kYXNoYm9hcmRpZnkudjEuR2V0V29ya291dFJlcXVlc3QaGC5kYXNoYm9hcmRpZnkudjEuV29ya291dCIr2kEEbmFtZYLT5JMCHhIcL3YxL3tuYW1lPWRheXMvKi93b3Jrb3V0cy8qfRKMAQoNUmV2aWV3V29ya291dBIlLmRhc2hib2FyZGlmeS52MS5SZXZpZXdXb3Jrb3V0UmVxdWVzdBoYLmRhc2hib2FyZGlmeS52MS5Xb3Jrb3V0IjraQQluYW1lLGtpbmSC0+STAig6ASoiIy92MS97bmFtZT1kYXlzLyovd29ya291dHMvKn06cmV2aWV3YgZwcm90bzM", [file_buf_validate_validate, file_google_api_annotations, file_google_api_client, file_google_api_field_behavior, file_google_api_resource, file_google_protobuf_timestamp, file_google_type_date]);
+  fileDesc("Ch5kYXNoYm9hcmRpZnkvdjEvYWN0aXZpdHkucHJvdG8SD2Rhc2hib2FyZGlmeS52MSLkAQoLQWN0aXZpdHlEYXkSHwoEZGF0ZRgBIAEoCzIRLmdvb2dsZS50eXBlLkRhdGUSDQoFc3RlcHMYAiABKAUSFAoMd29ybl9taW51dGVzGAMgASgFEioKCHdvcmtvdXRzGAQgAygLMhguZGFzaGJvYXJkaWZ5LnYxLldvcmtvdXQSJAoFd2Fsa3MYBSADKAsyFS5kYXNoYm9hcmRpZnkudjEuV2FsaxIxCgdsaWZ0aW5nGAYgASgLMhsuZGFzaGJvYXJkaWZ5LnYxLkxpZnRpbmdMb2dIAIgBAUIKCghfbGlmdGluZyLbBQoHV29ya291dBISCgRuYW1lGAEgASgJQgTiQQEIEhIKBGtpbmQYAiABKAlCBOJBAQMSNAoGc3RhdHVzGAMgASgOMh4uZGFzaGJvYXJkaWZ5LnYxLldvcmtvdXRTdGF0dXNCBOJBAQMSNAoKc3RhcnRfdGltZRgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBOJBAQMSMgoIZW5kX3RpbWUYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgTiQQEDEh4KEGR1cmF0aW9uX21pbnV0ZXMYBiABKAFCBOJBAQMSIAoSYXZlcmFnZV9oZWFydF9yYXRlGAcgASgBQgTiQQEDEhwKDm1heF9oZWFydF9yYXRlGAggASgBQgTiQQEDEhUKB2NhZGVuY2UYCSABKAFCBOJBAQMSFAoGc3RyYWluGAogASgBQgTiQQEDEhgKCmhlYXJ0X3JhdGUYCyADKAJCBOJBAQMSPwoVaGVhcnRfcmF0ZV9zdGFydF90aW1lGAwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIE4kEBAxIvCgRzZXRzGA0gAygLMhsuZGFzaGJvYXJkaWZ5LnYxLkxpZnRpbmdTZXRCBOJBAQMSIgoPZGlzdGFuY2VfbWV0ZXJzGA4gASgBQgTiQQEDSACIAQESJQoSc3RyYXZhX2FjdGl2aXR5X2lkGA8gASgDQgTiQQEDSAGIAQESGwoIY2Fsb3JpZXMYECABKAFCBOJBAQNIAogBATpP6kFMChhkYXNoYm9hcmRpZnkuYXBwL1dvcmtvdXQSHWRheXMve2RheX0vd29ya291dHMve3dvcmtvdXR9Kgh3b3Jrb3V0czIHd29ya291dEISChBfZGlzdGFuY2VfbWV0ZXJzQhUKE19zdHJhdmFfYWN0aXZpdHlfaWRCCwoJX2NhbG9yaWVzIu0BCgRXYWxrEi4KCnN0YXJ0X3RpbWUYASABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEiwKCGVuZF90aW1lGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIYChBkdXJhdGlvbl9taW51dGVzGAMgASgBEg0KBXN0ZXBzGAQgASgFEg8KB2NhZGVuY2UYBSABKAESFQoNYnJpc2tfbWludXRlcxgGIAEoBRIfChJhdmVyYWdlX2hlYXJ0X3JhdGUYByABKAFIAIgBAUIVChNfYXZlcmFnZV9oZWFydF9yYXRlIlUKCkxpZnRpbmdMb2cSEQoJZXhlcmNpc2VzGAEgASgFEgwKBHNldHMYAiABKAUSFQoNdm9sdW1lX3BvdW5kcxgDIAEoARIPCgdtYXRjaGVkGAQgASgIIrsCCgpMaWZ0aW5nU2V0EhAKCGV4ZXJjaXNlGAEgASgJEhYKDmV4ZXJjaXNlX2luZGV4GAIgASgFEhMKBndlaWdodBgDIAEoAUgAiAEBEgwKBHVuaXQYBCABKAkSDAoEcmVwcxgFIAEoBRIPCgd3YXJtX3VwGAYgASgIEjMKCnN0YXJ0X3RpbWUYByABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wSAGIAQESMgoJcGVha190aW1lGAggASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgCiAEBEhwKD3BlYWtfaGVhcnRfcmF0ZRgJIAEoAUgDiAEBQgkKB193ZWlnaHRCDQoLX3N0YXJ0X3RpbWVCDAoKX3BlYWtfdGltZUISChBfcGVha19oZWFydF9yYXRlIrIECgVOaWdodBISCgRuYW1lGAEgASgJQgTiQQEIEjIKCGJlZF90aW1lGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIE4kEBAxI0CgpvbnNldF90aW1lGAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIE4kEBAxIzCgl3YWtlX3RpbWUYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgTiQQEDEhwKDmFzbGVlcF9taW51dGVzGAUgASgBQgTiQQEDEhkKC3NsZWVwX3Njb3JlGAYgASgBQgTiQQEDEiAKDWxpZ2h0X21pbnV0ZXMYByABKAFCBOJBAQNIAIgBARIfCgxkZWVwX21pbnV0ZXMYCCABKAFCBOJBAQNIAYgBARIeCgtyZW1fbWludXRlcxgJIAEoAUIE4kEBA0gCiAEBEiMKEHN0YWdlc19wbGF1c2libGUYCiABKAhCBOJBAQNIA4gBARIvCgZzdGFnZXMYCyADKAsyGS5kYXNoYm9hcmRpZnkudjEuU3RhZ2VSdW5CBOJBAQM6POpBOQoWZGFzaGJvYXJkaWZ5LmFwcC9OaWdodBIQZGF5cy97ZGF5fS9uaWdodCoGbmlnaHRzMgVuaWdodEIQCg5fbGlnaHRfbWludXRlc0IPCg1fZGVlcF9taW51dGVzQg4KDF9yZW1fbWludXRlc0ITChFfc3RhZ2VzX3BsYXVzaWJsZSKLAgoIU3RhZ2VSdW4SNAoKc3RhcnRfdGltZRgBIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBOJBAQMSMgoIZW5kX3RpbWUYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgTiQQEDEjQKBXN0YWdlGAMgASgOMh8uZGFzaGJvYXJkaWZ5LnYxLlN0YWdlUnVuLlN0YWdlQgTiQQEDIl8KBVN0YWdlEhUKEVNUQUdFX1VOU1BFQ0lGSUVEEAASDwoLU1RBR0VfQVdBS0UQARIPCgtTVEFHRV9MSUdIVBACEg4KClNUQUdFX0RFRVAQAxINCglTVEFHRV9SRU0QBCJ9ChdMaXN0QWN0aXZpdHlEYXlzUmVxdWVzdBIxCgpzdGFydF9kYXRlGAEgASgLMhEuZ29vZ2xlLnR5cGUuRGF0ZUIK4kEBArpIA8gBARIvCghlbmRfZGF0ZRgCIAEoCzIRLmdvb2dsZS50eXBlLkRhdGVCCuJBAQK6SAPIAQEiRgoYTGlzdEFjdGl2aXR5RGF5c1Jlc3BvbnNlEioKBGRheXMYASADKAsyHC5kYXNoYm9hcmRpZnkudjEuQWN0aXZpdHlEYXkifgoRR2V0V29ya291dFJlcXVlc3QSaQoEbmFtZRgBIAEoCUJb4kEBAvpBGgoYZGFzaGJvYXJkaWZ5LmFwcC9Xb3Jrb3V0ukg3cjUyM15kYXlzL1swLTldezR9LVswLTldezJ9LVswLTldezJ9L3dvcmtvdXRzL1swLTldezR9JCLQAQoUUmV2aWV3V29ya291dFJlcXVlc3QSaQoEbmFtZRgBIAEoCUJb4kEBAvpBGgoYZGFzaGJvYXJkaWZ5LmFwcC9Xb3Jrb3V0ukg3cjUyM15kYXlzL1swLTldezR9LVswLTldezJ9LVswLTldezJ9L3dvcmtvdXRzL1swLTldezR9JBJNCgRraW5kGAIgASgJQj/iQQECukg4cjYyNF4ocnVubmluZ3x3YWxraW5nfHZvbGxleWJhbGx8bGlmdGluZ3x3b3Jrb3V0fG5vbmV8KSQibgoPR2V0TmlnaHRSZXF1ZXN0ElsKBG5hbWUYASABKAlCTeJBAQL6QRgKFmRhc2hib2FyZGlmeS5hcHAvTmlnaHS6SCtyKTInXmRheXMvWzAtOV17NH0tWzAtOV17Mn0tWzAtOV17Mn0vbmlnaHQkKqUBCg1Xb3Jrb3V0U3RhdHVzEh4KGldPUktPVVRfU1RBVFVTX1VOU1BFQ0lGSUVEEAASGwoXV09SS09VVF9TVEFUVVNfREVURUNURUQQARIbChdXT1JLT1VUX1NUQVRVU19QT1NTSUJMRRACEhwKGFdPUktPVVRfU1RBVFVTX0NPTkZJUk1FRBADEhwKGFdPUktPVVRfU1RBVFVTX0RJU01JU1NFRBAEMosECg9BY3Rpdml0eVNlcnZpY2USgQEKEExpc3RBY3Rpdml0eURheXMSKC5kYXNoYm9hcmRpZnkudjEuTGlzdEFjdGl2aXR5RGF5c1JlcXVlc3QaKS5kYXNoYm9hcmRpZnkudjEuTGlzdEFjdGl2aXR5RGF5c1Jlc3BvbnNlIhiC0+STAhISEC92MS9hY3Rpdml0eURheXMSdwoKR2V0V29ya291dBIiLmRhc2hib2FyZGlmeS52MS5HZXRXb3Jrb3V0UmVxdWVzdBoYLmRhc2hib2FyZGlmeS52MS5Xb3Jrb3V0IivaQQRuYW1lgtPkkwIeEhwvdjEve25hbWU9ZGF5cy8qL3dvcmtvdXRzLyp9EowBCg1SZXZpZXdXb3Jrb3V0EiUuZGFzaGJvYXJkaWZ5LnYxLlJldmlld1dvcmtvdXRSZXF1ZXN0GhguZGFzaGJvYXJkaWZ5LnYxLldvcmtvdXQiOtpBCW5hbWUsa2luZILT5JMCKDoBKiIjL3YxL3tuYW1lPWRheXMvKi93b3Jrb3V0cy8qfTpyZXZpZXcSbAoIR2V0TmlnaHQSIC5kYXNoYm9hcmRpZnkudjEuR2V0TmlnaHRSZXF1ZXN0GhYuZGFzaGJvYXJkaWZ5LnYxLk5pZ2h0IibaQQRuYW1lgtPkkwIZEhcvdjEve25hbWU9ZGF5cy8qL25pZ2h0fWIGcHJvdG8z", [file_buf_validate_validate, file_google_api_annotations, file_google_api_client, file_google_api_field_behavior, file_google_api_resource, file_google_protobuf_timestamp, file_google_type_date]);
 
 /**
  * One day's activity.
@@ -387,6 +387,180 @@ export const LiftingSetSchema: GenMessage<LiftingSet> = /*@__PURE__*/
   messageDesc(file_dashboardify_v1_activity, 4);
 
 /**
+ * A night's sleep from the strap data. Stages are estimated, and checked for plausibility only.
+ *
+ * @generated from message dashboardify.v1.Night
+ */
+export type Night = Message<"dashboardify.v1.Night"> & {
+  /**
+   * `days/{day}/night`, the day you woke.
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * Lay down: the start of the still window.
+   *
+   * @generated from field: google.protobuf.Timestamp bed_time = 2;
+   */
+  bedTime?: Timestamp | undefined;
+
+  /**
+   * Fell asleep: the first 10 minutes of unbroken sleep, or bed if that never happened.
+   *
+   * @generated from field: google.protobuf.Timestamp onset_time = 3;
+   */
+  onsetTime?: Timestamp | undefined;
+
+  /**
+   * Woke up.
+   *
+   * @generated from field: google.protobuf.Timestamp wake_time = 4;
+   */
+  wakeTime?: Timestamp | undefined;
+
+  /**
+   * Minutes asleep.
+   *
+   * @generated from field: double asleep_minutes = 5;
+   */
+  asleepMinutes: number;
+
+  /**
+   * Sleep score, 0 to 100.
+   *
+   * @generated from field: double sleep_score = 6;
+   */
+  sleepScore: number;
+
+  /**
+   * Minutes of light sleep. Unset without stages.
+   *
+   * @generated from field: optional double light_minutes = 7;
+   */
+  lightMinutes?: number | undefined;
+
+  /**
+   * Minutes of deep sleep. Unset without stages.
+   *
+   * @generated from field: optional double deep_minutes = 8;
+   */
+  deepMinutes?: number | undefined;
+
+  /**
+   * Minutes of REM sleep. Unset without stages.
+   *
+   * @generated from field: optional double rem_minutes = 9;
+   */
+  remMinutes?: number | undefined;
+
+  /**
+   * Whether the stage shares look like a real night. Unset without stages.
+   *
+   * @generated from field: optional bool stages_plausible = 10;
+   */
+  stagesPlausible?: boolean | undefined;
+
+  /**
+   * Runs of one stage, oldest first, awake included, covering bed to wake. Empty without stages.
+   *
+   * @generated from field: repeated dashboardify.v1.StageRun stages = 11;
+   */
+  stages: StageRun[];
+};
+
+/**
+ * Describes the message dashboardify.v1.Night.
+ * Use `create(NightSchema)` to create a new message.
+ */
+export const NightSchema: GenMessage<Night> = /*@__PURE__*/
+  messageDesc(file_dashboardify_v1_activity, 5);
+
+/**
+ * Consecutive epochs of one sleep stage.
+ *
+ * @generated from message dashboardify.v1.StageRun
+ */
+export type StageRun = Message<"dashboardify.v1.StageRun"> & {
+  /**
+   * Start of the run.
+   *
+   * @generated from field: google.protobuf.Timestamp start_time = 1;
+   */
+  startTime?: Timestamp | undefined;
+
+  /**
+   * End of the run.
+   *
+   * @generated from field: google.protobuf.Timestamp end_time = 2;
+   */
+  endTime?: Timestamp | undefined;
+
+  /**
+   * The stage.
+   *
+   * @generated from field: dashboardify.v1.StageRun.Stage stage = 3;
+   */
+  stage: StageRun_Stage;
+};
+
+/**
+ * Describes the message dashboardify.v1.StageRun.
+ * Use `create(StageRunSchema)` to create a new message.
+ */
+export const StageRunSchema: GenMessage<StageRun> = /*@__PURE__*/
+  messageDesc(file_dashboardify_v1_activity, 6);
+
+/**
+ * A sleep stage.
+ *
+ * @generated from enum dashboardify.v1.StageRun.Stage
+ */
+export enum StageRun_Stage {
+  /**
+   * Not set.
+   *
+   * @generated from enum value: STAGE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * Awake in bed.
+   *
+   * @generated from enum value: STAGE_AWAKE = 1;
+   */
+  AWAKE = 1,
+
+  /**
+   * Light sleep.
+   *
+   * @generated from enum value: STAGE_LIGHT = 2;
+   */
+  LIGHT = 2,
+
+  /**
+   * Deep sleep.
+   *
+   * @generated from enum value: STAGE_DEEP = 3;
+   */
+  DEEP = 3,
+
+  /**
+   * REM sleep.
+   *
+   * @generated from enum value: STAGE_REM = 4;
+   */
+  REM = 4,
+}
+
+/**
+ * Describes the enum dashboardify.v1.StageRun.Stage.
+ */
+export const StageRun_StageSchema: GenEnum<StageRun_Stage> = /*@__PURE__*/
+  enumDesc(file_dashboardify_v1_activity, 6, 0);
+
+/**
  * Request for ListActivityDays.
  *
  * @generated from message dashboardify.v1.ListActivityDaysRequest
@@ -412,7 +586,7 @@ export type ListActivityDaysRequest = Message<"dashboardify.v1.ListActivityDaysR
  * Use `create(ListActivityDaysRequestSchema)` to create a new message.
  */
 export const ListActivityDaysRequestSchema: GenMessage<ListActivityDaysRequest> = /*@__PURE__*/
-  messageDesc(file_dashboardify_v1_activity, 5);
+  messageDesc(file_dashboardify_v1_activity, 7);
 
 /**
  * Response for ListActivityDays.
@@ -433,7 +607,7 @@ export type ListActivityDaysResponse = Message<"dashboardify.v1.ListActivityDays
  * Use `create(ListActivityDaysResponseSchema)` to create a new message.
  */
 export const ListActivityDaysResponseSchema: GenMessage<ListActivityDaysResponse> = /*@__PURE__*/
-  messageDesc(file_dashboardify_v1_activity, 6);
+  messageDesc(file_dashboardify_v1_activity, 8);
 
 /**
  * Request for GetWorkout.
@@ -454,7 +628,7 @@ export type GetWorkoutRequest = Message<"dashboardify.v1.GetWorkoutRequest"> & {
  * Use `create(GetWorkoutRequestSchema)` to create a new message.
  */
 export const GetWorkoutRequestSchema: GenMessage<GetWorkoutRequest> = /*@__PURE__*/
-  messageDesc(file_dashboardify_v1_activity, 7);
+  messageDesc(file_dashboardify_v1_activity, 9);
 
 /**
  * Request for ReviewWorkout.
@@ -483,7 +657,28 @@ export type ReviewWorkoutRequest = Message<"dashboardify.v1.ReviewWorkoutRequest
  * Use `create(ReviewWorkoutRequestSchema)` to create a new message.
  */
 export const ReviewWorkoutRequestSchema: GenMessage<ReviewWorkoutRequest> = /*@__PURE__*/
-  messageDesc(file_dashboardify_v1_activity, 8);
+  messageDesc(file_dashboardify_v1_activity, 10);
+
+/**
+ * Request for GetNight.
+ *
+ * @generated from message dashboardify.v1.GetNightRequest
+ */
+export type GetNightRequest = Message<"dashboardify.v1.GetNightRequest"> & {
+  /**
+   * The night to get.
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+};
+
+/**
+ * Describes the message dashboardify.v1.GetNightRequest.
+ * Use `create(GetNightRequestSchema)` to create a new message.
+ */
+export const GetNightRequestSchema: GenMessage<GetNightRequest> = /*@__PURE__*/
+  messageDesc(file_dashboardify_v1_activity, 11);
 
 /**
  * How sure the workout's name is.
@@ -534,7 +729,7 @@ export const WorkoutStatusSchema: GenEnum<WorkoutStatus> = /*@__PURE__*/
   enumDesc(file_dashboardify_v1_activity, 0);
 
 /**
- * Workouts and walks found in the strap data, and your reviews of them.
+ * Workouts, walks and nights found in the strap data, and your reviews of workouts.
  *
  * @generated from service dashboardify.v1.ActivityService
  */
@@ -569,6 +764,16 @@ export const ActivityService: GenService<{
     methodKind: "unary";
     input: typeof ReviewWorkoutRequestSchema;
     output: typeof WorkoutSchema;
+  },
+  /**
+   * Gets the night you woke from on a day, with its sleep stages.
+   *
+   * @generated from rpc dashboardify.v1.ActivityService.GetNight
+   */
+  getNight: {
+    methodKind: "unary";
+    input: typeof GetNightRequestSchema;
+    output: typeof NightSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_dashboardify_v1_activity, 0);

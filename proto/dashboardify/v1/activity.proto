@@ -10,7 +10,7 @@ import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/date.proto";
 
-// Workouts and walks found in the strap data, and your reviews of them.
+// Workouts, walks and nights found in the strap data, and your reviews of workouts.
 service ActivityService {
   // Lists each day's workouts, walks and lifting log over a range of up to 92 days.
   rpc ListActivityDays(ListActivityDaysRequest) returns (ListActivityDaysResponse) {
@@ -31,6 +31,12 @@ service ActivityService {
       body: "*"
     };
     option (google.api.method_signature) = "name,kind";
+  }
+
+  // Gets the night you woke from on a day, with its sleep stages.
+  rpc GetNight(GetNightRequest) returns (Night) {
+    option (google.api.http) = {get: "/v1/{name=days/*/night}"};
+    option (google.api.method_signature) = "name";
   }
 }
 
@@ -197,6 +203,75 @@ message LiftingSet {
   optional double peak_heart_rate = 9;
 }
 
+// A night's sleep from the strap data. Stages are estimated, and checked for plausibility only.
+message Night {
+  option (google.api.resource) = {
+    type: "dashboardify.app/Night"
+    pattern: "days/{day}/night"
+    singular: "night"
+    plural: "nights"
+  };
+
+  // `days/{day}/night`, the day you woke.
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+
+  // Lay down: the start of the still window.
+  google.protobuf.Timestamp bed_time = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Fell asleep: the first 10 minutes of unbroken sleep, or bed if that never happened.
+  google.protobuf.Timestamp onset_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Woke up.
+  google.protobuf.Timestamp wake_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Minutes asleep.
+  double asleep_minutes = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Sleep score, 0 to 100.
+  double sleep_score = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Minutes of light sleep. Unset without stages.
+  optional double light_minutes = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Minutes of deep sleep. Unset without stages.
+  optional double deep_minutes = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Minutes of REM sleep. Unset without stages.
+  optional double rem_minutes = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Whether the stage shares look like a real night. Unset without stages.
+  optional bool stages_plausible = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Runs of one stage, oldest first, awake included, covering bed to wake. Empty without stages.
+  repeated StageRun stages = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// Consecutive epochs of one sleep stage.
+message StageRun {
+  // A sleep stage.
+  enum Stage {
+    // Not set.
+    STAGE_UNSPECIFIED = 0;
+    // Awake in bed.
+    STAGE_AWAKE = 1;
+    // Light sleep.
+    STAGE_LIGHT = 2;
+    // Deep sleep.
+    STAGE_DEEP = 3;
+    // REM sleep.
+    STAGE_REM = 4;
+  }
+
+  // Start of the run.
+  google.protobuf.Timestamp start_time = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // End of the run.
+  google.protobuf.Timestamp end_time = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The stage.
+  Stage stage = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
 // Request for ListActivityDays.
 message ListActivityDaysRequest {
   // First day, inclusive.
@@ -242,5 +317,15 @@ message ReviewWorkoutRequest {
   string kind = 2 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).string.pattern = "^(running|walking|volleyball|lifting|workout|none|)$"
+  ];
+}
+
+// Request for GetNight.
+message GetNightRequest {
+  // The night to get.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/Night",
+    (buf.validate.field).string.pattern = "^days/[0-9]{4}-[0-9]{2}-[0-9]{2}/night$"
   ];
 }
