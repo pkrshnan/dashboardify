@@ -56,7 +56,7 @@ Apple Reminders.
 | 2 | Tasks page and reminder editing (the API already does it all); starts with N7's task panel | Needs a plan |
 | 3 | Lists (shopping): one note per list in `Lists/`, which tasks skip | Built: [lists.md](lists.md) |
 | 4 | Journal page: the day's journal and check-in | Needs a plan |
-| 5 | The rest of health: training load, calories, VO2max, sleep stages | Training load, calories (workouts included) and VO2max built (H1–H5), epoch features for sleep stages (H8); the rest planned in [health-extended.md](health-extended.md) (H9–H11) |
+| 5 | The rest of health: training load, calories, VO2max, sleep stages | Training load, calories (workouts included) and VO2max built (H1–H5), sleep stages (H8–H9); the API and UI planned in [health-extended.md](health-extended.md) (H10–H11) |
 | 6 | Runs from Strava: split walk-run-walk outings, distance and pace | Built: [strava.md](strava.md) |
 | 7 | "Log journal" Shortcut recipe | Not started |
 | 8 | Home screen: unusual health rows first, a strain target from recovery, light mode | Not started |

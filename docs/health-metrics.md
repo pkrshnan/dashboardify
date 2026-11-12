@@ -9,6 +9,7 @@ a comparison with other people by definition.
 ```mermaid
 flowchart LR
   A[accel] --> S[sleep window] --> E[sleep epochs] --> SS[sleep score] --> REC[recovery]
+  E & RR & HR --> F[epoch features] --> STG[sleep stages]
   HR[heart_rate] --> E & R[resting HR] & ST[strain, zones] & W[workouts]
   S --> R & H[HRV] & B[breathing] & T[skin temp] & W
   RR[rr_interval] --> H & B
@@ -38,6 +39,31 @@ bpm above the median of the surrounding 10 min (arousal); HR 20%+ above the nigh
 percentile (lying awake; REM stays under this); no HR. Lone flips are rescored to match their
 neighbours (Webster 1982). Onset is the first 10 min of unbroken sleep; latency, WASO, awakenings
 (awake runs of 1+ min) and efficiency (asleep ÷ window) follow.
+
+## Sleep stages (`sleep-stages.ts`)
+
+Light, deep and REM for each asleep epoch. Estimated: nothing checks them yet but plausibility,
+and the constants are hand-set priors to tune as nights pile up. Wrist staging agrees with a
+sleep lab about 60–65% of the time for 4 stages.
+
+- **Features** (`sleep-features.ts`), per epoch, z-scored against the night's asleep epochs:
+  mean HR; `ln(RMSSD)` over the 5 min around it (null under 60 differences; Esco & Flatt 2014);
+  breathing regularity, `ln(peak ÷ band median)` of the 2-min spectrum (null under 80% kept
+  beats); the largest 5-s arm angle change; minutes since onset. HR is then taken against the
+  median of the asleep epochs within an hour either side, since it falls across the night
+  whatever the stage.
+- **Model:** a 4-state HMM decoded with Viterbi. Awake is `sleep-epochs.ts`'s and fixed; asleep
+  epochs can't be awake. Each state has a Gaussian per feature (SD 0.8; null features add
+  nothing): deep is HR −1, HRV +0.8, breathing +0.8; REM is HR +0.7, HRV −0.6, breathing −0.8;
+  light is 0 (Fonseca 2017, Walch 2019, Gutierrez 2016). A posture change over 5° is unlikely in
+  deep and REM (Wilde-Frenz & Schulz 1983); stillness counts for nothing.
+- **Transitions:** where each stage goes from 48 healthy adults' lab nights (Lo 2013), deep↔REM
+  rare. Bouts: light 10.9 min; deep 20 → 5 and REM 5 → 15 over the night. Entering deep is
+  weighted 4× at onset, decaying with a 2-hour time constant (deep mostly in the first third);
+  REM can't start before 45 min and is rare before 60 (Carskadon & Dement 2011). These give the
+  cycles without hard-coding them.
+- **Plausible** when light is 40–65%, deep 10–25% and REM 15–30% of asleep time; otherwise the
+  note line ends "unusual".
 
 ## Sleep score (`sleep-score.ts`)
 
@@ -197,5 +223,4 @@ Garmin do). The weights are versioned params tuned against check-ins
 
 ## Still to build
 
-Sleep stages: planned in
-[health-extended.md](health-extended.md).
+The stage API and UI: planned in [health-extended.md](health-extended.md).

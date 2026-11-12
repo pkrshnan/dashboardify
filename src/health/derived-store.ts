@@ -1,6 +1,7 @@
 // Computed health tables: health-derived/<table>/YYYY/MM/YYYY-MM-DD.parquet, one file per local
-// date: one row for nights and days, one row per workout, walk or lifting set for workouts, walks and sets. Everything here can be rebuilt from health-raw/, so it is overwritten whole and not
-// backed up. Every row carries the algorithm version that produced it.
+// date: one row for nights and days, one row per workout, walk, lifting set or sleep stage run
+// for workouts, walks, sets and stages. Everything here can be rebuilt from health-raw/, so it is
+// overwritten whole and not backed up. Every row carries the algorithm version that produced it.
 
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -10,7 +11,7 @@ import { parquetWriteBuffer } from "hyparquet-writer";
 export type DerivedRow = Record<string, number | string | null>;
 /** Tables with one row per date. */
 export type DailyTable = "nights" | "days";
-export type Table = DailyTable | "workouts" | "walks" | "sets";
+export type Table = DailyTable | "workouts" | "walks" | "sets" | "stages";
 
 export class DerivedStore {
   constructor(readonly root: string) {}

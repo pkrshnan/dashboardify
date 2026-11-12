@@ -230,6 +230,16 @@ describe("summaries", () => {
     expect(night?.skinTemp).toBe(34.5);
     expect(night?.asleepMin).toBeCloseTo(480, -1);
     expect(night?.sleep.score).toBeGreaterThan(99);
+    // Staged from the same epochs: every asleep minute gets a stage.
+    const stages = night?.stages;
+    expect((stages?.lightMin ?? 0) + (stages?.deepMin ?? 0) + (stages?.remMin ?? 0)).toBe(
+      night?.asleepMin ?? 0,
+    );
+    expect(stages?.runs[0]?.start).toBe(night?.bed);
+    // Whole epochs only, so the last run ends within 30 s of waking.
+    const end = stages?.runs[(stages?.runs.length ?? 0) - 1]?.end ?? 0;
+    expect((night?.wake ?? 0) - end).toBeLessThan(30_000);
+    expect((night?.wake ?? 0) - end).toBeGreaterThanOrEqual(0);
   });
 
   test("a day without a profile has no strain", () => {

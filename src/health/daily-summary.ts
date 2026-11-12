@@ -20,6 +20,7 @@ import {
 } from "./metrics/recovery";
 import type { RecordedRun } from "./metrics/runs";
 import { DEFAULT_NEED_MIN, type PastNight } from "./metrics/sleep-score";
+import type { SleepStages, StageRun } from "./metrics/sleep-stages";
 import { median, round } from "./metrics/stats";
 import { stepsPerMinute } from "./metrics/steps";
 import {
@@ -48,7 +49,7 @@ import { type DaySummary, frontmatter, healthBlock, syncLine } from "./render";
 import { counted, type ReviewedWorkout, reviewFor, reviewWorkouts } from "./reviews";
 
 /** Bump when a calculation changes, so old rows can be told apart and rebuilt. */
-export const ALGO_VERSION = "11";
+export const ALGO_VERSION = "12";
 
 /** Strava runs, as strava-cache.db holds them (see src/strava/cache.ts). */
 export interface RunSource {
@@ -341,6 +342,11 @@ export class DailySummary {
       date,
       summary.day.walks.map((w) => ({ ...stamp, ...walkRow(w) })),
     );
+    await this.derived.writeAll(
+      "stages",
+      date,
+      (summary.night?.stages?.runs ?? []).map((r) => ({ ...stamp, ...stageRow(r) })),
+    );
     await this.vault.recordHealth(date, frontmatter(summary), "strap");
     await this.vault.setDailyBlock(
       date,
@@ -406,7 +412,22 @@ function nightRow(night: NightMetrics): DerivedRow {
     hrv_windows: night.hrvWindows,
     resp_rate_bpm: night.breathingRate,
     skin_temp_c: night.skinTemp,
+    light_min: night.stages?.lightMin ?? null,
+    deep_min: night.stages?.deepMin ?? null,
+    rem_min: night.stages?.remMin ?? null,
+    stages_plausible: plausibleFlag(night.stages),
   };
+}
+
+function plausibleFlag(stages: SleepStages | null): number | null {
+  if (!stages) {
+    return null;
+  }
+  return stages.plausible ? 1 : 0;
+}
+
+function stageRow(run: StageRun): DerivedRow {
+  return { start_ts: run.start, end_ts: run.end, stage: run.stage };
 }
 
 export function fromNightRow(row: DerivedRow): NightSignals {
