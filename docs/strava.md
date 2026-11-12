@@ -2,8 +2,8 @@
 
 Runs from Strava, so a strap session of walk, run, walk is split into the run and the walks
 around it, and the run gets its distance and pace. You record only the running part in Strava,
-so the activity's start and length mark the run; the strap fills in the rest. Status: planned
-(ST1–ST5).
+so the activity's start and length mark the run; the strap fills in the rest. Status: ST1–ST2 built
+(the account and `bun run settings strava`); next, ST3.
 
 ## Goals
 
