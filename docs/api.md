@@ -49,6 +49,23 @@ at 9" use `VoiceService/AddTask` or Captures.
 
 Days follow the server's time zone.
 
+## Lists
+
+| Method | Path | Does |
+| --- | --- | --- |
+| GET | `/v1/lists` | Each list's `name`, `title`, `path` and `openCount` |
+| POST | `/v1/lists` | `{"title": "Shopping"}` makes `Lists/Shopping.md`; one already there is returned |
+| GET | `/v1/lists/{list}` | Its `sections`, each with `items` (`name`, `text`, `note`, `done`), and `etag` |
+| POST | `/v1/lists/{list}/items` | `{"texts": ["eggs, bread"], "section": "Produce"}`: commas add several; a ticked match is unticked in its section, or moved to `section` if given; a new section gets a heading |
+| PATCH | `/v1/lists/{list}/items/{item}?updateMask=done` | Tick (`done`), rename (`text`), set the `note`, or move (`section`; `""` is before the first heading) |
+| DELETE | `/v1/lists/{list}/items/{item}` | Remove the line |
+| POST | `/v1/lists/{list}:clearDone` | Remove every ticked line |
+
+`{list}` is the file name's slug (`Gift ideas.md` → `gift-ideas`). An item's name changes when
+its text or section does; the response has the new one. Writes take the list's `etag` and refuse an older
+one with `409`. Send `updateMask`: unticking sends `done: false`, and moving to the top `section: ""`, which protobuf JSON leaves
+out.
+
 ## Home
 
 `GET /v1/home`: everything the home screen shows: sentence, next event, seven days of agenda,
@@ -75,8 +92,9 @@ healthstrap is the client.
 | GET | `/v1/days/{date}/workouts/{HHMM}` | One workout: HR every 15 s, and sets for lifting |
 | POST | `/v1/days/{date}/workouts/{HHMM}:review` | `{"kind": "lifting"}`: `running`, `walking`, `volleyball`, `lifting`, `workout`, `none`, or `""` to undo |
 
-`status` is `DETECTED` (strap only), `POSSIBLE` (worth asking), `CONFIRMED` (reviewed or matched a
-lifting log) or `DISMISSED`. A review is written to the daily note and the day is recomputed.
+`status` is `DETECTED` (strap only), `POSSIBLE` (worth asking), `CONFIRMED` (reviewed, matched a
+lifting log, or a Strava run) or `DISMISSED`. Strava runs also have `distanceMeters` and
+`stravaActivityId`. A review is written to the daily note and the day is recomputed.
 
 ## Captures
 
@@ -152,3 +170,4 @@ RPC only, for Siri. Each response has a `message` to speak.
 | `…/CheckIn` | `feel`, `rpe`, `tags` (strings) | Record scores, merge tags |
 | `…/ListDue` | `window`: `today`, `overdue`, `week` | Summarise open tasks |
 | `…/CompleteByText` | `text` | Complete the closest open task |
+| `…/AddToList` | `list`, `text` | Add to the list with that spoken name; commas and "and" separate items |

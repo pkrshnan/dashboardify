@@ -58,6 +58,8 @@ const config: Config = {
 };
 
 await Bun.write(join(config.vaultPath, "Inbox.md"), tasks().join("\n"));
+await Bun.write(join(config.vaultPath, "Lists/Shopping.md"), demoShopping());
+await Bun.write(join(config.vaultPath, "Lists/Packing, Lisbon.md"), demoPacking());
 const derived = new DerivedStore(config.healthDerivedPath);
 await writeHealth(derived);
 
@@ -149,6 +151,34 @@ function demoPlaces(): Photon {
     },
   ]);
   return new Photon("https://photon.demo", server.fetch);
+}
+
+/** Made-up lists for the Lists page (docs/lists.md). */
+function demoShopping(): string {
+  return `- [ ] Coffee beans
+
+## Produce
+- [ ] Bananas
+- [ ] Spinach (2 bags)
+- [ ] Lemons
+- [x] Tomatoes
+
+## Dairy
+- [ ] Oat milk (2)
+- [ ] Greek yogurt
+- [x] Eggs
+
+## Household
+- [ ] Bin bags
+`;
+}
+
+function demoPacking(): string {
+  return `- [ ] Passport
+- [ ] Charger
+- [x] Adapter
+- [ ] Sunglasses
+`;
 }
 
 function tasks(): string[] {

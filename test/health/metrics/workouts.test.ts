@@ -100,6 +100,30 @@ describe("workouts", () => {
     expect(found[0]?.minutes).toBe(46);
   });
 
+  test("hard lifting starts at its warm-up set, though that set wasn't hard", () => {
+    // Like 9 November: a warm-up set under half of reserve, then sets that went over it.
+    const warmUp: Phase[] = [
+      { minutes: 2, bpm: 120, spm: 2, motion: 0.15, climb: true },
+      { minutes: 3, bpm: 105, spm: 0, motion: 0.1 },
+    ];
+    const hardSets = lifting.map((p) => ({ ...p, bpm: p.climb ? 140 : 110 }));
+
+    const [found] = workouts(day([...warmUp, ...hardSets]));
+
+    expect(found?.kind).toBe("lifting");
+    expect(found?.start).toBe(T0 + (30 + 1) * MINUTE_MS);
+    expect(found?.minutes).toBe(51);
+
+    // A climb well after the last set, still sweaty, is standing up, not a set.
+    const after: Phase[] = [
+      { minutes: 10, bpm: 100, spm: 0, motion: 0.05 },
+      { minutes: 1, bpm: 110, spm: 0, motion: 0.1, climb: true },
+    ];
+    const [walkedOff] = workouts(day([...warmUp, ...hardSets, ...after]));
+
+    expect(walkedOff?.minutes).toBe(51);
+  });
+
   test("the same moving about without the spikes is not a workout", () => {
     const input = day(lifting);
     input.climbs = [];
