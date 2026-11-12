@@ -17,6 +17,8 @@ import {
   gaussian,
   type SleepStage,
   STAGE_PARAMS,
+  STATES,
+  transitions,
 } from "../../src/health/metrics/sleep-stages";
 import { normalCdf } from "../../src/health/metrics/stats";
 import { minuteTrimp, reserve, strain } from "../../src/health/metrics/strain";
@@ -29,6 +31,9 @@ const PRIMER = readFileSync(join(ROOT, "docs/health-primer.html"), "utf8");
 /** The primer's example person. */
 const BODY = { weightKg: 70, heightCm: 175, ageYears: 30, sex: "male" as const };
 const PERSON = { restingHr: 52, maxHr: 190, body: BODY };
+
+/** The stage example's epoch. */
+const EPOCH_Z = { hrZ: 0.9, hrvZ: -0.5, breathingZ: -0.7, dfaZ: 0.6 };
 
 /** The text of one worked example, tags removed. */
 function example(id: string): string {
@@ -72,7 +77,7 @@ describe("health primer", () => {
   });
 
   test("sleep stages: one epoch's log scores", () => {
-    const z = { hrZ: 0.9, hrvZ: -0.5, breathingZ: -0.7, dfaZ: 0.6 };
+    const z = EPOCH_Z;
     const total = (stage: SleepStage) =>
       gaussian(z.hrZ, STAGE_PARAMS.hr[stage].mean, STAGE_PARAMS.hr[stage].sd) +
       FITTED_FEATURES.reduce((sum, k) => {
@@ -85,6 +90,36 @@ describe("health primer", () => {
       shown(total("deep"), 2, true),
       shown(total("rem"), 2, true),
       shown(total("rem") - total("light"), 2),
+    ]);
+  });
+
+  test("sleep stages: the same epoch as awake", () => {
+    const { hr, heartCue, movement } = STAGE_PARAMS;
+    const beats = FITTED_FEATURES.reduce((sum, k) => {
+      const own = DEFAULT_EMISSIONS.light[k];
+      return sum + gaussian(EPOCH_Z[k], own.mean, own.sd);
+    }, 0);
+    const heart = gaussian(EPOCH_Z.hrZ, hr.awake.mean, hr.awake.sd);
+    // Still, with no arousal: awake is scored against light's usual.
+    const calm =
+      Math.log((heartCue.p.awake[0] ?? 1) / (heartCue.p.light[0] ?? 1)) +
+      Math.log((movement.p.awake[0] ?? 1) / (movement.p.light[0] ?? 1));
+
+    expectShown("stages", [
+      `scores ${shown(beats + heart + calm, 2)}`,
+      `${shown(heart, 2)} on heart rate`,
+      `${shown(calm, 2)} for being still`,
+    ]);
+  });
+
+  test("sleep stages: the cost of leaving light for REM", () => {
+    const fromLight = transitions(180)[STATES.indexOf("light")] ?? [];
+    const stay = fromLight[STATES.indexOf("light")] ?? 0;
+    const leave = fromLight[STATES.indexOf("rem")] ?? 0;
+
+    expectShown("stages", [
+      `${shown(Math.exp(leave), 3)} against ${shown(Math.exp(stay), 3)}`,
+      `= ${shown(leave - stay, 2)}`,
     ]);
   });
 
