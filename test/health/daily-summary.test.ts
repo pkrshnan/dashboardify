@@ -200,6 +200,33 @@ describe("DailySummary", () => {
     expect(rows.map((r) => r.stage)).toContain("deep");
   });
 
+  test("stages use your own fitted emissions when params have them", async () => {
+    await putNight();
+    await writeProfile();
+    const before = (await summary.run(DATE))?.night?.stages?.deepMin ?? 0;
+    // Deep fits any level; light and REM only far-off ones, so nearly every epoch goes deep.
+    const far = { mean: 4, sd: 0.3 };
+    const any = { mean: 0, sd: 1 };
+    const own = (g: typeof far) => ({ hrvZ: g, breathingZ: g, dfaZ: g });
+    await mkdir(join(dir, "health-derived", "params"), { recursive: true });
+    await writeFile(
+      join(dir, "health-derived", "params", "current.json"),
+      JSON.stringify({
+        version: "2",
+        recovery: { hrv: 0.5, rhr: 0.25, sleep: 0.15, breathing: 0.1 },
+        stages: { light: own(far), deep: own(any), rem: own(far) },
+      }),
+    );
+
+    const after = (await summary.run(DATE))?.night?.stages?.deepMin ?? 0;
+
+    expect(after).toBeGreaterThan(before);
+    expect(await derived.read("nights", DATE)).toMatchObject({
+      params_version: "2",
+      deep_min: after,
+    });
+  });
+
   test("no stages without a night, and none left from an earlier run", async () => {
     await putNight();
     await writeProfile();

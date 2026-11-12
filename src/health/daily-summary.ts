@@ -19,14 +19,21 @@ import {
   tempDeviation,
 } from "./metrics/recovery";
 import type { RecordedRun } from "./metrics/runs";
+import type { EpochFeatures } from "./metrics/sleep-features";
 import { DEFAULT_NEED_MIN, type PastNight } from "./metrics/sleep-score";
-import type { SleepStages, StageRun } from "./metrics/sleep-stages";
+import {
+  type SleepStages,
+  type StageModel,
+  type StageRun,
+  stageModel,
+} from "./metrics/sleep-stages";
 import { median, round } from "./metrics/stats";
 import { stepsPerMinute } from "./metrics/steps";
 import {
   type DayMetrics,
   dayMetrics,
   type NightMetrics,
+  nightFeatures,
   nightMetrics,
   type Profile,
 } from "./metrics/summary";
@@ -105,7 +112,12 @@ export class DailySummary {
     const profileFields = await this.vault.readProfile();
     const rows = await this.history(date);
     const history = rows.map(fromNightRow);
-    const night = await this.night(date, rows, needMinutes(profileFields));
+    const night = await this.night(
+      date,
+      rows,
+      needMinutes(profileFields),
+      stageModel(params.stages),
+    );
     const signals = night ? toSignals(night) : null;
     const heartRate = await this.load(date, "heart_rate", 0, 24, toHeartRate);
     const steps = await this.load(date, "steps", 0, 24, toSteps);
@@ -219,10 +231,20 @@ export class DailySummary {
       .toZonedDateTime(this.timeZone).epochMilliseconds;
   }
 
+  /** The night that ended on `date`'s morning as stage features, for fit-stages.ts. */
+  async features(date: string): Promise<EpochFeatures[] | null> {
+    return nightFeatures({
+      accel: await this.load(date, "accel", -6, 14, toAccel),
+      heartRate: await this.load(date, "heart_rate", -6, 14, toHeartRate),
+      rr: await this.load(date, "rr_interval", -6, 14, toRr),
+    });
+  }
+
   private async night(
     date: string,
     history: DerivedRow[],
     needMin: number,
+    model?: StageModel,
   ): Promise<NightMetrics | null> {
     const minutesAfterNoon = (ts: number) => afterNoon(ts, this.timeZone);
     return nightMetrics({
@@ -233,6 +255,7 @@ export class DailySummary {
       past: history.map((row) => toPastNight(row, minutesAfterNoon)).filter((n) => n !== null),
       needMin,
       minutesAfterNoon,
+      stageModel: model,
     });
   }
 
