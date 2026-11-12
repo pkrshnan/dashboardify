@@ -2,8 +2,8 @@
 
 Runs from Strava, so a strap session of walk, run, walk is split into the run and the walks
 around it, and the run gets its distance and pace. You record only the running part in Strava,
-so the activity's start and length mark the run; the strap fills in the rest. Status: ST1–ST2 built
-(the account and `bun run settings strava`); next, ST3.
+so the activity's start and length mark the run; the strap fills in the rest. Status: ST1–ST3 built
+(the account, `bun run settings strava`, the sync); next, ST4.
 
 ## Goals
 
@@ -19,7 +19,7 @@ public URL; the server is on the tailnet only), writing to Strava.
 | Area | Decision |
 | --- | --- |
 | Account | One Strava account, your own API app in single-athlete mode. Scope `activity:read_all`, so private runs count. |
-| Connect | CLI only: `bun run settings strava connect` asks for the app's client ID and secret, prints the approval link with redirect `http://localhost/strava`, and takes the `code` you paste back from the address bar. `disconnect` deauthorizes and deletes the rows and cache; `status` prints the athlete and last sync. No API and no Settings section yet. |
+| Connect | CLI only: `bun run settings strava connect` asks for the app's client ID and secret, prints the approval link with redirect `http://localhost/strava`, and takes the `code` you paste back from the address bar. `disconnect` deauthorizes and deletes the row; the server's next pass forgets the cached runs; `status` prints the athlete and last sync. No API and no Settings section yet. |
 | Secrets | Client secret, refresh token and access token sealed in `settings.db` (`strava_account`, one row), registered for `rotate-key`, left out of `export`. Strava may return a new refresh token on each refresh; it replaces the old one in the same transaction. |
 | Sync | Every 30 min, `GET /athlete/activities?after=` the newest run's start minus 2 days, so late uploads and edits are seen. The first sync goes back 90 days. Well inside the read limits (about 100 per 15 min, 1,000 a day). |
 | Runs | `sport_type` `Run`, `TrailRun` or `VirtualRun` (treadmill). Others are ignored. |
