@@ -145,7 +145,7 @@ describe("DailySummary", () => {
     expect(note?.body.indexOf("## Health")).toBeLessThan(note?.body.indexOf("## Journal") ?? 0);
 
     expect((await derived.read("nights", DATE))?.rhr_bpm).toBeCloseTo(52, 0);
-    expect((await derived.read("days", DATE))?.algo_version).toBe("5");
+    expect((await derived.read("days", DATE))?.algo_version).toBe("6");
   });
 
   test("recovery appears once there are two weeks of nights", async () => {
@@ -181,6 +181,34 @@ describe("DailySummary", () => {
     expect((await derived.read("days", DATE))?.workout_min).toBe(40);
     // The run is fast stepping, but it is a workout, so it isn't also a walk.
     expect(await derived.readAll("walks", DATE)).toEqual([]);
+  });
+
+  test("a Strava run inside the strap's session takes its window, distance and pace", async () => {
+    await putNight();
+    await writeProfile();
+    await putRun();
+    const start = Date.parse("2026-11-02T18:05:00-08:00");
+    const runs = {
+      between: (from: number, to: number) =>
+        [{ id: 42, start, elapsedSeconds: 30 * 60, distanceMeters: 5000 }].filter(
+          (r) => r.start >= from && r.start < to,
+        ),
+    };
+    const now = () => Date.parse("2026-11-03T12:00:00-08:00");
+
+    await new DailySummary(raw, derived, vault, TZ, now, runs).run(DATE);
+
+    const note = await vault.readDaily(DATE);
+    expect(note?.body).toMatch(
+      /- Running 18:05–18:35 · 30 min · 5\.0 km · 6:00 \/km · 165 avg \/ 165 max · strain \d/,
+    );
+    const rows = await derived.readAll("workouts", DATE);
+    expect(rows).toEqual([
+      expect.objectContaining({ status: "confirmed", strava_id: 42, distance_m: 5000 }),
+    ]);
+    // The strap's minutes either side of the run are free again: five each, next to the run.
+    const walks = await derived.readAll("walks", DATE);
+    expect(walks.map((w) => w.duration_min)).toEqual([5, 5]);
   });
 
   test("a day with no night before borrows the closest night's resting HR", async () => {

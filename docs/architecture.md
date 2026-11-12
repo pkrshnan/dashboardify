@@ -9,8 +9,8 @@ web app, controlled by voice through Siri. Parts marked *planned* aren't built
 - **Files are the source of truth.** What you write lives in a Markdown vault (Obsidian). Server
   settings live in `settings.db` outside the vault, because they hold secrets that must never
   sync; `bun run settings export` gives a readable copy.
-- **Derived data is disposable.** `calendar-cache.db` and `health-derived/` are rebuilt from
-  iCloud and `health-raw/` when deleted.
+- **Derived data is disposable.** `calendar-cache.db`, `strava-cache.db` and `health-derived/`
+  are rebuilt from iCloud, Strava and `health-raw/` when deleted.
 - **The server only edits what it owns** in a note ([vault-format.md](vault-format.md)).
 - **Apple is a source, not a dependency.** The server runs on Linux; Apple-only data arrives
   through Shortcuts.
@@ -23,6 +23,7 @@ web app, controlled by voice through Siri. Parts marked *planned* aren't built
 flowchart TD
   W[healthstrap] --> R[(health-raw)] --> D[metrics job] --> HD[(health-derived)]
   C[iCloud and ICS links] <--> CS[calendar sync] <--> CC[(calendar-cache.db)]
+  ST[Strava] --> SS[Strava sync] --> SC[(strava-cache.db)] --> D
   S[Siri Shortcuts] --> API
   U[Web app] <--> API[v1 API]
   API <--> V[(vault)]
@@ -77,7 +78,7 @@ vault/                          synced by LiveSync
   inbox/messages/2026-11-02.md  messages received that day
 health-raw/                     Parquet per stream per UTC day
 health-derived/                 rebuildable tables; params/ holds recovery weights
-data/ (DATA_PATH)               settings.db, secret.key, calendar-cache.db, server.lock
+data/ (DATA_PATH)               settings.db, secret.key, calendar-cache.db, strava-cache.db, server.lock
 ```
 
 ## Security

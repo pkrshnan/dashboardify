@@ -67,7 +67,8 @@ workout_reviews:
 - **Health** is recomputed a couple of minutes after each strap upload and hourly for today
   ([health-metrics.md](health-metrics.md)). The night is the one that ended that morning; strain,
   workouts and steps cover the calendar day. An unsure workout ends with `?` (`Lifting?`) until
-  reviewed. "Synced" is on today only and turns into `**14h behind**` past two hours.
+  reviewed. A Strava run adds distance and pace: `- Running 10:42–11:14 · 32 min · 5.1 km ·
+  6:16 /km · …`. "Synced" is on today only and turns into `**14h behind**` past two hours.
 - **Agenda** is today's events, rewritten after each calendar sync that changes them.
 - **Journal** entries are `- HH:MM text`, continuation lines indented two spaces.
 - **Workouts** is yours; the server only reads it. A load line is `weight unit, sets x reps`,
