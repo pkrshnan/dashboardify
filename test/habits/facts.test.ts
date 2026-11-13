@@ -90,6 +90,15 @@ describe("factsFrom", () => {
     });
   });
 
+  test("logged sets count as lifting when the strap found no lifting workout", () => {
+    const logged = parseNote("## Workouts\n- Chest Press\n    - 80lbs, 3x10\n");
+    const empty = { note: logged, nextNote: null, day: null, nextNight: null, workouts: [] };
+
+    expect(factsFrom(empty, "UTC")).toMatchObject({ workouts: 1, lifting: 1, running: 0 });
+    const both = { ...empty, workouts: [{ kind: "lifting", status: "confirmed" }] };
+    expect(factsFrom(both, "UTC")).toMatchObject({ workouts: 1, lifting: 1 });
+  });
+
   test("leaves out what there's no data for", () => {
     const empty = { note: null, nextNote: null, day: null, nextNight: null, workouts: [] };
 
