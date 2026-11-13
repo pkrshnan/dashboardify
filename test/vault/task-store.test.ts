@@ -18,6 +18,23 @@ const write = (text: string) => Bun.write(join(dir, "Inbox.md"), text);
 const read = () => Bun.file(join(dir, "Inbox.md")).text();
 
 describe("TaskStore", () => {
+  test("lists every inbox checkbox, and elsewhere only those with a due date or an id", async () => {
+    await write("- [ ] Call bank\n");
+    await Bun.write(
+      join(dir, "Trips/Napa.md"),
+      "- [ ] Pack boots\n- [ ] Book winery\n\t- due: 2026-11-20\n- [ ] Moved here <!-- id:m1 -->\n- [x] Done\n\t- done: 2026-11-03\n",
+    );
+    await Bun.write(join(dir, "Lists/Shopping.md"), "- [ ] Bananas\n\t- due: 2026-11-20\n");
+
+    const found = (await tasks.list()).map((t) => `${t.path}: ${t.task.description}`).sort();
+
+    expect(found).toEqual([
+      "Inbox.md: Call bank",
+      "Trips/Napa.md: Book winery",
+      "Trips/Napa.md: Moved here",
+    ]);
+  });
+
   test("adds a task with its fields", async () => {
     const { task } = await tasks.add({ key: "k", description: "Call bank", due: "2026-11-03" });
 

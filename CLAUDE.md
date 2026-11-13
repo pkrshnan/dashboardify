@@ -54,7 +54,7 @@ Read the one for the area you change.
 - Small stacked PRs: each branch on the previous one, each passing `bun run check` with tests and
   doc updates.
 - Only touch what the server owns in a note: keys it was sent, its appended lines, `cc:` blocks.
-- A `- [ ]` line anywhere in the vault is a task.
+- A task is any `- [ ]` line in the inbox note, or one elsewhere with a `due:` field or an id.
 - No network in tests: `test/calendar/fake-caldav.ts`, `test/places/fake-photon.ts`, and
   `useApi()` in `test/server/api/helpers.ts` for an isolated vault and `DATA_PATH`.
 - Secrets go through `SecretBox`, are `INPUT_ONLY` in protos, and are never logged or returned.

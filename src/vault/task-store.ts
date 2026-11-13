@@ -1,4 +1,5 @@
-// Finds, adds and completes tasks anywhere in the vault. Tasks stay where you put them; the
+// Finds, adds and completes tasks: every checkbox in the inbox note, and elsewhere those with a
+// due date or an id, so a trip's packing list stays a note. Tasks stay where you put them; the
 // server only appends new ones to the inbox file and edits a task's line and fields in place.
 import { createHash } from "node:crypto";
 import { defined } from "../defined";
@@ -51,16 +52,19 @@ export class TaskStore {
   }
 
   /**
-   * Every task in the vault's Markdown files. Hidden folders (.obsidian, .trash, .cc) are
-   * skipped, and so is Lists/: a list's `- [ ]` lines are list items, not tasks.
+   * Every task in the vault's Markdown files: all of the inbox's checkboxes, and elsewhere those
+   * with a due date or an id. Hidden folders (.obsidian, .trash, .cc) are skipped, and so is
+   * Lists/: a list's `- [ ]` lines are list items, not tasks.
    */
   async list(): Promise<FoundTask[]> {
     const found: FoundTask[] = [];
+    const inbox = this.inboxPath;
     for await (const path of new Bun.Glob("**/*.md").scan({ cwd: this.vault.root })) {
       if (path.startsWith(`${LISTS_FOLDER}/`)) {
         continue;
       }
-      found.push(...tasksIn(path, (await this.vault.read(path)) ?? ""));
+      const tasks = tasksIn(path, (await this.vault.read(path)) ?? "");
+      found.push(...(path === inbox ? tasks : tasks.filter(({ task }) => task.due || task.id)));
     }
     return found;
   }

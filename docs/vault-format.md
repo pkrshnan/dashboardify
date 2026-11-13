@@ -21,7 +21,8 @@ What the server writes, so files can be edited by hand without breaking anything
   The server rewrites only the line and its `due`, `repeat`, `priority` and `done` fields; other
   bullets under it are yours. Older Obsidian Tasks emoji lines are still read and are rewritten
   in this form on their next edit. New tasks go to the inbox note (Settings › General, default
-  `Inbox.md`). Every `- [ ]` line in the vault is read as a task, except in `Lists/`.
+  `Inbox.md`). Every `- [ ]` line there is a task. Elsewhere, a checkbox is a task only with a
+  `due:` field or an id, so a trip's packing list stays a note; `Lists/` never holds tasks.
 - Folders and notes the server owns are capitalised: `Daily/`, `Health/`, `Profile.md`. On start
   it renames the older `daily/`, `health/` and `profile.md`, unless the new name already exists.
 
