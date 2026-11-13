@@ -109,7 +109,11 @@ keys `g b`. Look: [design/README.md](design/README.md#habits-page).
   name, and a GitHub-style grid of the last 36 weeks (Monday to Sunday, top to bottom) to the
   right edge. Cells: the habit's colour
   when done, grey when missed, outlined when not scheduled, a ring on today. Tapping a cell fixes
-  that day. A `N a week` habit shows this week as N dots under its streak, one filled per day done.
+  that day. A `N a week` habit's grid is one square per week instead, its colour once the week
+  is met, grey when it wasn't, dashed while this week is open; it only shows, so twelve weeks of
+  running read as twelve filled squares. Under its streak, this week as N dots, one filled per day
+  done: the next empty dot ticks today, or once today is done the latest open day this week (a run
+  logged late), and the last filled one unticks the latest day ticked by hand.
 - Beside the list, the selected habit's settings: name, "How often" (Every day, Weekly
   with − and +, Set days with seven day buttons), "Ticks itself from", colour, Pause, Archive.
   "+ New habit" opens the same form empty; adding one says "Added Stretch." and clears it for the

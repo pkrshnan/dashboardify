@@ -29,7 +29,9 @@ import {
   progressNote,
   ruleLabel,
   scheduleLabel,
-  weekDots,
+  thisWeekDots,
+  type WeekBox,
+  weekBoxes,
   withTick,
 } from "../lib/habits";
 import { href } from "../lib/router";
@@ -189,8 +191,9 @@ function HabitRow(props: {
   const { token, isPhone } = useApp();
   const { habit } = props;
   const { days, tick } = useHabitDays(token, habit, props.weeks, props.onChanged);
-  const cells = gridWeeks(days, habit.progress.day, props.weeks);
+  const today = habit.progress.day;
   const paused = habit.state !== "active";
+  const weekly = habit.schedule.kind === "weekly";
   return (
     <div
       class={`habit-row${props.selected ? " selected" : ""}${paused ? " paused" : ""}`}
@@ -207,12 +210,21 @@ function HabitRow(props: {
           <span class="habit-sub">{subLine(habit, props.facts)}</span>
           <Streak habit={habit} facts={props.facts} />
         </a>
+        {weekly && !paused && <WeekDots habit={habit} days={days} onTick={tick} />}
       </div>
-      <HabitGrid
-        cells={cells}
-        name={habit.displayName}
-        onToggle={isPhone ? undefined : (cell) => tick(cell.date, cell.state !== "done")}
-      />
+      {weekly ? (
+        <WeekGrid
+          boxes={weekBoxes(days, today, props.weeks, habit.schedule.times)}
+          times={habit.schedule.times}
+          name={habit.displayName}
+        />
+      ) : (
+        <HabitGrid
+          cells={gridWeeks(days, today, props.weeks)}
+          name={habit.displayName}
+          onToggle={isPhone ? undefined : (cell) => tick(cell.date, cell.state !== "done")}
+        />
+      )}
     </div>
   );
 }
@@ -258,26 +270,74 @@ function Streak({ habit, facts }: { habit: HabitView; facts: FactView[] }) {
     return <span class="habit-note">Paused</span>;
   }
   const { streak, unit, atRisk } = habit.progress;
-  const dots = weekDots(habit);
   return (
     <>
       <span class={`habit-streak${atRisk ? " at-risk" : ""}`}>
         <span class="habit-streak-n">{streak}</span> {streak === 1 ? unit : `${unit}s`}
       </span>
-      {dots.length > 0 ? (
-        <span
-          class="habit-dots"
-          role="img"
-          aria-label={`${habit.progress.thisWeek} of ${dots.length} this week`}
-        >
-          {dots.map((filled, i) => (
-            <span key={i} class={filled ? "on" : ""} />
-          ))}
-        </span>
-      ) : (
+      {habit.schedule.kind !== "weekly" && (
         <span class={`habit-note${atRisk ? " at-risk" : ""}`}>{progressNote(habit, facts)}</span>
       )}
     </>
+  );
+}
+
+/**
+ * This week as one dot per time. They sit outside the name's link, being buttons: the next empty
+ * dot ticks a day (dotDay says which) and the last filled one unticks it. The rest only show.
+ */
+function WeekDots(props: {
+  habit: HabitView;
+  days: HabitDayView[];
+  onTick: (date: string, done: boolean) => void;
+}) {
+  const dots = thisWeekDots(props.habit, props.days);
+  const done = dots.filter((d) => d.on).length;
+  return (
+    <fieldset class="habit-dots" aria-label={`${done} of ${dots.length} this week`}>
+      {dots.map(({ on, date }, i) => {
+        const cls = `habit-dot${on ? " on" : ""}`;
+        if (!date) {
+          return (
+            <span key={i} class={cls}>
+              <span />
+            </span>
+          );
+        }
+        const label = `${on ? "Untick" : "Tick"} ${dayLabel(date)}`;
+        return (
+          <button
+            type="button"
+            key={i}
+            class={cls}
+            aria-label={label}
+            title={label}
+            onClick={() => props.onTick(date, !on)}
+          >
+            <span />
+          </button>
+        );
+      })}
+    </fieldset>
+  );
+}
+
+/** A weekly habit's grid: one square per week, filled once the week is met. Read-only. */
+function WeekGrid(props: { boxes: WeekBox[]; times: number; name: string }) {
+  return (
+    <div
+      class="habit-grid weeks"
+      role="img"
+      aria-label={`${props.name}, last ${props.boxes.length} weeks`}
+    >
+      {props.boxes.map((box) => (
+        <span
+          key={box.monday}
+          class={`habit-cell ${box.state}${box.isCurrent ? " today" : ""}`}
+          title={`Week of ${dayMonth(box.monday)} · ${box.done} of ${props.times}`}
+        />
+      ))}
+    </div>
   );
 }
 

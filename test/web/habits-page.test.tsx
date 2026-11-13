@@ -83,12 +83,41 @@ describe("Habits page", () => {
     const page = showHabits();
 
     await page.findAllByText("Read");
-    await waitFor(() => expect(page.container.querySelectorAll(".habit-cell.done").length).toBe(2));
+    await waitFor(() => expect(page.container.querySelectorAll(".habit-cell.done").length).toBe(1));
 
     expect(page.getByText("26 of 30, last 30 days")).toBeTruthy();
     expect(page.getByText("3× a week · Lifting")).toBeTruthy();
-    expect(page.getByRole("img", { name: "2 of 3 this week" })).toBeTruthy();
+    expect(page.getByRole("group", { name: "1 of 3 this week" })).toBeTruthy();
     expect(page.getByText("Thursday 12 Nov · 0 of 2 done today")).toBeTruthy();
+  });
+
+  test("a weekly habit has one square per week, and this week's isn't a button", async () => {
+    const page = showHabits();
+    await page.findAllByText("Lift");
+
+    const grid = page.getByRole("img", { name: "Lift, last 36 weeks" });
+    const squares = grid.querySelectorAll(".habit-cell");
+    expect(squares).toHaveLength(36);
+    expect(grid.querySelectorAll("button")).toHaveLength(0);
+    await waitFor(() => expect(squares[35]?.getAttribute("title")).toBe("Week of 9 Nov · 1 of 3"));
+    expect(squares[35]?.className).toBe("habit-cell pending today");
+  });
+
+  test("the next dot ticks today, then the day before; the last filled one unticks", async () => {
+    const page = showHabits();
+    await page.findAllByText("Lift");
+
+    fireEvent.click(await page.findByRole("button", { name: "Untick Tue 10 Nov" }));
+    await waitFor(() => expect(writes()).toHaveLength(1));
+    fireEvent.click(await page.findByRole("button", { name: "Tick Thu 12 Nov" }));
+
+    // Shown at once: today is done, so the next dot is for yesterday.
+    expect(page.getByRole("button", { name: "Tick Wed 11 Nov" })).toBeTruthy();
+    await waitFor(() => expect(writes()).toHaveLength(2));
+    expect(writes().map((c) => [c.url, c.body])).toEqual([
+      ["/v1/habits/lift:mark", { day: { year: 2026, month: 11, day: 10 }, done: false }],
+      ["/v1/habits/lift:mark", { day: TODAY, done: true }],
+    ]);
   });
 
   test("the small tick marks today, and a square fixes its day", async () => {
@@ -109,7 +138,7 @@ describe("Habits page", () => {
   test("the tick shows at once, before the server answers", async () => {
     const page = showHabits();
     await page.findAllByText("Read");
-    await waitFor(() => expect(page.container.querySelectorAll(".habit-cell.done").length).toBe(2));
+    await waitFor(() => expect(page.container.querySelectorAll(".habit-cell.done").length).toBe(1));
     let answer: () => void = () => undefined;
     const slow = globalThis.fetch;
     globalThis.fetch = ((url: string, init?: RequestInit) =>

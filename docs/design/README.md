@@ -98,7 +98,9 @@ tick for today beside the name (22 px, 44 px to tap, on the phone), the schedule
 it, the streak in large type with the 30-day count under it, or this week as dots for a weekly
 habit. To the right, a GitHub-style grid of 36 weeks (23 on the phone), Monday at the top: the
 habit's colour when done, `#2A2A2E` when missed, an outline when not scheduled, a dashed outline
-while its fact is pending, a ring on today. Narrow windows drop the oldest weeks. On desktop a
+while its fact is pending, a ring on today. A weekly habit has one square per week, dashed
+while this week is open; its next dot to fill is a ring in its colour. Narrow windows drop the
+oldest weeks. On desktop a
 square is a button that fixes its day; on the phone a habit's screen has this week's seven days
 to tap. The selected habit's settings sit beside the list. A streak at risk is `warn` orange; a
 paused habit's done squares are its colour at 40%.
