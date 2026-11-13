@@ -6,6 +6,7 @@
 import { stat } from "node:fs/promises";
 import { join } from "node:path";
 import type { DerivedRow, DerivedStore } from "../health/derived-store";
+import { loggedSets, parseLiftingLog } from "../vault/lifting";
 import { type Note, sectionLines } from "../vault/markdown";
 import type { Vault } from "../vault/vault";
 import { datesBetween } from "./habit-day";
@@ -161,7 +162,7 @@ export function factsFrom(inputs: FactInputs, timeZone: string): DayFacts {
     asleep_min: num(inputs.nextNote?.frontmatter.tst_min),
     lights_out: lightsOut(inputs.nextNight, timeZone),
     journal: journalEntries(inputs.note),
-    ...workoutCounts(inputs.workouts),
+    ...workoutCounts(inputs.workouts, hasLiftingLog(inputs.note)),
   };
   return Object.fromEntries(Object.entries(facts).filter(([, v]) => v !== undefined));
 }
@@ -192,14 +193,27 @@ function journalEntries(note: Note | null): number | undefined {
   return lines ? lines.filter((l) => /^- \d{2}:\d{2} /.test(l)).length : undefined;
 }
 
-function workoutCounts(rows: DerivedRow[]): DayFacts {
-  if (rows.length === 0) {
+/** Sets logged under `## Workouts`. */
+function hasLiftingLog(note: Note | null): boolean {
+  return note !== null && loggedSets(parseLiftingLog(note.body)).length > 0;
+}
+
+/**
+ * Workouts by kind. Logged sets count as a lift even with no lifting workout: when HR stays low
+ * the strap finds none, and the sets are matched to moving in place instead.
+ */
+function workoutCounts(rows: DerivedRow[], lifted: boolean): DayFacts {
+  if (rows.length === 0 && !lifted) {
     return {};
   }
   const counted = rows.filter((w) => COUNTED_STATUSES.has(String(w.status)));
   const counts: DayFacts = { workouts: counted.length };
   for (const kind of WORKOUT_KINDS) {
     counts[kind] = counted.filter((w) => w.kind === kind).length;
+  }
+  if (lifted && counts.lifting === 0) {
+    counts.lifting = 1;
+    counts.workouts = (counts.workouts ?? 0) + 1;
   }
   return counts;
 }

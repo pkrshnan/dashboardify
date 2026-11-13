@@ -72,7 +72,7 @@ registry lists each fact's label, kind, day and default; the page's "Ticks itsel
 | `active_kcal` | kcal | `active_kcal` | `≥ 500` |
 | `strain` | number | `strain` | `≥ 12` |
 | `zone2_min` | minutes | `days/`, zone 2 and up | `≥ 30` |
-| `lifting`, `running`, `volleyball`, `walking`, `workouts` | count | workouts after reviews (an unsure one waits for its review); `workouts` is any kind | `≥ 1` |
+| `lifting`, `running`, `volleyball`, `walking`, `workouts` | count | workouts after reviews (an unsure one waits for its review); `workouts` is any kind. Sets logged under `## Workouts` count as a lift even when the strap found no workout | `≥ 1` |
 | `lights_out` | time, night | the night's `bed_ts`, the start of the sleep window: lying down and still, not sleep onset, so a slow night doesn't break it | `≤ 23:30` |
 | `asleep_min` | minutes, night | `tst_min` | `≥ 420` |
 | `journal` | count | entries under `## Journal` | `≥ 1` |
