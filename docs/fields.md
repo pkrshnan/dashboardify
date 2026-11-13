@@ -4,7 +4,7 @@ Tasks and habits keep their details as sub-bullets under the line, one `key: val
 instead of emoji (tasks) or `·`-separated words (habits). The line holds only the text and the
 id, so a note reads like a note.
 
-Status: F1–F5 built. Next: run `vault:convert` on the server, then F6.
+Status: built.
 
 ## Format
 
@@ -40,7 +40,7 @@ Status: F1–F5 built. Next: run `vault:convert` on the server, then F6.
 | Created date | Dropped. `Task.create_date` is removed from the proto and field 8 reserved; nothing read it. |
 | Etag | A task's etag hashes its line and its field lines. `Habits.md` keeps its whole-file etag. |
 | Edits | Delete removes the line and its fields. Completing a repeating task puts the next one, with its fields, above the done one. |
-| Old format | Read until F6, never written, so any edit converts a line. F5 converts the rest at once. |
+| Old format | Emoji and `·` lines aren't read any more; F5's one-time `vault:convert` moved them. |
 
 ## Build plan
 

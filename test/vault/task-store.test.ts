@@ -41,15 +41,15 @@ describe("TaskStore", () => {
     expect(await read()).toBe(`- [ ] Call bank <!-- id:${task.ref} -->\n\t- due: 2026-11-03\n`);
   });
 
-  test("an edit rewrites an old line in the new form and keeps the rest", async () => {
+  test("an edit rewrites the line and its fields and keeps the rest", async () => {
     await write(
-      "# Inbox\n- [ ] Call bank ⏰ 09:00 📅 2026-11-03 ➕ 2026-11-01 🆔 k7f3a2\n- [ ] Next\n",
+      "# Inbox\n- [ ] Call bank <!-- id:k7f3a2 -->\n\t- note\n\t- due: 2026-11-03\n- [ ] Next\n",
     );
 
-    await tasks.edit("k7f3a2", undefined, (task) => ({ ...task, description: "Call the bank" }));
+    await tasks.edit("k7f3a2", undefined, (task) => ({ ...task, time: "09:00" }));
 
     expect(await read()).toBe(
-      "# Inbox\n- [ ] Call the bank <!-- id:k7f3a2 -->\n\t- due: 2026-11-03 09:00\n- [ ] Next\n",
+      "# Inbox\n- [ ] Call bank <!-- id:k7f3a2 -->\n\t- due: 2026-11-03 09:00\n\t- note\n- [ ] Next\n",
     );
   });
 

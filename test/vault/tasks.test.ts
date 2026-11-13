@@ -32,24 +32,13 @@ describe("parseTask", () => {
     const lines = ["- [ ] A", "\t- due: Friday", "\t- priority: urgent", "\t- done: soon"];
     expect(parseTask(lines, 0)).toEqual({ done: false, description: "A" });
   });
-
-  test("a field wins over the old emoji on the line", () => {
-    const lines = ["- [ ] A ⏰ 09:00 📅 2026-11-03", "\t- due: 2026-11-04"];
-    expect(parseTask(lines, 0)).toEqual({ done: false, description: "A", due: "2026-11-04" });
-  });
 });
 
 describe("parseTaskLine", () => {
-  test("still reads old Tasks emoji in any order, and drops the created date", () => {
-    const task = parseTaskLine(
-      "- [ ] Call the bank ⏰ 09:00 📅 2026-11-03 ⏫ 🆔 k7f3a2 ➕ 2026-11-02",
-    );
-    expect(task).toEqual({
+  test("reads the text and id", () => {
+    expect(parseTaskLine("- [ ] Call the bank <!-- id:k7f3a2 -->")).toEqual({
       done: false,
       description: "Call the bank",
-      time: "09:00",
-      due: "2026-11-03",
-      priority: "high",
       id: "k7f3a2",
     });
   });
@@ -60,31 +49,17 @@ describe("parseTaskLine", () => {
   });
 
   test("any status other than space counts as done", () => {
-    expect(parseTaskLine("- [x] Done ✅ 2026-11-01")?.done).toBe(true);
+    expect(parseTaskLine("- [x] Done")?.done).toBe(true);
     expect(parseTaskLine("- [-] Cancelled")?.done).toBe(true);
   });
 
-  test("keeps emoji in the middle of the description", () => {
-    expect(parseTaskLine("- [ ] Buy 📅 calendar for desk")?.description).toBe(
-      "Buy 📅 calendar for desk",
-    );
+  test("keeps emoji in the description", () => {
+    expect(parseTaskLine("- [ ] Buy 📅 calendar ⏫")?.description).toBe("Buy 📅 calendar ⏫");
   });
 });
 
 describe("formatTask", () => {
-  test("writes the id on the line and the details as fields", () => {
-    const old =
-      "- [ ] Call the bank ⏰ 09:00 ⏫ 🔁 every week 📅 2026-11-03 ➕ 2026-11-02 🆔 k7f3a2";
-    const task = parseTaskLine(old);
-    expect(task && formatTask(task)).toEqual([
-      "- [ ] Call the bank <!-- id:k7f3a2 -->",
-      "\t- due: 2026-11-03 09:00",
-      "\t- repeat: every week",
-      "\t- priority: high",
-    ]);
-  });
-
-  test("round-trips", () => {
+  test("round-trips, with the id on the line and the details as fields", () => {
     const lines = [
       "- [x] Call Fetch <!-- id:a7efea -->",
       "\t- due: 2026-11-04",

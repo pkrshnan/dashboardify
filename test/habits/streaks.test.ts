@@ -14,7 +14,6 @@ const habit = (schedule: Schedule): Habit => ({
   color: null,
   since: null,
   state: "active",
-  extra: [],
   line: 0,
 });
 const daily = habit({ kind: "daily" });
