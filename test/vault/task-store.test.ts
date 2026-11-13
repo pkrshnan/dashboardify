@@ -1,0 +1,82 @@
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { TaskStore } from "../../src/vault/task-store";
+import { Vault } from "../../src/vault/vault";
+
+let dir: string;
+let tasks: TaskStore;
+
+beforeEach(async () => {
+  dir = await mkdtemp(join(tmpdir(), "tasks-"));
+  tasks = new TaskStore(new Vault(dir, "UTC"), "Inbox.md");
+});
+afterEach(() => rm(dir, { recursive: true, force: true }));
+
+const write = (text: string) => Bun.write(join(dir, "Inbox.md"), text);
+const read = () => Bun.file(join(dir, "Inbox.md")).text();
+
+describe("TaskStore", () => {
+  test("adds a task with its fields", async () => {
+    const { task } = await tasks.add({ key: "k", description: "Call bank", due: "2026-11-03" });
+
+    expect(await read()).toBe(`- [ ] Call bank <!-- id:${task.ref} -->\n\t- due: 2026-11-03\n`);
+  });
+
+  test("an edit rewrites an old line in the new form and keeps the rest", async () => {
+    await write(
+      "# Inbox\n- [ ] Call bank ⏰ 09:00 📅 2026-11-03 ➕ 2026-11-01 🆔 k7f3a2\n- [ ] Next\n",
+    );
+
+    await tasks.edit("k7f3a2", undefined, (task) => ({ ...task, description: "Call the bank" }));
+
+    expect(await read()).toBe(
+      "# Inbox\n- [ ] Call the bank <!-- id:k7f3a2 -->\n\t- due: 2026-11-03 09:00\n- [ ] Next\n",
+    );
+  });
+
+  test("completing a repeating task puts the next one above, and notes stay with the done one", async () => {
+    await write(
+      "- [ ] Water plants <!-- id:p1 -->\n\t- due: 2026-11-03\n\t- repeat: every week\n\t- by the window\n",
+    );
+
+    const result = await tasks.complete("p1", "2026-11-04");
+
+    expect(result.status).toBe("completed");
+    const next = result.status === "completed" ? result.next?.id : undefined;
+    expect(await read()).toBe(
+      [
+        `- [ ] Water plants <!-- id:${next} -->`,
+        "\t- due: 2026-11-10",
+        "\t- repeat: every week",
+        "- [x] Water plants <!-- id:p1 -->",
+        "\t- due: 2026-11-03",
+        "\t- repeat: every week",
+        "\t- done: 2026-11-04",
+        "\t- by the window",
+        "",
+      ].join("\n"),
+    );
+  });
+
+  test("delete removes the line and its fields but keeps notes and nested tasks", async () => {
+    await write(
+      "- [ ] Trip <!-- id:t1 -->\n\t- due: 2026-12-01\n\t- [ ] Book flights\n- [ ] Next\n",
+    );
+
+    await tasks.edit("t1", undefined, () => null);
+
+    expect(await read()).toBe("\t- [ ] Book flights\n- [ ] Next\n");
+  });
+
+  test("a change to a field makes the etag stale", async () => {
+    await write("- [ ] A <!-- id:a1 -->\n\t- due: 2026-11-03\n");
+    const [found] = await tasks.list();
+    const etag = found ? await tasks.etag(found) : "";
+
+    await write("- [ ] A <!-- id:a1 -->\n\t- due: 2026-11-04\n");
+
+    await expect(tasks.edit("a1", etag, (task) => task)).rejects.toThrow("ABORTED");
+  });
+});

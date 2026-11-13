@@ -9,11 +9,19 @@ What the server writes, so files can be edited by hand without breaking anything
 - Writes are atomic (temp file, then rename), one at a time per file, and skipped when nothing
   changes, so sync and backups only see real edits.
 - Days follow the server's time zone, so 23:30 lands on that day even across DST.
-- Tasks are Obsidian Tasks lines in any note:
-  `- [ ] Call the bank ⏰ 09:00 ⏫ 🔁 every week 📅 2026-11-03 ➕ 2026-11-02 🆔 k7f3a2`.
-  `⏰ HH:MM` is our own due time and always sits right after the description; `🆔` is the id the
-  API uses. New tasks go to the inbox note (Settings › General, default `Inbox.md`). Every `- [ ]`
-  line in the vault is read as a task, except in `Lists/`.
+- A task is a `- [ ]` line with its details as sub-bullets ([fields.md](fields.md)):
+
+  ```markdown
+  - [ ] Call the bank <!-- id:k7f3a2 -->
+  	- due: 2026-11-03 09:00
+  	- repeat: every week
+  	- priority: high
+  ```
+
+  The server rewrites only the line and its `due`, `repeat`, `priority` and `done` fields; other
+  bullets under it are yours. Older Obsidian Tasks emoji lines are still read and are rewritten
+  in this form on their next edit. New tasks go to the inbox note (Settings › General, default
+  `Inbox.md`). Every `- [ ]` line in the vault is read as a task, except in `Lists/`.
 - Folders and notes the server owns are capitalised: `Daily/`, `Health/`, `Profile.md`. On start
   it renames the older `daily/`, `health/` and `profile.md`, unless the new name already exists.
 

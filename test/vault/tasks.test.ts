@@ -1,9 +1,46 @@
 import { describe, expect, test } from "bun:test";
-import { formatTask, nextDue, parseTaskLine } from "../../src/vault/tasks";
+import { formatTask, nextDue, parseTask, parseTaskLine } from "../../src/vault/tasks";
 import { parseWhen } from "../../src/vault/when";
 
+describe("parseTask", () => {
+  test("reads the line and its fields", () => {
+    const lines = [
+      "- [ ] Call the bank <!-- id:k7f3a2 -->",
+      "\t- due: 2026-11-03 09:00",
+      "\t- repeat: every week",
+      "\t- Priority: High",
+      "\t- ask about fees",
+    ];
+    expect(parseTask(lines, 0)).toEqual({
+      done: false,
+      description: "Call the bank",
+      time: "09:00",
+      due: "2026-11-03",
+      recurrence: "every week",
+      priority: "high",
+      id: "k7f3a2",
+    });
+  });
+
+  test("a done task reads its done date", () => {
+    expect(parseTask(["- [x] Fold laundry", "\t- done: 2026-11-11"], 0)?.completed).toBe(
+      "2026-11-11",
+    );
+  });
+
+  test("skips values it can't read", () => {
+    const lines = ["- [ ] A", "\t- due: Friday", "\t- priority: urgent", "\t- done: soon"];
+    expect(parseTask(lines, 0)).toEqual({ done: false, description: "A" });
+  });
+
+  test("a field wins over the old emoji on the line", () => {
+    const lines = ["- [ ] A ⏰ 09:00 📅 2026-11-03", "\t- due: 2026-11-04"];
+    expect(parseTask(lines, 0)).toEqual({ done: false, description: "A", due: "2026-11-04" });
+  });
+});
+
 describe("parseTaskLine", () => {
-  test("reads Tasks fields in any order, plus our ⏰ time", () => {
+  test("still reads old Tasks emoji in any order, and drops the created date", () => {
     const task = parseTaskLine(
       "- [ ] Call the bank ⏰ 09:00 📅 2026-11-03 ⏫ 🆔 k7f3a2 ➕ 2026-11-02",
     );
@@ -14,7 +51,6 @@ describe("parseTaskLine", () => {
       due: "2026-11-03",
       priority: "high",
       id: "k7f3a2",
-      created: "2026-11-02",
     });
   });
 
@@ -36,15 +72,32 @@ describe("parseTaskLine", () => {
 });
 
 describe("formatTask", () => {
-  test("round-trips, with ⏰ right after the description", () => {
-    const line =
+  test("writes the id on the line and the details as fields", () => {
+    const old =
       "- [ ] Call the bank ⏰ 09:00 ⏫ 🔁 every week 📅 2026-11-03 ➕ 2026-11-02 🆔 k7f3a2";
-    const task = parseTaskLine(line);
-    expect(task && formatTask(task)).toBe(line);
+    const task = parseTaskLine(old);
+    expect(task && formatTask(task)).toEqual([
+      "- [ ] Call the bank <!-- id:k7f3a2 -->",
+      "\t- due: 2026-11-03 09:00",
+      "\t- repeat: every week",
+      "\t- priority: high",
+    ]);
   });
 
-  test("keeps indentation", () => {
-    expect(formatTask({ done: true, description: "Sub" }, "  ")).toBe("  - [x] Sub");
+  test("round-trips", () => {
+    const lines = [
+      "- [x] Call Fetch <!-- id:a7efea -->",
+      "\t- due: 2026-11-04",
+      "\t- done: 2026-11-09",
+    ];
+    const task = parseTask(lines, 0);
+    expect(task && formatTask(task)).toEqual(lines);
+  });
+
+  test("keeps indentation and leaves out the done date of an open task", () => {
+    expect(formatTask({ done: false, description: "Sub", completed: "2026-11-01" }, "  ")).toEqual([
+      "  - [ ] Sub",
+    ]);
   });
 });
 

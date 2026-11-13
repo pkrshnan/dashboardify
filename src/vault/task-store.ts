@@ -1,18 +1,19 @@
-// Finds, adds and completes Obsidian Tasks anywhere in the vault. Tasks stay where you put them;
-// the server only appends new ones to the inbox file and edits single lines in place.
+// Finds, adds and completes tasks anywhere in the vault. Tasks stay where you put them; the
+// server only appends new ones to the inbox file and edits a task's line and fields in place.
 import { createHash } from "node:crypto";
 import { defined } from "../defined";
 import { LISTS_FOLDER } from "../lists/list-store";
-import { formatTask, indentOf, nextDue, parseTaskLine, type Task } from "./tasks";
+import { fieldLines, replaceItem } from "./fields";
+import { formatTask, indentOf, nextDue, parseTask, TASK_KEYS, type Task } from "./tasks";
 import type { Vault } from "./vault";
 export interface FoundTask {
-  /** The task's 🆔, or a stable reference derived from its file and text when it has none. */
+  /** The task's id, or a stable reference derived from its file and text when it has none. */
   ref: string;
   path: string;
   task: Task;
 }
 export interface NewTask {
-  /** Device-generated key; the same key always maps to the same 🆔, so retries are safe. */
+  /** Device-generated key; the same key always maps to the same id, so retries are safe. */
   key: string;
   description: string;
   due?: string;
@@ -63,8 +64,8 @@ export class TaskStore {
     }
     return found;
   }
-  /** Append a task to the inbox, unless a task with the same 🆔 already exists anywhere. */
-  async add(input: NewTask, today: string): Promise<AddResult> {
+  /** Append a task to the inbox, unless a task with the same id already exists anywhere. */
+  async add(input: NewTask): Promise<AddResult> {
     const id = shortHash(input.key);
     const existing = (await this.list()).find((t) => t.task.id === id);
     if (existing) {
@@ -77,7 +78,6 @@ export class TaskStore {
       priority: input.priority,
       recurrence: input.recurrence,
       due: input.due,
-      created: today,
       id,
     };
     let result: AddResult = { status: "created", task: { ref: id, path: this.inboxPath, task } };
@@ -87,7 +87,7 @@ export class TaskStore {
         result = { status: "already_done", task: duplicate };
         return null;
       }
-      return appendLine(text, formatTask(task));
+      return appendLines(text, formatTask(task));
     });
     return result;
   }
@@ -103,38 +103,34 @@ export class TaskStore {
     let result: FoundTask | null = null;
     await this.vault.update(target.path, (text) => {
       const lines = (text ?? "").split("\n");
-      const index = lines.findIndex((line) => refOf(target.path, line) === ref);
+      const index = indexOf(lines, target.path, ref);
       if (index < 0) {
         throw new Error("NOT_FOUND");
       }
-      const line = defined(lines[index]);
-      if (etag && shortHash(line) !== etag) {
+      if (etag && etagAt(lines, index) !== etag) {
         throw new Error("ABORTED");
       }
-      const task = change(defined(parseTaskLine(line)));
+      const task = change(defined(parseTask(lines, index)));
       if (task) {
         task.id ??= ref;
-        lines[index] = formatTask(task, indentOf(line));
         result = { ref, path: target.path, task };
-      } else {
-        lines.splice(index, 1);
       }
+      const indent = indentOf(defined(lines[index]));
+      replaceItem(lines, index, TASK_KEYS, task ? formatTask(task, indent) : []);
       return lines.join("\n");
     });
     return result;
   }
   async etag(target: FoundTask): Promise<string> {
-    const line = ((await this.vault.read(target.path)) ?? "")
-      .split("\n")
-      .find((line) => refOf(target.path, line) === target.ref);
-    return shortHash(line ?? "");
+    const lines = ((await this.vault.read(target.path)) ?? "").split("\n");
+    return etagAt(lines, indexOf(lines, target.path, target.ref));
   }
   /**
-   * Tick a task off and stamp ✅ today. A recurring task gets its next occurrence inserted above
+   * Tick a task off and stamp `done:` today. A recurring task gets its next occurrence inserted above
    * it, as Tasks does. Completing an already-done task changes nothing.
    */
   async complete(ref: string, today: string, etag?: string): Promise<CompleteResult> {
-    // Without a 🆔, a done task and its next occurrence share a ref, so prefer the open one.
+    // Without an id, a done task and its next occurrence share a ref, so prefer the open one.
     const matches = (await this.list()).filter((t) => t.ref === ref);
     const target = matches.find((t) => !t.task.done) ?? matches[0];
     if (!target) {
@@ -148,8 +144,8 @@ export class TaskStore {
     }
     let result: CompleteResult = { status: "not_found" };
     await this.vault.update(target.path, (text) => {
-      const line = (text ?? "").split("\n").find((line) => refOf(target.path, line) === ref);
-      if (etag && shortHash(line ?? "") !== etag) {
+      const lines = (text ?? "").split("\n");
+      if (etag && etagAt(lines, indexOf(lines, target.path, ref)) !== etag) {
         throw new Error("ABORTED");
       }
       const edit = completeIn(text ?? "", target.path, ref, today);
@@ -161,8 +157,9 @@ export class TaskStore {
 }
 function tasksIn(path: string, text: string): FoundTask[] {
   const found: FoundTask[] = [];
-  for (const line of text.split("\n")) {
-    const task = parseTaskLine(line);
+  const lines = text.split("\n");
+  for (const index of lines.keys()) {
+    const task = parseTask(lines, index);
     if (task) {
       found.push({ ref: task.id ?? derivedRef(path, task), path, task });
     }
@@ -180,19 +177,18 @@ function completeIn(
   result: CompleteResult;
 } {
   const lines = text.split("\n");
-  const index = lines.findIndex((line) => refOf(path, line) === ref && !parseTaskLine(line)?.done);
-  const line = lines[index] ?? "";
-  const task = parseTaskLine(line);
+  const index = indexOf(lines, path, ref, (task) => !task.done);
+  const task = index < 0 ? null : parseTask(lines, index);
   if (!task || task.done) {
     return { text: null, result: { status: "not_found" } };
   }
-  const indent = indentOf(line);
+  const indent = indentOf(lines[index] ?? "");
   const done: Task = { ...task, done: true, completed: today };
   const next = nextOccurrence(task);
   const replacement = next
-    ? [formatTask(next, indent), formatTask(done, indent)]
-    : [formatTask(done, indent)];
-  lines.splice(index, 1, ...replacement);
+    ? [...formatTask(next, indent), ...formatTask(done, indent)]
+    : formatTask(done, indent);
+  replaceItem(lines, index, TASK_KEYS, replacement);
   return {
     text: lines.join("\n"),
     result: {
@@ -212,22 +208,36 @@ function nextOccurrence(task: Task): Task | null {
     return null;
   }
   const id = task.id ? shortHash(`${task.id}:${due}`) : undefined;
-  return { ...task, due, id, completed: undefined, created: undefined };
+  return { ...task, due, id, completed: undefined };
 }
-function refOf(path: string, line: string): string | null {
-  const task = parseTaskLine(line);
-  return task ? (task.id ?? derivedRef(path, task)) : null;
+/** The line of the first task with `ref` that passes `filter`, or -1. */
+function indexOf(
+  lines: string[],
+  path: string,
+  ref: string,
+  filter: (task: Task) => boolean = () => true,
+): number {
+  return lines.findIndex((_, index) => {
+    const task = parseTask(lines, index);
+    return task !== null && (task.id ?? derivedRef(path, task)) === ref && filter(task);
+  });
 }
-/** A stable reference for a task without a 🆔, from its file and description. */
+/** A hash of the task's line and its fields, so an edit to either makes an older etag stale. */
+function etagAt(lines: string[], index: number): string {
+  const own = [index, ...(index < 0 ? [] : fieldLines(lines, index, TASK_KEYS))];
+  return shortHash(own.map((i) => lines[i] ?? "").join("\n"));
+}
+/** A stable reference for a task without an id, from its file and description. */
 function derivedRef(path: string, task: Task): string {
   return `h${shortHash(`${path}\n${task.description}`)}`;
 }
 export function shortHash(value: string): string {
   return createHash("sha256").update(value).digest("hex").slice(0, 6);
 }
-function appendLine(text: string | null, line: string): string {
+function appendLines(text: string | null, lines: string[]): string {
+  const block = `${lines.join("\n")}\n`;
   if (!text) {
-    return `${line}\n`;
+    return block;
   }
-  return `${text.endsWith("\n") ? text : `${text}\n`}${line}\n`;
+  return `${text.endsWith("\n") ? text : `${text}\n`}${block}`;
 }
