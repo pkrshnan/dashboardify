@@ -3500,11 +3500,37 @@ button.habit-cell {
 }
 
 .habit-panel {
+  position: relative;
   padding: 32px 28px 64px;
   border-left: 1px solid var(--line-2);
   display: flex;
   flex-direction: column;
   gap: 18px;
+}
+
+/* Closed until a habit is picked, so the grids get the whole width. */
+.habits.closed {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.habit-close {
+  position: absolute;
+  top: 24px;
+  right: 20px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: var(--text-2);
+  font-size: var(--type-title);
+  line-height: 1;
+  text-decoration: none;
+}
+
+.habit-close:hover {
+  background: var(--fill);
+  color: var(--text);
 }
 
 .habit-panel-title {
