@@ -21,18 +21,18 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file dashboardify/v1/task.proto.
  */
 export const file_dashboardify_v1_task: GenFile = /*@__PURE__*/
-  fileDesc("ChpkYXNoYm9hcmRpZnkvdjEvdGFzay5wcm90bxIPZGFzaGJvYXJkaWZ5LnYxIuAFCgRUYXNrEikKBG5hbWUYASABKAlCG+JBAQi6SBRyEjIQXiR8XnRhc2tzL1teL10rJBI1CgtkZXNjcmlwdGlvbhgCIAEoCUIb4kEBArpIFHISEAEYoJwBMgooP3MpLipcUy4qSACIAQESMAoFc3RhdGUYAyABKA4yGy5kYXNoYm9hcmRpZnkudjEuVGFzay5TdGF0ZUIE4kEBAxIpCghkdWVfZGF0ZRgEIAEoCzIRLmdvb2dsZS50eXBlLkRhdGVCBOJBAQESLgoIZHVlX3RpbWUYBSABKAsyFi5nb29nbGUudHlwZS5UaW1lT2ZEYXlCBOJBAQESNgoIcHJpb3JpdHkYBiABKA4yHi5kYXNoYm9hcmRpZnkudjEuVGFzay5Qcmlvcml0eUIE4kEBARIYCgpyZWN1cnJlbmNlGAcgASgJQgTiQQEBEiwKC2NyZWF0ZV9kYXRlGAggASgLMhEuZ29vZ2xlLnR5cGUuRGF0ZUIE4kEBAxIuCg1jb21wbGV0ZV9kYXRlGAkgASgLMhEuZ29vZ2xlLnR5cGUuRGF0ZUIE4kEBAxISCgRwYXRoGAogASgJQgTiQQEDEhIKBGV0YWcYCyABKAlCBOJBAQEiPgoFU3RhdGUSFQoRU1RBVEVfVU5TUEVDSUZJRUQQABIOCgpTVEFURV9PUEVOEAESDgoKU1RBVEVfRE9ORRACIokBCghQcmlvcml0eRIYChRQUklPUklUWV9VTlNQRUNJRklFRBAAEhMKD1BSSU9SSVRZX0xPV0VTVBABEhAKDFBSSU9SSVRZX0xPVxACEhMKD1BSSU9SSVRZX01FRElVTRADEhEKDVBSSU9SSVRZX0hJR0gQBBIUChBQUklPUklUWV9ISUdIRVNUEAU6NepBMgoVZGFzaGJvYXJkaWZ5LmFwcC9UYXNrEgx0YXNrcy97dGFza30qBXRhc2tzMgR0YXNrQg4KDF9kZXNjcmlwdGlvbiJFCg5HZXRUYXNrUmVxdWVzdBIzCgRuYW1lGAEgASgJQiXiQQEC+kEXChVkYXNoYm9hcmRpZnkuYXBwL1Rhc2u6SARyAhABInoKEExpc3RUYXNrc1JlcXVlc3QSHgoJcGFnZV9zaXplGAEgASgFQgviQQEBukgEGgIoABIYCgpwYWdlX3Rva2VuGAIgASgJQgTiQQEBEhQKBmZpbHRlchgDIAEoCUIE4kEBARIWCghvcmRlcl9ieRgEIAEoCUIE4kEBASJSChFMaXN0VGFza3NSZXNwb25zZRIkCgV0YXNrcxgBIAMoCzIVLmRhc2hib2FyZGlmeS52MS5UYXNrEhcKD25leHRfcGFnZV90b2tlbhgCIAEoCSK6AQoRQ3JlYXRlVGFza1JlcXVlc3QSLwoEdGFzaxgBIAEoCzIVLmRhc2hib2FyZGlmeS52MS5UYXNrQgriQQECukgDyAEBEhgKCnJlcXVlc3RfaWQYAiABKAlCBOJBAQE6WrpIVxpVChl0YXNrLmRlc2NyaXB0aW9uLnJlcXVpcmVkEhx0YXNrLmRlc2NyaXB0aW9uIGlzIHJlcXVpcmVkGhpoYXModGhpcy50YXNrLmRlc2NyaXB0aW9uKSLmAgoRVXBkYXRlVGFza1JlcXVlc3QSLwoEdGFzaxgBIAEoCzIVLmRhc2hib2FyZGlmeS52MS5UYXNrQgriQQECukgDyAEBEjUKC3VwZGF0ZV9tYXNrGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLkZpZWxkTWFza0IE4kEBATroAbpI5AEangEKF3Rhc2suZGVzY3JpcHRpb24ubWFza2VkEiJ0YXNrLmRlc2NyaXB0aW9uIGNhbm5vdCBiZSBjbGVhcmVkGl8hdGhpcy51cGRhdGVfbWFzay5wYXRocy5leGlzdHMocCwgcCA9PSAiZGVzY3JpcHRpb24iIHx8IHAgPT0gIioiKSB8fCBoYXModGhpcy50YXNrLmRlc2NyaXB0aW9uKRpBChJ0YXNrLm5hbWUucmVxdWlyZWQSFXRhc2submFtZSBpcyByZXF1aXJlZBoUdGhpcy50YXNrLm5hbWUgIT0gIiIiXAoRRGVsZXRlVGFza1JlcXVlc3QSMwoEbmFtZRgBIAEoCUIl4kEBAvpBFwoVZGFzaGJvYXJkaWZ5LmFwcC9UYXNrukgEcgIQARISCgRldGFnGAIgASgJQgTiQQEBIl4KE0NvbXBsZXRlVGFza1JlcXVlc3QSMwoEbmFtZRgBIAEoCUIl4kEBAvpBFwoVZGFzaGJvYXJkaWZ5LmFwcC9UYXNrukgEcgIQARISCgRldGFnGAIgASgJQgTiQQEBImUKFENvbXBsZXRlVGFza1Jlc3BvbnNlEiMKBHRhc2sYASABKAsyFS5kYXNoYm9hcmRpZnkudjEuVGFzaxIoCgluZXh0X3Rhc2sYAiABKAsyFS5kYXNoYm9hcmRpZnkudjEuVGFzayJcChFSZW9wZW5UYXNrUmVxdWVzdBIzCgRuYW1lGAEgASgJQiXiQQEC+kEXChVkYXNoYm9hcmRpZnkuYXBwL1Rhc2u6SARyAhABEhIKBGV0YWcYAiABKAlCBOJBAQEiUAoSU2VhcmNoVGFza3NSZXF1ZXN0EhoKBXF1ZXJ5GAEgASgJQgviQQECukgEcgIQARIeCglwYWdlX3NpemUYAiABKAVCC+JBAQG6SAQaAigAIkIKE1NlYXJjaFRhc2tzUmVzcG9uc2USKwoHbWF0Y2hlcxgBIAMoCzIaLmRhc2hib2FyZGlmeS52MS5UYXNrTWF0Y2giPwoJVGFza01hdGNoEiMKBHRhc2sYASABKAsyFS5kYXNoYm9hcmRpZnkudjEuVGFzaxINCgVzY29yZRgCIAEoAjKdBwoLVGFza1NlcnZpY2USZAoHR2V0VGFzaxIfLmRhc2hib2FyZGlmeS52MS5HZXRUYXNrUmVxdWVzdBoVLmRhc2hib2FyZGlmeS52MS5UYXNrIiHaQQRuYW1lgtPkkwIUEhIvdjEve25hbWU9dGFza3MvKn0SZQoJTGlzdFRhc2tzEiEuZGFzaGJvYXJkaWZ5LnYxLkxpc3RUYXNrc1JlcXVlc3QaIi5kYXNoYm9hcmRpZnkudjEuTGlzdFRhc2tzUmVzcG9uc2UiEYLT5JMCCxIJL3YxL3Rhc2tzEmcKCkNyZWF0ZVRhc2sSIi5kYXNoYm9hcmRpZnkudjEuQ3JlYXRlVGFza1JlcXVlc3QaFS5kYXNoYm9hcmRpZnkudjEuVGFzayIe2kEEdGFza4LT5JMCEToEdGFzayIJL3YxL3Rhc2tzEoEBCgpVcGRhdGVUYXNrEiIuZGFzaGJvYXJkaWZ5LnYxLlVwZGF0ZVRhc2tSZXF1ZXN0GhUuZGFzaGJvYXJkaWZ5LnYxLlRhc2siONpBEHRhc2ssdXBkYXRlX21hc2uC0+STAh86BHRhc2syFy92MS97dGFzay5uYW1lPXRhc2tzLyp9EmsKCkRlbGV0ZVRhc2sSIi5kYXNoYm9hcmRpZnkudjEuRGVsZXRlVGFza1JlcXVlc3QaFi5nb29nbGUucHJvdG9idWYuRW1wdHkiIdpBBG5hbWWC0+STAhQqEi92MS97bmFtZT10YXNrcy8qfRKDAQoMQ29tcGxldGVUYXNrEiQuZGFzaGJvYXJkaWZ5LnYxLkNvbXBsZXRlVGFza1JlcXVlc3QaJS5kYXNoYm9hcmRpZnkudjEuQ29tcGxldGVUYXNrUmVzcG9uc2UiJoLT5JMCIDoBKiIbL3YxL3tuYW1lPXRhc2tzLyp9OmNvbXBsZXRlEm0KClJlb3BlblRhc2sSIi5kYXNoYm9hcmRpZnkudjEuUmVvcGVuVGFza1JlcXVlc3QaFS5kYXNoYm9hcmRpZnkudjEuVGFzayIkgtPkkwIeOgEqIhkvdjEve25hbWU9dGFza3MvKn06cmVvcGVuEnIKC1NlYXJjaFRhc2tzEiMuZGFzaGJvYXJkaWZ5LnYxLlNlYXJjaFRhc2tzUmVxdWVzdBokLmRhc2hib2FyZGlmeS52MS5TZWFyY2hUYXNrc1Jlc3BvbnNlIhiC0+STAhISEC92MS90YXNrczpzZWFyY2hiBnByb3RvMw", [file_buf_validate_validate, file_google_api_annotations, file_google_api_client, file_google_api_field_behavior, file_google_api_resource, file_google_protobuf_empty, file_google_protobuf_field_mask, file_google_type_date, file_google_type_timeofday]);
+  fileDesc("ChpkYXNoYm9hcmRpZnkvdjEvdGFzay5wcm90bxIPZGFzaGJvYXJkaWZ5LnYxIsUFCgRUYXNrEikKBG5hbWUYASABKAlCG+JBAQi6SBRyEjIQXiR8XnRhc2tzL1teL10rJBI1CgtkZXNjcmlwdGlvbhgCIAEoCUIb4kEBArpIFHISEAEYoJwBMgooP3MpLipcUy4qSACIAQESMAoFc3RhdGUYAyABKA4yGy5kYXNoYm9hcmRpZnkudjEuVGFzay5TdGF0ZUIE4kEBAxIpCghkdWVfZGF0ZRgEIAEoCzIRLmdvb2dsZS50eXBlLkRhdGVCBOJBAQESLgoIZHVlX3RpbWUYBSABKAsyFi5nb29nbGUudHlwZS5UaW1lT2ZEYXlCBOJBAQESNgoIcHJpb3JpdHkYBiABKA4yHi5kYXNoYm9hcmRpZnkudjEuVGFzay5Qcmlvcml0eUIE4kEBARIYCgpyZWN1cnJlbmNlGAcgASgJQgTiQQEBEi4KDWNvbXBsZXRlX2RhdGUYCSABKAsyES5nb29nbGUudHlwZS5EYXRlQgTiQQEDEhIKBHBhdGgYCiABKAlCBOJBAQMSEgoEZXRhZxgLIAEoCUIE4kEBASI+CgVTdGF0ZRIVChFTVEFURV9VTlNQRUNJRklFRBAAEg4KClNUQVRFX09QRU4QARIOCgpTVEFURV9ET05FEAIiiQEKCFByaW9yaXR5EhgKFFBSSU9SSVRZX1VOU1BFQ0lGSUVEEAASEwoPUFJJT1JJVFlfTE9XRVNUEAESEAoMUFJJT1JJVFlfTE9XEAISEwoPUFJJT1JJVFlfTUVESVVNEAMSEQoNUFJJT1JJVFlfSElHSBAEEhQKEFBSSU9SSVRZX0hJR0hFU1QQBTo16kEyChVkYXNoYm9hcmRpZnkuYXBwL1Rhc2sSDHRhc2tzL3t0YXNrfSoFdGFza3MyBHRhc2tCDgoMX2Rlc2NyaXB0aW9uSgQICBAJUgtjcmVhdGVfZGF0ZSJFCg5HZXRUYXNrUmVxdWVzdBIzCgRuYW1lGAEgASgJQiXiQQEC+kEXChVkYXNoYm9hcmRpZnkuYXBwL1Rhc2u6SARyAhABInoKEExpc3RUYXNrc1JlcXVlc3QSHgoJcGFnZV9zaXplGAEgASgFQgviQQEBukgEGgIoABIYCgpwYWdlX3Rva2VuGAIgASgJQgTiQQEBEhQKBmZpbHRlchgDIAEoCUIE4kEBARIWCghvcmRlcl9ieRgEIAEoCUIE4kEBASJSChFMaXN0VGFza3NSZXNwb25zZRIkCgV0YXNrcxgBIAMoCzIVLmRhc2hib2FyZGlmeS52MS5UYXNrEhcKD25leHRfcGFnZV90b2tlbhgCIAEoCSK6AQoRQ3JlYXRlVGFza1JlcXVlc3QSLwoEdGFzaxgBIAEoCzIVLmRhc2hib2FyZGlmeS52MS5UYXNrQgriQQECukgDyAEBEhgKCnJlcXVlc3RfaWQYAiABKAlCBOJBAQE6WrpIVxpVChl0YXNrLmRlc2NyaXB0aW9uLnJlcXVpcmVkEhx0YXNrLmRlc2NyaXB0aW9uIGlzIHJlcXVpcmVkGhpoYXModGhpcy50YXNrLmRlc2NyaXB0aW9uKSLmAgoRVXBkYXRlVGFza1JlcXVlc3QSLwoEdGFzaxgBIAEoCzIVLmRhc2hib2FyZGlmeS52MS5UYXNrQgriQQECukgDyAEBEjUKC3VwZGF0ZV9tYXNrGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLkZpZWxkTWFza0IE4kEBATroAbpI5AEangEKF3Rhc2suZGVzY3JpcHRpb24ubWFza2VkEiJ0YXNrLmRlc2NyaXB0aW9uIGNhbm5vdCBiZSBjbGVhcmVkGl8hdGhpcy51cGRhdGVfbWFzay5wYXRocy5leGlzdHMocCwgcCA9PSAiZGVzY3JpcHRpb24iIHx8IHAgPT0gIioiKSB8fCBoYXModGhpcy50YXNrLmRlc2NyaXB0aW9uKRpBChJ0YXNrLm5hbWUucmVxdWlyZWQSFXRhc2submFtZSBpcyByZXF1aXJlZBoUdGhpcy50YXNrLm5hbWUgIT0gIiIiXAoRRGVsZXRlVGFza1JlcXVlc3QSMwoEbmFtZRgBIAEoCUIl4kEBAvpBFwoVZGFzaGJvYXJkaWZ5LmFwcC9UYXNrukgEcgIQARISCgRldGFnGAIgASgJQgTiQQEBIl4KE0NvbXBsZXRlVGFza1JlcXVlc3QSMwoEbmFtZRgBIAEoCUIl4kEBAvpBFwoVZGFzaGJvYXJkaWZ5LmFwcC9UYXNrukgEcgIQARISCgRldGFnGAIgASgJQgTiQQEBImUKFENvbXBsZXRlVGFza1Jlc3BvbnNlEiMKBHRhc2sYASABKAsyFS5kYXNoYm9hcmRpZnkudjEuVGFzaxIoCgluZXh0X3Rhc2sYAiABKAsyFS5kYXNoYm9hcmRpZnkudjEuVGFzayJcChFSZW9wZW5UYXNrUmVxdWVzdBIzCgRuYW1lGAEgASgJQiXiQQEC+kEXChVkYXNoYm9hcmRpZnkuYXBwL1Rhc2u6SARyAhABEhIKBGV0YWcYAiABKAlCBOJBAQEiUAoSU2VhcmNoVGFza3NSZXF1ZXN0EhoKBXF1ZXJ5GAEgASgJQgviQQECukgEcgIQARIeCglwYWdlX3NpemUYAiABKAVCC+JBAQG6SAQaAigAIkIKE1NlYXJjaFRhc2tzUmVzcG9uc2USKwoHbWF0Y2hlcxgBIAMoCzIaLmRhc2hib2FyZGlmeS52MS5UYXNrTWF0Y2giPwoJVGFza01hdGNoEiMKBHRhc2sYASABKAsyFS5kYXNoYm9hcmRpZnkudjEuVGFzaxINCgVzY29yZRgCIAEoAjKdBwoLVGFza1NlcnZpY2USZAoHR2V0VGFzaxIfLmRhc2hib2FyZGlmeS52MS5HZXRUYXNrUmVxdWVzdBoVLmRhc2hib2FyZGlmeS52MS5UYXNrIiHaQQRuYW1lgtPkkwIUEhIvdjEve25hbWU9dGFza3MvKn0SZQoJTGlzdFRhc2tzEiEuZGFzaGJvYXJkaWZ5LnYxLkxpc3RUYXNrc1JlcXVlc3QaIi5kYXNoYm9hcmRpZnkudjEuTGlzdFRhc2tzUmVzcG9uc2UiEYLT5JMCCxIJL3YxL3Rhc2tzEmcKCkNyZWF0ZVRhc2sSIi5kYXNoYm9hcmRpZnkudjEuQ3JlYXRlVGFza1JlcXVlc3QaFS5kYXNoYm9hcmRpZnkudjEuVGFzayIe2kEEdGFza4LT5JMCEToEdGFzayIJL3YxL3Rhc2tzEoEBCgpVcGRhdGVUYXNrEiIuZGFzaGJvYXJkaWZ5LnYxLlVwZGF0ZVRhc2tSZXF1ZXN0GhUuZGFzaGJvYXJkaWZ5LnYxLlRhc2siONpBEHRhc2ssdXBkYXRlX21hc2uC0+STAh86BHRhc2syFy92MS97dGFzay5uYW1lPXRhc2tzLyp9EmsKCkRlbGV0ZVRhc2sSIi5kYXNoYm9hcmRpZnkudjEuRGVsZXRlVGFza1JlcXVlc3QaFi5nb29nbGUucHJvdG9idWYuRW1wdHkiIdpBBG5hbWWC0+STAhQqEi92MS97bmFtZT10YXNrcy8qfRKDAQoMQ29tcGxldGVUYXNrEiQuZGFzaGJvYXJkaWZ5LnYxLkNvbXBsZXRlVGFza1JlcXVlc3QaJS5kYXNoYm9hcmRpZnkudjEuQ29tcGxldGVUYXNrUmVzcG9uc2UiJoLT5JMCIDoBKiIbL3YxL3tuYW1lPXRhc2tzLyp9OmNvbXBsZXRlEm0KClJlb3BlblRhc2sSIi5kYXNoYm9hcmRpZnkudjEuUmVvcGVuVGFza1JlcXVlc3QaFS5kYXNoYm9hcmRpZnkudjEuVGFzayIkgtPkkwIeOgEqIhkvdjEve25hbWU9dGFza3MvKn06cmVvcGVuEnIKC1NlYXJjaFRhc2tzEiMuZGFzaGJvYXJkaWZ5LnYxLlNlYXJjaFRhc2tzUmVxdWVzdBokLmRhc2hib2FyZGlmeS52MS5TZWFyY2hUYXNrc1Jlc3BvbnNlIhiC0+STAhISEC92MS90YXNrczpzZWFyY2hiBnByb3RvMw", [file_buf_validate_validate, file_google_api_annotations, file_google_api_client, file_google_api_field_behavior, file_google_api_resource, file_google_protobuf_empty, file_google_protobuf_field_mask, file_google_type_date, file_google_type_timeofday]);
 
 /**
- * One Obsidian Tasks line, such as
- * `- [ ] Call the bank ⏰ 09:00 📅 2026-11-03 🆔 k7f3a2`.
+ * One task: a checkbox line and its `key: value` sub-bullets (docs/fields.md),
+ * such as `- [ ] Call the bank <!-- id:k7f3a2 -->` over `- due: 2026-11-03 09:00`.
  *
  * @generated from message dashboardify.v1.Task
  */
 export type Task = Message<"dashboardify.v1.Task"> & {
   /**
-   * `tasks/{task}`, where `{task}` is the task id, written as 🆔 in Obsidian
-   * Tasks.
+   * `tasks/{task}`, where `{task}` is the task id, written as `<!-- id:… -->`
+   * at the end of the line.
    *
    * @generated from field: string name = 1;
    */
@@ -54,14 +54,14 @@ export type Task = Message<"dashboardify.v1.Task"> & {
   state: Task_State;
 
   /**
-   * Due date. Written as 📅 in Obsidian Tasks.
+   * Due date. Written as `due: YYYY-MM-DD`.
    *
    * @generated from field: google.type.Date due_date = 4;
    */
   dueDate?: Date | undefined;
 
   /**
-   * Due time. Written as ⏰, our addition to Obsidian Tasks.
+   * Due time, after the date in `due:`.
    *
    * @generated from field: google.type.TimeOfDay due_time = 5;
    */
@@ -75,21 +75,14 @@ export type Task = Message<"dashboardify.v1.Task"> & {
   priority: Task_Priority;
 
   /**
-   * Recurrence rule, such as "every week". Written as 🔁 in Obsidian Tasks.
+   * Recurrence rule, such as "every week". Written as `repeat:`.
    *
    * @generated from field: string recurrence = 7;
    */
   recurrence: string;
 
   /**
-   * Date the task was created. Written as ➕ in Obsidian Tasks.
-   *
-   * @generated from field: google.type.Date create_date = 8;
-   */
-  createDate?: Date | undefined;
-
-  /**
-   * Date the task was completed. Written as ✅ in Obsidian Tasks.
+   * Date the task was completed. Written as `done:`.
    *
    * @generated from field: google.type.Date complete_date = 9;
    */
@@ -103,7 +96,8 @@ export type Task = Message<"dashboardify.v1.Task"> & {
   path: string;
 
   /**
-   * Hash of the line as read. Writes with a stale etag are rejected.
+   * Hash of the line and its fields as read. Writes with a stale etag are
+   * rejected.
    *
    * @generated from field: string etag = 11;
    */
@@ -165,35 +159,35 @@ export enum Task_Priority {
   UNSPECIFIED = 0,
 
   /**
-   * Written as ⏬ in Obsidian Tasks.
+   * Written as `priority: lowest`.
    *
    * @generated from enum value: PRIORITY_LOWEST = 1;
    */
   LOWEST = 1,
 
   /**
-   * Written as 🔽 in Obsidian Tasks.
+   * Written as `priority: low`.
    *
    * @generated from enum value: PRIORITY_LOW = 2;
    */
   LOW = 2,
 
   /**
-   * Written as 🔼 in Obsidian Tasks.
+   * Written as `priority: medium`.
    *
    * @generated from enum value: PRIORITY_MEDIUM = 3;
    */
   MEDIUM = 3,
 
   /**
-   * Written as ⏫ in Obsidian Tasks.
+   * Written as `priority: high`.
    *
    * @generated from enum value: PRIORITY_HIGH = 4;
    */
   HIGH = 4,
 
   /**
-   * Written as 🔺 in Obsidian Tasks.
+   * Written as `priority: highest`.
    *
    * @generated from enum value: PRIORITY_HIGHEST = 5;
    */
@@ -545,7 +539,7 @@ export const TaskMatchSchema: GenMessage<TaskMatch> = /*@__PURE__*/
   messageDesc(file_dashboardify_v1_task, 12);
 
 /**
- * Reads and writes Obsidian Tasks lines anywhere in the vault.
+ * Reads and writes tasks (`- [ ]` lines) anywhere in the vault.
  *
  * @generated from service dashboardify.v1.TaskService
  */

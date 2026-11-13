@@ -4,7 +4,7 @@ Tasks and habits keep their details as sub-bullets under the line, one `key: val
 instead of emoji (tasks) or `·`-separated words (habits). The line holds only the text and the
 id, so a note reads like a note.
 
-Status: plan. Next, F2.
+Status: F1–F3 built. Next, F4.
 
 ## Format
 

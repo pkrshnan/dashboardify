@@ -103,7 +103,9 @@ describe("capture API with a calendar", () => {
     expect(body.parse.kind).toBe("CAPTURE_KIND_REMINDER");
     expect(body.task.name).toMatch(/^tasks\//);
     expect(body.message).toBe("Added Call dentist to Inbox, Fri 6 Nov 10:00.");
-    expect(await api.vaultFile("Inbox.md")).toContain("- [ ] Call dentist ⏰ 10:00 📅 2026-11-06");
+    expect(await api.vaultFile("Inbox.md")).toMatch(
+      /^- \[ \] Call dentist <!-- id:\w+ -->\n\t- due: 2026-11-06 10:00\n/,
+    );
   });
 
   test("a kind switched by hand wins", async () => {
@@ -113,7 +115,9 @@ describe("capture API with a calendar", () => {
     });
 
     expect(body.parse.kind).toBe("CAPTURE_KIND_REMINDER");
-    expect(await api.vaultFile("Inbox.md")).toContain("Coffee with Priya ⏰ 15:00 📅 2026-11-05");
+    expect(await api.vaultFile("Inbox.md")).toMatch(
+      /Coffee with Priya <!-- id:\w+ -->\n\t- due: 2026-11-05 15:00\n/,
+    );
   });
 
   test("a calendar picked by hand wins, if it is writable", async () => {

@@ -32,7 +32,6 @@ export class TasksService {
       dueTime: task.time ? toTimeParts(task.time) : undefined,
       priority: task.priority ? `PRIORITY_${task.priority.toUpperCase()}` : "PRIORITY_UNSPECIFIED",
       recurrence: task.recurrence ?? "",
-      createDate: optionalDate(task.created),
       completeDate: optionalDate(task.completed),
       path,
       etag: await this.tasks.etag(found),
@@ -79,17 +78,14 @@ export class TasksService {
 
   createTask = async (request: ApiRequests["createTask"]) => {
     const task = request.task;
-    const result = await this.tasks.add(
-      {
-        key: request.requestId || randomUUID(),
-        description: task.description.trim(),
-        due: task.dueDate ? fromDateParts(task.dueDate) : undefined,
-        time: task.dueTime ? fromTimeParts(task.dueTime) : undefined,
-        priority: parsePriority(task.priority),
-        recurrence: task.recurrence,
-      },
-      this.today(),
-    );
+    const result = await this.tasks.add({
+      key: request.requestId || randomUUID(),
+      description: task.description.trim(),
+      due: task.dueDate ? fromDateParts(task.dueDate) : undefined,
+      time: task.dueTime ? fromTimeParts(task.dueTime) : undefined,
+      priority: parsePriority(task.priority),
+      recurrence: task.recurrence,
+    });
     return this.taskView(result.task);
   };
 

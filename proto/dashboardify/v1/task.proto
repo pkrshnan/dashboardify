@@ -12,7 +12,7 @@ import "google/protobuf/field_mask.proto";
 import "google/type/date.proto";
 import "google/type/timeofday.proto";
 
-// Reads and writes Obsidian Tasks lines anywhere in the vault.
+// Reads and writes tasks (`- [ ]` lines) anywhere in the vault.
 service TaskService {
   // Gets one task.
   rpc GetTask(GetTaskRequest) returns (Task) {
@@ -71,8 +71,8 @@ service TaskService {
   }
 }
 
-// One Obsidian Tasks line, such as
-// `- [ ] Call the bank ⏰ 09:00 📅 2026-11-03 🆔 k7f3a2`.
+// One task: a checkbox line and its `key: value` sub-bullets (docs/fields.md),
+// such as `- [ ] Call the bank <!-- id:k7f3a2 -->` over `- due: 2026-11-03 09:00`.
 message Task {
   option (google.api.resource) = {
     type: "dashboardify.app/Task"
@@ -95,20 +95,20 @@ message Task {
   enum Priority {
     // No priority marker.
     PRIORITY_UNSPECIFIED = 0;
-    // Written as ⏬ in Obsidian Tasks.
+    // Written as `priority: lowest`.
     PRIORITY_LOWEST = 1;
-    // Written as 🔽 in Obsidian Tasks.
+    // Written as `priority: low`.
     PRIORITY_LOW = 2;
-    // Written as 🔼 in Obsidian Tasks.
+    // Written as `priority: medium`.
     PRIORITY_MEDIUM = 3;
-    // Written as ⏫ in Obsidian Tasks.
+    // Written as `priority: high`.
     PRIORITY_HIGH = 4;
-    // Written as 🔺 in Obsidian Tasks.
+    // Written as `priority: highest`.
     PRIORITY_HIGHEST = 5;
   }
 
-  // `tasks/{task}`, where `{task}` is the task id, written as 🆔 in Obsidian
-  // Tasks.
+  // `tasks/{task}`, where `{task}` is the task id, written as `<!-- id:… -->`
+  // at the end of the line.
   string name = 1 [
     (google.api.field_behavior) = IDENTIFIER,
     (buf.validate.field).string.pattern = "^$|^tasks/[^/]+$"
@@ -128,28 +128,30 @@ message Task {
   // Open or done. Changed only by CompleteTask and ReopenTask.
   State state = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // Due date. Written as 📅 in Obsidian Tasks.
+  // Due date. Written as `due: YYYY-MM-DD`.
   google.type.Date due_date = 4 [(google.api.field_behavior) = OPTIONAL];
 
-  // Due time. Written as ⏰, our addition to Obsidian Tasks.
+  // Due time, after the date in `due:`.
   google.type.TimeOfDay due_time = 5 [(google.api.field_behavior) = OPTIONAL];
 
   // Priority marker.
   Priority priority = 6 [(google.api.field_behavior) = OPTIONAL];
 
-  // Recurrence rule, such as "every week". Written as 🔁 in Obsidian Tasks.
+  // Recurrence rule, such as "every week". Written as `repeat:`.
   string recurrence = 7 [(google.api.field_behavior) = OPTIONAL];
 
-  // Date the task was created. Written as ➕ in Obsidian Tasks.
-  google.type.Date create_date = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Was create_date; the vault no longer keeps it.
+  reserved 8;
+  reserved "create_date";
 
-  // Date the task was completed. Written as ✅ in Obsidian Tasks.
+  // Date the task was completed. Written as `done:`.
   google.type.Date complete_date = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Vault path of the note holding the line.
   string path = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // Hash of the line as read. Writes with a stale etag are rejected.
+  // Hash of the line and its fields as read. Writes with a stale etag are
+  // rejected.
   string etag = 11 [(google.api.field_behavior) = OPTIONAL];
 }
 

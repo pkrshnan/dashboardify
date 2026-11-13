@@ -27,8 +27,8 @@ https://claude.ai/artifact/Dm3mFqJPttBWpS9VxeYPUD. `home-desktop.dc.html` (1440 
    - **Day:** a timeline from an hour before now to 22:00 with a red now line. It shows at least
      eight hours and scrolls up to the day's first event or task, so a past task can still be
      ticked off. Short events take
-     one line. Overlapping events sit side by side. Timed reminders (`⏰`) are dashed pills in a
-     lane to the right. All-day events are slim bars in a row above the timeline. Tapping an event
+     one line. Overlapping events sit side by side. Timed reminders (tasks with a due time) are
+     dashed pills in a lane to the right. All-day events are slim bars in a row above the timeline. Tapping an event
      opens the event panel (view, Edit, Delete with one confirm); repeating and read-only events
      show why they can't be changed.
    - **Week:** desktop has seven columns with dated tasks on top; the phone has a day strip and

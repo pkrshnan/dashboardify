@@ -28,7 +28,7 @@ or binary protobuf). Both call the same code. Messages and fields are in
 | GET | `/v1/tasks`, `/v1/tasks/{id}` | List or read |
 | POST | `/v1/tasks` | Create in the inbox |
 | PATCH | `/v1/tasks/{id}` | Edit `description`, `dueDate`, `dueTime`, `priority`, `recurrence` |
-| DELETE | `/v1/tasks/{id}` | Remove the line |
+| DELETE | `/v1/tasks/{id}` | Remove the line and its fields |
 | POST | `/v1/tasks/{id}:complete`, `:reopen` | Complete (adds the next occurrence if recurring) or reopen |
 | GET | `/v1/tasks:search?query=bank` | Open tasks matching |
 
