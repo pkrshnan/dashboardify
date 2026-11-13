@@ -12,7 +12,8 @@ import "google/protobuf/field_mask.proto";
 import "google/type/date.proto";
 import "google/type/timeofday.proto";
 
-// Reads and writes tasks (`- [ ]` lines) anywhere in the vault.
+// Reads and writes tasks: every `- [ ]` line in the inbox note, and elsewhere
+// those with a due date or an id.
 service TaskService {
   // Gets one task.
   rpc GetTask(GetTaskRequest) returns (Task) {

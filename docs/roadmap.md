@@ -26,7 +26,7 @@ Apple Reminders.
 | Storage | The vault is the source of truth. `settings.db` holds settings and sealed secrets. Caches can be deleted and rebuilt. |
 | Vault sync | Obsidian Self-hosted LiveSync (CouchDB), mirrored to a plain folder by `livesync-bridge`. Backups are restic snapshots. |
 | Calendar | One iCloud account over CalDAV, read and write, plus read-only ICS links ([calendar.md](calendar.md)) |
-| Tasks | `- [ ]` lines anywhere in the vault, details as sub-bullets ([fields.md](fields.md)); new ones go to the inbox note |
+| Tasks | Every `- [ ]` line in the inbox note, and elsewhere those with a due date or id, so checklists in other notes stay notes. Details as sub-bullets ([fields.md](fields.md)); new tasks go to the inbox. |
 | Health | Raw data off the Whoop strap through healthstrap, metrics computed here ([health-metrics.md](health-metrics.md)) |
 | Runs | From the Strava API, polled; you record only the running part ([strava.md](strava.md)) |
 | Design | Apple-native, dark mode only for now ([design/README.md](design/README.md)) |

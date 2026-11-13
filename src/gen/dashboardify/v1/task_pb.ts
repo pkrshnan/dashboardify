@@ -539,7 +539,8 @@ export const TaskMatchSchema: GenMessage<TaskMatch> = /*@__PURE__*/
   messageDesc(file_dashboardify_v1_task, 12);
 
 /**
- * Reads and writes tasks (`- [ ]` lines) anywhere in the vault.
+ * Reads and writes tasks: every `- [ ]` line in the inbox note, and elsewhere
+ * those with a due date or an id.
  *
  * @generated from service dashboardify.v1.TaskService
  */
