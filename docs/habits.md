@@ -26,17 +26,17 @@ So habits never write `- [ ]` lines, never appear in Tasks, and Tasks aren't con
 
 | Area | Decision |
 | --- | --- |
-| Definitions | One note, `Habits.md` at the vault root. Each habit is a plain `- ` line (never a checkbox): name, then `·`-separated fields, then `<!-- id:… -->`. Other lines are left alone. |
+| Definitions | One note, `Habits.md` at the vault root. Each habit is a plain `- ` line (never a checkbox), `Name <!-- id:… -->`, with its details as sub-bullets ([fields.md](fields.md)). Other lines are left alone. |
 | Ids | Written by the server when the page creates a habit, so renaming it in Obsidian keeps its history. A hand-typed line without one is named by its slug. |
-| Colour | `· #40C8E0`, one of seven from the design palette; without one, the next unused |
-| Start | `· since YYYY-MM-DD`, written when the page creates a habit, so earlier days aren't misses. A tick before it moves the start back; without one, its first tick. |
+| Colour | `colour: 40C8E0`, one of seven from the design palette; without one, the next unused |
+| Start | `since: YYYY-MM-DD`, written when the page creates a habit, so earlier days aren't misses. A tick before it moves the start back; without one, its first tick. |
 | Schedules | `daily`, `N a week` (Monday–Sunday weeks), or weekdays (`Mon Wed Fri`). No "every N days". |
 | Done | The daily note's `habits:` frontmatter, a list of ids: `habits: [meditate, floss]`. A plain list shows as chips in Obsidian's Properties. The server owns only this key. |
-| Auto habits | `auto <fact> <op> <value>` on the line: one comparison against one of the day's facts ([below](#auto-ticks)). No code per habit. Computed on read, never written to `habits:`, so a health sync doesn't rewrite every note. Ticking one by hand (strap off) writes it to `habits:` like any other. |
+| Auto habits | `auto: <fact> <op> <value>`: one comparison against one of the day's facts ([below](#auto-ticks)). No code per habit. Computed on read, never written to `habits:`, so a health sync doesn't rewrite every note. Ticking one by hand (strap off) writes it to `habits:` like any other. |
 | Day | The server's time zone. Until 04:00, Today and Siri tick the day before, so "read" at 00:40 counts for the evening it was. The Habits page's grid can fix any past day. |
 | Streaks | Daily and weekday habits: consecutive scheduled days done; today unticked doesn't break it, and one missed day is forgiven but two in a row end it ("never miss twice"). `N a week`: consecutive weeks met; the current week counts once met. |
 | Rate | Days done of those scheduled in the last 30 (weeks met of the last 4 for `N a week`), shown beside the streak, so one miss doesn't erase a month. |
-| Pause | `· paused` on the line: off Today, greyed on the page with no streak. Nothing records when a pause began, so days while paused count as misses once it resumes. `· archived` hides it but keeps history. Deleting is done in Obsidian. |
+| Pause | `status: paused`: off Today, greyed on the page with no streak. Nothing records when a pause began, so days while paused count as misses once it resumes. `status: archived` hides it but keeps history. Deleting is done in Obsidian. |
 | History | Read from the daily notes of the last 400 days, cached per note by mtime. A streak stops there. |
 | Concurrency | Marks go through `Vault.update` on the daily note, one writer per file. Marking is idempotent (`done: true` twice is one id), so no etag. `Habits.md` edits carry its etag; a stale one is `409`. |
 
@@ -45,11 +45,19 @@ So habits never write `- [ ]` lines, never appear in Tasks, and Tasks aren't con
 ```markdown
 # Habits
 
-- Meditate · daily · since 2026-06-01 <!-- id:meditate -->
-- Lift · 3 a week · auto lifting · #40C8E0 <!-- id:lift -->
-- Steps · daily · auto steps ≥ 8000 <!-- id:steps -->
-- Lights out · Sun Mon Tue Wed Thu · auto lights_out ≤ 23:30 <!-- id:lights-out -->
-- Read · daily · paused <!-- id:read -->
+- Meditate <!-- id:meditate -->
+	- schedule: daily
+	- since: 2026-06-01
+- Lift <!-- id:lift -->
+	- schedule: 3 a week
+	- auto: lifting
+	- colour: 40C8E0
+- Lights out <!-- id:lights-out -->
+	- schedule: Sun Mon Tue Wed Thu
+	- auto: lights_out ≤ 23:30
+- Read <!-- id:read -->
+	- schedule: daily
+	- status: paused
 ```
 
 ```yaml

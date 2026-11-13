@@ -24,7 +24,9 @@ describe("HabitStore", () => {
     const read = await habits.create({ name: " Read ", schedule: { kind: "daily" } });
 
     expect(read).toMatchObject({ id: "read", name: "Read", color: "#BF5AF2", state: "active" });
-    expect(await file("Habits.md")).toBe("# Habits\n\n- Read · daily · #BF5AF2 <!-- id:read -->\n");
+    expect(await file("Habits.md")).toBe(
+      "# Habits\n\n- Read <!-- id:read -->\n\t- schedule: daily\n\t- colour: BF5AF2\n",
+    );
   });
 
   test("reads an empty list when there's no Habits.md", async () => {
@@ -125,7 +127,7 @@ describe("HabitStore", () => {
     expect(read?.start).toBe("2026-11-01");
     expect(read?.stats.recent).toEqual({ done: 1, of: 11 });
     expect(fixed?.start).toBe("2026-10-30");
-    expect(await file("Habits.md")).toContain("· since 2026-11-01 <!-- id:read -->");
+    expect(await file("Habits.md")).toContain("\t- since: 2026-11-01\n");
   });
 
   test("a hand tick wins; on other days the mark callback says how it went", async () => {

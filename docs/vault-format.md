@@ -132,15 +132,22 @@ is left alone, and no ids are written into the note.
 ## `Habits.md`
 
 At the vault root ([habits.md](habits.md)). Each top-level `- ` line that isn't a checkbox is a
-habit: its name, then `·`-separated fields (a schedule, `auto <rule>`, a colour, `since
-YYYY-MM-DD`, `paused` or `archived`), then its id. The server appends new habits after the last one and rewrites a habit's
-line when it's edited, writing its id so a rename keeps its history; a line without an id is
-named by its slug. Fields it doesn't know and every other line are left alone.
+habit: its name and id, with `schedule`, `auto`, `colour`, `since` and `status` as sub-bullets
+([fields.md](fields.md)). The server appends new habits after the last one and rewrites a
+habit's line and those fields when it's edited, writing its id so a rename keeps its history; a
+line without an id is named by its slug. Other bullets under it and every other line are left
+alone. Older `Name · daily · #40C8E0` lines are still read and rewritten on their next edit.
 
 ```markdown
-- Meditate · daily <!-- id:meditate -->
-- Lift · 3 a week · auto lifting · #40C8E0 <!-- id:lift -->
-- Read · Mon Wed Fri · paused <!-- id:read -->
+- Meditate <!-- id:meditate -->
+	- schedule: daily
+- Lift <!-- id:lift -->
+	- schedule: 3 a week
+	- auto: lifting
+	- colour: 40C8E0
+- Read <!-- id:read -->
+	- schedule: Mon Wed Fri
+	- status: paused
 ```
 
 ## `Profile.md`

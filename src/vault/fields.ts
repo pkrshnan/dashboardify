@@ -61,20 +61,30 @@ export function replaceItem(
   lines.splice(item, 1, ...replacement);
 }
 
+/** The index just past `item` and every line under it: a blank line or one no deeper ends it. */
+export function itemEnd(lines: string[], item: number): number {
+  const base = width(lines[item] ?? "");
+  let index = item + 1;
+  while (
+    index < lines.length &&
+    (lines[index] ?? "").trim() !== "" &&
+    width(lines[index] ?? "") > base
+  ) {
+    index++;
+  }
+  return index;
+}
+
 /**
- * The lines that belong directly to `item`: below it, up to a blank line or one indented no
- * deeper, and not under a deeper line in between (those are a nested item's).
+ * The lines that belong directly to `item`: those under it that aren't under a deeper line in
+ * between (those are a nested item's).
  */
 function childLines(lines: string[], item: number): number[] {
-  const base = width(lines[item] ?? "");
   const children: number[] = [];
   let childWidth: number | null = null;
-  for (let index = item + 1; index < lines.length; index++) {
-    const line = lines[index] ?? "";
-    const indent = width(line);
-    if (line.trim() === "" || indent <= base) {
-      break;
-    }
+  const end = itemEnd(lines, item);
+  for (let index = item + 1; index < end; index++) {
+    const indent = width(lines[index] ?? "");
     // The first child sets the level; anything deeper belongs to a child.
     childWidth ??= indent;
     if (indent <= childWidth) {

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   addHabit,
-  habitLine,
+  habitLines,
   isValidName,
   nextColor,
   parseHabits,
@@ -17,6 +17,11 @@ Things I mean to do.
 - Lift · 3 a week · auto lifting · #40C8E0 <!-- id:lift -->
 - Lights out · Sun Mon Tue Wed Thu · auto lights_out ≤ 23:30 <!-- id:lights-out -->
 - Read · daily · since 2026-09-01 · paused · from a book club
+- Floss <!-- id:floss -->
+	- schedule: Mon Wed
+	- Colour: #66d4cf
+	- with the new picks
+	- status: paused
 - [ ] Not a habit, a task
   - an indented note
 
@@ -39,7 +44,15 @@ describe("parseHabits", () => {
         "active",
       ],
       ["read", "Read", { kind: "daily" }, null, null, "paused"],
+      ["floss", "Floss", { kind: "days", days: [1, 3] }, null, "#66D4CF", "paused"],
     ]);
+  });
+
+  test("a field wins over the same detail on an old line, and bad values are skipped", () => {
+    const [habit] = parseHabits("- Read · 3 a week\n\t- schedule: daily\n\t- since: soon\n");
+
+    expect(habit?.schedule).toEqual({ kind: "daily" });
+    expect(habit?.since).toBeNull();
   });
 
   test("names a line without an id by its slug and keeps fields it doesn't know", () => {
@@ -73,10 +86,14 @@ describe("parseSchedule", () => {
 });
 
 describe("editing", () => {
-  test("adds a habit after the last one, keeping every other line", () => {
+  const FlossAndNote =
+    "- Floss <!-- id:floss -->\n\t- schedule: Mon Wed\n\t- Colour: #66d4cf\n\t- with the new picks\n\t- status: paused\n";
+
+  test("adds a habit after the last one and its bullets, keeping every other line", () => {
+    const added = "- Run <!-- id:run -->\n\t- schedule: 2 a week\n\t- colour: 66D4CF\n";
     const { text, habit } = addHabit(HABITS, {
-      name: "Floss",
-      schedule: { kind: "days", days: [1, 3] },
+      name: "Run",
+      schedule: { kind: "weekly", times: 2 },
       auto: null,
       color: "#66D4CF",
       since: null,
@@ -84,11 +101,9 @@ describe("editing", () => {
       extra: [],
     });
 
-    expect(habit.id).toBe("floss");
-    expect(text).toContain(
-      "- Read · daily · since 2026-09-01 · paused · from a book club\n- Floss · Mon Wed · #66D4CF <!-- id:floss -->\n- [ ]",
-    );
-    expect(text.replace("- Floss · Mon Wed · #66D4CF <!-- id:floss -->\n", "")).toBe(HABITS);
+    expect(habit.id).toBe("run");
+    expect(text).toContain(`${FlossAndNote}${added}- [ ]`);
+    expect(text.replace(added, "")).toBe(HABITS);
   });
 
   test("puts the first habit after a blank line and never reuses an id", () => {
@@ -96,24 +111,32 @@ describe("editing", () => {
     const first = addHabit("# Habits\n", { ...fields, name: "Read", state: "active", extra: [] });
     const second = addHabit(first.text, { ...fields, name: "read", state: "active", extra: [] });
 
-    expect(first.text).toBe("# Habits\n\n- Read · daily <!-- id:read -->\n");
+    expect(first.text).toBe("# Habits\n\n- Read <!-- id:read -->\n\t- schedule: daily\n");
     expect(second.habit.id).toBe("read-2");
   });
 
-  test("a rename writes the id, so the habit keeps its history", () => {
+  test("a rename rewrites an old line with its id and keeps unknown words as bullets", () => {
     const renamed = updateHabit(HABITS, "read", { name: "Read fiction" });
     const again = parseHabits(renamed?.text ?? "").find((h) => h.name === "Read fiction");
 
     expect(again?.id).toBe("read");
     expect(renamed?.text).toContain(
-      "- Read fiction · daily · since 2026-09-01 · paused · from a book club <!-- id:read -->\n",
+      "- Read fiction <!-- id:read -->\n\t- schedule: daily\n\t- since: 2026-09-01\n\t- status: paused\n\t- from a book club\n- Floss",
     );
     expect(updateHabit(HABITS, "nope", { name: "x" })).toBeNull();
   });
 
-  test("a line round-trips through habitLine", () => {
+  test("an update rewrites only its own fields and keeps other bullets", () => {
+    const resumed = updateHabit(HABITS, "floss", { state: "active" });
+
+    expect(resumed?.text).toContain(
+      "- Floss <!-- id:floss -->\n\t- schedule: Mon Wed\n\t- colour: 66D4CF\n\t- with the new picks\n- [ ]",
+    );
+  });
+
+  test("a habit round-trips through habitLines", () => {
     for (const habit of parseHabits(HABITS).slice(0, 3)) {
-      expect(parseHabits(habitLine(habit))[0]).toEqual({ ...habit, line: 0 });
+      expect(parseHabits(habitLines(habit).join("\n"))[0]).toEqual({ ...habit, line: 0 });
     }
   });
 
