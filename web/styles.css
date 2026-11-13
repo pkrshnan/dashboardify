@@ -1661,15 +1661,22 @@ button.link {
 @media (max-width: 899px) {
   :root {
     --gutter: 20px;
-    /* A step under iOS sizes, which read large on a dense dashboard. Body stays at 16 px because
-       iOS Safari zooms into any input set smaller. */
+    /* Under iOS sizes, which read large on a dense dashboard. */
     --type-footnote: 12px;
-    --type-body: 16px;
+    --type-body: 14px;
     --type-headline: 16px;
     --type-title: 18px;
     --type-large: 30px;
     --type-display: 22px;
     --type-hero: 44px;
+    --type-input: 16px;
+  }
+
+  /* iOS Safari zooms into a text box under 16 px. Important, so it beats every input's own rule. */
+  input,
+  textarea,
+  select {
+    font-size: var(--type-input) !important;
   }
 
   .capture-row {
