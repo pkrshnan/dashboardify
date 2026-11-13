@@ -17,7 +17,7 @@ beforeEach(async () => {
 afterEach(() => rm(dir, { recursive: true, force: true }));
 
 const file = (rel: string) => readFile(join(dir, rel), "utf8");
-const daily = "daily/2026/2026-11-12.md";
+const daily = "Daily/2026/2026-11-12.md";
 
 describe("HabitStore", () => {
   test("starts Habits.md with the first habit and gives it a colour", async () => {

@@ -145,7 +145,7 @@ function featuresOf(
   });
 }
 
-/** What strain and calories need to know about you. Read from profile.md in the vault. */
+/** What strain and calories need to know about you. Read from Profile.md in the vault. */
 export interface Profile {
   /** Age on the day being scored. */
   ageYears: number | null;

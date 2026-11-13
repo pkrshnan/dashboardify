@@ -76,6 +76,7 @@ if (import.meta.main) {
   const cache = await EventCache.open(config.dataPath);
   const calendar = cacheSource(cache, accounts);
   const vault = new Vault(config.vaultPath, config.timeZone);
+  await vault.renameLowercasePaths();
   // Today's events go into the daily note's agenda block after each sync that changes them.
   const agenda = new AgendaWriter(vault, calendar, config.timeZone);
   const calendarSync = new CalendarSync({

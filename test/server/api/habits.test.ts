@@ -11,7 +11,7 @@ describe("HabitService", () => {
 
   const create = (habit: object) => api.call("/v1/habits", "POST", habit);
   const note = (date: string, text: string) =>
-    Bun.write(join(api.dir, `vault/daily/2026/${date}.md`), text);
+    Bun.write(join(api.dir, `vault/Daily/2026/${date}.md`), text);
 
   test("creates a habit in Habits.md, starting today, and a retry returns it", async () => {
     const first = await create({ displayName: "Meditate", schedule: DAILY });
@@ -66,7 +66,7 @@ describe("HabitService", () => {
 
     const ticked = await api.call("/v1/habits/read:mark", "POST", { done: true });
     await api.call("/v1/habits/read:mark", "POST", { done: true });
-    const note = await api.vaultFile("daily/2026/2026-11-03.md");
+    const note = await api.vaultFile("Daily/2026/2026-11-03.md");
     const unticked = await api.call("/v1/habits/read:mark", "POST", { done: false });
 
     expect(ticked.body.progress).toMatchObject({ done: true, streak: 1 });

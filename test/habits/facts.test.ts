@@ -143,11 +143,11 @@ describe("with the vault and derived tables", () => {
 
   test("reads a day's facts and rereads them once a file changes", async () => {
     const reader = new FactReader(vault, derived);
-    await Bun.write(join(vault.root, "daily/2026/2026-11-11.md"), "---\nsteps: 4000\n---\n");
+    await Bun.write(join(vault.root, "Daily/2026/2026-11-11.md"), "---\nsteps: 4000\n---\n");
     await derived.write("nights", "2026-11-12", { bed_ts: BED });
 
     const before = await reader.facts("2026-11-11");
-    await Bun.write(join(vault.root, "daily/2026/2026-11-11.md"), "---\nsteps: 9000\n---\n");
+    await Bun.write(join(vault.root, "Daily/2026/2026-11-11.md"), "---\nsteps: 9000\n---\n");
     const after = await reader.facts("2026-11-11");
 
     expect(before).toEqual({ steps: 4000, lights_out: afterNoon(23 * 60 + 12) });
@@ -167,7 +167,7 @@ describe("with the vault and derived tables", () => {
       ["2026-11-10", 2000],
       ["2026-11-11", 8500],
     ] as const) {
-      await Bun.write(join(vault.root, `daily/2026/${date}.md`), `---\nsteps: ${steps}\n---\n`);
+      await Bun.write(join(vault.root, `Daily/2026/${date}.md`), `---\nsteps: ${steps}\n---\n`);
     }
     await habits.mark("steps", "2026-11-10", true);
 

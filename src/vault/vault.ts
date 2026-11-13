@@ -36,6 +36,19 @@ export interface IncomingMessage {
   receivedAt: Date;
 }
 
+const LEGACY_PATHS = [
+  ["daily", "Daily"],
+  ["health", "Health"],
+  ["profile.md", "Profile.md"],
+] as const;
+
+async function exists(path: string): Promise<boolean> {
+  return stat(path).then(
+    () => true,
+    () => false,
+  );
+}
+
 /** Called after every successful write with the vault-relative path. Used by git sync. */
 export type WriteListener = (path: string) => void;
 
@@ -56,15 +69,27 @@ export class Vault {
   // ---- paths -------------------------------------------------------------
 
   dailyPath(date: string): string {
-    return `daily/${date.slice(0, 4)}/${date}.md`;
+    return `Daily/${date.slice(0, 4)}/${date}.md`;
   }
 
   healthCsvPath(date: string): string {
-    return `health/${date.slice(0, 4)}/${date.slice(0, 7)}.csv`;
+    return `Health/${date.slice(0, 4)}/${date.slice(0, 7)}.csv`;
   }
 
   messagesPath(date: string): string {
     return `inbox/messages/${date}.md`;
+  }
+
+  /**
+   * Renames the folders and note the server once wrote in lower case, so the vault reads
+   * the same as the user's own capitalised folders. Leaves both alone if the new name exists.
+   */
+  async renameLowercasePaths(): Promise<void> {
+    for (const [from, to] of LEGACY_PATHS) {
+      if ((await exists(join(this.root, from))) && !(await exists(join(this.root, to)))) {
+        await rename(join(this.root, from), join(this.root, to));
+      }
+    }
   }
 
   // ---- low-level IO ------------------------------------------------------
@@ -217,9 +242,9 @@ export class Vault {
     }));
   }
 
-  /** profile.md's frontmatter (birth date, sex, height, …), or null without a profile. */
+  /** Profile.md's frontmatter (birth date, sex, height, …), or null without a profile. */
   async readProfile(): Promise<Frontmatter | null> {
-    const text = await this.read("profile.md");
+    const text = await this.read("Profile.md");
     return text === null ? null : parseNote(text).frontmatter;
   }
 

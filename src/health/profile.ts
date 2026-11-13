@@ -1,4 +1,4 @@
-// Reads the bits of profile.md (vault root) that the metrics need. Every field is optional:
+// Reads the bits of Profile.md (vault root) that the metrics need. Every field is optional:
 // without them the metrics that need them are left out rather than guessed.
 
 import type { Sex } from "./metrics/strain";

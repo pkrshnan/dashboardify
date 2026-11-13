@@ -117,7 +117,7 @@ async function putNextNight(): Promise<void> {
 async function writeProfile(body = ""): Promise<void> {
   await mkdir(join(dir, "vault"), { recursive: true });
   await writeFile(
-    join(dir, "vault", "profile.md"),
+    join(dir, "vault", "Profile.md"),
     `---\nbirth_date: 1996-05-01\nsex: male\n${body}---\n`,
   );
 }

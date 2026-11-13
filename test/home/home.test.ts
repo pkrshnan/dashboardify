@@ -117,8 +117,8 @@ describe("homeView", () => {
       ].join("\n"),
     );
     // Swim met its week on Monday, so it isn't due; Lift is done today.
-    await Bun.write(join(dir, "vault/daily/2026/2026-11-02.md"), "---\nhabits: [swim]\n---\n");
-    await Bun.write(join(dir, "vault/daily/2026/2026-11-03.md"), "---\nhabits: [lift]\n---\n");
+    await Bun.write(join(dir, "vault/Daily/2026/2026-11-02.md"), "---\nhabits: [swim]\n---\n");
+    await Bun.write(join(dir, "vault/Daily/2026/2026-11-03.md"), "---\nhabits: [lift]\n---\n");
 
     const morning = await homeView(deps(), NOW);
     const lateNight = await homeView(deps(), new Date("2026-11-04T02:30:00Z"));

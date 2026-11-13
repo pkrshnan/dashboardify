@@ -14,8 +14,10 @@ What the server writes, so files can be edited by hand without breaking anything
   `⏰ HH:MM` is our own due time and always sits right after the description; `🆔` is the id the
   API uses. New tasks go to the inbox note (Settings › General, default `Inbox.md`). Every `- [ ]`
   line in the vault is read as a task, except in `Lists/`.
+- Folders and notes the server owns are capitalised: `Daily/`, `Health/`, `Profile.md`. On start
+  it renames the older `daily/`, `health/` and `profile.md`, unless the new name already exists.
 
-## Daily note: `daily/YYYY/YYYY-MM-DD.md`
+## Daily note: `Daily/YYYY/YYYY-MM-DD.md`
 
 ```markdown
 ---
@@ -81,7 +83,7 @@ workout_reviews:
   ([health-metrics.md](health-metrics.md)). The night is the one that ended that morning; strain,
   workouts and steps cover the calendar day. Load (`load_*`) is the last 7 days' TRIMP against
   the last 28's and needs four weeks of days. Calories (`kcal`, `active_kcal`) need weight, height,
-  birth date and sex in `profile.md`, and are a running total today; a workout line ends with its
+  birth date and sex in `Profile.md`, and are a running total today; a workout line ends with its
   own. VO2max (`vo2max`, whole ml/kg/min) needs `hr_max_measured`, `sex` and 14 of the last 30
   nights. Stages (`deep_min`, `rem_min`, `light_min`) are estimated from HR, HRV and breathing;
   the line ends `· unusual` when a share is outside what held-out lab nights show. An unsure
@@ -133,7 +135,7 @@ named by its slug. Fields it doesn't know and every other line are left alone.
 - Read · Mon Wed Fri · paused <!-- id:read -->
 ```
 
-## `profile.md`
+## `Profile.md`
 
 At the vault root. Strain needs `birth_date` (or `hr_max_measured`); `sex` picks the strain
 constants; `sleep_need_h` defaults to 8. Calories need `weight_kg` and `height_cm`; VO2max needs
@@ -150,7 +152,7 @@ height_cm: 178
 ---
 ```
 
-## `health/YYYY/YYYY-MM.csv`
+## `Health/YYYY/YYYY-MM.csv`
 
 One row per day: `date`, the metric names sorted, then `source`. A day sent again replaces its row.
 

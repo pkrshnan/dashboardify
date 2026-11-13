@@ -77,7 +77,7 @@ describe("voice add to list", () => {
 
       expect(status).toBe(200);
       expect(body).toEqual({ habit: "habits/meditate", message: "Ticked Meditate. 1 day." });
-      expect(await api.vaultFile("daily/2026/2026-11-03.md")).toContain("habits:\n  - meditate");
+      expect(await api.vaultFile("Daily/2026/2026-11-03.md")).toContain("habits:\n  - meditate");
     });
 
     test("last night ticks yesterday; a weekly habit says how the week is going", async () => {
@@ -86,7 +86,7 @@ describe("voice add to list", () => {
       const { body } = await tick("lifted last night");
 
       expect(body.message).toBe("Ticked Lift for yesterday. 1 of 3 this week.");
-      expect(await api.vaultFile("daily/2026/2026-11-02.md")).toContain("habits:\n  - lift");
+      expect(await api.vaultFile("Daily/2026/2026-11-02.md")).toContain("habits:\n  - lift");
     });
 
     test("a habit that isn't there comes back as a sentence", async () => {

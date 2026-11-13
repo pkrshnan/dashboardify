@@ -394,7 +394,7 @@ function toSignals(night: NightMetrics): NightSignals {
   };
 }
 
-/** Base sleep need from profile.md (sleep_need_h), or the default. */
+/** Base sleep need from Profile.md (sleep_need_h), or the default. */
 function needMinutes(profile: Record<string, unknown> | null): number {
   const hours = profile?.sleep_need_h;
   return typeof hours === "number" && hours > 0 ? hours * 60 : DEFAULT_NEED_MIN;

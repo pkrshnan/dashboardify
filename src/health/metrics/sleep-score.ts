@@ -4,7 +4,7 @@
 
 import { mean } from "./stats";
 
-/** Adults need 7–9 hours (AASM); 8 is the middle. profile.md can override it (sleep_need_h). */
+/** Adults need 7–9 hours (AASM); 8 is the middle. Profile.md can override it (sleep_need_h). */
 export const DEFAULT_NEED_MIN = 8 * 60;
 /** A third of the last three nights' shortfall is added back, up to an hour. */
 const DEBT_NIGHTS = 3;
