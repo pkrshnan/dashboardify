@@ -229,11 +229,101 @@ export function progressNote(habit: HabitView, facts: FactView[]): string {
 }
 
 /** The dots under a weekly habit's streak: one per time, filled for each day done this week. */
-export function weekDots(habit: HabitView): boolean[] {
+export function weekDots(habit: HabitView, done = habit.progress.thisWeek): boolean[] {
   if (habit.schedule.kind !== "weekly") {
     return [];
   }
-  return Array.from({ length: habit.schedule.times }, (_, i) => i < habit.progress.thisWeek);
+  return Array.from({ length: habit.schedule.times }, (_, i) => i < done);
+}
+
+/** A weekly habit's square for one Monday–Sunday week. */
+export interface WeekBox {
+  monday: string;
+  done: number;
+  state: CellState;
+  isCurrent: boolean;
+}
+
+/**
+ * One square per week, oldest first: the habit's colour once the week is met, grey for a past
+ * week that wasn't, dashed while this week is still open. A run of met weeks reads as solid.
+ */
+export function weekBoxes(
+  days: HabitDayView[],
+  today: string,
+  weeks: number,
+  times: number,
+): WeekBox[] {
+  const byDate = new Map(days.map((d) => [d.date, d]));
+  const first = gridStart(today, weeks);
+  return Array.from({ length: weeks }, (_, w) => {
+    const monday = addDays(first, w * 7);
+    const isCurrent = w === weeks - 1;
+    const shown = weekDates(monday, today).map((date) => byDate.get(date));
+    const done = shown.filter((d) => d?.mark === "done").length;
+    const started = shown.some((d) => d && d.mark !== "before");
+    let state: CellState = "missed";
+    if (done >= times) {
+      state = "done";
+    } else if (!started) {
+      state = "empty";
+    } else if (isCurrent) {
+      state = "pending";
+    }
+    return { monday, done, state, isCurrent };
+  });
+}
+
+/** The days of `monday`'s week up to `today`. */
+function weekDates(monday: string, today: string): string[] {
+  return Array.from({ length: 7 }, (_, i) => addDays(monday, i)).filter((d) => d <= today);
+}
+
+/** Days done this week by the days shown, so a tick counts before the server answers. */
+export function doneThisWeek(days: HabitDayView[], today: string): number {
+  const week = new Set(weekDates(gridStart(today, 1), today));
+  return days.filter((d) => week.has(d.date) && d.mark === "done").length;
+}
+
+/**
+ * The day a dot ticks or unticks. Filling one ticks today, or once today is done the latest
+ * open day before it this week, for a run logged late. Emptying one unticks the latest day
+ * ticked by hand; an auto tick can't be taken back. Null when there's no such day.
+ */
+export function dotDay(days: HabitDayView[], today: string, fill: boolean): string | null {
+  const byDate = new Map(days.map((d) => [d.date, d]));
+  const latestFirst = weekDates(gridStart(today, 1), today).reverse();
+  const found = latestFirst.find((date) => {
+    const day = byDate.get(date);
+    return fill ? day?.mark !== "done" : day?.mark === "done" && day.ticked;
+  });
+  return found ?? null;
+}
+
+export interface Dot {
+  on: boolean;
+  /** The day tapping it ticks or unticks; null for a dot that only shows. */
+  date: string | null;
+}
+
+/**
+ * A weekly habit's dots from the days shown: the next empty dot ticks a day and the last filled
+ * one unticks one. Before the days load, the count from its progress, none to tap.
+ */
+export function thisWeekDots(habit: HabitView, days: HabitDayView[]): Dot[] {
+  const today = habit.progress.day;
+  if (days.length === 0) {
+    return weekDots(habit).map((on) => ({ on, date: null }));
+  }
+  const dots = weekDots(habit, doneThisWeek(days, today));
+  const next = dots.indexOf(false);
+  const last = (next === -1 ? dots.length : next) - 1;
+  return dots.map((on, i) => {
+    if (i === next) {
+      return { on, date: dotDay(days, today, true) };
+    }
+    return { on, date: i === last ? dotDay(days, today, false) : null };
+  });
 }
 
 /** "Wed 4 Nov". */

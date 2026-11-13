@@ -12,6 +12,8 @@ import {
   ruleParts,
   ruleText,
   scheduleLabel,
+  thisWeekDots,
+  weekBoxes,
   weekDots,
   withTick,
 } from "../../web/lib/habits";
@@ -102,6 +104,33 @@ describe("the grid", () => {
     expect(monthLabels(gridWeeks([], TODAY, 3))).toEqual(["", "Nov", ""]);
   });
 
+  test("a weekly habit has a square per week: met, missed, still open, or before it began", () => {
+    const days = [
+      day("2026-10-25", "before"),
+      day("2026-10-27", "done"),
+      day("2026-10-28", "done"),
+      day("2026-10-29", "done"),
+      day("2026-11-02", "done"),
+      day("2026-11-03", "open"),
+      day("2026-11-09", "done"),
+      day(TODAY, "open"),
+    ];
+
+    const boxes = weekBoxes(days, TODAY, 4, 3);
+
+    expect(boxes.map((b) => [b.monday, b.state, b.done])).toEqual([
+      ["2026-10-19", "empty", 0],
+      ["2026-10-26", "done", 3],
+      ["2026-11-02", "missed", 1],
+      ["2026-11-09", "pending", 1],
+    ]);
+    expect(boxes.map((b) => b.isCurrent)).toEqual([false, false, false, true]);
+    expect(
+      weekBoxes([...days, day("2026-11-10", "done"), day("2026-11-11", "done")], TODAY, 1, 3)[0]
+        ?.state,
+    ).toBe("done");
+  });
+
   test("a tick shows before the server answers", () => {
     const days = [day("2026-11-10", "open")];
 
@@ -143,6 +172,37 @@ describe("labels", () => {
 
     expect(weekDots(lift)).toEqual([true, true, false]);
     expect(weekDots(habit())).toEqual([]);
+  });
+
+  test("this week's next dot ticks today, then the latest open day; the last unticks a hand tick", () => {
+    const lift = habit({ schedule: { kind: "weekly", times: 3, days: [] } });
+    const ticked = (date: string): HabitDayView => ({ ...day(date, "done"), ticked: true });
+
+    expect(thisWeekDots(lift, [])).toEqual([
+      { on: true, date: null },
+      { on: true, date: null },
+      { on: false, date: null },
+    ]);
+    expect(thisWeekDots(lift, [ticked("2026-11-09"), day("2026-11-10", "open")])).toEqual([
+      { on: true, date: "2026-11-09" },
+      { on: false, date: TODAY },
+      { on: false, date: null },
+    ]);
+    // Today done, so the next dot is Wednesday; Tuesday's auto tick can't be taken back.
+    expect(
+      thisWeekDots(lift, [day("2026-11-10", "done"), ticked(TODAY), day("2026-11-11", "open")]),
+    ).toEqual([
+      { on: true, date: null },
+      { on: true, date: TODAY },
+      { on: false, date: "2026-11-11" },
+    ]);
+    // Met with a day to spare: no dot left to fill, and last week's ticks aren't this week's.
+    const met = ["2026-11-09", "2026-11-10", "2026-11-11", TODAY].map(ticked);
+    expect(thisWeekDots(lift, [ticked("2026-11-08"), ...met]).map((d) => d.date)).toEqual([
+      null,
+      null,
+      TODAY,
+    ]);
   });
 
   test("says how the streak counts for each cadence", () => {
