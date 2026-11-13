@@ -430,7 +430,12 @@ function HabitPanel(props: {
   };
   useEscapeCloses(!props.back);
   return (
-    <aside class="habit-panel" aria-label="Habit settings">
+    // The habit's colour, for the week's done days as in the list's rows.
+    <aside
+      class="habit-panel"
+      aria-label="Habit settings"
+      style={{ "--habit-color": habit?.color || "var(--control)" }}
+    >
       {props.back ? (
         <a class="habit-back" href={href("/habits")}>
           ‹ Habits
@@ -489,20 +494,23 @@ function ThisWeek(props: { habit: HabitView; onChanged: () => void }) {
   const { days, tick } = useHabitDays(token, props.habit, 1, props.onChanged);
   const [week] = gridWeeks(days, props.habit.progress.day, 1);
   return (
-    <fieldset class="habit-this-week" aria-label="This week">
-      {week?.map((cell, i) => (
-        <button
-          type="button"
-          key={cell.date}
-          class={`habit-week-day ${cellClass(cell)}`}
-          disabled={!cell.canTick}
-          aria-pressed={cell.state === "done"}
-          aria-label={cellTitle(cell)}
-          onClick={() => tick(cell.date, cell.state !== "done")}
-        >
-          {LONG_DAYS[i]?.charAt(0)}
-        </button>
-      ))}
-    </fieldset>
+    <div class="habit-field">
+      <span>This week</span>
+      <fieldset class="habit-this-week" aria-label="This week">
+        {week?.map((cell, i) => (
+          <button
+            type="button"
+            key={cell.date}
+            class={`habit-week-day ${cellClass(cell)}`}
+            disabled={!cell.canTick}
+            aria-pressed={cell.state === "done"}
+            aria-label={cellTitle(cell)}
+            onClick={() => tick(cell.date, cell.state !== "done")}
+          >
+            {LONG_DAYS[i]?.charAt(0)}
+          </button>
+        ))}
+      </fieldset>
+    </div>
   );
 }
