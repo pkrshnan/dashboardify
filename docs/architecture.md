@@ -73,7 +73,7 @@ The home screen is one call, `GET /v1/home`, refreshed every 5 minutes, on focus
 
 ```
 vault/                          synced by LiveSync
-  daily/2026/2026-11-02.md      journal, health, agenda, lifting log, reviews
+  Daily/2026/2026-11-02.md      journal, health, agenda, lifting log, reviews
   Inbox.md                      new tasks (any note can hold tasks)
   inbox/messages/2026-11-02.md  messages received that day
 health-raw/                     Parquet per stream per UTC day

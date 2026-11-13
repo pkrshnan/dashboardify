@@ -53,7 +53,7 @@ So habits never write `- [ ]` lines, never appear in Tasks, and Tasks aren't con
 ```
 
 ```yaml
-# daily/2026/2026-11-12.md
+# Daily/2026/2026-11-12.md
 habits: [meditate, read]
 ```
 

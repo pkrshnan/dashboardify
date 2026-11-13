@@ -157,7 +157,7 @@ describe("activity API", () => {
 
     expect(status).toBe(200);
     expect(recomputed).toContain(DAY);
-    const note = parseNote(await Bun.file(join(api.dir, "vault/daily/2026/2026-11-04.md")).text());
+    const note = parseNote(await Bun.file(join(api.dir, "vault/Daily/2026/2026-11-04.md")).text());
     expect(note.frontmatter.workout_reviews).toEqual([
       { start: "18:07", end: "18:31", kind: "none" },
     ]);

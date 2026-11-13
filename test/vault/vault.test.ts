@@ -21,32 +21,32 @@ describe("journal", () => {
     expect(
       await vault.appendJournal(new Date("2026-11-02T02:30:00Z"), "Long walk.\nFelt good."),
     ).toEqual({
-      path: "daily/2026/2026-11-01.md",
+      path: "Daily/2026/2026-11-01.md",
     });
     await vault.appendJournal(new Date("2026-11-02T06:00:00Z"), "Bed.");
-    const note = await file("daily/2026/2026-11-01.md");
+    const note = await file("Daily/2026/2026-11-01.md");
     expect(note).toContain("## Journal\n\n- 18:30 Long walk.\n  Felt good.\n- 22:00 Bed.\n");
     expect(note).toContain("date: 2026-11-01");
   });
 
   test("keeps text the user wrote outside the journal section", async () => {
     await vault.appendJournal(new Date("2026-11-02T18:00:00Z"), "one");
-    const path = join(dir, "daily/2026/2026-11-02.md");
-    await Bun.write(path, `${await file("daily/2026/2026-11-02.md")}\n## Notes\n\nmine\n`);
+    const path = join(dir, "Daily/2026/2026-11-02.md");
+    await Bun.write(path, `${await file("Daily/2026/2026-11-02.md")}\n## Notes\n\nmine\n`);
     await vault.appendJournal(new Date("2026-11-02T19:00:00Z"), "two");
-    const note = await file("daily/2026/2026-11-02.md");
+    const note = await file("Daily/2026/2026-11-02.md");
     expect(note).toContain("- 10:00 one\n- 11:00 two\n\n## Notes\n\nmine\n");
   });
 
   test("parallel writes to one note are all kept", async () => {
     const at = new Date("2026-11-02T18:00:00Z");
     await Promise.all(Array.from({ length: 25 }, (_, i) => vault.appendJournal(at, `entry ${i}`)));
-    expect((await file("daily/2026/2026-11-02.md")).match(/entry \d+/g)?.length).toBe(25);
+    expect((await file("Daily/2026/2026-11-02.md")).match(/entry \d+/g)?.length).toBe(25);
   });
 
   test("leaves no temp files behind", async () => {
     await vault.appendJournal(new Date("2026-11-02T18:00:00Z"), "x");
-    expect(await readdir(join(dir, "daily/2026"))).toEqual(["2026-11-02.md"]);
+    expect(await readdir(join(dir, "Daily/2026"))).toEqual(["2026-11-02.md"]);
   });
 });
 
@@ -55,10 +55,10 @@ describe("health", () => {
     await vault.recordHealth("2026-11-02", { recovery: 64, hrv_ms: 58.24 }, "whoop");
     await vault.recordHealth("2026-11-01", { steps: 8412 }, "apple-health");
     await vault.recordHealth("2026-11-02", { recovery: 70 }, "whoop");
-    expect(await file("health/2026/2026-11.csv")).toBe(
+    expect(await file("Health/2026/2026-11.csv")).toBe(
       "date,hrv_ms,recovery,steps,source\n2026-11-01,,,8412,apple-health\n2026-11-02,58.24,70,,whoop\n",
     );
-    const note = await file("daily/2026/2026-11-02.md");
+    const note = await file("Daily/2026/2026-11-02.md");
     expect(note).toContain("recovery: 70");
     expect(note).toContain("hrv_ms: 58.24");
   });
@@ -98,5 +98,26 @@ describe("update", () => {
       }),
     ).rejects.toThrow("boom");
     expect(await vault.update("notes/b.md", () => "ok\n")).toBe(true);
+  });
+});
+
+describe("renameLowercasePaths", () => {
+  test("capitalises daily, health and profile.md once", async () => {
+    await Bun.write(join(dir, "daily/2026/2026-11-02.md"), "old\n");
+    await Bun.write(join(dir, "health/2026/2026-11.csv"), "date\n");
+    await Bun.write(join(dir, "profile.md"), "---\nsex: male\n---\n");
+    await vault.renameLowercasePaths();
+    expect(await file("Daily/2026/2026-11-02.md")).toBe("old\n");
+    expect(await file("Health/2026/2026-11.csv")).toBe("date\n");
+    expect(await file("Profile.md")).toContain("sex: male");
+    expect((await readdir(dir)).sort()).toEqual(["Daily", "Health", "Profile.md"]);
+  });
+
+  test("leaves the old folder when the new one already exists", async () => {
+    await Bun.write(join(dir, "daily/a.md"), "old\n");
+    await Bun.write(join(dir, "Daily/b.md"), "new\n");
+    await vault.renameLowercasePaths();
+    expect(await readdir(join(dir, "daily"))).toEqual(["a.md"]);
+    expect(await readdir(join(dir, "Daily"))).toEqual(["b.md"]);
   });
 });

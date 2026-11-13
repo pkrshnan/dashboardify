@@ -63,7 +63,7 @@ describe("journal entries", () => {
     const res = await post(JOURNAL, { text: "Long walk.", entryTime: "2026-11-02T02:30:00Z" });
 
     expect(res.status).toBe(200);
-    expect(await file("daily/2026/2026-11-01.md")).toContain("- 18:30 Long walk.");
+    expect(await file("Daily/2026/2026-11-01.md")).toContain("- 18:30 Long walk.");
   });
 
   test("validate input", async () => {
@@ -95,8 +95,8 @@ describe("messages", () => {
 
 describe("days", () => {
   test("return the daily note, or an empty one", async () => {
-    await mkdir(join(dir, "daily/2026"), { recursive: true });
-    await writeFile(join(dir, "daily/2026/2026-11-02.md"), "---\nsleep_h: 7.1\n---\n");
+    await mkdir(join(dir, "Daily/2026"), { recursive: true });
+    await writeFile(join(dir, "Daily/2026/2026-11-02.md"), "---\nsleep_h: 7.1\n---\n");
 
     const found = (await (await get("/v1/days/2026-11-02")).json()) as {
       frontmatter: Record<string, unknown>;
@@ -106,7 +106,7 @@ describe("days", () => {
     expect(found.frontmatter.sleep_h).toBe(7.1);
     expect(empty).toEqual({
       name: "days/2026-11-03",
-      path: "daily/2026/2026-11-03.md",
+      path: "Daily/2026/2026-11-03.md",
       frontmatter: {},
     });
     expect((await get("/v1/days/nope")).status).toBe(400);

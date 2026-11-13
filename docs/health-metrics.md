@@ -133,7 +133,7 @@ minute or less 12–26 → 2–8, WASO 28–91 → 16–90 min (mean 62 → 53),
 
 ## Sleep score (`sleep-score.ts`)
 
-- **Sufficiency 60%:** asleep ÷ need, capped at 100. Need is 8 h (`sleep_need_h` in `profile.md`)
+- **Sufficiency 60%:** asleep ÷ need, capped at 100. Need is 8 h (`sleep_need_h` in `Profile.md`)
   plus a third of the last three nights' shortfall, up to an hour.
 - **Efficiency 20%:** 65% scores 0, 95% scores 100, linear.
 - **Consistency 20%:** onset and wake against the last 7 nights' average; 0 min off is 100, 90 min
