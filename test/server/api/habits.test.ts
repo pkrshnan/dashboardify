@@ -29,7 +29,7 @@ describe("HabitService", () => {
     });
     expect(again.body.name).toBe("habits/meditate");
     expect(await api.vaultFile("Habits.md")).toBe(
-      "# Habits\n\n- Meditate · daily · #BF5AF2 · since 2026-11-03 <!-- id:meditate -->\n",
+      "# Habits\n\n- Meditate <!-- id:meditate -->\n\t- schedule: daily\n\t- colour: BF5AF2\n\t- since: 2026-11-03\n",
     );
   });
 
@@ -45,7 +45,7 @@ describe("HabitService", () => {
     expect(body.auto).toBe("lights_out ≤ 23:30");
     expect(body.color).toBe("#7D7AFF");
     expect(await api.vaultFile("Habits.md")).toContain(
-      "- Lights out · Mon Tue Sun · auto lights_out ≤ 23:30 · #7D7AFF · since 2026-11-03",
+      "- Lights out <!-- id:lights-out -->\n\t- schedule: Mon Tue Sun\n\t- auto: lights_out ≤ 23:30\n\t- colour: 7D7AFF\n",
     );
   });
 
