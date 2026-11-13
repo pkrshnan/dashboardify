@@ -146,9 +146,10 @@ colour.
 1.5 px `control` rings that fill when done; touch targets 44 px on the phone; task rows are the
 hit area.
 
-**Type:** the system font, tabular figures. Every size is a `--type-*` token in `web/styles.css`
-(a test rejects raw pixels); the phone changes the token, not the element. The viewport's
-`maximum-scale=1` stops iOS Safari zooming into text boxes under 16 px; pinch zoom still works.
+**Type:** Bricolage Grotesque, bundled in `web/fonts/` so every device matches, with tabular
+figures. Every size is a `--type-*` token in `web/styles.css` (a test rejects raw pixels); the
+phone changes the token, not the element. The viewport's `maximum-scale=1` stops iOS Safari
+zooming into text boxes under 16 px; pinch zoom still works.
 
 | Token | Desktop | Phone | Use |
 |---|---|---|---|
