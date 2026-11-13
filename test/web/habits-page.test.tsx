@@ -152,6 +152,25 @@ describe("Habits page", () => {
     answer();
   });
 
+  test("no settings until a habit is picked; ×, Escape or clicking it again closes them", async () => {
+    const list = showHabits();
+    await list.findAllByText("Read");
+    expect(list.queryByRole("complementary", { name: "Habit settings" })).toBeNull();
+    expect(list.getByRole("link", { name: /^Read/ }).getAttribute("href")).toBe("#/habits/read");
+    list.unmount();
+
+    history.replaceState(null, "", "#/habits/read");
+    const one = showHabits({ habit: "read" });
+    await one.findByDisplayValue("Read");
+    expect(one.getByRole("link", { name: "Close" }).getAttribute("href")).toBe("#/habits");
+    expect(one.getByRole("link", { name: /^Read/ }).getAttribute("href")).toBe("#/habits");
+    // Again until it lands: Preact attaches the key handler after paint.
+    await waitFor(() => {
+      fireEvent.keyDown(window, { key: "Escape" });
+      expect(window.location.hash).toBe("#/habits");
+    });
+  });
+
   test("adds a habit three times a week that ticks itself from steps", async () => {
     const page = showHabits({ habit: "new" });
     await page.findByText("New habit");

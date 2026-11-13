@@ -114,7 +114,8 @@ keys `g b`. Look: [design/README.md](design/README.md#habits-page).
   running read as twelve filled squares. Under its streak, this week as N dots, one filled per day
   done: the next empty dot ticks today, or once today is done the latest open day this week (a run
   logged late), and the last filled one unticks the latest day ticked by hand.
-- Beside the list, the selected habit's settings: name, "How often" (Every day, Weekly
+- Clicking a habit opens its settings beside the list; clicking it again, ×, or Escape closes
+  them, and `#/habits` alone has no panel so the grids get the width. The settings: name, "How often" (Every day, Weekly
   with − and +, Set days with seven day buttons), "Ticks itself from", colour, Pause, Archive.
   "+ New habit" opens the same form empty; adding one says "Added Stretch." and clears it for the
   next.

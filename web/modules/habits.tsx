@@ -1,6 +1,7 @@
 // Habits, at `#/habits/<habit>` (docs/habits.md#web): a row per habit with its streak and a
-// GitHub-style grid of weeks, and the selected habit's settings beside the list. The phone shows
-// the list at `#/habits` and one habit at `#/habits/<habit>`; `new` is the form for a new one.
+// GitHub-style grid of weeks. Picking a habit opens its settings beside the list, and × or Escape
+// closes them. The phone shows the list at `#/habits` and one habit at `#/habits/<habit>`; `new`
+// is the form for a new one.
 
 import { useCallback, useEffect, useState } from "preact/hooks";
 import {
@@ -60,8 +61,10 @@ function HabitsPage({ params }: PageProps) {
   if (!(all && facts)) {
     return null;
   }
-  const selected = params.habit ?? (isPhone ? undefined : (all[0]?.id ?? "new"));
+  const selected = params.habit;
   const habit = all.find((h) => h.id === selected) ?? null;
+  // A habit just archived, or an old link, leaves nothing to show, so no panel.
+  const open = selected === "new" || habit !== null;
   const panel = (
     <HabitPanel key={selected} habit={habit} facts={facts} back={isPhone} onSaved={reload} />
   );
@@ -77,9 +80,9 @@ function HabitsPage({ params }: PageProps) {
     );
   }
   return (
-    <main class="habits">
+    <main class={`habits${open ? "" : " closed"}`}>
       <HabitList all={all} facts={facts} weeks={DESKTOP_WEEKS} current={selected} reload={reload} />
-      {panel}
+      {open && panel}
     </main>
   );
 }
@@ -205,7 +208,7 @@ function HabitRow(props: {
           done={doneOn(days, habit.progress.day) ?? habit.progress.done}
           onTick={(done) => tick(habit.progress.day, done)}
         />
-        <a class="habit-name" href={href(`/habits/${habit.id}`)}>
+        <a class="habit-name" href={href(props.selected ? "/habits" : `/habits/${habit.id}`)}>
           <span class="habit-title">{habit.displayName}</span>
           <span class="habit-sub">{subLine(habit, props.facts)}</span>
           <Streak habit={habit} facts={props.facts} />
@@ -420,13 +423,21 @@ function HabitPanel(props: {
     if (habit) {
       await updateHabit(token, habit.id, { state });
       await props.onSaved();
+      if (state === "archived") {
+        navigate(href("/habits"));
+      }
     }
   };
+  useEscapeCloses(!props.back);
   return (
     <aside class="habit-panel" aria-label="Habit settings">
-      {props.back && (
+      {props.back ? (
         <a class="habit-back" href={href("/habits")}>
           ‹ Habits
+        </a>
+      ) : (
+        <a class="habit-close" href={href("/habits")} aria-label="Close" title="Close (Esc)">
+          ×
         </a>
       )}
       <h2 class="habit-panel-title">{habit ? habit.displayName : "New habit"}</h2>
@@ -454,6 +465,22 @@ function HabitPanel(props: {
       )}
     </aside>
   );
+}
+
+/** Escape closes the panel; a menu in the form takes its own Escape first. */
+function useEscapeCloses(enabled: boolean) {
+  useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !e.defaultPrevented) {
+        navigate(href("/habits"));
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [enabled]);
 }
 
 /** This week's seven days as buttons, so the phone can fix a day. */

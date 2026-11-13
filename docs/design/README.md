@@ -102,7 +102,7 @@ while its fact is pending, a ring on today. A weekly habit has one square per we
 while this week is open; its next dot to fill is a ring in its colour. Narrow windows drop the
 oldest weeks. On desktop a
 square is a button that fixes its day; on the phone a habit's screen has this week's seven days
-to tap. The selected habit's settings sit beside the list. A streak at risk is `warn` orange; a
+to tap. The selected habit's settings open beside the list when you click one, with × to close. A streak at risk is `warn` orange; a
 paused habit's done squares are its colour at 40%.
 
 ## Look
