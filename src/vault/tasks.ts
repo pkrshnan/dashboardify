@@ -106,6 +106,13 @@ export function parseTaskLine(line: string): Task | null {
   return task;
 }
 
+/** Whether a task line still carries old Tasks emoji fields, so converting it would change it. */
+export function hasOldFields(line: string): boolean {
+  const task = parseTaskLine(line);
+  const text = CHECKBOX.exec(line)?.[4] ?? "";
+  return task !== null && task.description !== text.replace(ID, "").trim();
+}
+
 /** Peel old Tasks fields off the end of the text until none match, filling them into `task`. */
 function stripTrailingFields(text: string, task: Task): string {
   const seen = new Set<string>();
