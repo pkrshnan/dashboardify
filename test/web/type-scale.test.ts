@@ -9,7 +9,7 @@ test("every font size comes from the type scale", () => {
   const css = readFileSync(join(web, "styles.css"), "utf8");
   const sizes = [...css.matchAll(/font-size:\s*([^;]+);/g)].map((m) => m[1] ?? "");
   const stray = sizes.filter(
-    (s) => !/^var\(--type-[a-z]+\)( !important)?$/.test(s) && s !== "inherit" && s !== "0",
+    (s) => !/^var\(--type-[a-z]+\)$/.test(s) && s !== "inherit" && s !== "0",
   );
   expect(stray).toEqual([]);
 });

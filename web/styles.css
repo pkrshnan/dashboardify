@@ -1669,14 +1669,6 @@ button.link {
     --type-large: 30px;
     --type-display: 22px;
     --type-hero: 44px;
-    --type-input: 16px;
-  }
-
-  /* iOS Safari zooms into a text box under 16 px. Important, so it beats every input's own rule. */
-  input,
-  textarea,
-  select {
-    font-size: var(--type-input) !important;
   }
 
   .capture-row {

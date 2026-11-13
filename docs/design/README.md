@@ -145,15 +145,14 @@ colour.
 hit area.
 
 **Type:** the system font, tabular figures. Every size is a `--type-*` token in `web/styles.css`
-(a test rejects raw pixels); the phone changes the token, not the element. Phone text boxes use
-`input`, 16 px, since iOS Safari zooms into smaller ones.
+(a test rejects raw pixels); the phone changes the token, not the element. The viewport's
+`maximum-scale=1` stops iOS Safari zooming into text boxes under 16 px; pinch zoom still works.
 
 | Token | Desktop | Phone | Use |
 |---|---|---|---|
 | caption | 11 | 11 | hour labels, axis ticks, chips, tab bar |
 | footnote | 13 | 12 | metadata, notes, group labels, small buttons |
 | body | 15 | 14 | rows, inputs and their placeholders, buttons |
-| input | – | 16 | text boxes and dropdowns on the phone |
 | headline | 17 | 16 | group headings, units beside big numbers |
 | title | 22 | 18 | section headings, the next event, dialogs |
 | large | 28 | 30 | page titles |
