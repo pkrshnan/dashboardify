@@ -1661,12 +1661,15 @@ button.link {
 @media (max-width: 899px) {
   :root {
     --gutter: 20px;
-    /* iOS sizes: body text is 17 px, titles are larger and the display sizes smaller. */
-    --type-body: 17px;
-    --type-title: 20px;
-    --type-large: 34px;
-    --type-display: 24px;
-    --type-hero: 48px;
+    /* A step under iOS sizes, which read large on a dense dashboard. Body stays at 16 px because
+       iOS Safari zooms into any input set smaller. */
+    --type-footnote: 12px;
+    --type-body: 16px;
+    --type-headline: 16px;
+    --type-title: 18px;
+    --type-large: 30px;
+    --type-display: 22px;
+    --type-hero: 44px;
   }
 
   .capture-row {

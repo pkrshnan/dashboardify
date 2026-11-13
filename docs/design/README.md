@@ -145,18 +145,19 @@ colour.
 hit area.
 
 **Type:** the system font, tabular figures. Every size is a `--type-*` token in `web/styles.css`
-(a test rejects raw pixels); the phone changes the token, not the element.
+(a test rejects raw pixels); the phone changes the token, not the element. Phone body stays at
+16 px, since iOS Safari zooms into smaller inputs.
 
 | Token | Desktop | Phone | Use |
 |---|---|---|---|
 | caption | 11 | 11 | hour labels, axis ticks, chips, tab bar |
-| footnote | 13 | 13 | metadata, notes, group labels, small buttons |
-| body | 15 | 17 | rows, inputs and their placeholders, buttons |
-| headline | 17 | 17 | group headings, units beside big numbers |
-| title | 22 | 20 | section headings, the next event, dialogs |
-| large | 28 | 34 | page titles |
-| display | 34 | 24 | the sentence, health and activity numbers |
-| hero | 64 | 48 | the focus numbers |
+| footnote | 13 | 12 | metadata, notes, group labels, small buttons |
+| body | 15 | 16 | rows, inputs and their placeholders, buttons |
+| headline | 17 | 16 | group headings, units beside big numbers |
+| title | 22 | 18 | section headings, the next event, dialogs |
+| large | 28 | 30 | page titles |
+| display | 34 | 22 | the sentence, health and activity numbers |
+| hero | 64 | 44 | the focus numbers |
 
 Weight 200 only for hero, 300 for large and display. Formats: "3 Nov", 24-hour times, "7h 12m",
 "3d late".
