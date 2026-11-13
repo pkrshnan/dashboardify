@@ -224,6 +224,10 @@ describe("Habits page", () => {
     list.unmount();
 
     const one = showHabits({ habit: "read" }, true);
+    // Done days fill with the habit's colour, so the panel carries it as the rows do.
+    const tuesday = await one.findByRole("button", { name: "Tue 10 Nov · done" });
+    const panel = tuesday.closest(".habit-panel") as HTMLElement;
+    expect(panel.style.getPropertyValue("--habit-color")).toBe("#FF7EB6");
     const wednesday = await one.findByRole("button", { name: "Wed 11 Nov · not done" });
     fireEvent.click(wednesday);
 
