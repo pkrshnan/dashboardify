@@ -4,7 +4,7 @@ Tasks and habits keep their details as sub-bullets under the line, one `key: val
 instead of emoji (tasks) or `·`-separated words (habits). The line holds only the text and the
 id, so a note reads like a note.
 
-Status: F1–F4 built. Next, F5.
+Status: F1–F5 built. Next: run `vault:convert` on the server, then F6.
 
 ## Format
 
@@ -50,5 +50,5 @@ Status: F1–F4 built. Next, F5.
 | F2 | Field blocks | `src/vault/fields.ts`: find an item's field lines, read them, rewrite owned keys | Other children kept; nested items own their fields; tabs or spaces; repeated keys; blank line ends a block |
 | F3 | Tasks | `tasks.ts` and `task-store.ts` on fields; old lines still read; drop `create_date`; vault-format.md, api.md | Round trip; edit converts an old line; complete with repeat; delete keeps notes; etag covers fields |
 | F4 | Habits | `habit-note.ts` on fields; old lines still read; habits.md | Round trip; update keeps notes under a habit; colour without `#` |
-| F5 | Convert | `bun run vault:convert`: prints the changes, `--write` applies them. Run once on the server. | Converts an old vault; a second run changes nothing |
-| F6 | Clean up | Drop old parsing; habit names may hold `·`; demo data | |
+| F5 | Convert | `bun run vault:convert`: prints the changes, `--write` applies them. Run once on the server (`docker exec`, with `VAULT_PATH` set there). | Converts an old vault; a second run changes nothing |
+| F6 | Clean up | Drop old parsing and `vault:convert`; habit names may hold `·`; demo data and test fixtures | |
