@@ -1,0 +1,315 @@
+syntax = "proto3";
+
+package dashboardify.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/field_mask.proto";
+import "google/type/date.proto";
+
+// Lifting from the daily notes' `## Workouts`: each exercise's history and what to do next time,
+// and writing a day's log one exercise at a time (docs/lifting.md).
+service LiftingService {
+  // Every exercise, the one done most recently first, each with only its last session.
+  rpc ListExercises(ListExercisesRequest) returns (ListExercisesResponse) {
+    option (google.api.http) = {get: "/v1/exercises"};
+  }
+
+  // One exercise with every session, newest first, its records and next time.
+  rpc GetExercise(GetExerciseRequest) returns (Exercise) {
+    option (google.api.http) = {get: "/v1/{name=exercises/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  // Sets the rep range, written to the exercise's note as `reps` and `step`.
+  rpc UpdateExercise(UpdateExerciseRequest) returns (Exercise) {
+    option (google.api.http) = {
+      patch: "/v1/{exercise.name=exercises/*}"
+      body: "exercise"
+    };
+    option (google.api.method_signature) = "exercise,update_mask";
+  }
+
+  // A day's log, with the etag a write sends back.
+  rpc GetWorkoutLog(GetWorkoutLogRequest) returns (WorkoutLog) {
+    option (google.api.http) = {get: "/v1/{name=days/*/lifting}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  // Replaces one exercise's sets in the day's log, adding it when it isn't there. Sending the
+  // same sets again changes nothing, so a retry is safe.
+  rpc UpdateLoggedExercise(UpdateLoggedExerciseRequest) returns (WorkoutLog) {
+    option (google.api.http) = {
+      patch: "/v1/{exercise.name=days/*/lifting/exercises/*}"
+      body: "exercise"
+    };
+    option (google.api.method_signature) = "exercise";
+  }
+
+  // Takes one exercise and everything under it out of the day's log.
+  rpc DeleteLoggedExercise(DeleteLoggedExerciseRequest) returns (WorkoutLog) {
+    option (google.api.http) = {delete: "/v1/{name=days/*/lifting/exercises/*}"};
+    option (google.api.method_signature) = "name";
+  }
+}
+
+// An exercise, such as Chest Press, across every daily note.
+message Exercise {
+  option (google.api.resource) = {
+    type: "dashboardify.app/Exercise"
+    pattern: "exercises/{exercise}"
+    singular: "exercise"
+    plural: "exercises"
+  };
+
+  // `exercises/{exercise}`, a slug of the title: `exercises/chest-press`.
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+
+  // The note's file name, or the first spelling in the logs.
+  string title = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Other spellings, from the note's `aliases`.
+  repeated string aliases = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The exercise's note, such as `Lifting/Chest Press.md`; empty until it's made.
+  string path = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // "lb" or "kg": every weight here is in it.
+  string unit = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The range next time works within; the defaults when the note doesn't set one.
+  RepRange rep_range = 6 [(google.api.field_behavior) = OPTIONAL];
+
+  // Newest first. ListExercises sends only the last.
+  repeated ExerciseSession sessions = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // GetExercise only.
+  ExerciseRecords records = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // What to do next time.
+  NextTime next_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// Double progression: reps rise to `high`, then the weight goes up by `step`.
+message RepRange {
+  // The fewest reps a set aims for.
+  int32 low = 1 [(buf.validate.field).int32 = {
+    gte: 1
+    lte: 100
+  }];
+
+  // The most; every set here means add weight.
+  int32 high = 2 [(buf.validate.field).int32 = {
+    gte: 1
+    lte: 100
+  }];
+
+  // The weight added or taken off, in the exercise's unit.
+  double step = 3 [(buf.validate.field).double = {
+    gt: 0
+    lte: 100
+  }];
+}
+
+// One set.
+message WorkSet {
+  // Absent for bodyweight.
+  optional double weight = 1 [(buf.validate.field).double = {
+    gte: 0
+    lte: 2000
+  }];
+
+  // Reps done.
+  int32 reps = 2 [(buf.validate.field).int32 = {
+    gte: 0
+    lte: 1000
+  }];
+
+  // Left out of volume, records and next time's working sets.
+  bool warm_up = 3;
+}
+
+// One exercise on one day.
+message ExerciseSession {
+  // The day of the note it's in.
+  google.type.Date date = 1;
+
+  // In the order done.
+  repeated WorkSet sets = 2;
+
+  // The heaviest working weight; absent for bodyweight.
+  optional double top_weight = 3;
+
+  // The reps of each working set at the top weight.
+  repeated int32 reps_at_top = 4;
+
+  // Epley on the average set at the top weight.
+  optional double est_one_rep_max = 5;
+
+  // Weight × reps over the working sets.
+  double volume = 6;
+
+  // Against the session before: "weight", "reps", "same", "down", or empty for the first.
+  string progress = 7;
+
+  // The median rest between sets, when the strap matched the sets.
+  optional int32 rest_seconds = 8;
+
+  // The working sets' mean peak heart rate, when the strap matched them.
+  optional int32 peak_heart_rate = 9;
+
+  // The records first reached in this session: "heaviest", "est_one_rep_max", "at_top".
+  repeated string records = 10;
+}
+
+// The exercise's bests, each with the first day it was reached.
+message ExerciseRecords {
+  // The heaviest top weight.
+  optional double heaviest = 1;
+
+  // When it was first lifted.
+  google.type.Date heaviest_date = 2;
+
+  // The best estimated one-rep max.
+  optional double est_one_rep_max = 3;
+
+  // When it was reached.
+  google.type.Date est_one_rep_max_date = 4;
+
+  // The most reps at the latest top weight.
+  repeated int32 reps_at_top = 5;
+
+  // When.
+  google.type.Date reps_at_top_date = 6;
+}
+
+// The suggestion for the next session.
+message NextTime {
+  // Warm-ups first, then the working sets.
+  repeated WorkSet sets = 1;
+
+  // "more-reps", "add-weight", "stuck" or "break".
+  string reason = 2;
+}
+
+// A day's `## Workouts`.
+message WorkoutLog {
+  option (google.api.resource) = {
+    type: "dashboardify.app/WorkoutLog"
+    pattern: "days/{day}/lifting"
+    singular: "workoutLog"
+    plural: "workoutLogs"
+  };
+
+  // `days/{day}/lifting`.
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+
+  // In the order logged.
+  repeated LoggedExercise exercises = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // A hash of `## Workouts`; a write that sends an older one is refused.
+  string etag = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// One exercise in a day's log.
+message LoggedExercise {
+  option (google.api.resource) = {
+    type: "dashboardify.app/LoggedExercise"
+    pattern: "days/{day}/lifting/exercises/{exercise}"
+    singular: "loggedExercise"
+    plural: "loggedExercises"
+  };
+
+  // `days/{day}/lifting/exercises/{exercise}`, with the exercise's slug.
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+
+  // As written; needed to add one that isn't in the log or the history yet.
+  string title = 2 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).string = {
+      max_len: 80
+      pattern: "^[^\\r\\n]*$"
+    }
+  ];
+
+  // "lb" or "kg"; the exercise's unit when left out.
+  string unit = 3 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).string.pattern = "^(lb|kg|)$"
+  ];
+
+  // In the order done.
+  repeated WorkSet sets = 4 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).repeated.max_items = 50
+  ];
+}
+
+// Request for ListExercises.
+message ListExercisesRequest {}
+
+// Response for ListExercises.
+message ListExercisesResponse {
+  // The one done most recently first.
+  repeated Exercise exercises = 1;
+}
+
+// Request for GetExercise.
+message GetExerciseRequest {
+  // The exercise.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/Exercise",
+    (buf.validate.field).string.min_len = 1
+  ];
+}
+
+// Request for UpdateExercise.
+message UpdateExerciseRequest {
+  // Only `rep_range` is read.
+  Exercise exercise = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // `rep_range`.
+  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request for GetWorkoutLog.
+message GetWorkoutLogRequest {
+  // `days/{day}/lifting`.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/WorkoutLog",
+    (buf.validate.field).string.min_len = 1
+  ];
+}
+
+// Request for UpdateLoggedExercise.
+message UpdateLoggedExerciseRequest {
+  // The exercise and all its sets.
+  LoggedExercise exercise = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // Write only if the day's log is still at this version.
+  string etag = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request for DeleteLoggedExercise.
+message DeleteLoggedExerciseRequest {
+  // The exercise in the day's log.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/LoggedExercise",
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // Delete only if the day's log is still at this version.
+  string etag = 2 [(google.api.field_behavior) = OPTIONAL];
+}

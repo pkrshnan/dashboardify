@@ -11,6 +11,7 @@ import { EventService as EventSchema } from "../../gen/dashboardify/v1/event_pb"
 import { HabitService as HabitSchema } from "../../gen/dashboardify/v1/habit_pb";
 import { HomeService as HomeSchema } from "../../gen/dashboardify/v1/home_pb";
 import { JournalService as JournalSchema } from "../../gen/dashboardify/v1/journal_pb";
+import { LiftingService as LiftingSchema } from "../../gen/dashboardify/v1/lifting_pb";
 import { ListService as ListSchema } from "../../gen/dashboardify/v1/list_pb";
 import { MessageService as MessageSchema } from "../../gen/dashboardify/v1/message_pb";
 import { PlaceService as PlaceSchema } from "../../gen/dashboardify/v1/place_pb";
@@ -20,11 +21,14 @@ import { TaskService as TaskSchema } from "../../gen/dashboardify/v1/task_pb";
 import { VoiceService as VoiceSchema } from "../../gen/dashboardify/v1/voice_pb";
 import type { RawStore } from "../../health/raw-store";
 import type { HomeDeps } from "../../home/home";
+import { LiftingStore } from "../../lifting/lifting-store";
+import { ExerciseNotes } from "../../lifting/note-sync";
 import { ListStore } from "../../lists/list-store";
 import type { PlaceSearch } from "../../places/place";
 import type { GeneralSettings } from "../../settings/core";
 import type { DeviceStore } from "../../settings/devices";
 import type { TaskStore } from "../../vault/task-store";
+import { localDate } from "../../vault/time";
 import type { Vault } from "../../vault/vault";
 import { type ActivityDeps, ActivityService } from "../api/activity";
 import {
@@ -40,6 +44,7 @@ import { EventsService } from "../api/events";
 import { HabitsService } from "../api/habits";
 import { HomeService } from "../api/home";
 import { JournalService } from "../api/journal";
+import { LiftingService } from "../api/lifting";
 import { ListsService } from "../api/lists";
 import { MessagesService } from "../api/messages";
 import { PlacesService } from "../api/places";
@@ -120,6 +125,7 @@ export function v1Services(
     { schema: MessageSchema, implementation: new MessagesService(vault) },
     { schema: ListSchema, implementation: listsService },
     { schema: HabitSchema, implementation: habitsService },
+    { schema: LiftingSchema, implementation: liftingService(vault, activity, now) },
     { schema: SampleSchema, implementation: new SamplesService(raw, onSamples) },
     { schema: HomeSchema, implementation: new HomeService(home, now) },
     { schema: ActivitySchema, implementation: new ActivityService(activity) },
@@ -174,4 +180,17 @@ function eventService(
   const { accounts, cache, sync } = calendars;
   const connect = calendars.connect ?? connectICloud;
   return new EventsService({ accounts, cache, sync, connect, timeZone, now });
+}
+
+/** Lifting reads the daily notes and the strap's matched sets, and writes Lifting/ notes. */
+function liftingService(vault: Vault, activity: ActivityDeps, now: () => Date): LiftingService {
+  const store = new LiftingStore(vault);
+  const setsOn = (date: string) => activity.derived.readAll("sets", date);
+  const today = () => localDate(now(), vault.timeZone);
+  return new LiftingService({
+    notes: new ExerciseNotes({ vault, lifting: store, setsOn, today }),
+    store,
+    setsOn,
+    today,
+  });
 }
