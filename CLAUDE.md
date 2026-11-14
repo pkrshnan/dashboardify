@@ -30,6 +30,7 @@ Read the one for the area you change.
 | [vault-format.md](docs/vault-format.md) | What the server writes into notes |
 | [calendar.md](docs/calendar.md) | CalDAV, ICS links, cache and sync, capture |
 | [strava.md](docs/strava.md) | Plan ST1–ST6: Strava runs, splitting walk-run-walk |
+| [lifting.md](docs/lifting.md) | Plan LF1–LF8: logging with next-time suggestions, exercise notes, overload charts |
 | [settings.md](docs/settings.md) | `settings.db`, secrets, devices, CLI, Settings page |
 | [health-metrics.md](docs/health-metrics.md) | How each health number is computed |
 | [health-primer.html](docs/health-primer.html) | The health numbers explained from scratch; [kept current](docs/development.md#health-primer) |
