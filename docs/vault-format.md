@@ -134,6 +134,32 @@ is left alone, and no ids are written into the note.
 - [x] Lemons
 ```
 
+## Lifting: `Lifting/<Title>.md`
+
+One note per exercise ([lifting.md](lifting.md)), made the first time it's logged; the file name
+is its title. The server rewrites only the `cc:lifting` block: next time, records, and a row per
+session, newest first, from the daily notes. It reads `aliases` (other spellings in your logs),
+`reps` (`8-12`) and `step` (`5`). A note whose frontmatter won't parse is left alone, and none is
+ever deleted.
+
+```markdown
+---
+aliases: [Chest press machine]
+reps: 8-12
+---
+Seat on 4.
+
+<!-- cc:lifting -->
+## History
+Next: 60 lb, 1x10 W · 80 lb, 3x11
+Records: 80 lb top · est. 1RM 107 · 80 lb, 3x10 on 8 Nov
+
+| Day | Sets | Est. 1RM | Rest | Peak HR | |
+| --- | --- | --- | --- | --- | --- |
+| [[2026-11-08]] | 60 lb, 1x10 W · 80 lb, 3x10 | 107 | 2:05 | 141 | ↑ reps |
+<!-- /cc:lifting -->
+```
+
 ## `Habits.md`
 
 At the vault root ([habits.md](habits.md)). Each top-level `- ` line that isn't a checkbox is a

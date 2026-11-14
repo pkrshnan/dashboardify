@@ -9,6 +9,8 @@ import { DailySummary } from "./health/daily-summary";
 import { DerivedStore } from "./health/derived-store";
 import { RawStore } from "./health/raw-store";
 import { SummaryScheduler } from "./health/scheduler";
+import { LiftingStore } from "./lifting/lifting-store";
+import { ExerciseNotes } from "./lifting/note-sync";
 import { PHOTON_URL, Photon } from "./places/photon";
 import { connectICloud } from "./server/api/calendar-accounts";
 import { createApp } from "./server/app";
@@ -88,9 +90,10 @@ if (import.meta.main) {
   });
   calendarSync.start();
   const runs = await RunCache.open(config.dataPath);
+  const derived = new DerivedStore(config.healthDerivedPath);
   const summary = new DailySummary(
     new RawStore(config.healthRawPath),
-    new DerivedStore(config.healthDerivedPath),
+    derived,
     vault,
     config.timeZone,
     Date.now,
@@ -98,6 +101,13 @@ if (import.meta.main) {
   );
   const scheduler = startHealthSummaries(config, summary);
   startStrava(opened.store, config, runs, scheduler);
+  // Lifting/<Title>.md follows the daily notes' Workouts.
+  new ExerciseNotes({
+    vault,
+    lifting: new LiftingStore(vault),
+    setsOn: (date) => derived.readAll("sets", date),
+    today: () => localDate(new Date(), config.timeZone),
+  }).start();
   const app = createApp(config, {
     devices,
     tailnet,

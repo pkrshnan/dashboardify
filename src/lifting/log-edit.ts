@@ -14,38 +14,51 @@ interface Style {
   indent: string;
 }
 
-/** Consecutive sets at one weight share a line: `80lbs, 2x11, 1x10`, `7.5lbs, 1x10, warm-up`. */
-export function loadLines(sets: WorkSet[], unit: WeightUnit): string[] {
-  const runs: WorkSet[][] = [];
-  for (const set of sets) {
-    const run = runs[runs.length - 1];
-    const first = run?.[0];
-    if (run && first && first.weight === set.weight && first.warmUp === set.warmUp) {
-      run.push(set);
-    } else {
-      runs.push([set]);
-    }
-  }
-  return runs.map((run) => loadLine(run, unit));
+export interface SetRun {
+  weight: number | null;
+  warmUp: boolean;
+  /** `2x11, 1x10` is [{ count: 2, reps: 11 }, { count: 1, reps: 10 }]. */
+  groups: { count: number; reps: number }[];
 }
 
-function loadLine(run: WorkSet[], unit: WeightUnit): string {
-  const groups: { count: number; reps: number }[] = [];
-  for (const set of run) {
-    const group = groups[groups.length - 1];
-    if (group?.reps === set.reps) {
-      group.count++;
+/** Consecutive sets at one weight, warm-up or not, as one run of sets×reps groups. */
+export function setRuns(sets: WorkSet[]): SetRun[] {
+  const runs: SetRun[] = [];
+  for (const set of sets) {
+    const run = runs[runs.length - 1];
+    if (run && run.weight === set.weight && run.warmUp === set.warmUp) {
+      const group = run.groups[run.groups.length - 1];
+      if (group?.reps === set.reps) {
+        group.count++;
+      } else {
+        run.groups.push({ count: 1, reps: set.reps });
+      }
     } else {
-      groups.push({ count: 1, reps: set.reps });
+      runs.push({ weight: set.weight, warmUp: set.warmUp, groups: [{ count: 1, reps: set.reps }] });
     }
   }
-  const weight = run[0]?.weight ?? null;
-  const parts = [
-    ...(weight === null ? [] : [`${Number(weight.toFixed(2))}${unit === "kg" ? "kg" : "lbs"}`]),
-    ...groups.map((g) => `${g.count}x${g.reps}`),
-    ...(run[0]?.warmUp ? ["warm-up"] : []),
-  ];
-  return parts.join(", ");
+  return runs;
+}
+
+/** `2x11, 1x10` */
+export function groupsText(run: SetRun): string {
+  return run.groups.map((g) => `${g.count}x${g.reps}`).join(", ");
+}
+
+/** A run per line, weight first: `80lbs, 2x11, 1x10`, `7.5lbs, 1x10, warm-up`. */
+export function loadLines(sets: WorkSet[], unit: WeightUnit): string[] {
+  return setRuns(sets).map((run) =>
+    [
+      ...(run.weight === null ? [] : [`${round(run.weight)}${unit === "kg" ? "kg" : "lbs"}`]),
+      groupsText(run),
+      ...(run.warmUp ? ["warm-up"] : []),
+    ].join(", "),
+  );
+}
+
+/** Two decimals at most, no trailing zeros: 7.5, 12.5, 60. */
+export function round(weight: number): number {
+  return Number(weight.toFixed(2));
 }
 
 /** Sets `title`'s load lines in `body`, adding the exercise, or the section, when missing. */

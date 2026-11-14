@@ -39,9 +39,9 @@ export class LiftingStore {
     return days.sort((a, b) => a.date.localeCompare(b.date));
   }
 
-  /** Every exercise's history, the one done most recently first. */
-  async histories(): Promise<ExerciseHistory[]> {
-    return exerciseHistories(await this.days());
+  /** Every exercise's history, the one done most recently first; `titles` as in exerciseHistories. */
+  async histories(titles?: ReadonlyMap<string, string>): Promise<ExerciseHistory[]> {
+    return exerciseHistories(await this.days(), titles);
   }
 
   /** One day's log, with the etag a write must send back. */
