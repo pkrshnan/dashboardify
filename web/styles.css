@@ -2688,6 +2688,13 @@ button.link {
   color: var(--text);
 }
 
+/* Under Tasks, which is pinned above the lists. */
+.list-rule {
+  margin: 8px 10px;
+  border: 0;
+  border-top: 1px solid var(--line-2);
+}
+
 .list-count {
   margin-left: auto;
   font-size: var(--type-footnote);
@@ -3062,6 +3069,12 @@ button.link {
 
 .lists.phone .list {
   padding: 12px var(--gutter) 32px;
+}
+
+/* Phone rows already have lines between them; space sets Tasks apart. */
+.lists.phone .list-rule {
+  margin: 0 0 20px;
+  border: 0;
 }
 
 .lists.phone .list-new {

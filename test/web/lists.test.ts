@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import type { HomeView } from "../../src/home/types";
 import type { ListItemView, ListView } from "../../web/api";
 import {
   doneItems,
@@ -8,6 +9,7 @@ import {
   openSections,
   sectionAt,
   stepSection,
+  taskList,
   withMove,
   withTicks,
 } from "../../web/lib/lists";
@@ -120,5 +122,58 @@ describe("lists on the page", () => {
       ["Dairy", ["Eggs", "Milk", "Coffee"]],
     ]);
     expect(back.sections[0]?.items.map((i) => i.text)).toEqual(["Milk"]);
+  });
+});
+
+describe("taskList", () => {
+  const view = {
+    date: "2026-11-14",
+    days: [
+      {
+        date: "2026-11-14",
+        reminders: [
+          { id: "late", text: "Pharmacy", time: "17:30", minutes: 1050, done: false },
+          { id: "early", text: "Call Fetch", time: "09:00", minutes: 540, done: true },
+        ],
+      },
+    ],
+    tasks: [
+      { name: "Someday", tasks: [{ id: "s1", text: "Fix the bike", meta: "" }] },
+      { name: "Overdue", tasks: [{ id: "o1", text: "Call the bank", meta: "3d late" }] },
+      { name: "Today", tasks: [{ id: "t1", text: "Return the adapter", meta: "" }] },
+    ],
+  } as unknown as HomeView;
+  const titles = (list: ListView) =>
+    list.sections.map((s) => [s.title, s.items.map((i) => `${i.text}${i.done ? " ✓" : ""}`)]);
+
+  test("groups in order, today's timed tasks first under Today, the due date as the note", () => {
+    const list = taskList(view);
+
+    expect(list.slug).toBe("tasks");
+    expect(titles(list)).toEqual([
+      ["Overdue", ["Call the bank"]],
+      ["Today", ["Call Fetch ✓", "Pharmacy", "Return the adapter"]],
+      ["Someday", ["Fix the bike"]],
+    ]);
+    expect(list.sections[1]?.items[1]?.note).toBe("17:30");
+    expect(list.openCount).toBe(4);
+  });
+
+  test("tasks ticked here come back done in their group, unless the id is open again", () => {
+    const ticked = (name: string, text: string, section: string): ListItemView => ({
+      name,
+      text,
+      note: "",
+      done: false,
+      section,
+    });
+
+    const list = taskList(view, [
+      ticked("w1", "Book the dentist", "This week"),
+      ticked("s1", "Fix the bike", "Someday"),
+    ]);
+
+    expect(titles(list)).toContainEqual(["This week", ["Book the dentist ✓"]]);
+    expect(titles(list)).toContainEqual(["Someday", ["Fix the bike"]]);
   });
 });

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { act, fireEvent, render, waitFor } from "@testing-library/preact";
 import { AppContext } from "../../web/modules/context";
 import { lists } from "../../web/modules/lists";
+import type { LoadedHome } from "../../web/modules/types";
 import { useDom } from "./dom";
 
 useDom();
@@ -42,14 +43,32 @@ afterEach(() => {
   globalThis.fetch = original;
 });
 
-function showList(isPhone = false) {
+const HOME = {
+  view: {
+    date: "2026-11-14",
+    days: [],
+    tasks: [
+      { name: "Overdue", tasks: [{ id: "k7f3a2", text: "Call the bank", meta: "3d late" }] },
+      { name: "Someday", tasks: [{ id: "b9", text: "Fix the bike", meta: "" }] },
+    ],
+  },
+  now: { date: "2026-11-14", time: "09:12", minutes: 552 },
+  load: () => Promise.resolve(),
+} as unknown as LoadedHome;
+
+function showList(
+  isPhone = false,
+  /** null for #/lists, with no list in the address. */
+  list: string | null = "shopping",
+  home = null as LoadedHome | null,
+) {
   const View = lists.view;
   return render(
     <AppContext.Provider value={{ token: "t", onUnauthorized: () => undefined, isPhone }}>
       <View
-        route={{ path: "/lists/shopping", query: {} }}
-        params={{ list: "shopping" }}
-        home={null}
+        route={{ path: list ? `/lists/${list}` : "/lists", query: {} }}
+        params={list ? { list } : {}}
+        home={home}
       />
     </AppContext.Provider>,
   );
@@ -167,5 +186,55 @@ describe("Lists page", () => {
     const page = showList(true);
 
     expect((await page.findByText("‹ Lists")).getAttribute("href")).toBe("#/lists");
+  });
+});
+
+describe("Tasks, pinned in Lists", () => {
+  test("is pinned above the lists and opens first on desktop", async () => {
+    const page = showList(false, null, HOME);
+    await page.findByRole("link", { name: /Shopping/ });
+
+    const links = page.getAllByRole("link").map((a) => a.textContent);
+    expect(links).toEqual(["Tasks2", "Shopping2"]);
+    expect(page.getByRole("link", { name: /Tasks/ }).getAttribute("aria-current")).toBe("page");
+    expect(page.getByText("Overdue")).toBeTruthy();
+    expect(page.getByText("3d late")).toBeTruthy();
+    // Nothing to move between or clear: tasks aren't one note.
+    expect(page.queryByRole("button", { name: /^Move/ })).toBeNull();
+    expect(page.queryByRole("button", { name: "Section" })).toBeNull();
+  });
+
+  test("a tick completes the task and keeps it under Done; an untick reopens it", async () => {
+    const page = showList(false, "tasks", HOME);
+    const bank = await page.findByRole("button", { name: /^Call the bank/ });
+
+    await act(async () => {
+      fireEvent.click(bank);
+    });
+    await waitFor(() => expect(page.getByText("Done · 1")).toBeTruthy());
+    expect(page.queryByText("Clear done items")).toBeNull();
+    await act(async () => {
+      fireEvent.click(page.getByRole("button", { name: /^Call the bank/ }));
+    });
+
+    await waitFor(() => expect(calls.filter((c) => c.method === "POST")).toHaveLength(2));
+    expect(calls.filter((c) => c.method === "POST").map((c) => c.url)).toEqual([
+      "/v1/tasks/k7f3a2:complete",
+      "/v1/tasks/k7f3a2:reopen",
+    ]);
+  });
+
+  test("the add box captures the line as a reminder", async () => {
+    const page = showList(false, "tasks", HOME);
+    const box = (await page.findByLabelText("Add to Tasks")) as HTMLInputElement;
+
+    fireEvent.input(box, { target: { value: "call mum fri" } });
+    await act(async () => {
+      fireEvent.submit(box.closest("form") as HTMLFormElement);
+    });
+
+    await waitFor(() => expect(box.value).toBe(""));
+    const sent = calls.find((c) => c.url.endsWith("/Capture"));
+    expect(sent?.body).toMatchObject({ text: "call mum fri", kind: "CAPTURE_KIND_REMINDER" });
   });
 });
