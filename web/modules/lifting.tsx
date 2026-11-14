@@ -12,6 +12,7 @@ import {
   Unauthorized,
 } from "../api";
 import { type Segment, Segmented } from "../components/segmented";
+import { WorkoutLog } from "../components/workout-log";
 import {
   byLastDay,
   type ChartRange,
@@ -56,6 +57,9 @@ function LiftingPage({ params, route, home }: PageProps) {
   if (!home) {
     return null;
   }
+  if (params.exercise === "log") {
+    return <WorkoutLog date={home.view.date} />;
+  }
   const slug = params.exercise ?? (isPhone ? undefined : all?.[0]?.slug);
   const range = chartRange(route.query.range);
   const screen = slug && (
@@ -97,7 +101,12 @@ function ExerciseIndex({ all, current }: { all: ExerciseView[] | null; current?:
   const groups = byLastDay(matching(all ?? [], query));
   return (
     <nav class="lift-index" aria-label="Exercises">
-      <h1 class="lift-title">Lifting</h1>
+      <div class="lift-index-head">
+        <h1 class="lift-title">Lifting</h1>
+        <a class="lift-log-link" href={href("/lifting/log")}>
+          Log a workout
+        </a>
+      </div>
       <input
         class="lift-search"
         type="search"

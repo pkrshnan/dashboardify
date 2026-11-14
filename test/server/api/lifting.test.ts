@@ -52,6 +52,17 @@ describe("LiftingService", () => {
     expect(chest.nextTime.sets.map((s: { reps: number }) => s.reps)).toEqual([10, 11, 11, 11]);
   });
 
+  test("before a day, next time ignores what's logged that day", async () => {
+    const { body } = await api.call("/v1/exercises?before.year=2026&before.month=11&before.day=1");
+
+    expect(body.exercises[0].sessions[0].date).toEqual({ year: 2026, month: 10, day: 27 });
+    expect(body.exercises[0].nextTime.sets.map((s: { reps: number }) => s.reps)).toEqual([
+      10, 11, 11, 10,
+    ]);
+    const early = await api.call("/v1/exercises?before.year=2026&before.month=10&before.day=1");
+    expect(early.body.exercises ?? []).toEqual([]);
+  });
+
   test("gets one exercise with every session and its records", async () => {
     const { body } = await api.call("/v1/exercises/chest-press");
 

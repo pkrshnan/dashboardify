@@ -196,9 +196,15 @@ async function writeLifting(vault: Vault): Promise<void> {
     ]);
     await lifting.putExercise(date, "Bench press", "lb", [
       { weight: 95, reps: 8, warmUp: true },
-      ...working(bench, i < 7 ? [6 + (i % 3), 6] : [6, 6]),
+      ...working(bench, [6 + Math.floor((i % 7) / 2), 6 + Math.floor((i % 7) / 3)]),
     ]);
-    await lifting.putExercise(date, "Romanian deadlift", "lb", working(70, [8, 8]));
+    // Two reps more every four weeks, so it climbs rather than stalls.
+    await lifting.putExercise(
+      date,
+      "Romanian deadlift",
+      "lb",
+      working(70, [8 + Math.floor(i / 4), 8 + Math.floor((i + 2) / 4)]),
+    );
     await lifting.putExercise(date, "Pull-up", "lb", working(null, [6 + Math.floor(i / 4), 6]));
   }
 }

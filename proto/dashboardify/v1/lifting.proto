@@ -249,7 +249,11 @@ message LoggedExercise {
 }
 
 // Request for ListExercises.
-message ListExercisesRequest {}
+message ListExercisesRequest {
+  // Only sessions before this day count, so the log screen's next time ignores what's already
+  // logged today. All of them when unset.
+  google.type.Date before = 1 [(google.api.field_behavior) = OPTIONAL];
+}
 
 // Response for ListExercises.
 message ListExercisesResponse {
