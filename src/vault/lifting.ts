@@ -52,6 +52,11 @@ const LOAD = new RegExp(
 const SETS_REPS = /(\d+)\s*[x×]\s*(\d+)/gi;
 const BULLET = /^(\s*)[-*+]\s+(.*)$/;
 
+/** Whether a bullet's text (without the bullet) is a load line, like `80lbs, 3x10`. */
+export function isLoadLine(text: string): boolean {
+  return LOAD.test(text.trim());
+}
+
 /** The exercises in a note body, in order. Lines that aren't exercises or loads are skipped. */
 export function parseLiftingLog(body: string): Exercise[] {
   const exercises: Exercise[] = [];

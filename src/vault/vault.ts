@@ -164,6 +164,18 @@ export class Vault {
     return this.update(this.dailyPath(date), (text) => editNote(text, this.newDaily(date), fn));
   }
 
+  /**
+   * Rewrites the day's note body with `edit`, which returns the new body or null to change
+   * nothing. Makes the note when it's missing. Resolves to whether the note changed.
+   */
+  editDailyBody(date: string, edit: (body: string) => string | null): Promise<boolean> {
+    return this.update(this.dailyPath(date), (text) => {
+      const note = text === null ? this.newDaily(date) : parseNote(text);
+      const body = edit(note.body);
+      return body === null ? null : renderNote({ ...note, body });
+    });
+  }
+
   async readDaily(date: string): Promise<Note | null> {
     const text = await this.read(this.dailyPath(date));
     return text === null ? null : parseNote(text);
