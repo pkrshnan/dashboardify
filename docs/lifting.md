@@ -3,7 +3,7 @@
 Log a workout from the control centre with what to do next time already filled in, look up an
 exercise to see what you did last, and see the overload: heavier weight, or more reps at the same
 weight. One note per exercise holds its history. Design: the Lifting boards on
-https://claude.ai/artifact/XoFbk5bcjsHBkEcdTG4uTw. Status: building; LF1–LF5 done.
+https://claude.ai/artifact/XoFbk5bcjsHBkEcdTG4uTw. Status: building; LF1–LF6 done, LF7 next.
 
 ## Goals
 
@@ -81,7 +81,6 @@ Records: 80 lb top · est. 1RM 107 · 80 lb, 3x10 on 8 Nov
 | GET | `/v1/days/{date}/lifting` | That day's log: exercises with their sets, and `etag` |
 | PATCH | `/v1/days/{date}/lifting/exercises/{exercise}` | Replace that exercise's sets, adding it when missing; `etag`. Idempotent, so a retry is safe |
 | DELETE | `/v1/days/{date}/lifting/exercises/{exercise}` | Remove the exercise and its lines |
-| RPC | `VoiceService/LastLift` | "Leg press, 12 November: 200 pounds, 3 sets of 10. Next, 3 of 11." |
 
 `{exercise}` is a slug of the title (`Chest Press` → `chest-press`).
 
@@ -111,7 +110,6 @@ in More on the phone.
 | LF5 | LiftingService | `lifting.proto`, `src/server/api/lifting.ts`, REST bindings, api.md | Each method; stale etag `409`; unknown `404`; a new exercise needs a title |
 | LF6 | Lifting page | Lookup and exercise page with charts; demo data; Activity links | Grouping, filter, charts' grouping by weight |
 | LF7 | Logging | Log screen on desktop and phone: steppers, W, remove and Undo, add exercise | Save on change, Undo, swipe, Return |
-| LF8 | Siri | `VoiceService.LastLift`, `shortcuts/last-lift.md` | Loose name match, aliases, the sentence |
 
 ## Open questions
 

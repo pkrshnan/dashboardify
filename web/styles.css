@@ -3935,3 +3935,404 @@ button.habit-cell {
     border-radius: 22px;
   }
 }
+
+/* ---- Lifting (docs/lifting.md) ---- */
+
+.lifting {
+  --lift: #40c8e0;
+  --lift-2: #35a6ba;
+  --lift-3: #2b8798;
+  --lift-est: #7fa9b3;
+  --good: #30d158;
+  max-width: 1240px;
+  display: grid;
+  grid-template-columns: 320px minmax(0, 900px);
+  min-height: 100vh;
+}
+
+.lift-index {
+  padding: 32px 12px;
+  border-right: 1px solid var(--line-2);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lift-title {
+  margin: 0 10px 14px;
+  font-size: var(--type-large);
+  font-weight: 300;
+}
+
+.lift-search {
+  height: 36px;
+  margin: 0 0 6px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--fill);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--type-body);
+}
+
+.lift-day-label {
+  margin: 14px 10px 2px;
+  font-size: var(--type-footnote);
+  font-weight: 400;
+  color: var(--text-3);
+}
+
+.lift-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-left: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.lift-row[aria-current="page"] {
+  background: var(--fill);
+}
+
+.lift-name {
+  font-size: var(--type-body);
+  font-weight: 500;
+}
+
+.lift-sets {
+  font-size: var(--type-footnote);
+  color: var(--text-2);
+}
+
+.lift-up {
+  color: var(--good);
+}
+
+.lift-screen {
+  padding: 32px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  min-width: 0;
+}
+
+.lift-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.lift-name-head {
+  margin: 0;
+  font-size: var(--type-large);
+  font-weight: 600;
+}
+
+.lift-path {
+  margin-left: auto;
+  font-size: var(--type-footnote);
+  color: var(--text-3);
+}
+
+.lift-next {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 18px 20px;
+  border-radius: 12px;
+  background: var(--fill);
+  font-size: var(--type-footnote);
+}
+
+.lift-next-sets {
+  font-size: var(--type-display);
+  font-weight: 300;
+}
+
+.lift-next-why {
+  color: var(--text-2);
+}
+
+.lift-range {
+  align-self: flex-start;
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  font-size: var(--type-footnote);
+  text-decoration: underline;
+  text-decoration-color: var(--line-3);
+  text-underline-offset: 3px;
+}
+
+.lift-range-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.lift-range-form input {
+  width: 64px;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--line-3);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+.lift-form-button {
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--line-3);
+  border-radius: 8px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+}
+
+.lift-last {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--type-footnote);
+}
+
+.lift-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: var(--fill);
+  font-size: var(--type-body);
+}
+
+.lift-chip.warm {
+  color: var(--text-3);
+}
+
+.lift-facts {
+  margin-left: auto;
+}
+
+.lift-hr {
+  color: var(--text-2);
+}
+
+.lift-progress-head {
+  display: flex;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.lift-progress-title {
+  margin: 0;
+  font-size: var(--type-headline);
+  font-weight: 600;
+}
+
+.lift-progress-head .segmented {
+  margin-left: auto;
+}
+
+.lift-charts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 32px;
+}
+
+.lift-charts figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lift-charts figcaption {
+  display: flex;
+  gap: 14px;
+  font-size: var(--type-footnote);
+  color: var(--text-2);
+}
+
+.lift-key.top {
+  color: var(--lift);
+}
+
+.lift-key.est {
+  color: var(--lift-est);
+}
+
+.lift-charts svg {
+  width: 100%;
+  height: auto;
+}
+
+.lift-axis {
+  font-size: var(--type-caption);
+  fill: var(--text-3);
+}
+
+.lift-grid {
+  stroke: var(--line-2);
+}
+
+.lift-step {
+  fill: none;
+  stroke: var(--lift);
+  stroke-width: 2.5;
+}
+
+.lift-est {
+  fill: none;
+  stroke: var(--lift-est);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+
+.lift-dot {
+  fill: var(--bg);
+  stroke: var(--lift);
+  stroke-width: 2;
+}
+
+.lift-dot.heaviest {
+  fill: var(--lift);
+}
+
+.lift-bar.shade-0 {
+  fill: var(--lift);
+}
+
+.lift-bar.shade-1 {
+  fill: var(--lift-2);
+}
+
+.lift-bar.shade-2 {
+  fill: var(--lift-3);
+}
+
+.lift-divider {
+  stroke: var(--line-3);
+}
+
+.lift-records {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 40px;
+  margin: 0;
+  font-size: var(--type-body);
+}
+
+.lift-records dt {
+  font-size: var(--type-footnote);
+  color: var(--text-3);
+}
+
+.lift-records dd {
+  margin: 2px 0 0;
+}
+
+.lift-history {
+  overflow-x: auto;
+}
+
+.lift-history table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--type-body);
+}
+
+.lift-history th {
+  padding: 0 0 8px;
+  font-size: var(--type-footnote);
+  font-weight: 400;
+  color: var(--text-3);
+  text-align: left;
+}
+
+.lift-history td {
+  padding: 10px 8px 10px 0;
+  border-top: 1px solid var(--line-2);
+}
+
+.lift-history .num {
+  text-align: right;
+}
+
+.lift-tag {
+  margin-left: 6px;
+  padding: 0 4px;
+  border: 1px solid var(--lift);
+  border-radius: 4px;
+  color: var(--lift);
+  font-size: var(--type-caption);
+}
+
+.lift-back {
+  color: var(--text-2);
+  font-size: var(--type-headline);
+  text-decoration: none;
+}
+
+.lifting.phone {
+  display: block;
+  padding-top: env(safe-area-inset-top);
+}
+
+.lifting.phone .lift-index {
+  padding: 56px var(--gutter) 24px;
+  border-right: 0;
+}
+
+.lifting.phone .lift-title {
+  margin-left: 0;
+}
+
+.lifting.phone .lift-row {
+  margin-left: 12px;
+  min-height: 52px;
+  justify-content: center;
+}
+
+.lifting.phone .lift-screen {
+  padding: 56px var(--gutter) 120px;
+  gap: 22px;
+}
+
+.lifting.phone .lift-charts {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.lifting.phone .lift-facts,
+.lifting.phone .lift-path {
+  margin-left: 0;
+}
+
+.lifting.phone .lift-records {
+  gap: 14px 24px;
+}
+
+.lift-history td:first-child {
+  white-space: nowrap;
+}
+
+/* The last session shows rest and peak HR; on the phone the table keeps to sets and change. */
+.lifting.phone .lift-history th:nth-child(4),
+.lifting.phone .lift-history td:nth-child(4),
+.lifting.phone .lift-history th:nth-child(5),
+.lifting.phone .lift-history td:nth-child(5) {
+  display: none;
+}

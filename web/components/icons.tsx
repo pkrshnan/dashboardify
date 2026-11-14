@@ -1,7 +1,15 @@
 // Page icons for the sidebar and tab bar: 24-unit stroke drawings in the text colour, as on the
 // design canvas (docs/navigation.md). Decorative: the page's name always sits beside or under one.
 
-export type IconName = "today" | "lists" | "habits" | "health" | "activity" | "settings" | "more";
+export type IconName =
+  | "today"
+  | "lists"
+  | "habits"
+  | "health"
+  | "activity"
+  | "lifting"
+  | "settings"
+  | "more";
 
 const PATHS: Record<IconName, preact.JSX.Element> = {
   today: (
@@ -30,6 +38,7 @@ const PATHS: Record<IconName, preact.JSX.Element> = {
     <path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.3a4.3 4.3 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20z" />
   ),
   activity: <path d="M3 12h4l3-7 4 14 3-7h4" />,
+  lifting: <path d="M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11" />,
   settings: (
     <>
       <path d="M4 7h9M17 7h3M4 17h3M11 17h9" />

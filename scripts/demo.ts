@@ -16,6 +16,8 @@ import { CalendarSync } from "../src/calendar/sync";
 import { DerivedStore } from "../src/health/derived-store";
 import { RawStore } from "../src/health/raw-store";
 import type { Category } from "../src/home/types";
+import type { WorkSet } from "../src/lifting/history";
+import { LiftingStore } from "../src/lifting/lifting-store";
 import { Photon } from "../src/places/photon";
 import { CalendarAccountService, type ConnectCalDav } from "../src/server/api/calendar-accounts";
 import { createApp } from "../src/server/app";
@@ -78,6 +80,7 @@ const activity = new DemoActivity({
 });
 await activity.write();
 await writeHabits(new Vault(config.vaultPath, TIME_ZONE));
+await writeLifting(new Vault(config.vaultPath, TIME_ZONE));
 // DEMO_SYNC_MIN=300 makes the strap data that many minutes old (default 12), to see it lag.
 const syncAt = (now?.() ?? new Date()).getTime() - Number(process.env.DEMO_SYNC_MIN ?? 12) * 60_000;
 await Bun.write(
@@ -153,6 +156,51 @@ function demoPlaces(): Photon {
     },
   ]);
   return new Photon("https://photon.demo", server.fetch);
+}
+
+/**
+ * Made-up lifting logs for the Lifting page (docs/lifting.md): the last 13 Mondays, the same
+ * exercises as the strap's demo sets so rest and peak HR show, with the squat and bench climbing
+ * in reps at a weight before each step up, and pull-ups gaining a rep now and then.
+ */
+async function writeLifting(vault: Vault): Promise<void> {
+  const lifting = new LiftingStore(vault);
+  const squat: [number, number[]][] = [
+    [185, [6, 5, 5]],
+    [185, [6, 6, 5]],
+    [185, [6, 6, 6]],
+    [185, [8, 8, 8]],
+    [195, [5, 5, 4]],
+    [195, [6, 5, 5]],
+    [195, [6, 6, 6]],
+    [195, [8, 8, 8]],
+    [205, [5, 5, 5]],
+    [205, [5, 5, 5]],
+    [205, [6, 5, 5]],
+    [205, [6, 6, 5]],
+    [205, [6, 6, 6]],
+  ];
+  const working = (weight: number | null, reps: number[]): WorkSet[] =>
+    reps.map((r) => ({ weight, reps: r, warmUp: false }));
+  const monday = -(today.dayOfWeek - 1);
+  for (const [i, [weight, reps]] of squat.entries()) {
+    const offset = monday - 7 * (squat.length - 1 - i);
+    if (offset === 0) {
+      continue;
+    }
+    const date = day(offset);
+    const bench = i < 7 ? 145 : 155;
+    await lifting.putExercise(date, "Back squat", "lb", [
+      { weight: 135, reps: 8, warmUp: true },
+      ...working(weight, reps),
+    ]);
+    await lifting.putExercise(date, "Bench press", "lb", [
+      { weight: 95, reps: 8, warmUp: true },
+      ...working(bench, i < 7 ? [6 + (i % 3), 6] : [6, 6]),
+    ]);
+    await lifting.putExercise(date, "Romanian deadlift", "lb", working(70, [8, 8]));
+    await lifting.putExercise(date, "Pull-up", "lb", working(null, [6 + Math.floor(i / 4), 6]));
+  }
 }
 
 /**

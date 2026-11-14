@@ -1107,3 +1107,151 @@ export async function fetchHabitFacts(token: Token): Promise<FactView[]> {
     defaultRule: f.defaultRule ?? "",
   }));
 }
+
+// ---- Lifting (docs/lifting.md) ----
+
+export interface WorkSetView {
+  /** Null for bodyweight. */
+  weight: number | null;
+  reps: number;
+  warmUp: boolean;
+}
+
+export interface SessionView {
+  /** YYYY-MM-DD */
+  date: string;
+  sets: WorkSetView[];
+  topWeight: number | null;
+  repsAtTop: number[];
+  est1rm: number | null;
+  progress: "weight" | "reps" | "same" | "down" | "";
+  restSeconds: number | null;
+  peakHr: number | null;
+  /** "heaviest", "est_one_rep_max", "at_top": the records first reached that day. */
+  records: string[];
+}
+
+export interface ExerciseView {
+  /** "chest-press", for the address: #/lifting/chest-press. */
+  slug: string;
+  title: string;
+  aliases: string[];
+  path: string;
+  unit: "lb" | "kg";
+  range: { low: number; high: number; step: number };
+  /** Newest first; only the last one in fetchExercises. */
+  sessions: SessionView[];
+  records: {
+    heaviest: { value: number; date: string } | null;
+    est1rm: { value: number; date: string } | null;
+    atTop: { reps: number[]; date: string } | null;
+  };
+  next: { sets: WorkSetView[]; reason: string } | null;
+}
+
+interface SetJson {
+  weight?: number;
+  reps?: number;
+  warmUp?: boolean;
+}
+
+interface ExerciseJson {
+  name: string;
+  title?: string;
+  aliases?: string[];
+  path?: string;
+  unit?: string;
+  repRange?: { low?: number; high?: number; step?: number };
+  sessions?: {
+    date?: DateJson;
+    sets?: SetJson[];
+    topWeight?: number;
+    repsAtTop?: number[];
+    estOneRepMax?: number;
+    progress?: string;
+    restSeconds?: number;
+    peakHeartRate?: number;
+    records?: string[];
+  }[];
+  records?: {
+    heaviest?: number;
+    heaviestDate?: DateJson;
+    estOneRepMax?: number;
+    estOneRepMaxDate?: DateJson;
+    repsAtTop?: number[];
+    repsAtTopDate?: DateJson;
+  };
+  nextTime?: { sets?: SetJson[]; reason?: string };
+}
+
+function workSetView(s: SetJson): WorkSetView {
+  return { weight: s.weight ?? null, reps: s.reps ?? 0, warmUp: s.warmUp ?? false };
+}
+
+function exerciseView(json: ExerciseJson): ExerciseView {
+  return {
+    slug: json.name.replace(/^exercises\//, ""),
+    title: json.title ?? "",
+    aliases: json.aliases ?? [],
+    path: json.path ?? "",
+    unit: json.unit === "kg" ? "kg" : "lb",
+    range: { low: 8, high: 12, step: 5, ...json.repRange },
+    sessions: (json.sessions ?? []).map(sessionView),
+    records: recordsView(json.records ?? {}),
+    next: nextView(json.nextTime),
+  };
+}
+
+function nextView(next: ExerciseJson["nextTime"]): ExerciseView["next"] {
+  return next ? { sets: (next.sets ?? []).map(workSetView), reason: next.reason ?? "" } : null;
+}
+
+type SessionJson = NonNullable<ExerciseJson["sessions"]>[number];
+
+function sessionView(s: SessionJson): SessionView {
+  return {
+    date: isoDate(s.date),
+    sets: (s.sets ?? []).map(workSetView),
+    topWeight: s.topWeight ?? null,
+    repsAtTop: s.repsAtTop ?? [],
+    est1rm: s.estOneRepMax ?? null,
+    progress: (s.progress ?? "") as SessionView["progress"],
+    restSeconds: s.restSeconds ?? null,
+    peakHr: s.peakHeartRate ?? null,
+    records: s.records ?? [],
+  };
+}
+
+function recordsView(r: NonNullable<ExerciseJson["records"]>): ExerciseView["records"] {
+  const best = (value: number | undefined, date: DateJson | undefined) =>
+    value === undefined ? null : { value, date: isoDate(date) };
+  return {
+    heaviest: best(r.heaviest, r.heaviestDate),
+    est1rm: best(r.estOneRepMax, r.estOneRepMaxDate),
+    atTop: r.repsAtTop?.length ? { reps: r.repsAtTop, date: isoDate(r.repsAtTopDate) } : null,
+  };
+}
+
+export async function fetchExercises(token: Token): Promise<ExerciseView[]> {
+  const body = await call<{ exercises?: ExerciseJson[] }>(token, "/v1/exercises");
+  return (body.exercises ?? []).map(exerciseView);
+}
+
+export async function fetchExercise(token: Token, slug: string): Promise<ExerciseView> {
+  return exerciseView(await call<ExerciseJson>(token, `/v1/exercises/${encodeURIComponent(slug)}`));
+}
+
+/** Writes `reps` and `step` to the exercise's note. */
+export async function setRepRange(
+  token: Token,
+  slug: string,
+  range: ExerciseView["range"],
+): Promise<ExerciseView> {
+  const body = JSON.stringify({ repRange: range });
+  return exerciseView(
+    await call<ExerciseJson>(token, `/v1/exercises/${encodeURIComponent(slug)}`, {
+      method: "PATCH",
+      body,
+    }),
+  );
+}
