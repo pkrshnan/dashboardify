@@ -1232,8 +1232,13 @@ function recordsView(r: NonNullable<ExerciseJson["records"]>): ExerciseView["rec
   };
 }
 
-export async function fetchExercises(token: Token): Promise<ExerciseView[]> {
-  const body = await call<{ exercises?: ExerciseJson[] }>(token, "/v1/exercises");
+/** With `before` (YYYY-MM-DD), only sessions before that day count, as the log screen needs. */
+export async function fetchExercises(token: Token, before?: string): Promise<ExerciseView[]> {
+  const [year, month, day] = (before ?? "").split("-");
+  const query = before
+    ? `?before.year=${year}&before.month=${Number(month)}&before.day=${Number(day)}`
+    : "";
+  const body = await call<{ exercises?: ExerciseJson[] }>(token, `/v1/exercises${query}`);
   return (body.exercises ?? []).map(exerciseView);
 }
 
@@ -1254,4 +1259,69 @@ export async function setRepRange(
       body,
     }),
   );
+}
+
+export interface LoggedExerciseView {
+  /** "chest-press" */
+  slug: string;
+  title: string;
+  unit: "lb" | "kg";
+  sets: WorkSetView[];
+}
+
+export interface WorkoutLogView {
+  /** YYYY-MM-DD */
+  date: string;
+  exercises: LoggedExerciseView[];
+  etag: string;
+}
+
+interface WorkoutLogJson {
+  name: string;
+  exercises?: { name: string; title?: string; unit?: string; sets?: SetJson[] }[];
+  etag?: string;
+}
+
+function workoutLogView(json: WorkoutLogJson): WorkoutLogView {
+  return {
+    date: json.name.split("/")[1] ?? "",
+    exercises: (json.exercises ?? []).map((e) => ({
+      slug: e.name.split("/").pop() ?? "",
+      title: e.title ?? "",
+      unit: e.unit === "kg" ? "kg" : "lb",
+      sets: (e.sets ?? []).map(workSetView),
+    })),
+    etag: json.etag ?? "",
+  };
+}
+
+export async function fetchWorkoutLog(token: Token, date: string): Promise<WorkoutLogView> {
+  return workoutLogView(await call<WorkoutLogJson>(token, `/v1/days/${date}/lifting`));
+}
+
+/** Replaces one exercise's sets in the day's note; `title` adds one never logged before. */
+export async function saveLoggedExercise(
+  token: Token,
+  date: string,
+  exercise: { slug: string; title: string; unit: string; sets: WorkSetView[] },
+  etag: string,
+): Promise<WorkoutLogView> {
+  const sets = exercise.sets.map((s) => ({
+    ...(s.weight === null ? {} : { weight: s.weight }),
+    reps: s.reps,
+    warmUp: s.warmUp,
+  }));
+  const body = JSON.stringify({ title: exercise.title, unit: exercise.unit, sets });
+  const path = `/v1/days/${date}/lifting/exercises/${exercise.slug}?etag=${encodeURIComponent(etag)}`;
+  return workoutLogView(await call<WorkoutLogJson>(token, path, { method: "PATCH", body }));
+}
+
+export async function removeLoggedExercise(
+  token: Token,
+  date: string,
+  slug: string,
+  etag: string,
+): Promise<WorkoutLogView> {
+  const path = `/v1/days/${date}/lifting/exercises/${slug}?etag=${encodeURIComponent(etag)}`;
+  return workoutLogView(await call<WorkoutLogJson>(token, path, { method: "DELETE" }));
 }

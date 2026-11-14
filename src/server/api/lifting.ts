@@ -12,8 +12,9 @@ import { exerciseKey } from "../../lifting/names";
 import { nextTime, type RepRange } from "../../lifting/next-time";
 import { type ExerciseNotes, UnreadableNote } from "../../lifting/note-sync";
 import type { WeightUnit } from "../../vault/lifting";
-import { toDateParts } from "./date-time";
+import { fromDateParts, toDateParts } from "./date-time";
 import { ApiError, failedPrecondition, invalidArgument } from "./errors";
+import type { DateParts } from "./requests";
 
 export interface LiftingDeps {
   notes: ExerciseNotes;
@@ -43,8 +44,12 @@ const DATE = String.raw`(\d{4}-\d{2}-\d{2})`;
 export class LiftingService {
   constructor(private readonly deps: LiftingDeps) {}
 
-  listExercises = async () => {
-    const found = await this.deps.notes.histories();
+  listExercises = async (request: { before?: DateParts }) => {
+    const before = request.before?.year ? fromDateParts(request.before) : null;
+    const found = (await this.deps.notes.histories()).flatMap((f) => {
+      const history = before ? sessionsBefore(f.history, before) : f.history;
+      return history.sessions.length > 0 ? [{ ...f, history }] : [];
+    });
     return { exercises: await Promise.all(found.map((f) => this.exerciseView(f, true))) };
   };
 
@@ -144,6 +149,11 @@ export class LiftingService {
       nextTime: next ? { sets: next.sets.map(setView), reason: next.reason } : undefined,
     };
   }
+}
+
+/** The history as it stood before `date`; records are left as they are. */
+function sessionsBefore(history: ExerciseHistory, date: string): ExerciseHistory {
+  return { ...history, sessions: history.sessions.filter((s) => s.date < date) };
 }
 
 function checkRange(range: Partial<RepRange> | undefined): RepRange {

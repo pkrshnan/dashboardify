@@ -116,6 +116,12 @@ weight as steps in fitness cyan, est. 1RM dashed, a filled dot where the heavies
 lifted) beside reps at the top weight (bars in three shades of cyan by weight, a divider where it
 rose), records and the history table. The phone drops Rest and Peak HR from the table.
 
+`#/lifting/log` is today's workout. Desktop lists today's exercises (× removes one) over "Add an
+exercise" and "Usually next" (the rest of the session the open one was last in); the open
+exercise shows next time and a row per set: its number (tap for W), weight and reps steppers, and
+×. The phone puts today's exercises in a sideways bar (long-press for "Remove from workout"),
+swipes a set left to delete it, and has no ×. Every change is saved at once; removing offers Undo.
+
 ## Look
 
 Dark mode only (`color-scheme: dark`), Apple's dark system colours. Past items dim by colour and

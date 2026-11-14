@@ -4336,3 +4336,327 @@ button.habit-cell {
 .lifting.phone .lift-history td:nth-child(5) {
   display: none;
 }
+
+/* ---- Lifting: the log screen ---- */
+
+.lift-index-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: 10px;
+}
+
+.lift-log-link {
+  margin-left: auto;
+  padding: 6px 14px;
+  border-radius: 8px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: var(--type-body);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.lift-date {
+  margin: -10px 10px 12px;
+  font-size: var(--type-footnote);
+}
+
+.lift-today {
+  display: flex;
+  align-items: center;
+}
+
+button.lift-row {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+}
+
+.lift-x {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--text-3);
+  font: inherit;
+  font-size: var(--type-headline);
+}
+
+.lift-x:hover {
+  background: var(--fill);
+  color: var(--text);
+}
+
+.lift-error {
+  margin: 0;
+  color: var(--warn);
+  font-size: var(--type-footnote);
+}
+
+.lift-add {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 12px;
+}
+
+.lift-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+}
+
+.lift-choice:hover {
+  background: var(--fill);
+}
+
+.lift-next-line {
+  font-size: var(--type-headline);
+}
+
+.lift-sets-table {
+  display: flex;
+  flex-direction: column;
+}
+
+.lift-set {
+  display: grid;
+  grid-template-columns: 40px 220px 160px minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  min-height: 60px;
+  border-bottom: 1px solid var(--line-2);
+  background: var(--bg);
+}
+
+.lift-setn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  font-size: var(--type-body);
+}
+
+.lift-setn.w {
+  background: var(--line-2);
+  color: var(--text-3);
+  font-size: var(--type-footnote);
+  font-weight: 600;
+}
+
+.lift-stepper {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--fill);
+}
+
+.lift-step-btn {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border: 0;
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  font-size: var(--type-title);
+}
+
+.lift-step-value {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--type-headline);
+  text-align: center;
+}
+
+.lift-unit {
+  color: var(--text-3);
+  font-size: var(--type-footnote);
+}
+
+.lift-set .lift-x {
+  justify-self: end;
+}
+
+.lift-add-set {
+  align-self: flex-start;
+  height: 40px;
+  margin-top: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  font-size: var(--type-body);
+}
+
+.lift-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 32px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 44px;
+  padding: 0 8px 0 16px;
+  border: 1px solid var(--line-3);
+  border-radius: 12px;
+  background: var(--fill);
+  font-size: var(--type-body);
+}
+
+.lift-toast-undo {
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--line-2);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--type-footnote);
+}
+
+.lift-log-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.lift-bar-wrap {
+  position: relative;
+}
+
+.lift-pills {
+  display: flex;
+  gap: 8px;
+  margin: 0 calc(-1 * var(--gutter));
+  padding: 0 var(--gutter);
+  overflow-x: auto;
+  scrollbar-width: none;
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 24px,
+    #000 calc(100% - 24px),
+    transparent
+  );
+}
+
+.lift-pill {
+  flex: none;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--line-3);
+  border-radius: 18px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--type-body);
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+.lift-pill.current {
+  border-color: var(--lift);
+  background: var(--fill);
+}
+
+.lift-pill.add {
+  width: 36px;
+  padding: 0;
+}
+
+.lift-menu {
+  position: absolute;
+  z-index: 5;
+  top: 44px;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+  border-radius: 14px;
+  background: var(--line-2);
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgb(0 0 0 / 60%);
+}
+
+.lift-menu-item {
+  height: 48px;
+  padding: 0 16px;
+  border: 0;
+  border-bottom: 1px solid var(--line-3);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--type-headline);
+  text-align: left;
+}
+
+.lift-menu .danger {
+  color: var(--bad);
+}
+
+.lift-swipe {
+  position: relative;
+  overflow: hidden;
+}
+
+.lift-delete {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 74px;
+  border: 0;
+  background: var(--bad);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--type-body);
+}
+
+.lift-swipe-row {
+  position: relative;
+  touch-action: pan-y;
+}
+
+.lifting.phone .lift-set {
+  grid-template-columns: 28px minmax(0, 1fr) 116px;
+  gap: 8px;
+  min-height: 64px;
+}
+
+.lifting.phone .lift-stepper {
+  height: 44px;
+}
+
+.lifting.phone .lift-step-btn {
+  width: 36px;
+  height: 44px;
+}
+
+.lift-set.warm .lift-step-value {
+  color: var(--text-3);
+}

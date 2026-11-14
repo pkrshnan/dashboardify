@@ -85,7 +85,7 @@ Days are habit days: until 04:00 it's still the day before. Writes to `Habits.md
 
 | Method | Path | Does |
 | --- | --- | --- |
-| GET | `/v1/exercises` | Each exercise, done most recently first: `title`, `aliases`, `path` (its note), `unit`, `repRange`, `nextTime`, and its last session in `sessions` |
+| GET | `/v1/exercises?before.year=…` | Each exercise, done most recently first (with `before`, only sessions before that day, as the log screen uses): `title`, `aliases`, `path` (its note), `unit`, `repRange`, `nextTime`, and its last session in `sessions` |
 | GET | `/v1/exercises/{exercise}` | Every session newest first (`sets`, `topWeight`, `repsAtTop`, `estOneRepMax`, `volume`, `progress`, `restSeconds`, `peakHeartRate`, `records` first reached), `records`, `nextTime` |
 | PATCH | `/v1/exercises/{exercise}` | `{"repRange": {"low": 8, "high": 12, "step": 5}}` writes `reps` and `step` to the exercise's note |
 | GET | `/v1/days/{day}/lifting` | That day's `exercises` with their `sets`, and `etag` |
