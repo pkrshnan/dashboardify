@@ -1,7 +1,6 @@
 // Reading and editing Habits.md (docs/habits.md): each top-level `- ` line that isn't a checkbox
-// is a habit, `Name <!-- id:… -->`, with its details as sub-bullets (docs/fields.md). Older
-// lines hold them as `Name · field · field`; those are still read, never written. Every other
-// line is kept exactly as it is. Pure: habit-store.ts reads and writes the file.
+// is a habit, `Name <!-- id:… -->`, with its details as sub-bullets (docs/fields.md). Every
+// other line is kept exactly as it is. Pure: habit-store.ts reads and writes the file.
 
 import { slugOf } from "../lists/list-store";
 import { type Fields, formatFields, itemEnd, readFields, replaceItem } from "../vault/fields";
@@ -28,11 +27,6 @@ export interface Habit {
   /** The day it began, so earlier days aren't misses; without one, its first tick. */
   since: string | null;
   state: HabitState;
-  /**
-   * Words after `·` on an old line that this version doesn't know. Rewriting the habit moves
-   * them to plain bullets under it, so they aren't lost.
-   */
-  extra: string[];
   line: number;
 }
 
@@ -54,9 +48,7 @@ export const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const HABIT = /^[-*] (?!\[[ xX]\] )(.+)$/;
 const ID = /\s*<!--\s*id:([a-z0-9-]+)\s*-->\s*$/;
 const WEEKLY = /^([1-7])\s*(?:×|x|times)?\s*(?:a|per)\s+week$/i;
-const COLOR = /^#[0-9a-f]{6}$/i;
 const HEX = /^#?([0-9a-f]{6})$/i;
-const SINCE = /^since (\S+)$/i;
 const MAX_TIMES = 7;
 
 /** The sub-bullet keys a habit owns, in the order they're written. */
@@ -85,14 +77,11 @@ export function parseHabits(text: string): Habit[] {
 
 function parseLine(entry: string, line: number): Habit | null {
   const idMatch = ID.exec(entry);
-  const [name = "", ...fields] = entry
-    .replace(ID, "")
-    .split("·")
-    .map((f) => f.trim());
+  const name = entry.replace(ID, "").trim();
   if (name === "") {
     return null;
   }
-  const habit: Habit = {
+  return {
     id: idMatch?.[1] ?? slugOf(name, "habit"),
     name,
     schedule: { kind: "daily" },
@@ -100,35 +89,11 @@ function parseLine(entry: string, line: number): Habit | null {
     color: null,
     since: null,
     state: "active",
-    extra: [],
     line,
   };
-  for (const field of fields.filter((f) => f !== "")) {
-    readField(habit, field);
-  }
-  return habit;
 }
 
-function readField(habit: Habit, field: string): void {
-  const schedule = parseSchedule(field);
-  const lower = field.toLowerCase();
-  const since = SINCE.exec(field)?.[1];
-  if (schedule) {
-    habit.schedule = schedule;
-  } else if (lower.startsWith("auto ")) {
-    habit.auto = field.slice(5).trim();
-  } else if (COLOR.test(field)) {
-    habit.color = field.toUpperCase();
-  } else if (since && isIsoDate(since)) {
-    habit.since = since;
-  } else if (lower === "paused" || lower === "archived") {
-    habit.state = lower;
-  } else {
-    habit.extra.push(field);
-  }
-}
-
-/** Sub-bullet fields win over the same detail on an old line. Values it can't read are skipped. */
+/** Fills in the habit's fields. Values it can't read are skipped, leaving the default. */
 function readHabitFields(habit: Habit, fields: Fields): void {
   const schedule = fields.schedule ? parseSchedule(fields.schedule) : null;
   if (schedule) {
@@ -188,7 +153,7 @@ export function isValidSchedule(schedule: Schedule): boolean {
   return true;
 }
 
-/** A habit's line and its fields, then any old unknown words as plain bullets. */
+/** A habit's line and its fields. */
 export function habitLines(habit: HabitFields & { id: string }): string[] {
   const fields = {
     schedule: scheduleText(habit.schedule),
@@ -197,11 +162,7 @@ export function habitLines(habit: HabitFields & { id: string }): string[] {
     since: habit.since ?? undefined,
     status: habit.state === "active" ? undefined : habit.state,
   };
-  return [
-    `- ${habit.name} <!-- id:${habit.id} -->`,
-    ...formatFields(fields, HABIT_KEYS, ""),
-    ...habit.extra.map((word) => `\t- ${word}`),
-  ];
+  return [`- ${habit.name} <!-- id:${habit.id} -->`, ...formatFields(fields, HABIT_KEYS, "")];
 }
 
 /**
@@ -242,7 +203,7 @@ export function updateHabit(
   }
   const lines = text.split("\n");
   replaceItem(lines, habit.line, HABIT_KEYS, habitLines({ ...habit, ...patch }));
-  return { text: lines.join("\n"), habit: { ...habit, ...patch, extra: [] } };
+  return { text: lines.join("\n"), habit: { ...habit, ...patch } };
 }
 
 /** The first palette colour no habit uses yet, or the first one when all are taken. */
@@ -251,10 +212,10 @@ export function nextColor(habits: Habit[]): string {
   return HABIT_COLORS.find((c) => !used.has(c)) ?? (HABIT_COLORS[0] as string);
 }
 
-/** A habit's name can't hold `·` (the field separator) or comment markers, or be empty. */
+/** A habit's name is one line without comment markers, which would break its id. */
 export function isValidName(name: string): boolean {
   const trimmed = name.trim();
-  return trimmed !== "" && trimmed.length <= 80 && !/[·\n]|<!--|-->/.test(trimmed);
+  return trimmed !== "" && trimmed.length <= 80 && !/\n|<!--|-->/.test(trimmed);
 }
 
 function unique(id: string, taken: Set<string>): string {

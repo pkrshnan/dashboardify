@@ -65,7 +65,6 @@ export class HabitStore {
         auto: null,
         since: null,
         state: "active" as const,
-        extra: [],
         ...fields,
         color,
       };
@@ -175,7 +174,7 @@ function startOf(habit: Habit, marks: Map<string, Set<string>>, today: string): 
 
 function checked<T extends HabitFields>(fields: T): T {
   if (!isValidName(fields.name)) {
-    throw new InvalidHabit("A habit's name can't be empty or hold · or comment markers.");
+    throw new InvalidHabit("A habit's name can't be empty or hold comment markers.");
   }
   if (fields.auto && !parseRule(fields.auto)) {
     throw new InvalidHabit(`"${fields.auto}" isn't a rule: a fact, then ≥ or ≤ and a value.`);

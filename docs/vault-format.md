@@ -19,10 +19,10 @@ What the server writes, so files can be edited by hand without breaking anything
   ```
 
   The server rewrites only the line and its `due`, `repeat`, `priority` and `done` fields; other
-  bullets under it are yours. Older Obsidian Tasks emoji lines are still read and are rewritten
-  in this form on their next edit. New tasks go to the inbox note (Settings › General, default
-  `Inbox.md`). Every `- [ ]` line there is a task. Elsewhere, a checkbox is a task only with a
-  `due:` field or an id, so a trip's packing list stays a note; `Lists/` never holds tasks.
+  bullets under it are yours. Obsidian Tasks emoji are plain text to it. New tasks go to the
+  inbox note (Settings › General, default `Inbox.md`). Every `- [ ]` line there is a task.
+  Elsewhere, a checkbox is a task only with a `due:` field or an id, so a trip's packing list
+  stays a note; `Lists/` never holds tasks.
 - Folders and notes the server owns are capitalised: `Daily/`, `Health/`, `Profile.md`. On start
   it renames the older `daily/`, `health/` and `profile.md`, unless the new name already exists.
 
@@ -137,7 +137,7 @@ habit: its name and id, with `schedule`, `auto`, `colour`, `since` and `status` 
 ([fields.md](fields.md)). The server appends new habits after the last one and rewrites a
 habit's line and those fields when it's edited, writing its id so a rename keeps its history; a
 line without an id is named by its slug. Other bullets under it and every other line are left
-alone. Older `Name · daily · #40C8E0` lines are still read and rewritten on their next edit.
+alone.
 
 ```markdown
 - Meditate <!-- id:meditate -->

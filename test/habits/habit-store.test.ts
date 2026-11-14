@@ -35,7 +35,7 @@ describe("HabitStore", () => {
 
   test("refuses a bad name or schedule", async () => {
     const bad = [
-      { name: "a · b", schedule: { kind: "daily" as const } },
+      { name: "a <!-- b", schedule: { kind: "daily" as const } },
       { name: "Lift", schedule: { kind: "weekly" as const, times: 0 } },
       { name: "Floss", schedule: { kind: "days" as const, days: [] } },
     ];

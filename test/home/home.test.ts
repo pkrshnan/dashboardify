@@ -17,7 +17,7 @@ beforeEach(async () => {
   dir = await mkdtemp(join(tmpdir(), "home-"));
   await Bun.write(
     join(dir, "vault", "Inbox.md"),
-    "- [ ] Renew lease 📅 2026-10-31\n- [ ] Call Mum ⏰ 18:30 📅 2026-11-03\n",
+    "- [ ] Renew lease\n\t- due: 2026-10-31\n- [ ] Call Mum\n\t- due: 2026-11-03 18:30\n",
   );
 });
 afterEach(() => rm(dir, { recursive: true, force: true }));
@@ -108,11 +108,11 @@ describe("homeView", () => {
     await Bun.write(
       join(dir, "vault/Habits.md"),
       [
-        "- Read · daily <!-- id:read -->",
-        "- Lift · 1 a week <!-- id:lift -->",
-        "- Floss · daily · paused <!-- id:floss -->",
-        "- Gym · Sat <!-- id:gym -->",
-        "- Swim · 1 a week <!-- id:swim -->",
+        "- Read <!-- id:read -->",
+        "- Lift <!-- id:lift -->\n\t- schedule: 1 a week",
+        "- Floss <!-- id:floss -->\n\t- status: paused",
+        "- Gym <!-- id:gym -->\n\t- schedule: Sat",
+        "- Swim <!-- id:swim -->\n\t- schedule: 1 a week",
         "",
       ].join("\n"),
     );

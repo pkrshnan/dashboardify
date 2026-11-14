@@ -5,9 +5,6 @@
 //   - [ ] Call the bank <!-- id:k7f3a2 -->
 //   	- due: 2026-11-03 09:00
 //   	- repeat: every week
-// Older lines carry Obsidian Tasks emoji instead:
-//   - [ ] Call the bank ⏰ 09:00 ⏫ 🔁 every week 📅 2026-11-03 ➕ 2026-11-02 🆔 k7f3a2
-// They're still read, but never written: an edit rewrites a task in the new form.
 
 import { formatFields, readFields } from "./fields";
 
@@ -30,35 +27,12 @@ export interface Task {
 export const TASK_KEYS = ["due", "repeat", "priority", "done"] as const;
 
 const PRIORITIES: readonly Priority[] = ["highest", "high", "medium", "low", "lowest"];
-const PRIORITY_EMOJI: Record<Priority, string> = {
-  highest: "🔺",
-  high: "⏫",
-  medium: "🔼",
-  low: "🔽",
-  lowest: "⏬",
-};
-const EMOJI_PRIORITY = new Map(Object.entries(PRIORITY_EMOJI).map(([p, e]) => [e, p as Priority]));
-
 const CHECKBOX = /^(\s*[-*] \[)(.)(\] )(.*)$/u;
 const ID = /\s*<!--\s*id:([A-Za-z0-9_-]+)\s*-->\s*$/u;
 const DATE = String.raw`(\d{4}-\d{2}-\d{2})`;
 const DUE = new RegExp(String.raw`^${DATE}(?:\s+(\d{2}:\d{2}))?$`, "u");
 const DONE = new RegExp(String.raw`^${DATE}$`, "u");
-/** Old Tasks fields, each anchored at the end of the remaining text. */
-const TRAILING_FIELDS: [keyof Task | "created", RegExp][] = [
-  ["id", /\s*🆔 ([A-Za-z0-9_-]+)$/u],
-  ["completed", new RegExp(String.raw`\s*✅ ${DATE}$`, "u")],
-  ["created", new RegExp(String.raw`\s*➕ ${DATE}$`, "u")],
-  ["due", new RegExp(String.raw`\s*📅 ${DATE}$`, "u")],
-  ["recurrence", /\s*🔁 ([a-zA-Z0-9 ,]+?)$/u],
-  ["priority", /\s*(🔺|⏫|🔼|🔽|⏬)$/u],
-];
-const TIME = /\s*⏰ (\d{2}:\d{2})$/u;
-
-/**
- * The task at `index` with its sub-bullet fields, or null when the line isn't a task. A field
- * wins over the same detail written the old way on the line.
- */
+/** The task at `index` with its sub-bullet fields, or null when the line isn't a task. */
 export function parseTask(lines: string[], index: number): Task | null {
   const task = parseTaskLine(lines[index] ?? "");
   if (!task) {
@@ -91,58 +65,13 @@ export function parseTaskLine(line: string): Task | null {
   }
   const status = match[2] ?? " ";
   const task: Task = { done: status !== " ", description: "" };
-  let rest = match[4] ?? "";
-  const id = ID.exec(rest);
+  const text = match[4] ?? "";
+  const id = ID.exec(text);
   if (id?.[1]) {
     task.id = id[1];
-    rest = rest.slice(0, id.index);
   }
-  rest = stripTrailingFields(rest, task);
-  const time = TIME.exec(rest);
-  task.description = (time ? rest.slice(0, time.index) : rest).trim();
-  if (time?.[1]) {
-    task.time = time[1];
-  }
+  task.description = (id ? text.slice(0, id.index) : text).trim();
   return task;
-}
-
-/** Whether a task line still carries old Tasks emoji fields, so converting it would change it. */
-export function hasOldFields(line: string): boolean {
-  const task = parseTaskLine(line);
-  const text = CHECKBOX.exec(line)?.[4] ?? "";
-  return task !== null && task.description !== text.replace(ID, "").trim();
-}
-
-/** Peel old Tasks fields off the end of the text until none match, filling them into `task`. */
-function stripTrailingFields(text: string, task: Task): string {
-  const seen = new Set<string>();
-  let rest = text.trimEnd();
-  let found = true;
-  while (found) {
-    found = false;
-    for (const [field, pattern] of TRAILING_FIELDS) {
-      const match = pattern.exec(rest);
-      if (match?.[1] && !seen.has(field) && task[field as keyof Task] === undefined) {
-        seen.add(field);
-        setField(task, field, match[1]);
-        rest = rest.slice(0, match.index);
-        found = true;
-      }
-    }
-  }
-  return rest;
-}
-
-function setField(task: Task, field: keyof Task | "created", value: string): void {
-  if (field === "created") {
-    // No longer kept; peeled off so it doesn't end up in the description.
-    return;
-  }
-  if (field === "priority") {
-    task.priority = EMOJI_PRIORITY.get(value);
-    return;
-  }
-  (task as unknown as Record<string, string>)[field] = value;
 }
 
 /** A task's line and its fields. `indent` keeps a nested task's leading whitespace. */

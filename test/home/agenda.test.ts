@@ -4,16 +4,16 @@ import type { CalendarEvent } from "../../src/home/calendar";
 import { daySentence } from "../../src/home/sentence";
 import type { MetricTrend } from "../../src/home/types";
 import type { FoundTask } from "../../src/vault/task-store";
-import { parseTaskLine } from "../../src/vault/tasks";
+import { parseTask } from "../../src/vault/tasks";
 
 const TZ = "Europe/London";
 const TODAY = "2026-11-03";
 
-function tasks(...lines: string[]): FoundTask[] {
-  return lines.map((line, i) => {
-    const task = parseTaskLine(line);
+function tasks(...texts: string[]): FoundTask[] {
+  return texts.map((text, i) => {
+    const task = parseTask(text.split("\n"), 0);
     if (!task) {
-      throw new Error(`not a task: ${line}`);
+      throw new Error(`not a task: ${text}`);
     }
     return { ref: `t${i}`, path: "Inbox.md", task };
   });
@@ -28,14 +28,14 @@ function event(date: string, from: string, to: string, title: string): CalendarE
 
 describe("groupTasks", () => {
   const list = tasks(
-    "- [ ] Renew lease 📅 2026-10-31",
-    "- [ ] Upload receipt 📅 2026-11-03",
-    "- [ ] Call Mum ⏰ 18:30 📅 2026-11-03",
-    "- [ ] Prep notes ⏰ 15:00 📅 2026-11-06",
-    "- [ ] Order lenses 📅 2026-11-05",
-    "- [ ] Book flights 📅 2026-12-12",
+    "- [ ] Renew lease\n\t- due: 2026-10-31",
+    "- [ ] Upload receipt\n\t- due: 2026-11-03",
+    "- [ ] Call Mum\n\t- due: 2026-11-03 18:30",
+    "- [ ] Prep notes\n\t- due: 2026-11-06 15:00",
+    "- [ ] Order lenses\n\t- due: 2026-11-05",
+    "- [ ] Book flights\n\t- due: 2026-12-12",
     "- [ ] Fix bike brakes",
-    "- [x] Already done 📅 2026-11-03",
+    "- [x] Already done\n\t- due: 2026-11-03",
   );
 
   test("puts each open task in one group, leaving today's timed ones for the timeline", () => {
@@ -71,9 +71,9 @@ describe("buildDays", () => {
         event("2026-11-04", "10:00", "10:15", "Standup"),
       ],
       tasks(
-        "- [x] Vitamin D ⏰ 09:00 📅 2026-11-03",
-        "- [ ] Call Mum ⏰ 18:30 📅 2026-11-03",
-        "- [ ] Upload receipt 📅 2026-11-03",
+        "- [x] Vitamin D\n\t- due: 2026-11-03 09:00",
+        "- [ ] Call Mum\n\t- due: 2026-11-03 18:30",
+        "- [ ] Upload receipt\n\t- due: 2026-11-03",
       ),
     );
     expect(days.map((d) => d.date)).toEqual([
@@ -159,7 +159,7 @@ describe("daySentence", () => {
     const sentence = daySentence({
       next: { title: "Standup", start: "10:00", detail: "", inMin: 48, url: null, mapsUrl: null },
       health: [recovery(62, "bad")],
-      tasks: groupTasks(tasks("- [ ] Renew lease 📅 2026-10-31"), TODAY),
+      tasks: groupTasks(tasks("- [ ] Renew lease\n\t- due: 2026-10-31"), TODAY),
     });
     expect(sentence).toBe(
       "Standup at 10:00. Recovery is below your usual, so keep today easy. Renew lease is 3 days late.",
@@ -171,7 +171,11 @@ describe("daySentence", () => {
       next: null,
       health: [recovery(70, "neutral")],
       tasks: groupTasks(
-        tasks("- [ ] A 📅 2026-10-31", "- [ ] B 📅 2026-11-01", "- [ ] C 📅 2026-11-02"),
+        tasks(
+          "- [ ] A\n\t- due: 2026-10-31",
+          "- [ ] B\n\t- due: 2026-11-01",
+          "- [ ] C\n\t- due: 2026-11-02",
+        ),
         TODAY,
       ),
     });

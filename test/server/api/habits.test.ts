@@ -54,7 +54,7 @@ describe("HabitService", () => {
       { displayName: "Lift", schedule: { kind: "KIND_WEEKLY", timesPerWeek: 0 } },
       { displayName: "Floss", schedule: { kind: "KIND_DAYS" } },
       { displayName: "Steps", schedule: DAILY, auto: "steps lots" },
-      { displayName: "a · b", schedule: DAILY },
+      { displayName: "a <!-- b", schedule: DAILY },
     ];
     for (const habit of bad) {
       expect((await create(habit)).status).toBe(400);

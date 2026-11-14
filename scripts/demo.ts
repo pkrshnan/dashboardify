@@ -164,11 +164,29 @@ async function writeHabits(vault: Vault): Promise<void> {
     join(config.vaultPath, "Habits.md"),
     `# Habits
 
-- Meditate · daily · #BF5AF2 · since ${day(-251)} <!-- id:meditate -->
-- Lift · 3 a week · auto lifting · #40C8E0 · since ${day(-251)} <!-- id:lift -->
-- Steps · daily · auto steps ≥ 8000 · #64D2FF · since ${day(-251)} <!-- id:steps -->
-- Lights out · Sun Mon Tue Wed Thu · auto lights_out ≤ 23:30 · #7D7AFF · since ${day(-251)} <!-- id:lights-out -->
-- Read · daily · #FF7EB6 · since ${day(-62)} <!-- id:read -->
+- Meditate <!-- id:meditate -->
+	- schedule: daily
+	- colour: BF5AF2
+	- since: ${day(-251)}
+- Lift <!-- id:lift -->
+	- schedule: 3 a week
+	- auto: lifting
+	- colour: 40C8E0
+	- since: ${day(-251)}
+- Steps <!-- id:steps -->
+	- schedule: daily
+	- auto: steps ≥ 8000
+	- colour: 64D2FF
+	- since: ${day(-251)}
+- Lights out <!-- id:lights-out -->
+	- schedule: Sun Mon Tue Wed Thu
+	- auto: lights_out ≤ 23:30
+	- colour: 7D7AFF
+	- since: ${day(-251)}
+- Read <!-- id:read -->
+	- schedule: daily
+	- colour: FF7EB6
+	- since: ${day(-62)}
 `,
   );
   for (let back = 1; back <= 251; back++) {
@@ -223,15 +241,15 @@ function demoPacking(): string {
 
 function tasks(): string[] {
   return [
-    `- [x] Take vitamin D ⏰ 09:00 📅 ${day(0)}`,
-    `- [ ] Leave for physio ⏰ 17:05 📅 ${day(0)}`,
-    `- [ ] Call Mum ⏰ 18:30 📅 ${day(0)}`,
-    `- [ ] Charge the strap ⏰ 21:30 📅 ${day(0)}`,
-    `- [ ] Renew lease 📅 ${day(-3)}`,
-    `- [ ] Upload insurance receipt 📅 ${day(0)}`,
-    `- [ ] Order contact lenses 📅 ${day(2)}`,
-    `- [ ] Prep 1:1 notes ⏰ 15:00 📅 ${day(3)}`,
-    `- [ ] Book December flights 📅 ${day(5)}`,
+    `- [x] Take vitamin D\n\t- due: ${day(0)} 09:00`,
+    `- [ ] Leave for physio\n\t- due: ${day(0)} 17:05`,
+    `- [ ] Call Mum\n\t- due: ${day(0)} 18:30`,
+    `- [ ] Charge the strap\n\t- due: ${day(0)} 21:30`,
+    `- [ ] Renew lease\n\t- due: ${day(-3)}`,
+    `- [ ] Upload insurance receipt\n\t- due: ${day(0)}`,
+    `- [ ] Order contact lenses\n\t- due: ${day(2)}`,
+    `- [ ] Prep 1:1 notes\n\t- due: ${day(3)} 15:00`,
+    `- [ ] Book December flights\n\t- due: ${day(5)}`,
     "- [ ] Fix bike brakes",
     "",
   ];

@@ -66,7 +66,7 @@ Apple Reminders.
 | 11 | Inbox: IMAP triage, daily messages digest | Not started |
 | 12 | Local: Ollama guide, morning brief over ntfy | Not started |
 | 13 | Habits: ticks in the daily note, auto habits from health and workouts, streaks that forgive one miss | Built: [habits.md](habits.md); "Mark habit" waits for the command bar |
-| 14 | Fields: task and habit details as `key: value` sub-bullets, not emoji | Planned: [fields.md](fields.md) |
+| 14 | Fields: task and habit details as `key: value` sub-bullets, not emoji | Built: [fields.md](fields.md) |
 
 ## Open questions
 
