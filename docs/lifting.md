@@ -3,7 +3,7 @@
 Log a workout from the control centre with what to do next time already filled in, look up an
 exercise to see what you did last, and see the overload: heavier weight, or more reps at the same
 weight. One note per exercise holds its history. Design: the Lifting boards on
-https://claude.ai/artifact/XoFbk5bcjsHBkEcdTG4uTw. Status: planned (LF1–LF8).
+https://claude.ai/artifact/XoFbk5bcjsHBkEcdTG4uTw. Status: building; LF1 done.
 
 ## Goals
 

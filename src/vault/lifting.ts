@@ -1,8 +1,8 @@
-// The lifting log you write under `## Workouts` in a daily note: one bullet per exercise, in the
-// order you did them, with indented `weight, sets×reps` lines. The server only reads it.
+// The lifting log under `## Workouts` in a daily note: one bullet per exercise, in the order you
+// did them, with indented `weight, sets×reps` lines. A line ending `warm-up` is warm-up sets.
 //
 //   - Chest Press
-//       - 60lbs, 1x10
+//       - 60lbs, 1x10, warm-up
 //       - 80lbs, 3x10
 
 import { sectionLines } from "./markdown";
@@ -17,6 +17,7 @@ export interface LoadLine {
   unit: WeightUnit | null;
   sets: number;
   reps: number;
+  warmUp: boolean;
 }
 
 export interface Exercise {
@@ -32,19 +33,20 @@ export interface LoggedSet {
   weight: number | null;
   unit: WeightUnit | null;
   reps: number;
-  /** A first line lighter than the exercise's heaviest. */
+  /** Tagged `warm-up` in the log. */
   warmUp: boolean;
 }
 
 /**
  * A load line: one or more `sets×reps` with an optional weight before or after, such as
  * `60lbs, 1x10`, `1x10, 60lbs`, `7.5 lbs 3 x 10`, `40kg, 3×8`, `15lbs, 2x10, 1x8` (two sets of 10,
- * then one of 8), or bodyweight `3x12`.
+ * then one of 8), or bodyweight `3x12`, optionally ending `warm-up`.
  */
 const WEIGHT = String.raw`(\d+(?:\.\d+)?)\s*(lbs?|kgs?)\b`;
 const GROUPS = String.raw`(\d+\s*[x×]\s*\d+(?:[\s,]+\d+\s*[x×]\s*\d+)*)`;
+const WARM_UP = String.raw`(?:[\s,]+(warm[\s-]?ups?))?`;
 const LOAD = new RegExp(
-  String.raw`^(?:${WEIGHT}[\s,]*${GROUPS}|${GROUPS}(?:[\s,]+${WEIGHT})?)[\s,]*$`,
+  String.raw`^(?:${WEIGHT}[\s,]*${GROUPS}|${GROUPS}(?:[\s,]+${WEIGHT})?)${WARM_UP}[\s,]*$`,
   "i",
 );
 const SETS_REPS = /(\d+)\s*[x×]\s*(\d+)/gi;
@@ -72,7 +74,8 @@ export function parseLiftingLog(body: string): Exercise[] {
 
 /** One LoadLine per `sets×reps` group, all at the line's weight. */
 function toLoads(match: RegExpExecArray): LoadLine[] {
-  const [, before, beforeUnit, beforeGroups, groups = beforeGroups ?? "", after, afterUnit] = match;
+  const [, before, beforeUnit, beforeGroups, groups = beforeGroups ?? "", after, afterUnit, warm] =
+    match;
   const weight = before ?? after;
   const unit = beforeUnit ?? afterUnit;
   return [...groups.matchAll(SETS_REPS)].map(([, sets, reps]) => ({
@@ -80,6 +83,7 @@ function toLoads(match: RegExpExecArray): LoadLine[] {
     unit: unit === undefined ? null : toUnit(unit),
     sets: Number(sets),
     reps: Number(reps),
+    warmUp: warm !== undefined,
   }));
 }
 
@@ -89,17 +93,16 @@ function toUnit(written: string): WeightUnit {
 
 /** Every set in log order. */
 export function loggedSets(exercises: Exercise[]): LoggedSet[] {
-  return exercises.flatMap((e, exerciseIndex) => {
-    const heaviest = Math.max(...e.lines.map((l) => l.weight ?? 0));
-    return e.lines.flatMap((line, i) =>
+  return exercises.flatMap((e, exerciseIndex) =>
+    e.lines.flatMap((line) =>
       Array.from({ length: line.sets }, () => ({
         exercise: e.name,
         exerciseIndex,
         weight: line.weight,
         unit: line.unit,
         reps: line.reps,
-        warmUp: i === 0 && e.lines.length > 1 && (line.weight ?? 0) < heaviest,
+        warmUp: line.warmUp,
       })),
-    );
-  });
+    ),
+  );
 }

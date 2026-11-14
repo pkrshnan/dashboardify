@@ -488,7 +488,7 @@ describe("DailySummary", () => {
     const text = (await vault.read(path)) ?? "";
     await writeFile(
       join(dir, "vault", path),
-      `${text}\n## Workouts\n- Chest Press\n    - 60lbs, 1x10\n    - 80lbs, 3x10\n`,
+      `${text}\n## Workouts\n- Chest Press\n    - 60lbs, 1x10, warm-up\n    - 80lbs, 3x10\n`,
     );
 
     await summary.run(DATE);

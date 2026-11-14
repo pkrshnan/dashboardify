@@ -103,7 +103,7 @@ workout_reviews:
 - **Journal** entries are `- HH:MM text`, continuation lines indented two spaces.
 - **Workouts** is yours; the server only reads it. A load line is `weight unit, sets x reps`,
   or the weight last (`lb`, `lbs` or `kg`; `x` or `×`; several groups share one weight; no weight
-  for bodyweight). Other indented lines are notes. A first line lighter than the heaviest is a warm-up.
+  for bodyweight). A line ending `warm-up` is warm-up sets. Other indented lines are notes.
 - **`workout_reviews`** come from the Activity page and can be edited. A review applies to the
   workout it overlaps by at least half. `kind` is `running`, `walking`, `volleyball`, `lifting`,
   `workout` or `none`. Malformed entries are skipped.
