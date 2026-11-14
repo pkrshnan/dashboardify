@@ -103,6 +103,9 @@ describe("Lifting page", () => {
     expect(page.getByText("Sun 8 Nov")).toBeTruthy();
     expect(page.getAllByText("80 lb, 3x11")).toHaveLength(1);
     expect(page.getByText("est. 1RM 107 lb · rest 2:05 · peak 141 bpm")).toBeTruthy();
+    expect(page.getByText("HR on Activity ›").getAttribute("href")).toBe(
+      "#/activity?day=2026-11-08",
+    );
     expect(page.getByText("best est. 1RM")).toBeTruthy();
     expect(page.getByRole("img", { name: /Top weight/ })).toBeTruthy();
   });

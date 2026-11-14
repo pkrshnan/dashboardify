@@ -9,11 +9,13 @@ import {
   kcal,
   pace,
   rangeDates,
+  rangeShowing,
   totals,
   type WorkoutView,
   weeklyMinutes,
   workoutName,
 } from "../../web/lib/activity";
+import { shownDay } from "../../web/modules/activity";
 
 const workout = (status: WorkoutView["status"], minutes: number): WorkoutView => ({
   name: "days/2026-11-08/workouts/1806",
@@ -123,5 +125,20 @@ describe("activity page", () => {
     expect(heartRateTicks(55, 125)).toEqual([60, 80, 100, 120]);
     expect(heartRateTicks(55, 105)).toEqual([60, 70, 80, 90, 100]);
     expect(heartRateTicks(60, 200)).toEqual([80, 120, 160]);
+  });
+});
+
+describe("opening on a day", () => {
+  test("the narrowest range that shows the day", () => {
+    expect(rangeShowing("2026-11-12", "2026-11-14")).toBe("week");
+    expect(rangeShowing("2026-10-20", "2026-11-14")).toBe("month");
+    expect(rangeShowing("2026-09-01", "2026-11-14")).toBe("3m");
+  });
+
+  test("?day= must be a date no later than today", () => {
+    expect(shownDay("2026-11-08", "2026-11-14")).toBe("2026-11-08");
+    expect(shownDay("2026-11-20", "2026-11-14")).toBeUndefined();
+    expect(shownDay("yesterday", "2026-11-14")).toBeUndefined();
+    expect(shownDay(undefined, "2026-11-14")).toBeUndefined();
   });
 });

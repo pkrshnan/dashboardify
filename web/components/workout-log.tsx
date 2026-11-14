@@ -167,10 +167,12 @@ function DesktopLog(props: LogProps) {
   return (
     <>
       <nav class="lift-index" aria-label="Today's workout">
-        <a class="lift-back" href={href("/lifting")}>
+        <a class="lift-back side" href={href("/lifting")}>
           ‹ Lifting
         </a>
-        <h1 class="lift-title">Today</h1>
+        <div class="lift-index-head">
+          <h1 class="lift-title">Today</h1>
+        </div>
         <span class="lift-date muted">{weekdayLabel(props.date)}</span>
         {drafts.map((d) => (
           <div key={d.slug} class="lift-today">
