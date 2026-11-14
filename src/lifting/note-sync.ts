@@ -2,7 +2,7 @@
 // edits arrive as plain file changes), and soon after the server writes a daily note.
 
 import type { DerivedRow } from "../health/derived-store";
-import { editNote, parseNote, replaceBlock } from "../vault/markdown";
+import { editNote, mergeFrontmatter, parseNote, replaceBlock } from "../vault/markdown";
 import type { Vault } from "../vault/vault";
 import {
   type ExerciseNote,
@@ -18,7 +18,10 @@ import { type SessionHeartRate, sessionHeartRate } from "./heart-rate";
 import type { ExerciseHistory } from "./history";
 import type { LiftingStore } from "./lifting-store";
 import { exerciseKey } from "./names";
-import { nextTime } from "./next-time";
+import { nextTime, type RepRange } from "./next-time";
+
+/** The exercise's note has frontmatter the server can't read, so it won't write to it. */
+export class UnreadableNote extends Error {}
 
 const EVERY_MS = 5 * 60_000;
 /** Saving set after set from the log screen rebuilds the notes once. */
@@ -79,6 +82,24 @@ export class ExerciseNotes {
       }
     }
     return changed;
+  }
+
+  /** Writes `reps` and `step` to the exercise's note, making the note when it has none. */
+  async setRange(history: ExerciseHistory, note: ExerciseNote | undefined, range: RepRange) {
+    const path = note?.path ?? `${LIFTING_FOLDER}/${fileTitle(history.title)}.md`;
+    let unreadable = false;
+    await this.deps.vault.update(path, (text) => {
+      unreadable = text !== null && safeFrontmatter(text) === null;
+      if (unreadable) {
+        return null;
+      }
+      return editNote(text, { frontmatter: {}, body: "" }, (n) =>
+        mergeFrontmatter(n, { reps: `${range.low}-${range.high}`, step: range.step }),
+      );
+    });
+    if (unreadable) {
+      throw new UnreadableNote(`${path} has frontmatter that won't parse; fix it in Obsidian.`);
+    }
   }
 
   /** Syncs now, then every five minutes and shortly after the server writes a daily note. */

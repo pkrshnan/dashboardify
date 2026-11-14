@@ -3,7 +3,7 @@
 Log a workout from the control centre with what to do next time already filled in, look up an
 exercise to see what you did last, and see the overload: heavier weight, or more reps at the same
 weight. One note per exercise holds its history. Design: the Lifting boards on
-https://claude.ai/artifact/XoFbk5bcjsHBkEcdTG4uTw. Status: building; LF1–LF4 done.
+https://claude.ai/artifact/XoFbk5bcjsHBkEcdTG4uTw. Status: building; LF1–LF5 done.
 
 ## Goals
 
@@ -75,12 +75,12 @@ Records: 80 lb top · est. 1RM 107 · 80 lb, 3x10 on 8 Nov
 
 | Method | Path | Does |
 | --- | --- | --- |
-| GET | `/v1/exercises` | Each exercise's `name`, `title`, `aliases`, last day and its sets, progress; newest first |
-| GET | `/v1/exercises/{exercise}` | Sessions (sets, top weight, reps at top, est. 1RM, rest, peak HR, progress, record badges), records, next time, rep range, note path |
-| PATCH | `/v1/exercises/{exercise}` | `repRange`, `step` (written to the note's frontmatter) |
+| GET | `/v1/exercises` | Each exercise with its last session and next time, newest first |
+| GET | `/v1/exercises/{exercise}` | Sessions (sets, top weight, reps at top, est. 1RM, rest, peak HR, progress, records reached), records, next time, rep range, note path |
+| PATCH | `/v1/exercises/{exercise}` | `repRange` (written to the note as `reps` and `step`) |
 | GET | `/v1/days/{date}/lifting` | That day's log: exercises with their sets, and `etag` |
-| PUT | `/v1/days/{date}/lifting/exercises/{exercise}` | Replace that exercise's sets (adds it when missing); `etag`, `requestId` |
-| DELETE | `/v1/days/{date}/lifting/exercises/{exercise}` | Remove the exercise and its load lines |
+| PATCH | `/v1/days/{date}/lifting/exercises/{exercise}` | Replace that exercise's sets, adding it when missing; `etag`. Idempotent, so a retry is safe |
+| DELETE | `/v1/days/{date}/lifting/exercises/{exercise}` | Remove the exercise and its lines |
 | RPC | `VoiceService/LastLift` | "Leg press, 12 November: 200 pounds, 3 sets of 10. Next, 3 of 11." |
 
 `{exercise}` is a slug of the title (`Chest Press` → `chest-press`).
@@ -108,7 +108,7 @@ in More on the phone.
 | LF2 | Heart rate and next time | Rest and peak HR from derived `sets`; the next-time rules | Each rule; no HR; unmatched day |
 | LF3 | Writing the log | Render an exercise's sets as lines; replace and remove an exercise in a day's `## Workouts`; vault-format.md | Round trip keeps other lines; bullet and indent copied; new section; grouping; warm-up suffix |
 | LF4 | Exercise notes | `Lifting/<Title>.md` with `cc:lifting`, aliases, `reps`/`step`, the rebuild | Created once; user text kept; alias merges; unchanged history not rewritten |
-| LF5 | LiftingService | `lifting.proto`, `src/server/api/lifting.ts`, REST bindings, api.md | Each method; stale etag `409`; unknown `404`; `requestId` retry |
+| LF5 | LiftingService | `lifting.proto`, `src/server/api/lifting.ts`, REST bindings, api.md | Each method; stale etag `409`; unknown `404`; a new exercise needs a title |
 | LF6 | Lifting page | Lookup and exercise page with charts; demo data; Activity links | Grouping, filter, charts' grouping by weight |
 | LF7 | Logging | Log screen on desktop and phone: steppers, W, remove and Undo, add exercise | Save on change, Undo, swipe, Return |
 | LF8 | Siri | `VoiceService.LastLift`, `shortcuts/last-lift.md` | Loose name match, aliases, the sentence |

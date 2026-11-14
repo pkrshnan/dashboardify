@@ -81,6 +81,21 @@ out.
 Days are habit days: until 04:00 it's still the day before. Writes to `Habits.md` take its
 `etag` and refuse an older one with `409`; ticks go to the day's note and need none.
 
+## Lifting
+
+| Method | Path | Does |
+| --- | --- | --- |
+| GET | `/v1/exercises` | Each exercise, done most recently first: `title`, `aliases`, `path` (its note), `unit`, `repRange`, `nextTime`, and its last session in `sessions` |
+| GET | `/v1/exercises/{exercise}` | Every session newest first (`sets`, `topWeight`, `repsAtTop`, `estOneRepMax`, `volume`, `progress`, `restSeconds`, `peakHeartRate`, `records` first reached), `records`, `nextTime` |
+| PATCH | `/v1/exercises/{exercise}` | `{"repRange": {"low": 8, "high": 12, "step": 5}}` writes `reps` and `step` to the exercise's note |
+| GET | `/v1/days/{day}/lifting` | That day's `exercises` with their `sets`, and `etag` |
+| PATCH | `/v1/days/{day}/lifting/exercises/{exercise}?etag=…` | `{"sets": [{"weight": 80, "reps": 11}]}` replaces that exercise's lines in the day's note, adding it (`title` needed if it's never been logged); returns the day's log |
+| DELETE | `/v1/days/{day}/lifting/exercises/{exercise}?etag=…` | Removes the exercise and everything under it |
+
+`{exercise}` is a slug of the title (`Chest Press` → `chest-press`, a plural last word made
+singular). The day's `etag` covers only `## Workouts`, and an older one is `409`. Sending the same
+sets again changes nothing, so a retry is safe.
+
 ## Home
 
 `GET /v1/home`: everything the home screen shows: sentence, next event, seven days of agenda,
