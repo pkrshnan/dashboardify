@@ -105,6 +105,17 @@ square is a button that fixes its day; on the phone a habit's screen has this we
 to tap. The selected habit's settings open beside the list when you click one, with × to close. A streak at risk is `warn` orange; a
 paused habit's done squares are its colour at 40%.
 
+## Lifting page
+
+`#/lifting/<exercise>`; canvas https://claude.ai/artifact/XoFbk5bcjsHBkEcdTG4uTw. Exercises sit
+under the day they were last done, each with its working sets ("80 lb, 3x10") and a green ↑ when
+it beat the session before; a search box filters by name and alias. An exercise shows Next time
+in a `fill` box (the rep range is a quiet link that opens three number boxes), the last session
+as chips (warm-ups in `text-3`) with est. 1RM, rest and peak HR, then the weight chart (top
+weight as steps in fitness cyan, est. 1RM dashed, a filled dot where the heaviest was first
+lifted) beside reps at the top weight (bars in three shades of cyan by weight, a divider where it
+rose), records and the history table. The phone drops Rest and Peak HR from the table.
+
 ## Look
 
 Dark mode only (`color-scheme: dark`), Apple's dark system colours. Past items dim by colour and

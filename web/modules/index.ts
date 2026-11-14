@@ -4,13 +4,14 @@ import { matchPath } from "../lib/router";
 import { activity } from "./activity";
 import { habits } from "./habits";
 import { health } from "./health";
+import { lifting } from "./lifting";
 import { lists } from "./lists";
 import { moreModule } from "./more";
 import { settings } from "./settings";
 import { today } from "./today";
 import type { Module } from "./types";
 
-export const MODULES: Module[] = [today, lists, habits, health, activity, settings];
+export const MODULES: Module[] = [today, lists, habits, health, activity, lifting, settings];
 
 /** More lists what the phone's tab bar has no room for; it is routed but not in the nav. */
 export const MORE = moreModule(() => MODULES);
