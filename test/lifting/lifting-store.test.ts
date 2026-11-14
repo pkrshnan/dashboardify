@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm, utimes } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { LiftingStore } from "../../src/lifting/lifting-store";
+import { LiftingStore, StaleLog } from "../../src/lifting/lifting-store";
 import { Vault } from "../../src/vault/vault";
 
 let dir: string;
@@ -50,5 +50,50 @@ describe("LiftingStore", () => {
     const [chest] = (await lifting.days()).filter((d) => d.date === "2026-11-08");
 
     expect(chest?.exercises[0]?.lines[0]?.reps).toBe(11);
+  });
+});
+
+describe("writing a day's log", () => {
+  const press = [
+    { weight: 60, reps: 10, warmUp: true },
+    { weight: 80, reps: 11, warmUp: false },
+  ];
+
+  test("adds the exercise to the day's note and returns the new log", async () => {
+    const before = await lifting.day("2026-11-12");
+
+    const after = await lifting.putExercise("2026-11-12", "Chest Press", "lb", press, before.etag);
+
+    expect(after.exercises.map((e) => e.name)).toEqual(["Leg Press", "Chest Press"]);
+    expect(await Bun.file(join(dir, "Daily/2026/2026-11-12.md")).text()).toContain(
+      "- Chest Press\n    - 60lbs, 1x10, warm-up\n    - 80lbs, 1x11\n\n## Journal",
+    );
+    expect(after.etag).not.toBe(before.etag);
+  });
+
+  test("makes the day's note when there isn't one", async () => {
+    await lifting.putExercise("2026-11-14", "Chest Press", "lb", press);
+
+    const text = await Bun.file(join(dir, "Daily/2026/2026-11-14.md")).text();
+    expect(text).toContain("## Workouts\n- Chest Press\n");
+    expect(text).toContain("## Journal");
+  });
+
+  test("refuses a stale etag and leaves the note as it was", async () => {
+    const { etag } = await lifting.day("2026-11-12");
+    await lifting.removeExercise("2026-11-12", "Leg Press");
+
+    await expect(
+      lifting.putExercise("2026-11-12", "Chest Press", "lb", press, etag),
+    ).rejects.toThrow(StaleLog);
+    expect((await lifting.day("2026-11-12")).exercises).toEqual([]);
+  });
+
+  test("another section changing doesn't make the etag stale", async () => {
+    const { etag } = await lifting.day("2026-11-12");
+    const path = join(dir, "Daily/2026/2026-11-12.md");
+    await Bun.write(path, `${await Bun.file(path).text()}- 10:00 Journal line.\n`);
+
+    expect((await lifting.day("2026-11-12")).etag).toBe(etag);
   });
 });

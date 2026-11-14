@@ -101,9 +101,13 @@ workout_reviews:
   into `**14h behind**` past two hours.
 - **Agenda** is today's events, rewritten after each calendar sync that changes them.
 - **Journal** entries are `- HH:MM text`, continuation lines indented two spaces.
-- **Workouts** is yours; the server only reads it. A load line is `weight unit, sets x reps`,
-  or the weight last (`lb`, `lbs` or `kg`; `x` or `×`; several groups share one weight; no weight
-  for bodyweight). A line ending `warm-up` is warm-up sets. Other indented lines are notes.
+- **Workouts** is one bullet per exercise with indented load lines. A load line is
+  `weight unit, sets x reps`, or the weight last (`lb`, `lbs` or `kg`; `x` or `×`; several groups
+  share one weight; no weight for bodyweight). A line ending `warm-up` is warm-up sets. Other
+  indented lines are notes. Logging from the Lifting page rewrites only the load lines of the
+  exercise it saves (`80lbs, 2x11, 1x10`, a line per run of sets at one weight), copying the
+  section's bullet and indent; a new exercise goes at the end, and a missing section before
+  `## Journal`. Removing an exercise there takes out its bullet and everything under it.
 - **`workout_reviews`** come from the Activity page and can be edited. A review applies to the
   workout it overlaps by at least half. `kind` is `running`, `walking`, `volleyball`, `lifting`,
   `workout` or `none`. Malformed entries are skipped.
