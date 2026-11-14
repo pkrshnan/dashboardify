@@ -3959,12 +3959,14 @@ button.habit-cell {
 }
 
 .lift-title {
-  margin: 0 10px 14px;
+  margin: 0;
   font-size: var(--type-large);
   font-weight: 300;
 }
 
 .lift-search {
+  box-sizing: border-box;
+  width: 100%;
   height: 36px;
   margin: 0 0 6px;
   padding: 0 12px;
@@ -4297,10 +4299,6 @@ button.habit-cell {
   border-right: 0;
 }
 
-.lifting.phone .lift-title {
-  margin-left: 0;
-}
-
 .lifting.phone .lift-row {
   margin-left: 12px;
   min-height: 52px;
@@ -4339,11 +4337,12 @@ button.habit-cell {
 
 /* ---- Lifting: the log screen ---- */
 
+/* The title and its button share a row, so the row carries the spacing the title used to. */
 .lift-index-head {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-right: 10px;
+  margin: 0 10px 14px;
 }
 
 .lift-log-link {
@@ -4659,4 +4658,14 @@ button.lift-row {
 
 .lift-set.warm .lift-step-value {
   color: var(--text-3);
+}
+
+.lifting.phone .lift-index-head {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+/* In the side column, line the way back up with the title under it. */
+.lift-back.side {
+  margin: 0 10px 4px;
 }

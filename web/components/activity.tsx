@@ -47,15 +47,22 @@ interface Props {
   token: Token;
   timeZone: string;
   today: string;
+  /** The day to open on, from the address (`?day=`); today otherwise. */
+  day?: string;
   /** Week, month or 3M, from the address (`?range=month`). */
   range: Range;
   onRange: (range: Range) => void;
   onUnauthorized: (setup: boolean) => void;
 }
 
-export function Activity({ token, timeZone, today, range, onRange, onUnauthorized }: Props) {
+export function Activity({ token, timeZone, today, day, range, onRange, onUnauthorized }: Props) {
   const [days, setDays] = useState<ActivityDayView[] | null>(null);
-  const [selected, setSelected] = useState<Selection>({ day: today });
+  const [selected, setSelected] = useState<Selection>({ day: day ?? today });
+  useEffect(() => {
+    if (day) {
+      setSelected({ day });
+    }
+  }, [day]);
   const side = useRef<HTMLElement>(null);
   const revealing = useRef(false);
   const { start, end } = rangeDates(today, range);

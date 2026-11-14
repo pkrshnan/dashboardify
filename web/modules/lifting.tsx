@@ -305,7 +305,7 @@ function LastSession({ exercise, session }: { exercise: ExerciseView; session: S
       {progress && <span class={progress.startsWith("↑") ? "lift-up" : "muted"}>{progress}</span>}
       <span class="lift-facts muted">{facts.join(" · ")}</span>
       {session.peakHr !== null && (
-        <a class="lift-hr" href={href("/activity")}>
+        <a class="lift-hr" href={href("/activity", { day: session.date })}>
           HR on Activity ›
         </a>
       )}

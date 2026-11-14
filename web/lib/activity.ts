@@ -140,6 +140,16 @@ export function rangeDates(today: string, range: Range): { start: string; end: s
   return { start: addDays(monday(today), -12 * 7), end: today };
 }
 
+/** The narrowest range that shows `day`: the week, the month, else three months. */
+export function rangeShowing(day: string, today: string): Range {
+  for (const range of ["week", "month"] as const) {
+    if (day >= rangeDates(today, range).start) {
+      return range;
+    }
+  }
+  return "3m";
+}
+
 export function datesFrom(start: string, end: string): string[] {
   const dates: string[] = [];
   for (let d = start; d <= end; d = addDays(d, 1)) {
