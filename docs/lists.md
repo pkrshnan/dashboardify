@@ -77,6 +77,12 @@ A `lists` module at `#/lists/:list?`, sidebar group 2, a phone tab, icon `lists`
 - Phone: `#/lists` shows the lists; `#/lists/shopping` the list, with 52 px rows and "Done" at
   the bottom.
 - The wording fits any list: "7 left", "All done", "Done", not shopping's "to get" and "got".
+- Tasks is pinned above the lists at `#/lists/tasks`, and opens first on desktop. It's drawn
+  in the browser from the home view's tasks, not from ListService: sections are Overdue, Today
+  (timed ones first), This week, Later and Someday, with the due date as the note. A tick calls
+  `CompleteTask`, an untick `ReopenTask`; ticked ones stay under Done until the page closes. The
+  add box goes through `Capture` as a reminder, so "call mum fri" is due Friday. No handles or
+  "Clear done items".
 - A tick shows at once and is sent in order, as on Today.
 
 ## Build plan

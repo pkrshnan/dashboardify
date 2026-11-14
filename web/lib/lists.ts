@@ -1,7 +1,9 @@
 // What the Lists page shows of a list: what's left, by section, and what's done. The wording
 // fits any list (shopping, packing, films), so it says "left" and "done", not "to get" and "got".
-// Pure, so it's tested without a DOM; web/modules/lists.tsx draws it.
+// Tasks is drawn the same way, pinned above the lists. Pure, so it's tested without a DOM;
+// web/modules/lists.tsx draws it.
 
+import type { HomeView, TaskGroupName } from "../../src/home/types";
 import type { ListItemView, ListView } from "../api";
 
 export interface Section {
@@ -101,4 +103,48 @@ export function withMove(list: ListView, name: string, to: string): ListView {
     sections.push({ title: to, items: [moved] });
   }
   return { ...list, sections };
+}
+
+/** The pinned list's address, #/lists/tasks. No note in Lists/ is a task list. */
+export const TASKS_SLUG = "tasks";
+
+const TASK_GROUPS: TaskGroupName[] = ["Overdue", "Today", "This week", "Later", "Someday"];
+
+/**
+ * Tasks as a list, from the home view: its groups are the sections (grouped by the server, in
+ * its time zone), today's timed tasks come first under Today, and the due date sits where an
+ * item's note goes. An item's name is the task's id. `done` are tasks ticked on this page, put
+ * back in their group so an untick shows at once; one whose id is open again (a repeat without
+ * an id of its own) is left out.
+ */
+export function taskList(view: HomeView, done: ListItemView[] = []): ListView {
+  const items = new Map(TASK_GROUPS.map((group) => [group, [] as ListItemView[]]));
+  const reminders = view.days.find((day) => day.date === view.date)?.reminders ?? [];
+  for (const r of [...reminders].sort((a, b) => a.minutes - b.minutes)) {
+    items
+      .get("Today")
+      ?.push({ name: r.id, text: r.text, note: r.time, done: r.done, section: "Today" });
+  }
+  for (const group of view.tasks) {
+    for (const t of group.tasks) {
+      items
+        .get(group.name)
+        ?.push({ name: t.id, text: t.text, note: t.meta, done: false, section: group.name });
+    }
+  }
+  const shown = new Set([...items.values()].flat().map((item) => item.name));
+  for (const item of done) {
+    if (!shown.has(item.name)) {
+      items.get(item.section as TaskGroupName)?.push({ ...item, done: true });
+    }
+  }
+  const sections = TASK_GROUPS.map((title) => ({ title, items: items.get(title) ?? [] }));
+  return {
+    slug: TASKS_SLUG,
+    title: "Tasks",
+    path: "",
+    openCount: sections.flatMap((s) => s.items).filter((item) => !item.done).length,
+    sections: sections.filter((s) => s.items.length > 0),
+    etag: "",
+  };
 }

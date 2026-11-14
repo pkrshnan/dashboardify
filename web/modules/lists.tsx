@@ -1,18 +1,23 @@
 // Lists, at `#/lists/<list>`: checklists kept as notes in the vault's Lists/ folder
-// (docs/lists.md). Desktop shows the lists beside the open one; the phone shows the lists at
+// (docs/lists.md), with Tasks pinned above them at `#/lists/tasks`, drawn from the home view's
+// tasks. Desktop shows the lists beside the open one, Tasks first; the phone shows the lists at
 // `#/lists` and one list at `#/lists/<list>`. Ticks show at once and reach the vault in order.
 
-import type { RefObject } from "preact";
+import type { JSX, RefObject } from "preact";
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 import {
   addListItems,
+  capture,
   clearDoneItems,
+  completeTask,
   createList,
   fetchList,
   fetchLists,
   type ListItemView,
   type ListView,
   moveListItem,
+  randomKey,
+  reopenTask,
   setListItemDone,
   type Token,
   Unauthorized,
@@ -28,13 +33,15 @@ import {
   sectionAt,
   sectionTitles,
   stepSection,
+  TASKS_SLUG,
+  taskList,
   withMove,
   withTicks,
 } from "../lib/lists";
 import { href } from "../lib/router";
 import { navigate } from "../lib/use-route";
 import { useApp } from "./context";
-import type { Module, PageProps } from "./types";
+import type { LoadedHome, Module, PageProps } from "./types";
 
 export const lists: Module = {
   id: "lists",
@@ -47,25 +54,29 @@ export const lists: Module = {
   view: ListsPage,
 };
 
-function ListsPage({ params }: PageProps) {
+function ListsPage({ params, home }: PageProps) {
   const { isPhone } = useApp();
   const { all, reload } = useAllLists();
-  const slug = params.list ?? (isPhone ? undefined : all?.[0]?.slug);
+  // Tasks waits for the home view, which the shell loads for every page.
+  const tasks = home ? taskList(home.view) : null;
+  const slug = params.list ?? (isPhone ? undefined : TASKS_SLUG);
+  const screen = (back: boolean) =>
+    slug === TASKS_SLUG ? (
+      home && <TaskScreen home={home} back={back} />
+    ) : (
+      <ListScreen key={slug} slug={slug ?? ""} back={back} onChanged={reload} />
+    );
   if (isPhone) {
     return (
       <main class="lists phone">
-        {slug ? (
-          <ListScreen slug={slug} back onChanged={reload} />
-        ) : (
-          <ListIndex all={all} onCreated={reload} />
-        )}
+        {slug ? screen(true) : <ListIndex pinned={tasks} all={all} onCreated={reload} />}
       </main>
     );
   }
   return (
     <main class="lists">
-      <ListIndex all={all} current={slug} onCreated={reload} />
-      {slug && <ListScreen key={slug} slug={slug} onChanged={reload} />}
+      <ListIndex pinned={tasks} all={all} current={slug} onCreated={reload} />
+      {slug && screen(false)}
     </main>
   );
 }
@@ -89,22 +100,36 @@ function useAllLists() {
   return { all, reload };
 }
 
-function ListIndex(props: { all: ListView[] | null; current?: string; onCreated: () => void }) {
-  const { all, current } = props;
+/** Tasks, pinned above a line, then the lists in title order. */
+function ListIndex(props: {
+  pinned: ListView | null;
+  all: ListView[] | null;
+  current?: string;
+  onCreated: () => void;
+}) {
+  const { pinned, all, current } = props;
+  const link = (list: ListView) => (
+    <a
+      key={list.slug}
+      href={href(`/lists/${list.slug}`)}
+      aria-current={list.slug === current ? "page" : undefined}
+    >
+      <span class="ell">{list.title}</span>
+      <span class="list-count">{list.openCount}</span>
+    </a>
+  );
   return (
     <nav class="list-index" aria-label="Lists">
       <h1>Lists</h1>
+      {pinned && (
+        <>
+          {link(pinned)}
+          <hr class="list-rule" />
+        </>
+      )}
       {all?.length === 0 && <p class="muted">No lists yet.</p>}
-      {all?.map((list) => (
-        <a
-          key={list.slug}
-          href={href(`/lists/${list.slug}`)}
-          aria-current={list.slug === current ? "page" : undefined}
-        >
-          <span class="ell">{list.title}</span>
-          <span class="list-count">{list.openCount}</span>
-        </a>
-      ))}
+      {/* A note that would take Tasks' address is shadowed by it. */}
+      {all?.filter((list) => list.slug !== TASKS_SLUG).map(link)}
       <NewList onCreated={props.onCreated} />
     </nav>
   );
@@ -152,7 +177,10 @@ function ListScreen(props: { slug: string; back?: boolean; onChanged: () => void
     await load();
     props.onChanged();
   };
-  const { ticked, tick } = useListTicks(token, changed);
+  const { ticked, tick } = useTicks(
+    (item, done) => setListItemDone(token, item.name, done),
+    changed,
+  );
   const { moving, move } = useMove(token, changed);
   const { drag, start } = useItemDrag(root, move);
   if (error) {
@@ -163,12 +191,72 @@ function ListScreen(props: { slug: string; back?: boolean; onChanged: () => void
   }
   const ticks = withTicks(list, ticked);
   const shown = moving ? withMove(ticks, moving.name, moving.to) : ticks;
-  const open = openSections(shown);
-  const left = open.reduce((count, section) => count + section.items.length, 0);
-  const done = doneItems(shown);
   const titles = sectionTitles(list);
+  const clear = async () => {
+    await clearDoneItems(token, list.slug);
+    await changed();
+  };
   return (
-    <section ref={root} class="list" aria-label={list.title}>
+    <ListBody
+      list={shown}
+      root={root}
+      back={props.back}
+      add={<AddItems slug={list.slug} title={list.title} sections={titles} onAdded={changed} />}
+      onTick={tick}
+      drag={drag}
+      grip={titles.length > 0 ? { titles, start, move, root } : undefined}
+      onClear={clear}
+    />
+  );
+}
+
+/**
+ * Tasks, from the home view: ticking completes a task (a repeat puts the next one in place) and
+ * unticking reopens it. Tasks aren't one note, so there is nothing to move them between or clear:
+ * no handles and no "Clear done items". Rescheduling is the task panel's job.
+ */
+function TaskScreen(props: { home: LoadedHome; back: boolean }) {
+  const { token } = useApp();
+  const root = useRef<HTMLElement>(null);
+  // A done task leaves the home view, so the ones ticked here are kept to show under Done.
+  const [doneHere, setDoneHere] = useState(new Map<string, ListItemView>());
+  const send = async (item: ListItemView, done: boolean) => {
+    await (done ? completeTask : reopenTask)(token, item.name);
+    setDoneHere((kept) =>
+      done ? new Map(kept).set(item.name, item) : withoutKey(kept, item.name),
+    );
+  };
+  const { ticked, tick } = useTicks(send, props.home.load);
+  const list = withTicks(taskList(props.home.view, [...doneHere.values()]), ticked);
+  return (
+    <ListBody
+      list={list}
+      root={root}
+      back={props.back}
+      add={<AddTask onAdded={props.home.load} />}
+      onTick={tick}
+    />
+  );
+}
+
+/** A list's heading, add box, open items by section and Done; a note's list and Tasks share it. */
+function ListBody(props: {
+  list: ListView;
+  root: RefObject<HTMLElement>;
+  back?: boolean;
+  add: JSX.Element;
+  onTick: (item: ListItemView, done: boolean) => void;
+  drag?: Drag | null;
+  grip?: Grip;
+  /** Absent for Tasks, which has no done lines to clear. */
+  onClear?: () => Promise<void>;
+}) {
+  const { list, drag = null } = props;
+  const open = openSections(list);
+  const left = open.reduce((count, section) => count + section.items.length, 0);
+  const done = doneItems(list);
+  return (
+    <section ref={props.root} class="list" aria-label={list.title}>
       {props.back && (
         <a class="list-back" href={href("/lists")}>
           ‹ Lists
@@ -177,22 +265,20 @@ function ListScreen(props: { slug: string; back?: boolean; onChanged: () => void
       <header class="list-head">
         <h2>{list.title}</h2>
         <span class="muted">{leftLabel(left)}</span>
-        <span class="list-path">{list.path}</span>
+        {list.path && <span class="list-path">{list.path}</span>}
       </header>
-      <AddItems slug={list.slug} title={list.title} sections={titles} onAdded={changed} />
-      {(drag ? dropSections(shown) : open).map((section) => (
+      {props.add}
+      {(drag ? dropSections(list) : open).map((section) => (
         <OpenSection
           key={section.title}
           section={section}
           drag={drag}
-          onTick={tick}
-          grip={titles.length > 0 ? { titles, start, move, root } : undefined}
+          onTick={props.onTick}
+          grip={props.grip}
         />
       ))}
       {drag && <DragGhost drag={drag} />}
-      {done.length > 0 && (
-        <DoneItems slug={list.slug} items={done} onTick={tick} onCleared={changed} />
-      )}
+      {done.length > 0 && <DoneItems items={done} onTick={props.onTick} onClear={props.onClear} />}
     </section>
   );
 }
@@ -217,13 +303,8 @@ function OpenSection(props: {
   section: Section;
   drag: Drag | null;
   onTick: (item: ListItemView, done: boolean) => void;
-  /** Absent when the list has no headings, so nowhere to move to. */
-  grip?: {
-    titles: string[];
-    start: (event: PointerEvent, item: ListItemView, from: string) => void;
-    move: (item: ListItemView, to: string) => void;
-    root: RefObject<HTMLElement>;
-  };
+  /** Absent when the list has no headings, so nowhere to move to, and for Tasks. */
+  grip?: Grip;
 }) {
   const { section, drag, grip } = props;
   const empty = section.items.length === 0;
@@ -270,6 +351,13 @@ function DragGhost({ drag }: { drag: Drag }) {
 function focusGrip(root: HTMLElement | null, name: string) {
   const grips = root?.querySelectorAll<HTMLElement>("[data-grip]") ?? [];
   [...grips].find((grip) => grip.dataset.grip === name)?.focus();
+}
+
+interface Grip {
+  titles: string[];
+  start: (event: PointerEvent, item: ListItemView, from: string) => void;
+  move: (item: ListItemView, to: string) => void;
+  root: RefObject<HTMLElement>;
 }
 
 interface Drag {
@@ -407,12 +495,15 @@ function useList(slug: string) {
  * Ticks sent to the vault. Each shows at once and lasts until the reload after it; an item's
  * ticks wait for the one before, so a quick tick and untick arrive in that order.
  */
-function useListTicks(token: Token, load: () => Promise<void>) {
+function useTicks(
+  sendTick: (item: ListItemView, done: boolean) => Promise<unknown>,
+  load: () => Promise<void>,
+) {
   const [ticked, setTicked] = useState(new Map<string, boolean>());
   const queue = useRef(new Map<string, Promise<void>>());
   const tick = (item: ListItemView, done: boolean) => {
     setTicked((t) => new Map(t).set(item.name, done));
-    const send = () => setListItemDone(token, item.name, done).then(() => undefined);
+    const send = () => sendTick(item, done).then(() => undefined);
     const next = (queue.current.get(item.name) ?? Promise.resolve())
       .then(send, send)
       .then(load, load)
@@ -427,7 +518,7 @@ function useListTicks(token: Token, load: () => Promise<void>) {
   return { ticked, tick };
 }
 
-function withoutKey(map: Map<string, boolean>, key: string): Map<string, boolean> {
+function withoutKey<T>(map: Map<string, T>, key: string): Map<string, T> {
   const left = new Map(map);
   left.delete(key);
   return left;
@@ -517,6 +608,47 @@ function AddItems(props: {
   );
 }
 
+/**
+ * Tasks' add box: the line goes through the capture parser as a reminder, so "call mum fri"
+ * is due Friday. New tasks go to the inbox note.
+ */
+function AddTask({ onAdded }: { onAdded: () => Promise<void> }) {
+  const { token, isPhone } = useApp();
+  const [text, setText] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  // One id per line typed, so a retried send makes one task.
+  const requestId = useRef(randomKey());
+  const submit = async (event: Event) => {
+    event.preventDefault();
+    if (text.trim() === "") {
+      return;
+    }
+    try {
+      await capture(token, { text, requestId: requestId.current, kind: "reminder" });
+      requestId.current = randomKey();
+      setText("");
+      setError(null);
+      await onAdded();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  };
+  return (
+    <form class="list-add" onSubmit={submit}>
+      <div class="list-add-row">
+        <input
+          class="list-input"
+          aria-label="Add to Tasks"
+          placeholder={isPhone ? "Add a task" : "Add a task, such as call mum fri"}
+          value={text}
+          onInput={(e) => setText(e.currentTarget.value)}
+        />
+      </div>
+      {error && <p class="list-error">{error}</p>}
+    </form>
+  );
+}
+
 /** The section to add to: a pill that opens a small menu of the list's headings. */
 function SectionPick(props: {
   sections: string[];
@@ -592,23 +724,19 @@ function ItemRow(props: {
 }
 
 function DoneItems(props: {
-  slug: string;
   items: ListItemView[];
   onTick: (item: ListItemView, done: boolean) => void;
-  onCleared: () => Promise<void>;
+  onClear?: () => Promise<void>;
 }) {
-  const { token } = useApp();
-  const clear = async () => {
-    await clearDoneItems(token, props.slug);
-    await props.onCleared();
-  };
   return (
     <div class="list-done">
       <div class="list-done-head">
         <span class="muted">Done · {props.items.length}</span>
-        <button type="button" class="list-clear" onClick={clear}>
-          Clear done items
-        </button>
+        {props.onClear && (
+          <button type="button" class="list-clear" onClick={props.onClear}>
+            Clear done items
+          </button>
+        )}
       </div>
       {props.items.map((item) => (
         <ItemRow key={item.name} item={item} onTick={props.onTick} />

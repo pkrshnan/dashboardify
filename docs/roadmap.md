@@ -39,7 +39,7 @@ Apple Reminders.
 | Foundation | Strict TypeScript, Biome, CI, Dockerfile, a `demo` label that runs a PR on a temporary URL |
 | Vault | Frontmatter, sections, `<!-- cc:name -->` blocks, atomic writes, one writer per file, time-zone-correct days |
 | API | 14 v1 services; etags, update masks, `requestId` retries, pagination |
-| Tasks | Full API (create, edit, delete, complete with recurrence, reopen, search) and Siri. On screen: a grouped list you can tick, and Day timeline reminders you can tick and untick. |
+| Tasks | Full API (create, edit, delete, complete with recurrence, reopen, search) and Siri. On screen: a grouped list you can tick on Today, Day timeline reminders, and Tasks pinned at the top of Lists, where you can tick, untick and add. |
 | Capture | One box: a line becomes an event or a reminder, with the calendar guessed and the place looked up; Undo; Siri "Add to command center" |
 | Calendar | iCloud sync every 2 min, ICS links every 15; Day and Week, all-day row, overlap layout; event panel edits and deletes from Day or Week; Week shows locations; agenda block in the daily note |
 | Settings | `settings.db`, hashed devices, sealed secrets, setup code, `bun run settings`, Settings page (General, Devices, Calendars) |
@@ -54,7 +54,7 @@ Apple Reminders.
 | # | Work | State |
 | --- | --- | --- |
 | 1 | Navigation: router, modules, command bar, search, sidebar and tab bar | Building: N1, N2, N8 done; [navigation.md](navigation.md) |
-| 2 | Tasks page and reminder editing (the API already does it all); starts with N7's task panel | Needs a plan |
+| 2 | Tasks page and reminder editing | Page built: Tasks pinned in Lists. Editing waits for N7's task panel. |
 | 3 | Lists (shopping): one note per list in `Lists/`, which tasks skip | Built: [lists.md](lists.md) |
 | 4 | Journal page: the day's journal and check-in | Needs a plan |
 | 5 | The rest of health: training load, calories, VO2max, sleep stages | Done: training load, calories (workouts included), VO2max, sleep stages fitted to lab nights and then to yours, awake decoded with the stages, home rows, workout calories and the Health page with the night view ([health-metrics.md](health-metrics.md), [design](design/README.md#health-page)). Next: what moved recovery, on that page. Fitness and biological age dropped: no reference data spans adult ages for South Asians. |

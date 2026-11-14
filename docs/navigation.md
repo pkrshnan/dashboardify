@@ -36,7 +36,7 @@ for that later), typed sentences through a model (that's Ask, which will appear 
 | Modules | `web/modules/<id>.tsx`, listed in order in `web/modules/index.ts`. The shell never names a module. |
 | Context | `AppContext` holds the token, time zone, phone flag, `navigate`, `openPanel`, `toast`, `reloadHome` |
 | Desktop | A quiet sidebar, groups separated by space, Settings at the bottom; an icon rail under 1200 px |
-| Phone | A floating tab bar: Today, Tasks, Search (centre), Lists, More |
+| Phone | A floating tab bar: Today, Search (centre), Lists, More. Tasks is pinned in Lists. |
 | Command bar | `⌘K` / `Ctrl K` or `/`; the Search tab on the phone. Go, find, do and add in one box. |
 | Search | Pages, sections and commands searched in the browser with `fuse.js`; things from a new `SearchService`. Ask's index later becomes one more provider. |
 | Fall-through | Text matching nothing becomes an Add row through the capture parser |
@@ -51,7 +51,7 @@ The nav lists only pages that exist.
 | --- | --- | --- | --- | --- | --- |
 | Today | `#/` (`?view=week`) | `g t` | 1 | Tab | Built |
 | Calendar | `#/calendar/<date>` | `g c` | 2 | More | Planned |
-| Tasks | `#/tasks` | `g k` | 2 | Tab | Planned |
+| Tasks | `#/lists/tasks`, pinned in Lists | | 2 | In Lists | Built ([lists.md](lists.md#web)) |
 | Lists | `#/lists/<list>` | `g l` | 2 | Tab | Built ([lists.md](lists.md)) |
 | Habits | `#/habits/<habit>` | `g b` | 2 | More | Built ([habits.md](habits.md)) |
 | Health | `#/health` (`?night=`, `?range=`) | `g h` | 3 | More | Built: recovery, the night and sleep trends, heart, vitals. Next: what moved recovery |
@@ -147,7 +147,6 @@ section) → tests, `docs/api.md`, `docs/vault-format.md`, the roadmap.
 
 ## Open questions
 
-- [ ] Phone tabs: Today, Tasks, Search, Lists, More?
 - [ ] Keep the capture box on Today? Planned yes: most used, and it draws the pending event.
 - [ ] N7 drops the whole-row tick (ring completes, text opens). Acceptable?
 - [ ] Recency per device, or synced through `settings.db`?
