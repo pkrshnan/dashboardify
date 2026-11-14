@@ -37,6 +37,31 @@ describe("lifting day", () => {
     expect(day?.volumeLb).toBeCloseTo(200 + 220.46, 1);
   });
 
+  test("sets the workout's start trimmed off are found just before it", () => {
+    // Like 14 November: the first sets peak before the workout the strap found.
+    const log = parseLiftingLog("## Workouts\n- Press\n  - 50lbs, 1x10\n  - 70lbs, 2x8\n");
+    const early = heartRate(T0 - 8 * 60_000, T0 + 6 * 60_000, (ts) => {
+      const s = (ts - T0) / 1000;
+      const bump = (at: number) => Math.max(0, 25 - Math.abs(s - at) / 2);
+      return 100 + bump(-180) + bump(60) + bump(240);
+    });
+
+    const day = liftingDay(log, [workout("lifting", 6)], null, early);
+
+    expect(day?.matched).toBe(true);
+    expect(day?.sets.map((s) => Math.round(((s.climb?.peak ?? 0) - T0) / 60_000))).toEqual([
+      -3, 1, 4,
+    ]);
+    // The session is still the workout the strap found.
+    expect(day?.session?.start).toBe(T0);
+  });
+
+  test("more sets than climbs even a little either side: nothing is matched", () => {
+    const log = parseLiftingLog("## Workouts\n- Press\n  - 70lbs, 3x8\n");
+
+    expect(liftingDay(log, [workout("lifting", 6)], null, twoSets)?.matched).toBe(false);
+  });
+
   test("without a lifting workout, moving in place is the session", () => {
     const day = liftingDay(
       LOG,
