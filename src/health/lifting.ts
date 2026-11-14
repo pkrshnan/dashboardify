@@ -7,9 +7,6 @@ import type { HeartRate, Span } from "./metrics/types";
 import type { Workout } from "./metrics/workouts";
 
 const LB_PER_KG = 2.20462;
-/** How far past a session's edges to look for sets it missed. */
-const LOOK_BEFORE_MS = 10 * 60_000;
-const LOOK_AFTER_MS = 5 * 60_000;
 
 export interface LiftingSet extends LoggedSet {
   /** The HR climb this set was matched to; null when the sets couldn't be matched. */
@@ -45,7 +42,7 @@ export function liftingDay(
   }
   const workout = longest(workouts, "lifting") ?? longest(workouts, "workout");
   const session = workout ?? moving;
-  const climbs = session ? matchSets(heartRate, session, logged.length) : null;
+  const climbs = session ? setClimbs(heartRate, session, logged.length) : null;
   return {
     exercises: exercises.length,
     sets: logged.map((set, i) => ({ ...set, climb: climbs?.[i] ?? null })),
@@ -54,16 +51,6 @@ export function liftingDay(
     found: foundBy(workout, moving),
     matched: climbs !== null,
   };
-}
-
-/**
- * The session's own climbs first. Finding a workout trims its edges, which can cut off the first
- * sets (a warm-up that wasn't hard) or the last, so when the span has too few climbs, look a
- * little either side: more before, where the trimming bites.
- */
-function matchSets(heartRate: HeartRate[], session: Span, count: number): SetClimb[] | null {
-  const wider = { start: session.start - LOOK_BEFORE_MS, end: session.end + LOOK_AFTER_MS };
-  return setClimbs(heartRate, session, count) ?? setClimbs(heartRate, wider, count);
 }
 
 function foundBy(workout: Workout | null, moving: Span | null): LiftingDay["found"] {
