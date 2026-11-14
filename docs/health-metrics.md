@@ -273,9 +273,8 @@ are `POSSIBLE` and asked about on the Activity page.
    outside sleep, workouts and walks).
 3. HR per 5 s smoothed over 15 s; each peak's climb from the lowest point in the prior 90 s,
    looking before the session for a set that peaks at its start; under 6 bpm is noise.
-4. The N clearest climbs at least a minute apart go to the N sets in order. Fewer than N in the
-   session: look again from 10 min before it to 5 min after, since finding the workout can trim
-   off a first set that wasn't hard. Still fewer: nothing is matched (the log still counts).
+4. The N clearest climbs at least a minute apart go to the N sets in order. Fewer than N clear
+   climbs: nothing is matched (the log still counts).
 
 Volume is weight × reps, in pounds.
 
