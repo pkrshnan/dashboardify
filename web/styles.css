@@ -2942,8 +2942,11 @@ button.link {
   border-bottom: 0;
 }
 
-/* The handle to drag an item to another section, shown on hover. */
+/* The handle to drag an item to another section, shown on hover. It sits in the gutter left of
+   the tick, so the rings stay in line with the add box. */
 .list-grip {
+  position: absolute;
+  left: -34px;
   flex: none;
   display: grid;
   place-items: center;
@@ -3103,8 +3106,9 @@ button.link {
   min-height: 44px;
 }
 
-/* No hover on the phone, so the handle always shows. */
+/* No hover on the phone, so the handle always shows, in the row since the gutter is narrow. */
 .lists.phone .list-grip {
+  position: static;
   width: 40px;
   height: 44px;
   opacity: 1;

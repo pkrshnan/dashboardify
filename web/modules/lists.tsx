@@ -684,16 +684,6 @@ function ItemRow(props: {
   const { item, onTick, grip } = props;
   return (
     <div class={`list-row${props.dragging ? " dragging" : ""}`}>
-      <button
-        type="button"
-        class={`list-item${item.done ? " done" : ""}`}
-        aria-pressed={item.done}
-        onClick={() => onTick(item, !item.done)}
-      >
-        <span class="ring" aria-hidden="true" />
-        <span class="list-text">{item.text}</span>
-        {item.note && <span class="list-note">{item.note}</span>}
-      </button>
       {grip && (
         <button
           type="button"
@@ -719,6 +709,16 @@ function ItemRow(props: {
           </svg>
         </button>
       )}
+      <button
+        type="button"
+        class={`list-item${item.done ? " done" : ""}`}
+        aria-pressed={item.done}
+        onClick={() => onTick(item, !item.done)}
+      >
+        <span class="ring" aria-hidden="true" />
+        <span class="list-text">{item.text}</span>
+        {item.note && <span class="list-note">{item.note}</span>}
+      </button>
     </div>
   );
 }
