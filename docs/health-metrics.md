@@ -273,8 +273,13 @@ are `POSSIBLE` and asked about on the Activity page.
    outside sleep, workouts and walks).
 3. HR per 5 s smoothed over 15 s; each peak's climb from the lowest point in the prior 90 s,
    looking before the session for a set that peaks at its start; under 6 bpm is noise.
-4. The N clearest climbs at least a minute apart go to the N sets in order. Fewer than N clear
-   climbs: nothing is matched (the log still counts).
+4. The climbs (`set-align.ts`): the session's, plus any run of climbs under 4 min apart reaching
+   up to 10 min before it (the strap trims a light first set) and 2 min after (its end holds).
+5. Each set takes one climb, in order, skipping climbs that don't fit. The fit scores each climb's
+   size (up to twice the median), a steady rest within an exercise (the run's length over the
+   sets), up to three rests free where the exercise changes, and the climbs skipped (less at the
+   edges). Fewer climbs than sets, or a fit under 0.35 a set: nothing is matched (the log still
+   counts).
 
 Volume is weight × reps, in pounds.
 

@@ -735,7 +735,7 @@ wrap: 12 − 65,530 + 65,536 = 18 steps</p>
 <p class="src">Source: Tudor-Locke 2018 (100 steps a minute as moderate intensity).</p>
 
 <h2 id="workouts">Workouts and lifting</h2>
-<p class="file">src/health/metrics/workouts.ts · runs.ts · sets.ts · src/health/lifting.ts</p>
+<p class="file">src/health/metrics/workouts.ts · runs.ts · sets.ts · set-align.ts · src/health/lifting.ts</p>
 <p>Nothing here is a physiological measurement. These are detection rules, tuned by hand on a few sessions, that find when you exercised and guess what it was.</p>
 <h3>Finding a workout</h3>
 <ol>
@@ -756,7 +756,7 @@ wrap: 12 − 65,530 + 65,536 = 18 steps</p>
 </tbody></table></div>
 <p>Each workout gets its own TRIMP, strain and calories, using the same per-minute maths as the day. A run recorded on Strava replaces any detected workout it overlaps and is marked confirmed, with its distance. Uncertain names are marked "possible" and asked about on the Activity page.</p>
 <h3>Matching lifting sets to heart rate</h3>
-<p>If you log sets in the daily note, each is matched to the heart-rate climb it caused. The code smooths heart rate over 15 seconds, finds each peak's climb from the lowest point in the previous 90 seconds, and gives the N clearest climbs, at least a minute apart, to the N logged sets in order. With fewer clear climbs than sets, nothing is matched. Volume is weight × reps.</p>
+<p>If you log sets in the daily note, each is matched to the heart-rate climb it caused. The code smooths heart rate over 15 seconds and finds each peak's climb from the lowest point in the previous 90 seconds. There are usually more climbs than sets: walking to a machine or setting up raises heart rate too. So the climbs are lined up with the log in order, skipping the ones that don't fit. The fit favours big climbs and a steady rest between sets of one exercise, allows a longer gap where you change exercise, and looks up to 10 minutes before the session (where a light first set gets trimmed off) but only 2 after. A poor fit matches nothing, since a wrong set time is worse than none. Volume is weight × reps.</p>
 <p class="trust"><strong>How far to trust it.</strong> Start and end times are usually close. Names are provisional: the rules were checked against only a few sessions, and no runs before Strava was connected.</p>
 
 <p class="part">Reference</p>

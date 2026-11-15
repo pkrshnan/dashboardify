@@ -2,7 +2,8 @@
 // is one. Sets are matched to HR climbs in the order they were logged.
 
 import { type Exercise, type LoggedSet, loggedSets } from "../vault/lifting";
-import { type SetClimb, setClimbs } from "./metrics/sets";
+import { alignSets, sessionRun } from "./metrics/set-align";
+import { climbs as findClimbs, type SetClimb } from "./metrics/sets";
 import type { HeartRate, Span } from "./metrics/types";
 import type { Workout } from "./metrics/workouts";
 
@@ -42,7 +43,7 @@ export function liftingDay(
   }
   const workout = longest(workouts, "lifting") ?? longest(workouts, "workout");
   const session = workout ?? moving;
-  const climbs = session ? setClimbs(heartRate, session, logged.length) : null;
+  const climbs = session ? matchSets(heartRate, session, logged) : null;
   return {
     exercises: exercises.length,
     sets: logged.map((set, i) => ({ ...set, climb: climbs?.[i] ?? null })),
@@ -51,6 +52,18 @@ export function liftingDay(
     found: foundBy(workout, moving),
     matched: climbs !== null,
   };
+}
+
+/** How far either side of the session a run of climbs is followed for sets it trimmed off. */
+const REACH_MS = 25 * 60_000;
+
+/** The session's climbs, and any run carrying on past its edges, lined up with the log. */
+function matchSets(heartRate: HeartRate[], session: Span, logged: LoggedSet[]): SetClimb[] | null {
+  const near = findClimbs(heartRate, {
+    start: session.start - REACH_MS,
+    end: session.end + REACH_MS,
+  });
+  return alignSets(sessionRun(session, near), logged);
 }
 
 function foundBy(workout: Workout | null, moving: Span | null): LiftingDay["found"] {
