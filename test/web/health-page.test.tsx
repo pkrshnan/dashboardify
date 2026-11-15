@@ -86,7 +86,7 @@ const names = (el: Element) =>
   [...el.querySelectorAll(".metric-name")].map((n) => n.textContent ?? "");
 
 describe("Health page", () => {
-  test("recovery heads the page, then sleep, heart and vitals", () => {
+  test("recovery and strain head the page, then sleep, heart and vitals", () => {
     const page = showPage();
 
     const sections = [...page.container.querySelectorAll("section")];
@@ -98,7 +98,7 @@ describe("Health page", () => {
       "Vitals",
     ]);
     expect(sections.map(names)).toEqual([
-      ["Recovery"],
+      ["Recovery", "Strain"],
       ["Sleep score", "Time asleep", "Deep sleep", "REM sleep"],
       ["HRV", "Resting HR", "VO2max"],
       ["Breathing rate", "Skin temperature"],
