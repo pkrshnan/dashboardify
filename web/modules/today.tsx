@@ -19,7 +19,7 @@ import { EventPanel } from "../components/event-panel";
 import { Focus } from "../components/focus";
 import { HabitChips } from "../components/habit-chips";
 import { Health } from "../components/health";
-import { TaskList } from "../components/task-list";
+import { listedGroups, TaskList } from "../components/task-list";
 import { type Pending, pendingEvent, withPending } from "../lib/capture";
 import { NIGHT_ROWS } from "../lib/night";
 import { href } from "../lib/router";
@@ -61,7 +61,9 @@ function HomeScreen({ home, query }: { home: LoadedHome; query: Record<string, s
       onPending={setPending}
     />
   );
-  const tasks = <TaskList groups={view.tasks} done={done} onComplete={complete} />;
+  const tasks = (
+    <TaskList groups={listedGroups(view.tasks, week)} done={done} onComplete={complete} />
+  );
   return (
     <main class="home">
       <Focus view={view} now={now} />

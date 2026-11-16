@@ -1,5 +1,6 @@
 // The task list: Overdue, Today, This week, Later and Someday. Rows are the hit area; ticking a
-// task completes it in the vault. New tasks come from the capture box.
+// task completes it in the vault. New tasks come from the capture box. Beside the Week view it
+// leaves out This week, whose tasks are already in the day columns.
 
 import type { TaskGroup } from "../../src/home/types";
 
@@ -8,6 +9,11 @@ interface Props {
   /** Tasks ticked in this session, shown done until the next refresh drops them. */
   done: Set<string>;
   onComplete: (id: string) => void;
+}
+
+/** The groups to list: all of them, or beside the Week view all but This week. */
+export function listedGroups(groups: TaskGroup[], week: boolean): TaskGroup[] {
+  return week ? groups.filter((g) => g.name !== "This week") : groups;
 }
 
 export function TaskList({ groups, done, onComplete }: Props) {
