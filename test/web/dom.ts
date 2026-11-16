@@ -52,7 +52,7 @@ export function reminder(text: string, minutes: number, done = false): Reminder 
 }
 
 export function day(date: string, items: Partial<DayAgenda> = {}): DayAgenda {
-  return { date, events: [], reminders: [], dated: [], allDay: [], ...items };
+  return { date, events: [], reminders: [], dated: [], datedDone: [], allDay: [], ...items };
 }
 
 function clock(min: number): string {

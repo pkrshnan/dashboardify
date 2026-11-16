@@ -223,6 +223,9 @@ message DayAgenda {
 
   // All-day events on this day, shown as Week view markers only.
   repeated AgendaEvent all_day_events = 5;
+
+  // Text of untimed tasks due that day and already ticked off.
+  repeated string done_dated_tasks = 6;
 }
 
 // A task in the task list.

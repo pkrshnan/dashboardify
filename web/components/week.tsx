@@ -2,7 +2,7 @@
 // top of each; the phone shows a strip of days and the agenda for the chosen one. Reminders have
 // hollow markers, events filled ones, and all-day events hollow squares in their colour. Events show
 // their location and open the event panel, as on the Day view. Nothing here can be ticked: that
-// happens in the task list.
+// happens in the task list. Done tasks stay, struck through, so the week shows what got done.
 
 import { useState } from "preact/hooks";
 import type { AgendaEvent, DayAgenda } from "../../src/home/types";
@@ -57,7 +57,11 @@ export function WeekColumns(props: { days: DayAgenda[]; nowMin: number; onOpen?:
             >
               <WeekEvents day={d} y={y} onOpen={onOpen} />
               {d.reminders.map((r) => (
-                <div key={r.id} class="week-reminder ell" style={{ top: `${y(r.minutes)}px` }}>
+                <div
+                  key={r.id}
+                  class={`week-reminder ell${r.done ? " done" : ""}`}
+                  style={{ top: `${y(r.minutes)}px` }}
+                >
                   <span class="hollow" />
                   <span class="ell">{r.text}</span>
                 </div>
@@ -112,7 +116,7 @@ function WeekEvents(props: { day: DayAgenda; y: (min: number) => number; onOpen?
   );
 }
 
-/** The top of a Week column: all-day events, then tasks due that day with no time. */
+/** The top of a Week column: all-day events, then tasks due that day with no time, done last. */
 function WeekDated({ day, onOpen }: { day: DayAgenda; onOpen?: OnOpen }) {
   return (
     <div class="week-dated">
@@ -124,6 +128,12 @@ function WeekDated({ day, onOpen }: { day: DayAgenda; onOpen?: OnOpen }) {
       ))}
       {day.dated.map((text) => (
         <div key={text}>
+          <span class="hollow" />
+          <span class="ell">{text}</span>
+        </div>
+      ))}
+      {day.datedDone.map((text) => (
+        <div key={`x${text}`} class="done">
           <span class="hollow" />
           <span class="ell">{text}</span>
         </div>
@@ -144,6 +154,8 @@ interface AgendaItem {
   filled: boolean;
   /** All-day events: a square marker, so they read as events and not tasks. */
   square?: boolean;
+  /** A ticked-off task, struck through. */
+  done?: boolean;
 }
 
 export function WeekStrip({ days, onOpen }: { days: DayAgenda[]; onOpen?: OnOpen }) {
@@ -173,7 +185,7 @@ export function WeekStrip({ days, onOpen }: { days: DayAgenda[]; onOpen?: OnOpen
           agendaOf(day).map((item) => (
             <div
               key={item.key}
-              class="agenda-row"
+              class={`agenda-row${item.done ? " done" : ""}`}
               {...(item.event ? opener(item.event, onOpen) : {})}
             >
               <span class="agenda-time">{item.time}</span>
@@ -197,7 +209,9 @@ export function WeekStrip({ days, onOpen }: { days: DayAgenda[]; onOpen?: OnOpen
 }
 
 function hasItems(d: DayAgenda): boolean {
-  return d.events.length + d.reminders.length + d.dated.length + d.allDay.length > 0;
+  return (
+    d.events.length + d.reminders.length + d.dated.length + d.datedDone.length + d.allDay.length > 0
+  );
 }
 
 /** Untimed tasks first, then events and reminders by time. */
@@ -217,7 +231,14 @@ function agendaOf(day: DayAgenda): AgendaItem[] {
     })),
     ...day.reminders.map((r) => ({
       sort: r.minutes,
-      item: { key: `r${r.id}`, time: r.time, text: r.text, color: TEXT_3, filled: false },
+      item: {
+        key: `r${r.id}`,
+        time: r.time,
+        text: r.text,
+        color: TEXT_3,
+        filled: false,
+        done: r.done,
+      },
     })),
   ].sort((a, b) => a.sort - b.sort);
   const allDay = day.allDay.map((e) => ({
@@ -230,12 +251,20 @@ function agendaOf(day: DayAgenda): AgendaItem[] {
     filled: false,
     square: true,
   }));
-  const dated = day.dated.map((text) => ({
-    key: `d${text}`,
+  return [...allDay, ...datedItems(day), ...timed.map((t) => t.item)];
+}
+
+/** Untimed tasks, open then done. */
+function datedItems(day: DayAgenda): AgendaItem[] {
+  return [
+    ...day.dated.map((text) => ({ text, done: false })),
+    ...day.datedDone.map((text) => ({ text, done: true })),
+  ].map(({ text, done }) => ({
+    key: `${done ? "x" : "d"}${text}`,
     time: "",
     text,
     color: TEXT_3,
     filled: false,
+    done,
   }));
-  return [...allDay, ...dated, ...timed.map((t) => t.item)];
 }

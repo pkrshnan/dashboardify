@@ -152,6 +152,28 @@ describe("WeekColumns", () => {
     expect(cols[0]?.querySelector(".week-body .week-event")).toBeNull();
   });
 
+  test("done tasks stay, struck through, after open ones", () => {
+    const { cols } = columns(
+      week({
+        dated: ["Renew passport"],
+        datedDone: ["Book dentist"],
+        reminders: [reminder("Pills", 9 * 60, true), reminder("Call the bank", 10 * 60)],
+      }),
+    );
+    const top = cols[0]?.querySelector(".week-dated");
+    expect(
+      [...(top?.children ?? [])].map((row) => [text(row), row.classList.contains("done")]),
+    ).toEqual([
+      ["Renew passport", false],
+      ["Book dentist", true],
+    ]);
+    const pills = [...(cols[0]?.querySelectorAll(".week-reminder") ?? [])];
+    expect(pills.map((p) => [text(p), p.classList.contains("done")])).toEqual([
+      ["Pills", true],
+      ["Call the bank", false],
+    ]);
+  });
+
   test("an event shows its location under the title, without a link", () => {
     const { blocks } = columns(
       week({
@@ -268,6 +290,24 @@ describe("WeekStrip", () => {
       "09:00 | Standup",
       "10:00 | Call the bank",
       "12:00 | Lunch",
+    ]);
+  });
+
+  test("done tasks stay, struck through", () => {
+    const { container } = strip(
+      week({
+        dated: ["Renew passport"],
+        datedDone: ["Book dentist"],
+        reminders: [reminder("Pills", 9 * 60, true)],
+      }),
+    );
+    const rows = [...container.querySelectorAll(".agenda-row")];
+    expect(
+      rows.map((r) => [text(r.querySelector(".agenda-text")), r.classList.contains("done")]),
+    ).toEqual([
+      ["Renew passport", false],
+      ["Book dentist", true],
+      ["Pills", true],
     ]);
   });
 

@@ -47,7 +47,8 @@ https://claude.ai/artifact/Dm3mFqJPttBWpS9VxeYPUD. `home-desktop.dc.html` (1440 
 
 - A time today → the timeline only. No time → the task list only. All-day events are not tasks.
 - Overdue items: the task list, plus at most one mention in the sentence.
-- Week shows dated tasks as hollow markers you can't tick; ticking is in the task list.
+- Week shows dated tasks as hollow markers you can't tick; ticking is in the task list. Done ones
+  stay, struck through, after the open ones.
 
 ## Health numbers
 

@@ -694,7 +694,10 @@ button.link {
   font-size: var(--type-footnote);
 }
 
-.reminder.done .reminder-text {
+.reminder.done .reminder-text,
+.week-reminder.done .ell,
+.week-dated .done .ell,
+.agenda-row.done .agenda-text {
   color: var(--text-3);
   text-decoration: line-through;
 }

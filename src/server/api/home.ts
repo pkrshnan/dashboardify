@@ -111,6 +111,7 @@ function dayResource(day: DayAgenda) {
     events: day.events.map(eventResource),
     reminders: day.reminders.map(reminderResource),
     datedTasks: day.dated,
+    doneDatedTasks: day.datedDone,
     allDayEvents: day.allDay.map(eventResource),
   };
 }
