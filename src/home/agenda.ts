@@ -28,6 +28,7 @@ export function buildDays(
     const date = start.add({ days: i });
     const midnight = date.toZonedDateTime(timeZone).epochMilliseconds;
     const iso = date.toString();
+    const dated = tasks.filter((t) => t.task.due === iso && !t.task.time);
     return {
       date: iso,
       events: eventsOn(events, midnight, timeZone),
@@ -41,9 +42,8 @@ export function buildDays(
           done: t.task.done,
         }))
         .sort((a, b) => a.minutes - b.minutes),
-      dated: tasks
-        .filter((t) => !t.task.done && t.task.due === iso && !t.task.time)
-        .map((t) => t.task.description),
+      dated: dated.filter((t) => !t.task.done).map((t) => t.task.description),
+      datedDone: dated.filter((t) => t.task.done).map((t) => t.task.description),
       allDay: events
         .filter(
           (e) => e.allDay && e.startDate && e.endDate && e.startDate <= iso && iso < e.endDate,

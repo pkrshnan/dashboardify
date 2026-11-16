@@ -118,6 +118,7 @@ export async function fetchHome(token: Token, asOf?: string): Promise<HomeView> 
         done: r.done,
       })),
       dated: d.datedTasks,
+      datedDone: d.doneDatedTasks,
     })),
     tasks: v.taskGroups.map((g) => ({
       name: g.displayName as HomeView["tasks"][number]["name"],

@@ -74,6 +74,7 @@ describe("buildDays", () => {
         "- [x] Vitamin D\n\t- due: 2026-11-03 09:00",
         "- [ ] Call Mum\n\t- due: 2026-11-03 18:30",
         "- [ ] Upload receipt\n\t- due: 2026-11-03",
+        "- [x] Book dentist\n\t- due: 2026-11-03",
       ),
     );
     expect(days.map((d) => d.date)).toEqual([
@@ -108,6 +109,7 @@ describe("buildDays", () => {
       ["Call Mum", 1110, false],
     ]);
     expect(today?.dated).toEqual(["Upload receipt"]);
+    expect(today?.datedDone).toEqual(["Book dentist"]);
     expect(tomorrow?.events.map((e) => e.title)).toEqual(["Standup"]);
   });
 

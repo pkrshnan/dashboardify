@@ -169,7 +169,14 @@ describe("place choice", () => {
 
 describe("pending events", () => {
   const shown = preview({ text: "Lunch with Sam tomorrow 12:30–13:30" }, withCalendar);
-  const day = (date: string) => ({ date, events: [], reminders: [], dated: [], allDay: [] });
+  const day = (date: string) => ({
+    date,
+    events: [],
+    reminders: [],
+    dated: [],
+    datedDone: [],
+    allDay: [],
+  });
   const view = { days: [day("2026-11-10"), day("2026-11-11")] } as unknown as HomeView;
 
   test("are drawn on their day, marked as saving", () => {
