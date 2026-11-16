@@ -1,5 +1,6 @@
 // Today, the home screen: focus, then calendar and tasks, then health trends, all from the home
-// view the shell loads. Day or Week is the address's `?view=week`.
+// view the shell loads. Day or Week is the address's `?view=week`. The Week view has no task
+// list: its columns already hold the week's tasks.
 
 import { useRef, useState } from "preact/hooks";
 import type { CaptureHints } from "../../src/home/calendar";
@@ -19,7 +20,7 @@ import { EventPanel } from "../components/event-panel";
 import { Focus } from "../components/focus";
 import { HabitChips } from "../components/habit-chips";
 import { Health } from "../components/health";
-import { listedGroups, TaskList } from "../components/task-list";
+import { TaskList } from "../components/task-list";
 import { type Pending, pendingEvent, withPending } from "../lib/capture";
 import { NIGHT_ROWS } from "../lib/night";
 import { href } from "../lib/router";
@@ -61,9 +62,7 @@ function HomeScreen({ home, query }: { home: LoadedHome; query: Record<string, s
       onPending={setPending}
     />
   );
-  const tasks = (
-    <TaskList groups={listedGroups(view.tasks, week)} done={done} onComplete={complete} />
-  );
+  const tasks = <TaskList groups={view.tasks} done={done} onComplete={complete} />;
   return (
     <main class="home">
       <Focus view={view} now={now} />
@@ -78,9 +77,9 @@ function HomeScreen({ home, query }: { home: LoadedHome; query: Record<string, s
         onReopen={reopen}
         onOpenEvent={openEvent}
         capture={capture}
-        aside={isPhone ? undefined : tasks}
+        aside={isPhone || week ? undefined : tasks}
       />
-      {isPhone && (
+      {isPhone && !week && (
         <section class="section">
           <div class="section-head">
             <h2>Tasks</h2>

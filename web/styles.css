@@ -576,6 +576,10 @@ button.link {
   align-items: start;
 }
 
+.calendar-grid.full {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 /* Earlier hours sit above the top, scrolled out of view. Padding matches SCROLL_PAD_PX. */
 .timeline-scroll {
   overflow-y: auto;

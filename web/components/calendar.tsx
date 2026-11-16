@@ -1,5 +1,5 @@
 // Calendar and tasks, with a Day/Week toggle and the capture box under the heading. On desktop the task list sits beside the
-// calendar; on the phone it is its own section below.
+// calendar; on the phone it is its own section below. The Week view has none and takes the width.
 
 import type { ComponentChildren } from "preact";
 import type { CalendarSyncView, HomeView } from "../../src/home/types";
@@ -25,7 +25,7 @@ interface Props {
   onOpenEvent?: (event: string) => void;
   /** The capture box, under the heading. */
   capture?: ComponentChildren;
-  /** The task list, beside the calendar on desktop. */
+  /** The task list, beside the calendar on desktop. Without one the calendar takes the width. */
   aside?: ComponentChildren;
 }
 
@@ -56,7 +56,7 @@ export function Calendar(props: Props) {
         />
       </div>
       {capture}
-      <div class="calendar-grid">
+      <div class={`calendar-grid${aside ? "" : " full"}`}>
         <div>
           {mode === "day" && today && (
             <DayTimeline
