@@ -806,6 +806,7 @@ function workoutDetail(w: Workout): WorkoutDetail {
       warmUp: s.warmUp,
       start: s.startTime ? ms(s.startTime) : null,
       peak: s.peakTime ? ms(s.peakTime) : null,
+      end: s.endTime ? ms(s.endTime) : null,
       peakHr: s.peakHeartRate ?? null,
     })),
   };

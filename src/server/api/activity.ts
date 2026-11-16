@@ -229,8 +229,15 @@ function setResource(row: DerivedRow) {
     warmUp: row.warm_up === 1,
     startTime: typeof row.start_ts === "number" ? iso(row.start_ts) : undefined,
     peakTime: typeof row.peak_ts === "number" ? iso(row.peak_ts) : undefined,
+    // Rows from before motion edges have no end; the peak was the end then.
+    endTime: endOf(row),
     peakHeartRate: typeof row.peak_hr === "number" ? row.peak_hr : undefined,
   };
+}
+
+function endOf(row: DerivedRow): string | undefined {
+  const end = typeof row.end_ts === "number" ? row.end_ts : row.peak_ts;
+  return typeof end === "number" ? iso(end) : undefined;
 }
 
 function pounds(row: DerivedRow): number {

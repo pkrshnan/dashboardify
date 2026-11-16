@@ -280,6 +280,13 @@ are `POSSIBLE` and asked about on the Activity page.
    sets), up to three rests free where the exercise changes, and the climbs skipped (less at the
    edges). Fewer climbs than sets, or a fit under 0.35 a set: nothing is matched (the log still
    counts).
+6. Each matched set's edges (`set-edges.ts`): the run of moving in place that covers 15+ s of
+   30 s before its climb's low point to 5 s after its peak. Moving is motion averaged over 11 s at
+   3× the session's 20th percentile (at least 0.04), joined across 8 s, not walking (12+ steps in
+   10 s). Start and end are the run's, ending no later than 20 s after the peak and starting no
+   earlier than the last set's end. A run over 90 s gives only the end, the start staying at the
+   low point. Two sets in one run, or under 15 s: the climb's low point and peak. Rest is from
+   one set's end to the next one's start.
 
 Volume is weight × reps, in pounds.
 

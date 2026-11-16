@@ -6,7 +6,7 @@ import type { DerivedRow } from "../health/derived-store";
 import { exerciseKey } from "./names";
 
 export interface SessionHeartRate {
-  /** The median gap from one set's peak to the next set's start. */
+  /** The median gap from one set's end to the next set's start. */
   restSeconds: number | null;
   /** The mean peak HR of the working sets. */
   peakHr: number | null;
@@ -31,7 +31,8 @@ export function sessionHeartRate(rows: DerivedRow[], key: string): SessionHeartR
 function rests(sets: DerivedRow[]): number[] {
   return sets.slice(1).flatMap((set, i) => {
     const before = sets[i];
-    const gap = Number(set.start_ts) - Number(before?.peak_ts);
+    // Rows from before motion edges have no end; the peak stood for it then.
+    const gap = Number(set.start_ts) - Number(before?.end_ts ?? before?.peak_ts);
     return typeof set.start_ts === "number" && gap > 0 ? [Math.round(gap / 1000)] : [];
   });
 }

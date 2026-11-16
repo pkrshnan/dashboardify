@@ -57,6 +57,8 @@ export interface SetView {
   warmUp: boolean;
   start: number | null;
   peak: number | null;
+  /** When the set ended; the peak for sets matched before motion gave edges. */
+  end: number | null;
   peakHr: number | null;
 }
 

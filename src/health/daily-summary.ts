@@ -168,7 +168,7 @@ export class DailySummary {
         ...kept,
         ...day.walks,
       ]),
-      strap.heartRate,
+      strap,
     );
     const workouts = reviewWorkouts(day.workouts, reviews, {
       session: lifting?.found === "workout" ? lifting.session : null,
@@ -527,7 +527,8 @@ function setRow(set: LiftingSet, index: number): DerivedRow {
     unit: set.unit,
     reps: set.reps,
     warm_up: set.warmUp ? 1 : 0,
-    start_ts: set.climb?.start ?? null,
+    start_ts: set.span?.start ?? null,
+    end_ts: set.span?.end ?? null,
     peak_ts: set.climb?.peak ?? null,
     peak_hr: set.climb?.peakHr ?? null,
   };
