@@ -71,7 +71,7 @@ A `lists` module at `#/lists/:list?`, sidebar group 2, a phone tab, icon `lists`
 
 - Desktop: the lists in a column beside the open list, and "+ New list". The add box at the top,
   with a section menu beside it ("No section", the headings, "New section…"); sections with their
-  items, each with a drag handle (shown on hover; always on the phone). Drag it onto another
+  items, each with a drag handle left of the tick (shown on hover; always on the phone). Drag it onto another
   section, or focus it and press ↑ or ↓; while dragging, empty sections and "No section" show as
   drop zones. "Done · 3" with "Clear done items"; the note's path.
 - Phone: `#/lists` shows the lists; `#/lists/shopping` the list, with 52 px rows and "Done" at
