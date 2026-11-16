@@ -38,6 +38,7 @@
   --bad: #ff453a;
   --link: #8ab4ff;
   --gutter: 64px;
+  --page-width: 1440px;
   /* The type scale (docs/design/README.md). Every font-size is one of these; the phone redefines
      a token rather than an element, so text of one role is one size everywhere. */
   --type-caption: 11px;
@@ -90,8 +91,6 @@ h2 {
 }
 
 .home {
-  max-width: 1440px;
-  margin: 0 auto;
   padding-bottom: env(safe-area-inset-bottom);
 }
 
@@ -1083,8 +1082,6 @@ button.link {
 }
 
 .settings {
-  max-width: 1280px;
-  margin: 0 auto;
   padding-bottom: env(safe-area-inset-bottom);
 }
 
@@ -1952,8 +1949,6 @@ button.link {
 }
 
 .activity {
-  max-width: 1440px;
-  margin: 0 auto;
   padding-bottom: env(safe-area-inset-bottom);
   --accent: #64d2ff;
   --walk: #66d4cf;
@@ -2510,6 +2505,12 @@ button.link {
   min-width: 0;
 }
 
+/* Every page is the same width, centred in the space beside the sidebar. */
+.frame-page > main {
+  max-width: var(--page-width);
+  margin: 0 auto;
+}
+
 .sidebar {
   position: sticky;
   top: 0;
@@ -2651,9 +2652,8 @@ button.link {
 /* ---- Lists (docs/lists.md): the lists beside the open one; one at a time on the phone ---- */
 
 .lists {
-  max-width: 1200px;
   display: grid;
-  grid-template-columns: 240px minmax(0, 760px);
+  grid-template-columns: 240px minmax(0, 1fr);
   min-height: 100vh;
 }
 
@@ -3123,8 +3123,6 @@ button.link {
 }
 
 .health-page {
-  max-width: 1440px;
-  margin: 0 auto;
   padding-bottom: env(safe-area-inset-bottom);
   --sleep: #7d7aff;
 }
@@ -3266,7 +3264,6 @@ button.link {
 /* ---- Habits (docs/habits.md#web) ---- */
 
 .habits {
-  max-width: 1320px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
   min-height: 100vh;
@@ -3944,9 +3941,8 @@ button.habit-cell {
   --lift-3: #2b8798;
   --lift-est: #7fa9b3;
   --good: #30d158;
-  max-width: 1240px;
   display: grid;
-  grid-template-columns: 320px minmax(0, 900px);
+  grid-template-columns: 320px minmax(0, 1fr);
   min-height: 100vh;
 }
 
