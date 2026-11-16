@@ -38,7 +38,6 @@
   --bad: #ff453a;
   --link: #8ab4ff;
   --gutter: 64px;
-  --page-width: 1440px;
   /* The type scale (docs/design/README.md). Every font-size is one of these; the phone redefines
      a token rather than an element, so text of one role is one size everywhere. */
   --type-caption: 11px;
@@ -2503,12 +2502,6 @@ button.link {
 .frame-page {
   flex: 1;
   min-width: 0;
-}
-
-/* Every page is the same width, centred in the space beside the sidebar. */
-.frame-page > main {
-  max-width: var(--page-width);
-  margin: 0 auto;
 }
 
 .sidebar {

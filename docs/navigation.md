@@ -114,8 +114,7 @@ Home screen tokens ([design/README.md](design/README.md#look)).
 
 - **Sidebar:** 220 px on the page background; 36 px rows, 17 px icon and name in text-2; the
   current page on `fill` with 8 px corners. Badges in text-3, warn when overdue. Beside it
-  every page is at most 1440 px wide (`--page-width`) and centred, with its columns filling
-  that width.
+  every page fills the rest of the window, so a page's own index column sits against it.
 - **Tab bar:** a capsule 16 px from the edges above the home indicator, blurred `fill`; 11 px
   names; Search a round centre button. Pages pad their bottom to clear it; "‹ Home" links go.
 - **Command bar:** 640 px, 15% from the top, `fill` with a `line-3` hairline and 12 px corners
