@@ -37,7 +37,8 @@ export function stepsPerMinute(samples: StepCounter[]): Map<number, number> {
   return minutes;
 }
 
-function stepDelta(prev: StepCounter, cur: StepCounter): number {
+/** Steps between two counter readings, allowing for a wrap or reset. */
+export function stepDelta(prev: StepCounter, cur: StepCounter): number {
   let delta = cur.count - prev.count;
   if (delta < 0) {
     delta = prev.count >= WRAP_ZONE ? delta + COUNTER_SIZE : cur.count;

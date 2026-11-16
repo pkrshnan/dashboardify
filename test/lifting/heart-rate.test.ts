@@ -33,6 +33,16 @@ describe("session heart rate", () => {
     expect(sessionHeartRate(rows, "chest press")).toEqual({ restSeconds: 120, peakHr: 142 });
   });
 
+  test("rest runs from a set's end when motion gave one, not from its peak", () => {
+    // Each set ends 40 s after it starts, and peaks 20 s after that.
+    const rows = [0, 3, 6].map((m) => ({
+      ...set("Leg Press", m, 150),
+      end_ts: Date.UTC(2026, 10, 8, 18) + m * MIN + 40_000,
+    }));
+
+    expect(sessionHeartRate(rows, "leg press")?.restSeconds).toBe(140);
+  });
+
   test("matches the exercise by its key, so a plural spelling still counts", () => {
     const rows = [set("Cable Fly Crossovers", 0, 130), set("Cable Fly Crossovers", 3, 134)];
 

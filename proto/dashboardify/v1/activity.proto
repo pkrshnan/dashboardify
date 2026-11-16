@@ -193,14 +193,17 @@ message LiftingSet {
   // A lighter first set.
   bool warm_up = 6;
 
-  // When the matched climb started, about when the set began.
+  // When the set began: where motion picked up, else the matched climb's low point.
   optional google.protobuf.Timestamp start_time = 7;
 
-  // When the matched climb peaked, about when the set ended.
+  // When the matched climb peaked, often just after the set ended.
   optional google.protobuf.Timestamp peak_time = 8;
 
   // Heart rate at the peak.
   optional double peak_heart_rate = 9;
+
+  // When the set ended: where motion settled, else the climb's peak.
+  optional google.protobuf.Timestamp end_time = 10;
 }
 
 // A night's sleep from the strap data. Stages are estimated, and checked for plausibility only.

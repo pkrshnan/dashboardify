@@ -3,8 +3,9 @@
 
 import { type Exercise, type LoggedSet, loggedSets } from "../vault/lifting";
 import { alignSets, sessionRun } from "./metrics/set-align";
+import { type SetSpan, setSpans } from "./metrics/set-edges";
 import { climbs as findClimbs, type SetClimb } from "./metrics/sets";
-import type { HeartRate, Span } from "./metrics/types";
+import type { HeartRate, Motion, Span, StepCounter } from "./metrics/types";
 import type { Workout } from "./metrics/workouts";
 
 const LB_PER_KG = 2.20462;
@@ -12,6 +13,8 @@ const LB_PER_KG = 2.20462;
 export interface LiftingSet extends LoggedSet {
   /** The HR climb this set was matched to; null when the sets couldn't be matched. */
   climb: SetClimb | null;
+  /** When the set began and ended, from motion where it's clear; null with the climb. */
+  span: SetSpan | null;
 }
 
 export interface LiftingDay {
@@ -35,7 +38,7 @@ export function liftingDay(
   exercises: Exercise[],
   workouts: Workout[],
   moving: Span | null,
-  heartRate: HeartRate[],
+  strap: { heartRate: HeartRate[]; motion: Motion[]; steps: StepCounter[] },
 ): LiftingDay | null {
   const logged = loggedSets(exercises);
   if (logged.length === 0) {
@@ -43,10 +46,15 @@ export function liftingDay(
   }
   const workout = longest(workouts, "lifting") ?? longest(workouts, "workout");
   const session = workout ?? moving;
-  const climbs = session ? matchSets(heartRate, session, logged) : null;
+  const climbs = session ? matchSets(strap.heartRate, session, logged) : null;
+  const spans = climbs ? setSpans(climbs, strap.motion, strap.steps) : null;
   return {
     exercises: exercises.length,
-    sets: logged.map((set, i) => ({ ...set, climb: climbs?.[i] ?? null })),
+    sets: logged.map((set, i) => ({
+      ...set,
+      climb: climbs?.[i] ?? null,
+      span: spans?.[i] ?? null,
+    })),
     volumeLb: logged.reduce((sum, s) => sum + pounds(s) * s.reps, 0),
     session: session ? { start: session.start, end: session.end } : null,
     found: foundBy(workout, moving),

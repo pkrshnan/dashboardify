@@ -217,10 +217,10 @@ function pace(minutes: number, meters: number): string {
 function liftingLine(l: LiftingDay, clock: (ts: number) => string): string {
   const volume = `${Math.round(l.volumeLb).toLocaleString("en-US")} lb`;
   const log = `- Lifting log · ${count(l.exercises, "exercise")} · ${count(l.sets.length, "set")} · ${volume}`;
-  const first = l.sets[0]?.climb;
-  const last = l.sets[l.sets.length - 1]?.climb;
+  const first = l.sets[0]?.span;
+  const last = l.sets[l.sets.length - 1]?.span;
   return l.matched && first && last
-    ? `${log} · sets matched ${clock(first.start)}–${clock(last.peak)}`
+    ? `${log} · sets matched ${clock(first.start)}–${clock(last.end)}`
     : `${log} · not matched to the strap`;
 }
 

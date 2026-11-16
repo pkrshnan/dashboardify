@@ -735,7 +735,7 @@ wrap: 12 − 65,530 + 65,536 = 18 steps</p>
 <p class="src">Source: Tudor-Locke 2018 (100 steps a minute as moderate intensity).</p>
 
 <h2 id="workouts">Workouts and lifting</h2>
-<p class="file">src/health/metrics/workouts.ts · runs.ts · sets.ts · set-align.ts · src/health/lifting.ts</p>
+<p class="file">src/health/metrics/workouts.ts · runs.ts · sets.ts · set-align.ts · set-edges.ts · src/health/lifting.ts</p>
 <p>Nothing here is a physiological measurement. These are detection rules, tuned by hand on a few sessions, that find when you exercised and guess what it was.</p>
 <h3>Finding a workout</h3>
 <ol>
@@ -757,6 +757,8 @@ wrap: 12 − 65,530 + 65,536 = 18 steps</p>
 <p>Each workout gets its own TRIMP, strain and calories, using the same per-minute maths as the day. A run recorded on Strava replaces any detected workout it overlaps and is marked confirmed, with its distance. Uncertain names are marked "possible" and asked about on the Activity page.</p>
 <h3>Matching lifting sets to heart rate</h3>
 <p>If you log sets in the daily note, each is matched to the heart-rate climb it caused. The code smooths heart rate over 15 seconds and finds each peak's climb from the lowest point in the previous 90 seconds. There are usually more climbs than sets: walking to a machine or setting up raises heart rate too. So the climbs are lined up with the log in order, skipping the ones that don't fit. The fit favours big climbs and a steady rest between sets of one exercise, allows a longer gap where you change exercise, and looks up to 10 minutes before the session (where a light first set gets trimmed off) but only 2 after. A poor fit matches nothing, since a wrong set time is worse than none. Volume is weight × reps.</p>
+<p>Heart rate is slow to say exactly when a set began and ended. Its low point can come half a minute before you start, and it often peaks after you stop. Motion is quick: the strap's motion jumps when you start a set and falls when you rack the weight. So each matched set takes its start and end from the stretch of moving in place around its climb. Moving means three times the session's resting motion (its 20th percentile), and at least 0.04, averaged over 11 seconds; pauses of up to 8 seconds don't end it, and 12 or more steps in 10 seconds is walking, not a set. Where motion can't tell, the climb's own edges stand: two sets in one stretch of motion, or under 15 seconds of it. A stretch over 90 seconds includes setting up, so it gives only the end. Rest between sets runs from one set's end to the next one's start.</p>
+<p>For example, the first leg press on 12 Nov: heart rate bottomed out at 16:35:35 and peaked at 16:37:05. Motion picked up at 16:36:08 and settled at 16:37:11, so the set is 16:36:08–16:37:11, 63 seconds rather than 90.</p>
 <p class="trust"><strong>How far to trust it.</strong> Start and end times are usually close. Names are provisional: the rules were checked against only a few sessions, and no runs before Strava was connected.</p>
 
 <p class="part">Reference</p>

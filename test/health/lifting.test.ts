@@ -26,9 +26,12 @@ const twoSets = heartRate(T0, T0 + 6 * 60_000, (ts) => {
   return 100 + bump(60) + bump(240);
 });
 
+/** No motion: each set's span falls back to its climb. */
+const strap = { heartRate: twoSets, motion: [], steps: [] };
+
 describe("lifting day", () => {
   test("joins the log to the lifting session and matches sets in order", () => {
-    const day = liftingDay(LOG, [workout("volleyball", 60), workout("lifting", 6)], null, twoSets);
+    const day = liftingDay(LOG, [workout("volleyball", 60), workout("lifting", 6)], null, strap);
 
     expect(day?.found).toBe("workout");
     expect(day?.matched).toBe(true);
@@ -42,20 +45,20 @@ describe("lifting day", () => {
       LOG,
       [workout("running", 30)],
       { start: T0, end: T0 + 6 * 60_000 },
-      twoSets,
+      strap,
     );
 
     expect(day).toMatchObject({ found: "movement", matched: true });
   });
 
   test("a log with no strap session is kept, unmatched", () => {
-    const day = liftingDay(LOG, [workout("running", 30)], null, twoSets);
+    const day = liftingDay(LOG, [workout("running", 30)], null, strap);
 
     expect(day).toMatchObject({ exercises: 1, session: null, found: null, matched: false });
-    expect(day?.sets.every((s) => s.climb === null)).toBe(true);
+    expect(day?.sets.every((s) => s.climb === null && s.span === null)).toBe(true);
   });
 
   test("no log, nothing to join", () => {
-    expect(liftingDay([], [workout("lifting", 30)], null, twoSets)).toBeNull();
+    expect(liftingDay([], [workout("lifting", 30)], null, strap)).toBeNull();
   });
 });

@@ -684,7 +684,7 @@ function WalkShades(props: {
   });
 }
 
-/** Each matched set as a band from its start to its HR peak, in its exercise's colour. */
+/** Each matched set as a band from its start to its end, in its exercise's colour. */
 function SetBands(props: {
   sets: WorkoutDetail["sets"];
   x: (ms: number) => number;
@@ -692,12 +692,12 @@ function SetBands(props: {
 }) {
   const { x } = props;
   return props.sets.map((s, i) =>
-    s.start && s.peak ? (
+    s.start && s.end ? (
       <rect
         key={`${s.exercise}${i}`}
         x={x(s.start)}
         y={0}
-        width={Math.max(2, x(s.peak) - x(s.start))}
+        width={Math.max(2, x(s.end) - x(s.start))}
         height={props.height}
         fill={EXERCISE_COLORS[s.exerciseIndex % EXERCISE_COLORS.length]}
         fill-opacity={s.warmUp ? 0.14 : 0.3}
