@@ -1,7 +1,7 @@
-// The Health page: recovery, then sleep (a night's stages over the sleep trends), heart and
-// vitals. The trend rows are home's (web/components/health.tsx), given the page's width. The night
-// is the address's `?night=`, last night without it; the range is `?range=`. Every row is as of
-// the night's day, so stepping back a night reads as if that day were today.
+// The Health page: recovery and strain, then sleep (a night's stages over the sleep trends), heart
+// and vitals. The trend rows are home's (web/components/health.tsx), given the page's width. The
+// night is the address's `?night=`, last night without it; the range is `?range=`. Every row is
+// as of the night's day, so stepping back a night reads as if that day were today.
 
 import { useEffect, useState } from "preact/hooks";
 import type { HealthGroup, MetricTrend } from "../../src/home/types";
@@ -26,7 +26,9 @@ export const health: Module = {
   view: HealthPage,
 };
 
-/** Recovery is in home's heart group; here it heads the page on its own. */
+/** How well you have recovered and how hard you pushed head the page, out of their groups. */
+const TOP = ["recovery", "strain"];
+
 const SECTIONS: { title: string; group: HealthGroup }[] = [
   { title: "Sleep", group: "sleep" },
   { title: "Heart", group: "heart" },
@@ -49,7 +51,7 @@ function HealthPage({ route, home }: PageProps) {
       ))}
     </div>
   );
-  const recovery = metrics.filter((m) => m.key === "recovery");
+  const top = TOP.flatMap((key) => metrics.filter((m) => m.key === key));
   return (
     <main class="health-page">
       <section class="section">
@@ -72,7 +74,7 @@ function HealthPage({ route, home }: PageProps) {
             />
           </div>
         </div>
-        {rows(recovery)}
+        {rows(top)}
       </section>
       {SECTIONS.map(({ title, group }) => (
         <section key={group} class="section">
@@ -89,7 +91,7 @@ function HealthPage({ route, home }: PageProps) {
               onUnauthorized={onUnauthorized}
             />
           )}
-          {rows(metrics.filter((m) => m.group === group && m.key !== "recovery"))}
+          {rows(metrics.filter((m) => m.group === group && !TOP.includes(m.key)))}
         </section>
       ))}
     </main>
