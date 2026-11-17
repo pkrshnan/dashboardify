@@ -22,10 +22,11 @@ function page(id: string, group: 1 | 2 | 3 | 4 | "bottom", phone: "tab" | "more"
   };
 }
 
-const FIVE = [
+const SIX = [
   page("today", 1, "tab"),
   page("tasks", 2, "tab"),
   page("lists", 2, "tab"),
+  page("health", 3, "tab"),
   page("activity", 3, "more"),
   page("settings", "bottom", "more"),
 ];
@@ -39,34 +40,34 @@ describe("nav rules", () => {
   });
 
   test("the sidebar keeps group order, drops empty groups and sets the bottom apart", () => {
-    const { groups, bottom } = sidebarGroups(FIVE);
+    const { groups, bottom } = sidebarGroups(SIX);
 
     expect(groups.map((g) => g.map((m) => m.id))).toEqual([
       ["today"],
       ["tasks", "lists"],
-      ["activity"],
+      ["health", "activity"],
     ]);
     expect(bottom.map((m) => m.id)).toEqual(["settings"]);
   });
 
   test("while every page fits, each is a tab and there is no More", () => {
-    const { tabs, more } = phoneTabs(FIVE.slice(0, 4));
+    const { tabs, more } = phoneTabs(SIX.slice(0, 5));
 
-    expect(tabs.map((m) => m.id)).toEqual(["today", "tasks", "lists", "activity"]);
+    expect(tabs.map((m) => m.id)).toEqual(["today", "tasks", "lists", "health", "activity"]);
     expect(more).toEqual([]);
   });
 
-  test("Habits, Health, Activity and Lifting go under More, with Settings", () => {
+  test("Activity and Lifting go under More, with Settings", () => {
     const { tabs, more } = phoneTabs(MODULES);
 
-    expect(tabs.map((m) => m.id)).toEqual(["today", "lists"]);
-    expect(more.map((m) => m.id)).toEqual(["habits", "health", "activity", "lifting", "settings"]);
+    expect(tabs.map((m) => m.id)).toEqual(["today", "lists", "habits", "health"]);
+    expect(more.map((m) => m.id)).toEqual(["activity", "lifting", "settings"]);
   });
 
-  test("past four pages, the tab pages stay and the rest go under More", () => {
-    const { tabs, more } = phoneTabs(FIVE);
+  test("past five pages, the tab pages stay and the rest go under More", () => {
+    const { tabs, more } = phoneTabs(SIX);
 
-    expect(tabs.map((m) => m.id)).toEqual(["today", "tasks", "lists"]);
+    expect(tabs.map((m) => m.id)).toEqual(["today", "tasks", "lists", "health"]);
     expect(more.map((m) => m.id)).toEqual(["activity", "settings"]);
   });
 });
@@ -99,17 +100,23 @@ describe("Sidebar", () => {
 });
 
 describe("TabBar", () => {
-  test("shows Today and Lists as tabs, and More for the rest", () => {
+  test("shows Today, Lists, Habits and Health as tabs, and More for the rest", () => {
     const { getAllByRole } = render(<TabBar modules={MODULES} current="today" more={MORE} />);
 
-    expect(getAllByRole("link").map((a) => a.textContent)).toEqual(["Today", "Lists", "More"]);
+    expect(getAllByRole("link").map((a) => a.textContent)).toEqual([
+      "Today",
+      "Lists",
+      "Habits",
+      "Health",
+      "More",
+    ]);
   });
 
   test("adds More when pages don't fit, and marks it for a page under it", () => {
-    const { getAllByRole } = render(<TabBar modules={FIVE} current="activity" more={MORE} />);
+    const { getAllByRole } = render(<TabBar modules={SIX} current="activity" more={MORE} />);
     const links = getAllByRole("link");
 
-    expect(links.map((a) => a.textContent)).toEqual(["today", "tasks", "lists", "More"]);
-    expect(links[3]?.getAttribute("aria-current")).toBe("page");
+    expect(links.map((a) => a.textContent)).toEqual(["today", "tasks", "lists", "health", "More"]);
+    expect(links[4]?.getAttribute("aria-current")).toBe("page");
   });
 });

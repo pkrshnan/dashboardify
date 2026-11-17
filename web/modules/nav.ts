@@ -4,7 +4,7 @@
 import type { Module } from "./types";
 
 /** The phone's tab bar holds this many pages; past it, the rest go under More. */
-export const MAX_TABS = 4;
+export const MAX_TABS = 5;
 
 /** The address a nav entry opens: its path without parameters ("/settings/:section?" → "/settings"). */
 export function pagePath(module: Module): string {

@@ -21,7 +21,7 @@ export const health: Module = {
   icon: "health",
   path: "/health",
   key: "h",
-  nav: { group: 3, phone: "more" },
+  nav: { group: 3, phone: "tab" },
   needsHome: true,
   view: HealthPage,
 };

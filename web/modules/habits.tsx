@@ -46,7 +46,7 @@ export const habits: Module = {
   icon: "habits",
   path: "/habits/:habit?",
   key: "b",
-  nav: { group: 2, phone: "more" },
+  nav: { group: 2, phone: "tab" },
   needsHome: false,
   view: HabitsPage,
 };

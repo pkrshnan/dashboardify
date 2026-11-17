@@ -6,8 +6,8 @@ search and Settings all read. Design canvas, with every page and state on deskto
 https://claude.ai/artifact/XuhyWehLi6CPS3yFr4paUU.
 
 Status: N1, N2 and N8 built: the sidebar, icon rail and tab bar list Today, Lists, Habits,
-Health, Activity and Settings. Past four pages, the phone keeps Today and Lists as tabs and More
-(`#/more`) takes the rest. Next, N3–N7.
+Health, Activity and Settings. Past five pages, the phone keeps Today, Lists, Habits and Health as
+tabs and More (`#/more`) takes the rest. Next, N3–N7.
 
 ## Where it started
 
@@ -36,7 +36,7 @@ for that later), typed sentences through a model (that's Ask, which will appear 
 | Modules | `web/modules/<id>.tsx`, listed in order in `web/modules/index.ts`. The shell never names a module. |
 | Context | `AppContext` holds the token, time zone, phone flag, `navigate`, `openPanel`, `toast`, `reloadHome` |
 | Desktop | A quiet sidebar, groups separated by space, Settings at the bottom; an icon rail under 1200 px |
-| Phone | A floating tab bar: Today, Search (centre), Lists, More. Tasks is pinned in Lists. |
+| Phone | A floating tab bar: Today, Lists, Habits, Health, More. Tasks is pinned in Lists. |
 | Command bar | `⌘K` / `Ctrl K` or `/`; the Search tab on the phone. Go, find, do and add in one box. |
 | Search | Pages, sections and commands searched in the browser with `fuse.js`; things from a new `SearchService`. Ask's index later becomes one more provider. |
 | Fall-through | Text matching nothing becomes an Add row through the capture parser |
@@ -53,8 +53,8 @@ The nav lists only pages that exist.
 | Calendar | `#/calendar/<date>` | `g c` | 2 | More | Planned |
 | Tasks | `#/lists/tasks`, pinned in Lists | | 2 | In Lists | Built ([lists.md](lists.md#web)) |
 | Lists | `#/lists/<list>` | `g l` | 2 | Tab | Built ([lists.md](lists.md)) |
-| Habits | `#/habits/<habit>` | `g b` | 2 | More | Built ([habits.md](habits.md)) |
-| Health | `#/health` (`?night=`, `?range=`) | `g h` | 3 | More | Built: recovery, the night and sleep trends, heart, vitals. Next: what moved recovery |
+| Habits | `#/habits/<habit>` | `g b` | 2 | Tab | Built ([habits.md](habits.md)) |
+| Health | `#/health` (`?night=`, `?range=`) | `g h` | 3 | Tab | Built: recovery, the night and sleep trends, heart, vitals. Next: what moved recovery |
 | Activity | `#/activity` (`?range=month`) | `g a` | 3 | More | Built: workouts, walks, lifting; strain, steps, zone 2 |
 | Journal | `#/journal/<date>` | `g j` | 4 | More | Planned |
 | Settings | `#/settings/<section>` | `g s` | bottom | More | Built |
