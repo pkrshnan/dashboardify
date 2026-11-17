@@ -88,7 +88,7 @@ either side, shaded teal. A Running total joins the row above when the range has
 `#/health`, with the same heading, range switch and sync labels as home. Under the title, a
 stepper names the day ("‹ Today ›", "‹ Sun 15 Nov ›"); it steps a day each way, never past
 today, and replaces the history entry, so Back leaves the page. The first section is what is
-live: the night that ended that morning, the day since, then recovery and strain. Then Heart,
+live: the night that ended that morning and the day since. Then Recovery and strain, Heart,
 Sleep and Vitals, each a column of home's rows given the full width. The day is today unless
 `?night=2026-11-12` names one. The night shows its times ("23:41–07:05"), time asleep
 and score, then a hypnogram (awake, REM, light and deep lanes in shades of the sleep colour, hour

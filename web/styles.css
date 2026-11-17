@@ -3176,11 +3176,6 @@ button.link {
   margin-bottom: 24px;
 }
 
-/* Recovery and strain follow the day's charts, as far below them as the rows are apart. */
-.night ~ .health-rows {
-  margin-top: 28px;
-}
-
 .night-title {
   margin: 0;
   font-size: var(--type-headline);

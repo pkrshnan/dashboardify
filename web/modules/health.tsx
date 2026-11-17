@@ -1,6 +1,6 @@
-// The Health page: a day stepper under the title, then what is live (the night's stages, the day
-// since, web/components/day-trace.tsx, recovery and strain), then the heart, sleep and vitals
-// trends. The trend rows are home's (web/components/health.tsx), given the page's width. The day
+// The Health page: a day stepper under the title, then what is live (the night's stages and the
+// day since, web/components/day-trace.tsx), then recovery and strain, and the heart, sleep and
+// vitals trends. The trend rows are home's (web/components/health.tsx), given the page's width. The day
 // is the address's `?night=`, today without it; the range is `?range=`. Every row is as of that
 // day, so stepping back reads as if that day were today.
 
@@ -29,7 +29,7 @@ export const health: Module = {
   view: HealthPage,
 };
 
-/** How well you have recovered and how hard you pushed: under the day, out of their groups. */
+/** How well you have recovered and how hard you pushed: their own section, out of their groups. */
 const TOP = ["recovery", "strain"];
 
 const SECTIONS: { title: string; group: HealthGroup }[] = [
@@ -72,6 +72,11 @@ function HealthPage({ route, home }: PageProps) {
           isPhone={isPhone}
           onUnauthorized={onUnauthorized}
         />
+      </section>
+      <section class="section">
+        <div class="section-head">
+          <h2>Recovery and strain</h2>
+        </div>
         {rows(top)}
       </section>
       {SECTIONS.map(({ title, group }) => (
