@@ -4,9 +4,13 @@
 
 import { fromJson, type JsonValue } from "@bufbuild/protobuf";
 import {
+  DayTraceSchema,
   ListActivityDaysResponseSchema,
   NightSchema,
   StageRun_Stage,
+  type TraceSeries,
+  TraceSeries_Kind,
+  TraceSpan_Kind,
   type Workout,
   WorkoutSchema,
   WorkoutStatus,
@@ -766,6 +770,71 @@ export async function fetchNight(token: Token, date: string): Promise<NightView>
       const stage = STAGES[r.stage];
       return stage ? [{ start: ms(r.startTime), end: ms(r.endTime), stage }] : [];
     }),
+  };
+}
+
+/** One signal over the day: a value per bucket from the day's start, null where none came. */
+export interface TraceSeriesView {
+  bucketMin: number;
+  values: (number | null)[];
+}
+
+export type TraceSpanKind = "sleep" | "workout" | "walk" | "notWorn";
+
+export interface DayTraceView {
+  start: number;
+  /** The next midnight, or now for today. */
+  end: number;
+  heartRate: TraceSeriesView & { low: (number | null)[]; high: (number | null)[] };
+  steps: TraceSeriesView;
+  skinTemp: TraceSeriesView;
+  /** What zones are measured against; null without a profile. */
+  maxHr: number | null;
+  spans: { kind: TraceSpanKind; start: number; end: number; workoutKind: string }[];
+}
+
+const SPAN_KINDS: Record<number, TraceSpanKind> = {
+  [TraceSpan_Kind.SLEEP]: "sleep",
+  [TraceSpan_Kind.WORKOUT]: "workout",
+  [TraceSpan_Kind.WALK]: "walk",
+  [TraceSpan_Kind.NOT_WORN]: "notWorn",
+};
+
+/** A day of heart rate, steps and skin temperature (docs/day-trace.md). */
+export async function fetchDayTrace(token: Token, date: string): Promise<DayTraceView> {
+  const t = fromJson(DayTraceSchema, await call<JsonValue>(token, `/v1/days/${date}/trace`));
+  const kind = (k: TraceSeries_Kind) => t.series.find((s) => s.kind === k);
+  const hr = kind(TraceSeries_Kind.HEART_RATE);
+  const missing = new Set(hr?.missingIndexes ?? []);
+  const withGaps = (values: number[] = []) => values.map((v, i) => (missing.has(i) ? null : v));
+  return {
+    start: ms(t.startTime),
+    end: ms(t.endTime),
+    heartRate: { ...seriesView(hr), low: withGaps(hr?.low), high: withGaps(hr?.high) },
+    steps: seriesView(kind(TraceSeries_Kind.STEPS)),
+    skinTemp: seriesView(kind(TraceSeries_Kind.SKIN_TEMPERATURE)),
+    maxHr: t.maxHeartRate ?? null,
+    spans: t.spans.flatMap((s) => {
+      const spanKind = SPAN_KINDS[s.kind];
+      return spanKind
+        ? [
+            {
+              kind: spanKind,
+              start: ms(s.startTime),
+              end: ms(s.endTime),
+              workoutKind: s.workoutKind,
+            },
+          ]
+        : [];
+    }),
+  };
+}
+
+function seriesView(series: TraceSeries | undefined): TraceSeriesView {
+  const missing = new Set(series?.missingIndexes ?? []);
+  return {
+    bucketMin: (series?.bucketSeconds ?? 60) / 60,
+    values: (series?.values ?? []).map((v, i) => (missing.has(i) ? null : v)),
   };
 }
 

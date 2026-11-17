@@ -1,11 +1,14 @@
-// The Health page: recovery and strain, then sleep (a night's stages over the sleep trends), heart
-// and vitals. The trend rows are home's (web/components/health.tsx), given the page's width. The
-// night is the address's `?night=`, last night without it; the range is `?range=`. Every row is
-// as of the night's day, so stepping back a night reads as if that day were today.
+// The Health page: recovery and strain, then sleep (a night's stages over the sleep trends), the
+// day since (web/components/day-trace.tsx), heart and vitals. The trend rows are home's
+// (web/components/health.tsx), given the page's width. The night is the address's `?night=`,
+// last night without it; the range is `?range=`. Every row is as of the night's day, so stepping
+// back a night reads as if that day were today, and the Day section shows that day.
 
+import { Fragment } from "preact";
 import { useEffect, useState } from "preact/hooks";
-import type { HealthGroup, MetricTrend } from "../../src/home/types";
+import type { HealthGroup, HomeView, MetricTrend } from "../../src/home/types";
 import { fetchHome, type Token, Unauthorized } from "../api";
+import { DayTrace } from "../components/day-trace";
 import { HealthStatus, Metric, RANGES } from "../components/health";
 import { Night } from "../components/night";
 import { Segmented } from "../components/segmented";
@@ -55,46 +58,66 @@ function HealthPage({ route, home }: PageProps) {
   return (
     <main class="health-page">
       <section class="section">
-        <div class="section-head">
-          <div class="activity-title">
-            <h1>Health</h1>
-          </div>
-          <div class="activity-range">
-            <HealthStatus
-              date={night}
-              range={range}
-              sync={view.healthSync}
-              timeZone={view.timeZone}
-            />
-            <Segmented
-              label="Trend range"
-              segments={RANGES}
-              value={range}
-              onChange={(r) => setQuery({ range: r === "1m" ? "" : r })}
-            />
-          </div>
-        </div>
+        <PageHead date={night} range={range} view={view} />
         {rows(top)}
       </section>
       {SECTIONS.map(({ title, group }) => (
-        <section key={group} class="section">
-          <div class="section-head">
-            <h2>{title}</h2>
-          </div>
+        <Fragment key={group}>
+          <section class="section">
+            <div class="section-head">
+              <h2>{title}</h2>
+            </div>
+            {group === "sleep" && (
+              <Night
+                token={token}
+                date={night}
+                today={view.date}
+                timeZone={view.timeZone}
+                onStep={(date) => setQuery({ night: date })}
+                onUnauthorized={onUnauthorized}
+              />
+            )}
+            {rows(metrics.filter((m) => m.group === group && !TOP.includes(m.key)))}
+          </section>
           {group === "sleep" && (
-            <Night
+            <DayTrace
               token={token}
               date={night}
               today={view.date}
               timeZone={view.timeZone}
-              onStep={(date) => setQuery({ night: date })}
+              isPhone={isPhone}
               onUnauthorized={onUnauthorized}
             />
           )}
-          {rows(metrics.filter((m) => m.group === group && !TOP.includes(m.key)))}
-        </section>
+        </Fragment>
       ))}
     </main>
+  );
+}
+
+/** The title, the sync labels as of the night's day, and the trend range. */
+function PageHead(props: { date: string; range: Range; view: HomeView }) {
+  const { view } = props;
+  return (
+    <div class="section-head">
+      <div class="activity-title">
+        <h1>Health</h1>
+      </div>
+      <div class="activity-range">
+        <HealthStatus
+          date={props.date}
+          range={props.range}
+          sync={view.healthSync}
+          timeZone={view.timeZone}
+        />
+        <Segmented
+          label="Trend range"
+          segments={RANGES}
+          value={props.range}
+          onChange={(r) => setQuery({ range: r === "1m" ? "" : r })}
+        />
+      </div>
+    </div>
   );
 }
 

@@ -86,23 +86,33 @@ const names = (el: Element) =>
   [...el.querySelectorAll(".metric-name")].map((n) => n.textContent ?? "");
 
 describe("Health page", () => {
-  test("recovery and strain head the page, then sleep, heart and vitals", () => {
+  test("recovery and strain head the page, then sleep, the day since, heart and vitals", () => {
     const page = showPage();
 
-    const sections = [...page.container.querySelectorAll("section")];
+    const sections = [...page.container.querySelectorAll("main > section")];
 
     expect(sections.map((s) => s.querySelector("h1, h2")?.textContent)).toEqual([
       "Health",
       "Sleep",
+      "Today",
       "Heart",
       "Vitals",
     ]);
     expect(sections.map(names)).toEqual([
       ["Recovery", "Strain"],
       ["Sleep score", "Time asleep", "Deep sleep", "REM sleep"],
+      [],
       ["HRV", "Resting HR", "VO2max"],
       ["Breathing rate", "Skin temperature"],
     ]);
+  });
+
+  test("the Day section shows the night's day", async () => {
+    const page = showPage({ night: "2026-11-09" });
+
+    expect(await page.findByText("No strap data for this day.")).toBeTruthy();
+    expect(page.getByRole("heading", { name: "Mon 9 Nov" })).toBeTruthy();
+    expect(asked).toContain("/v1/days/2026-11-09/trace");
   });
 
   test("shows last night without a night in the address", async () => {
@@ -110,7 +120,7 @@ describe("Health page", () => {
 
     expect(await page.findByText("No night recorded.")).toBeTruthy();
     expect(page.getByText("Night, 11–12 Nov")).toBeTruthy();
-    expect(asked).toEqual([`/v1/days/${TODAY}/night`]);
+    expect(asked).toEqual([`/v1/days/${TODAY}/night`, `/v1/days/${TODAY}/trace`]);
   });
 
   test("shows the night the address names", async () => {

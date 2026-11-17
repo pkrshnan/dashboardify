@@ -93,6 +93,15 @@ ticks in the server's time zone), the stage totals and "Estimated", plus "· unu
 the stages look unlike yours. Links step to the night before or after and replace the history
 entry, so Back leaves the page. Every row and the range label are as of that night's day.
 
+After Sleep comes the day since (canvas https://claude.ai/artifact/PshadTmZFoNAm9Uaxjg31Q),
+titled "Today" or the day ("Sun 15 Nov"): heart rate, steps and skin temperature, each its own
+chart on a 00:00–24:00 axis (every 3 hours, 6 on the phone) under a hairline, with its latest
+value (the total for steps) in large type at the right. Sleep, workouts and walks are shaded in
+their colours and time not worn is hatched; workouts and sleep are named over heart rate on
+desktop. Heart rate is a line over each minute's range, its grid the zone lines (bpm on the
+left, Z1–Z5 on the right), the line in the zone's shade of heart: `#6E4A5C` below zone 1, then
+`#9C5F7E`, `#CC6E9C`, `#FF7EB6`, `#FFA3CB`, `#FFD1E5`. Today ends at a red now line.
+
 ## Habits page
 
 `#/habits`; canvas https://claude.ai/artifact/PQe6S6nfjyGt242ui4udNK. A row per habit: a 20 px

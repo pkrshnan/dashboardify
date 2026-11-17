@@ -3265,6 +3265,218 @@ button.link {
   min-height: 44px;
 }
 
+/* ---- Day trace (docs/day-trace.md) ---- */
+
+.day-trace {
+  --hr: #ff7eb6;
+  display: flex;
+  flex-direction: column;
+}
+
+.trace-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+  font-size: var(--type-footnote);
+  color: var(--text-2);
+}
+
+.trace-legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.trace-legend li::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  box-sizing: border-box;
+}
+
+.trace-legend .sleep::before {
+  background: rgb(125 122 255 / 60%);
+}
+
+.trace-legend .workout::before {
+  background: rgb(100 210 255 / 60%);
+}
+
+.trace-legend .walk::before {
+  background: rgb(102 212 207 / 60%);
+}
+
+.trace-legend .not-worn::before {
+  border: 1px dashed var(--text-3);
+}
+
+/* Hairlines and space group the charts, as on the rest of the page; no cards. */
+.trace {
+  border-top: 1px solid var(--line-2);
+  padding: 16px 0 4px;
+}
+
+.trace-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.trace-title {
+  margin: 0;
+  font-size: var(--type-headline);
+  font-weight: 600;
+}
+
+.trace-value {
+  margin-left: auto;
+  font-size: var(--type-large);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.trace-unit {
+  font-size: var(--type-footnote);
+}
+
+.trace-labels {
+  position: relative;
+  height: 18px;
+  font-size: var(--type-caption);
+}
+
+.trace-labels span {
+  position: absolute;
+  bottom: 2px;
+  white-space: nowrap;
+}
+
+.trace-plot {
+  position: relative;
+}
+
+.trace-plot svg {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.trace-span {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.trace-span.sleep {
+  background: rgb(125 122 255 / 16%);
+}
+
+.trace-span.workout {
+  background: rgb(100 210 255 / 16%);
+}
+
+.trace-span.walk {
+  background: rgb(102 212 207 / 14%);
+}
+
+.trace-span.not-worn {
+  box-sizing: border-box;
+  border-inline: 1px dashed var(--control);
+  background: repeating-linear-gradient(135deg, rgb(142 142 147 / 12%) 0 4px, transparent 4px 8px);
+}
+
+.trace-grid {
+  stroke: var(--line-2);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.trace-grid.zone {
+  stroke: var(--line-3);
+  stroke-dasharray: 3 4;
+}
+
+.trace-band {
+  fill: var(--hr);
+  fill-opacity: 0.16;
+}
+
+.trace-line {
+  fill: none;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.trace-line.temp {
+  stroke: #ac8e68;
+}
+
+.trace-bars {
+  fill: #64d2ff;
+}
+
+/* Inside the plot, so the phone keeps the full width; a backing keeps them over the line. */
+.trace-tick {
+  position: absolute;
+  left: 0;
+  transform: translateY(-50%);
+  padding: 0 4px;
+  border-radius: 4px;
+  background: rgb(12 12 14 / 85%);
+  font-size: var(--type-caption);
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.trace-tick.right {
+  left: auto;
+  right: 0;
+}
+
+.trace-now {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1px solid var(--now);
+  pointer-events: none;
+}
+
+.trace-hours {
+  position: relative;
+  height: 22px;
+  font-size: var(--type-caption);
+}
+
+.trace-hour {
+  position: absolute;
+  top: 6px;
+  transform: translateX(-50%);
+}
+
+.trace-hour.start {
+  transform: none;
+}
+
+.trace-hour.end {
+  transform: translateX(-100%);
+}
+
+.trace-note {
+  min-height: 16px;
+  margin: 4px 0 0;
+  font-size: var(--type-footnote);
+}
+
 /* ---- Habits (docs/habits.md#web) ---- */
 
 .habits {
