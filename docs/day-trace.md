@@ -2,8 +2,7 @@
 
 Heart rate, steps and skin temperature over a day, as charts on the Health page, with sleep,
 workouts and walks shaded behind them so you can see why a line moves. Today by default.
-Design: https://claude.ai/artifact/PshadTmZFoNAm9Uaxjg31Q (DT3 waits for its approval). Status: DT1–DT2
-built.
+Design: https://claude.ai/artifact/PshadTmZFoNAm9Uaxjg31Q. Status: DT1–DT3 built.
 
 ## Goals
 
@@ -59,5 +58,5 @@ that minute; on desktop, leaving the charts goes back to the latest.
 | --- | --- | --- | --- |
 | DT1 | Plan | This doc, CLAUDE.md, roadmap | — |
 | DT2 | GetDayTrace | `src/health/trace.ts` (buckets and spans), the RPC in `activity.proto` and `src/server/api/activity.ts`, binding, api.md | Each series; gaps; HR 0; counter wrap; zones without a profile; spans; local day across two UTC files; today cut at now; empty day |
-| DT3 | Day section | The charts and shading on the Health page, demo streams for today | Scales, gaps break the line, step total, zone colours; follows `?night=` |
+| DT3 | Day section | The charts and shading on the Health page, demo streams for today and yesterday | Scales, gaps break the line, step total, zone colours; follows `?night=` |
 | DT4 | Reading a minute | The shared minute and each card value at it | Nearest bucket per series; missing shows "–"; back to latest on leave |

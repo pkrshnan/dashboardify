@@ -16,7 +16,7 @@ screenshots.
 **On a PR:** the `demo` label runs the demo from that branch on GitHub Actions and comments a
 temporary public `trycloudflare.com` URL and token. It stays up 30 minutes and restarts on each
 push; removing the label stops it. Actions › Demo › Run workflow starts one on any branch for up
-to 60 minutes. It only holds made-up data.
+to 60 minutes, and its `time` pins the clock as `DEMO_TIME` does. It only holds made-up data.
 
 `APPLE_ID=you@icloud.com bun scripts/caldav-check.ts` lists a real iCloud account's calendars and
 saves nothing.

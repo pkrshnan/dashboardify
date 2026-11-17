@@ -1,8 +1,9 @@
 // Serves the web app with made-up data, for working on the UI without a vault or a strap:
 //   bun run demo   then open http://localhost:8788 and sign in with "demo-token-0123456789"
-// It writes a temporary vault, a year of computed health rows and three months of workouts and
-// walks (demo-activity.ts), and runs the calendar against the in-memory iCloud the tests use, so
-// the capture box can add, show and undo real events.
+// It writes a temporary vault, a year of computed health rows, three months of workouts and walks
+// (demo-activity.ts) and today's and yesterday's strap streams (demo-day.ts), and runs the
+// calendar against the in-memory iCloud the tests use, so the capture box can add, show and undo
+// real events.
 
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -32,6 +33,7 @@ import { FakeCalDav } from "../test/calendar/fake-caldav";
 import { DISHOOM, FakePhoton } from "../test/places/fake-photon";
 import homepage from "../web/index.html";
 import { DemoActivity } from "./demo-activity";
+import { writeDemoDays } from "./demo-day";
 import { demoNight } from "./demo-sleep";
 
 /** Which demo calendar holds each category's events. */
@@ -61,6 +63,8 @@ const config: Config = {
 };
 
 await Bun.write(join(config.vaultPath, "Inbox.md"), tasks().join("\n"));
+// Only a birth date: enough for max HR and the Day section's zones, without turning on calories.
+await Bun.write(join(config.vaultPath, "Profile.md"), "---\nbirth_date: 1994-03-12\n---\n");
 await Bun.write(join(config.vaultPath, "Lists/Shopping.md"), demoShopping());
 await Bun.write(join(config.vaultPath, "Lists/Packing, Lisbon.md"), demoPacking());
 const derived = new DerivedStore(config.healthDerivedPath);
@@ -79,6 +83,13 @@ const activity = new DemoActivity({
   now: (now?.() ?? new Date()).getTime(),
 });
 await activity.write();
+await writeDemoDays({
+  derived,
+  raw: new RawStore(config.healthRawPath),
+  timeZone: TIME_ZONE,
+  today,
+  now: (now?.() ?? new Date()).getTime(),
+});
 await writeHabits(new Vault(config.vaultPath, TIME_ZONE));
 await writeLifting(new Vault(config.vaultPath, TIME_ZONE));
 // DEMO_SYNC_MIN=300 makes the strap data that many minutes old (default 12), to see it lag.
