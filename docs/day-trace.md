@@ -2,7 +2,7 @@
 
 Heart rate, steps and skin temperature over a day, as charts on the Health page, with sleep,
 workouts and walks shaded behind them so you can see why a line moves. Today by default.
-Design: to come (DT3 waits for its canvas). Status: planned (DT1–DT4).
+Design: https://claude.ai/artifact/PshadTmZFoNAm9Uaxjg31Q (DT3 waits for its approval). Status: planned (DT1–DT4).
 
 ## Goals
 
@@ -45,10 +45,12 @@ trace, not `404`. Fields: `proto/dashboardify/v1/activity.proto`.
 
 ## Web
 
-The three charts stack on one shared 00:00–24:00 axis, each with its name, the latest or total
-value, and a few y ticks in HTML (as the workout HR chart does, so they stay readable on a
-phone). Spans shade all three, in the sleep, activity and walk colours. Hovering (or dragging on
-the phone) shows a line through every chart at that minute with each value.
+Each signal is its own card, full width and stacked: heart rate, then steps, then skin
+temperature. A card has its title, a large value (the latest, or the day's total for steps),
+its own 00:00–24:00 axis and the shading, with y labels inside the plot so a phone keeps the
+full width. Heart rate's grid is the zone lines, labelled with bpm on the left and Z1–Z5 on
+the right. Hovering or dragging picks one minute for all three, and each card's value shows
+that minute; on desktop, leaving the charts goes back to the latest.
 
 ## Build plan
 
@@ -57,4 +59,4 @@ the phone) shows a line through every chart at that minute with each value.
 | DT1 | Plan | This doc, CLAUDE.md, roadmap | — |
 | DT2 | GetDayTrace | `src/health/trace.ts` (buckets and spans), the RPC in `activity.proto` and `src/server/api/activity.ts`, binding, api.md | Each series; gaps; HR 0; counter wrap; zones without a profile; spans; local day across two UTC files; today cut at now; empty day |
 | DT3 | Day section | The charts and shading on the Health page, demo streams for today | Scales, gaps break the line, step total, zone colours; follows `?night=` |
-| DT4 | Reading a minute | The shared hover and drag readout | Nearest bucket per series; missing shows "–" |
+| DT4 | Reading a minute | The shared minute and each card value at it | Nearest bucket per series; missing shows "–"; back to latest on leave |
