@@ -143,6 +143,29 @@ describe("readOccurrences", () => {
     });
   });
 
+  test("two moved instances with no master are each shown on their own", async () => {
+    const ics = (await fixture("icloud-recurring.ics"))
+      .replace(/BEGIN:VEVENT[\s\S]*?RRULE[\s\S]*?END:VEVENT\n/, "")
+      .replace(
+        "END:VCALENDAR",
+        [
+          "BEGIN:VEVENT",
+          "DTSTART;TZID=Europe/London:20261109T100000",
+          "DTEND;TZID=Europe/London:20261109T103000",
+          "RECURRENCE-ID;TZID=Europe/London:20261109T090000",
+          "SUMMARY:Standup (moved again)",
+          "UID:9E8D7C6B-5A4F-4E3D-8C2B-1A0F9E8D7C6B",
+          "END:VEVENT",
+          "END:VCALENDAR",
+        ].join("\n"),
+      );
+
+    expect(readOccurrences(ics, window).map((o) => o.title)).toEqual([
+      "Standup (moved)",
+      "Standup (moved again)",
+    ]);
+  });
+
   test("floating times are read in the server's zone", async () => {
     const [lunch] = await read("floating-overnight.ics", { floatingZone: "America/New_York" });
 

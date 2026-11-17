@@ -49,16 +49,18 @@ export function readOccurrences(ics: string, options: ReadOptions): Occurrence[]
   const reader = { ...options, zones };
   const events = calendar.getAllSubcomponents("vevent").map((vevent) => new ICAL.Event(vevent));
   const masters = events.filter((event) => !event.isRecurrenceException());
+  // Instances whose master isn't here (a shared calendar can send just those): each shown alone.
+  // Kept apart from the masters, so a second instance of the series isn't related to the first.
+  const orphans: ICAL.Event[] = [];
   for (const exception of events.filter((event) => event.isRecurrenceException())) {
     const master = masters.find((event) => event.uid === exception.uid);
     if (master) {
       master.relateException(exception);
     } else {
-      // An instance whose master isn't here (a shared calendar can send just that): show it alone.
-      masters.push(exception);
+      orphans.push(exception);
     }
   }
-  return masters.flatMap((event) =>
+  return [...masters, ...orphans].flatMap((event) =>
     event.isRecurring() ? expand(event, reader) : single(event, reader),
   );
 }
