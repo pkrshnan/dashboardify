@@ -100,7 +100,11 @@ value (the total for steps) in large type at the right. Sleep, workouts and walk
 their colours and time not worn is hatched; workouts and sleep are named over heart rate on
 desktop. Heart rate is a line over each minute's range, its grid the zone lines (bpm on the
 left, Z1–Z5 on the right), the line in the zone's shade of heart: `#6E4A5C` below zone 1, then
-`#9C5F7E`, `#CC6E9C`, `#FF7EB6`, `#FFA3CB`, `#FFD1E5`. Today ends at a red now line.
+`#9C5F7E`, `#CC6E9C`, `#FF7EB6`, `#FFA3CB`, `#FFD1E5`. Today ends at a red now line. Hovering
+or dragging on any chart picks a minute: a line runs through all three, each value reads that
+minute (heart rate with its zone, steps their 5 minutes) and each note gives the time and what
+was happening ("08:05 · Lifting"). Leaving with the mouse goes back to the latest; a finger's
+minute stays. The charts take only sideways drags, so the page still scrolls.
 
 ## Habits page
 

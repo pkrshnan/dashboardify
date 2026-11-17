@@ -1,28 +1,33 @@
 // The Health page's Day section: heart rate, steps and skin temperature over one day, each its own
 // chart on the day's 00:00–24:00 axis, with sleep, workouts, walks and time not worn shaded
 // behind (docs/day-trace.md). From GET /v1/days/{date}/trace. The SVGs stretch to the width, so
-// the scales and hours are HTML and stay readable on a phone.
+// the scales and hours are HTML and stay readable on a phone. Hovering or dragging on any chart
+// picks one minute for all three, and each header reads that minute.
 
-import type { ComponentChildren } from "preact";
+import type { ComponentChildren, JSX } from "preact";
 import { useEffect, useState } from "preact/hooks";
 import { type DayTraceView, fetchDayTrace, type Token, Unauthorized } from "../api";
 import { nowIn } from "../lib/clock";
 import {
   bandPath,
   barPath,
+  type Clock,
   dayMinutes,
   extent,
   HR_RANGE,
-  latest,
+  heartRateReading,
   linePath,
+  minuteAt,
+  type Reading,
   type Scale,
   scale,
+  skinTempReading,
   stepsMax,
+  stepsReading,
   tempRange,
   total,
   ZONE_COLORS,
   ZONE_SHARES,
-  zoneOf,
   zonePaths,
 } from "../lib/day-trace";
 import { shortDate } from "../lib/format";
@@ -78,7 +83,9 @@ function DayBody(props: Props) {
   if (trace === null || !hasData(trace)) {
     return <p class="muted">No strap data for this day.</p>;
   }
-  return <Charts trace={trace} timeZone={props.timeZone} isPhone={props.isPhone} />;
+  return (
+    <Charts key={trace.start} trace={trace} timeZone={props.timeZone} isPhone={props.isPhone} />
+  );
 }
 
 function hasData(trace: DayTraceView): boolean {
@@ -94,19 +101,23 @@ interface ChartProps {
   trace: DayTraceView;
   minutes: number;
   height: number;
-  clock: (minute: number) => string;
+  clock: Clock;
   isPhone: boolean;
-  /** " today" while the day is still going, so a past day's range doesn't say "today". */
-  sofar: string;
+  /** The minute being read, or null for the latest values. */
+  cursor: number | null;
+  onPick: (minute: number | null) => void;
 }
 
 function Charts(props: { trace: DayTraceView; timeZone: string; isPhone: boolean }) {
   const { trace, isPhone } = props;
-  const clock = (minute: number) =>
-    nowIn(props.timeZone, new Date(trace.start + minute * 60_000)).time;
+  const [cursor, setCursor] = useState<number | null>(null);
   const minutes = dayMinutes(trace);
-  const sofar = trace.end < trace.start + minutes * 60_000 ? " today" : "";
-  const shared = { trace, minutes, clock, isPhone, sofar };
+  const clock: Clock = {
+    at: (minute) => nowIn(props.timeZone, new Date(trace.start + minute * 60_000)).time,
+    // A past day's range shouldn't say "today".
+    sofar: trace.end < trace.start + minutes * 60_000 ? " today" : "",
+  };
+  const shared = { trace, minutes, clock, isPhone, cursor, onPick: setCursor };
   const size = isPhone ? "phone" : "desktop";
   return (
     <div class="day-trace">
@@ -130,23 +141,15 @@ function Legend() {
 }
 
 function HeartRate(props: ChartProps) {
-  const { trace, height, clock } = props;
+  const { trace, height } = props;
   const hr = trace.heartRate;
   const y = scale(HR_RANGE.lo, HR_RANGE.hi, height);
-  const last = latest(hr);
   const day = extent(hr.values);
   const zones = trace.maxHr ? ZONE_SHARES.map((share) => share * (trace.maxHr ?? 0)) : [];
   return (
     <Chart
       title="Heart rate"
-      value={last ? String(Math.round(last.value)) : "–"}
-      unit="bpm"
-      valueColor={last && trace.maxHr ? ZONE_COLORS[zoneOf(last.value, trace.maxHr)] : undefined}
-      note={
-        last && day
-          ? `at ${clock(last.index * hr.bucketMin)} · ${Math.round(day.lo)}–${Math.round(day.hi)}${props.sofar}`
-          : ""
-      }
+      reading={heartRateReading(trace, props.cursor, props.clock)}
       above={props.isPhone ? null : <SpanLabels {...props} />}
       plot={
         <Plot
@@ -186,9 +189,7 @@ function Steps(props: ChartProps) {
   return (
     <Chart
       title="Steps"
-      value={steps.toLocaleString("en-US")}
-      unit="steps"
-      note=""
+      reading={stepsReading(trace, props.cursor, props.clock)}
       plot={
         <Plot
           {...props}
@@ -203,23 +204,16 @@ function Steps(props: ChartProps) {
 }
 
 function SkinTemp(props: ChartProps) {
-  const { trace, height, clock } = props;
+  const { trace, height } = props;
   const temp = trace.skinTemp;
   const range = tempRange(temp.values);
   const y = scale(range.lo, range.hi, height);
-  const last = latest(temp);
   const day = extent(temp.values);
   const ticks = [range.lo + 1, (range.lo + range.hi) / 2, range.hi - 1].map(Math.round);
   return (
     <Chart
       title="Skin temperature"
-      value={last ? last.value.toFixed(1) : "–"}
-      unit="°C"
-      note={
-        last && day
-          ? `at ${clock(last.index * temp.bucketMin)} · ${day.lo.toFixed(1)}–${day.hi.toFixed(1)}${props.sofar}`
-          : ""
-      }
+      reading={skinTempReading(trace, props.cursor, props.clock)}
       plot={
         <Plot
           {...props}
@@ -239,28 +233,25 @@ function SkinTemp(props: ChartProps) {
 
 function Chart(props: {
   title: string;
-  value: string;
-  unit: string;
-  valueColor?: string;
-  note: string;
+  reading: Reading;
   above?: ComponentChildren;
   plot: ComponentChildren;
 }) {
+  const { reading } = props;
   return (
     <section class="trace">
       <div class="trace-head">
         <h3 class="trace-title">{props.title}</h3>
-        <span
-          class="trace-value"
-          style={props.valueColor ? { color: props.valueColor } : undefined}
-        >
-          {props.value}
+        <span class="trace-value" style={reading.color ? { color: reading.color } : undefined}>
+          {reading.value}
         </span>
-        <span class="trace-unit muted">{props.unit}</span>
+        <span class="trace-unit muted">{reading.unit}</span>
       </div>
       {props.above}
       {props.plot}
-      <p class="trace-note muted">{props.note}</p>
+      <p class="trace-note muted" aria-live="polite">
+        {reading.note}
+      </p>
     </section>
   );
 }
@@ -288,14 +279,8 @@ function Plot(
   const hours = Array.from({ length: Math.floor(minutes / every) + 1 }, (_, i) => i * every);
   return (
     <>
-      <div class="trace-plot" style={{ height: `${height}px` }}>
-        {trace.spans.map((s) => (
-          <div
-            key={`${s.kind}${s.start}`}
-            class={`trace-span ${s.kind === "notWorn" ? "not-worn" : s.kind}`}
-            style={{ left: pct(at(s.start)), width: pct(at(s.end) - at(s.start)) }}
-          />
-        ))}
+      <div class="trace-plot" style={{ height: `${height}px` }} {...picking(props, now)}>
+        <Shading trace={trace} pct={pct} />
         <svg
           viewBox={`0 0 ${minutes} ${height}`}
           preserveAspectRatio="none"
@@ -319,10 +304,47 @@ function Plot(
         </svg>
         <Ticks grid={props.grid} names={props.names ?? []} height={height} />
         {now < minutes && <div class="trace-now" style={{ left: pct(now) }} />}
+        {props.cursor !== null && (
+          <div class="trace-cursor" style={{ left: pct(props.cursor + 0.5) }} />
+        )}
       </div>
       <Hours {...props} hours={hours} pct={pct} />
     </>
   );
+}
+
+/** Sleep, workouts, walks and time not worn, behind the chart. */
+function Shading(props: { trace: DayTraceView; pct: (minute: number) => string }) {
+  const { trace, pct } = props;
+  const at = (ms: number) => (ms - trace.start) / 60_000;
+  return trace.spans.map((s) => (
+    <div
+      key={`${s.kind}${s.start}`}
+      class={`trace-span ${s.kind === "notWorn" ? "not-worn" : s.kind}`}
+      style={{ left: pct(at(s.start)), width: pct(at(s.end) - at(s.start)) }}
+    />
+  ));
+}
+
+/**
+ * A mouse reads the minute it is over and lets go on leaving; a finger reads where it touches or
+ * drags and the reading stays, since there is nothing to leave. The plot only takes sideways
+ * drags (`touch-action: pan-y`), so the page still scrolls.
+ */
+function picking(props: ChartProps, now: number): JSX.HTMLAttributes<HTMLDivElement> {
+  const pick = (e: JSX.TargetedPointerEvent<HTMLDivElement>) => {
+    const box = e.currentTarget.getBoundingClientRect();
+    props.onPick(minuteAt(e.clientX - box.left, box.width, props.minutes, now));
+  };
+  return {
+    onPointerDown: pick,
+    onPointerMove: pick,
+    onPointerLeave: (e) => {
+      if (e.pointerType === "mouse") {
+        props.onPick(null);
+      }
+    },
+  };
 }
 
 /** The y labels inside the plot: values on the left, zone names on the right. */
@@ -356,7 +378,7 @@ function Hours(props: ChartProps & { hours: number[]; pct: (minute: number) => s
     <div class="trace-hours muted" aria-hidden>
       {hours.map((m, i) => (
         <span key={m} class={`trace-hour${edge(i, hours.length)}`} style={{ left: pct(m) }}>
-          {m === minutes || m === 1440 ? "24:00" : props.clock(m)}
+          {m === minutes || m === 1440 ? "24:00" : props.clock.at(m)}
         </span>
       ))}
     </div>
@@ -380,8 +402,8 @@ function SpanLabels(props: ChartProps) {
     <div class="trace-labels muted" aria-hidden>
       {named.map((s) => (
         <span key={s.start} style={{ left: `${(at(s.start) / minutes) * 100}%` }}>
-          {s.kind === "sleep" ? "Sleep" : capitalised(s.workoutKind)} {clock(at(s.start))}–
-          {clock(at(s.end))}
+          {s.kind === "sleep" ? "Sleep" : capitalised(s.workoutKind)} {clock.at(at(s.start))}–
+          {clock.at(at(s.end))}
         </span>
       ))}
     </div>
