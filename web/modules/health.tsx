@@ -1,8 +1,8 @@
-// The Health page: what is live first (recovery, strain, a night's stages and the day since,
-// web/components/day-trace.tsx), then the heart, sleep and vitals trends. The trend rows are home's
-// (web/components/health.tsx), given the page's width. The night is the address's `?night=`,
-// last night without it; the range is `?range=`. Every row is as of the night's day, so stepping
-// back a night reads as if that day were today, and the Day section shows that day.
+// The Health page: a day stepper under the title, then what is live (the night's stages, the day
+// since, web/components/day-trace.tsx, recovery and strain), then the heart, sleep and vitals
+// trends. The trend rows are home's (web/components/health.tsx), given the page's width. The day
+// is the address's `?night=`, today without it; the range is `?range=`. Every row is as of that
+// day, so stepping back reads as if that day were today.
 
 import { useEffect, useState } from "preact/hooks";
 import type { HealthGroup, HomeView, MetricTrend } from "../../src/home/types";
@@ -12,6 +12,7 @@ import { HealthStatus, Metric, RANGES } from "../components/health";
 import { Night } from "../components/night";
 import { Segmented } from "../components/segmented";
 import type { Range } from "../lib/chart";
+import { addDays, shortDate } from "../lib/format";
 import { nightDate } from "../lib/night";
 import { setQuery } from "../lib/use-route";
 import { useApp } from "./context";
@@ -28,7 +29,7 @@ export const health: Module = {
   view: HealthPage,
 };
 
-/** How well you have recovered and how hard you pushed head the page, out of their groups. */
+/** How well you have recovered and how hard you pushed: under the day, out of their groups. */
 const TOP = ["recovery", "strain"];
 
 const SECTIONS: { title: string; group: HealthGroup }[] = [
@@ -58,24 +59,21 @@ function HealthPage({ route, home }: PageProps) {
     <main class="health-page">
       <section class="section">
         <PageHead date={night} range={range} view={view} />
-        {rows(top)}
         <Night
           token={token}
           date={night}
-          today={view.date}
           timeZone={view.timeZone}
-          onStep={(date) => setQuery({ night: date })}
           onUnauthorized={onUnauthorized}
         />
+        <DayTrace
+          token={token}
+          date={night}
+          timeZone={view.timeZone}
+          isPhone={isPhone}
+          onUnauthorized={onUnauthorized}
+        />
+        {rows(top)}
       </section>
-      <DayTrace
-        token={token}
-        date={night}
-        today={view.date}
-        timeZone={view.timeZone}
-        isPhone={isPhone}
-        onUnauthorized={onUnauthorized}
-      />
       {SECTIONS.map(({ title, group }) => (
         <section key={group} class="section">
           <div class="section-head">
@@ -95,6 +93,7 @@ function PageHead(props: { date: string; range: Range; view: HomeView }) {
     <div class="section-head">
       <div class="activity-title">
         <h1>Health</h1>
+        <DayStep date={props.date} today={view.date} />
       </div>
       <div class="activity-range">
         <HealthStatus
@@ -111,6 +110,44 @@ function PageHead(props: { date: string; range: Range; view: HomeView }) {
         />
       </div>
     </div>
+  );
+}
+
+/**
+ * The day the page shows, Today or "Sun 15 Nov": the night that ended that morning, the day
+ * since, and every row as of it. Steps replace the history entry, so Back leaves the page.
+ */
+function DayStep(props: { date: string; today: string }) {
+  const { date, today } = props;
+  return (
+    <div class="day-step">
+      <button
+        type="button"
+        class="link-button"
+        aria-label="Day before"
+        onClick={() => setQuery({ night: addDays(date, -1) })}
+      >
+        <Chevron d="M12.5 5l-5 5 5 5" />
+      </button>
+      <span>{date === today ? "Today" : shortDate(date)}</span>
+      <button
+        type="button"
+        class="link-button"
+        aria-label="Day after"
+        disabled={date >= today}
+        onClick={() => setQuery({ night: addDays(date, 1) === today ? "" : addDays(date, 1) })}
+      >
+        <Chevron d="M7.5 5l5 5-5 5" />
+      </button>
+    </div>
+  );
+}
+
+function Chevron(props: { d: string }) {
+  return (
+    <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true">
+      <path d={props.d} />
+    </svg>
   );
 }
 

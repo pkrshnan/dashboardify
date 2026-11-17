@@ -64,7 +64,6 @@ function show(date = DAY, isPhone = false) {
     <DayTrace
       token="t"
       date={date}
-      today={DAY}
       timeZone="UTC"
       isPhone={isPhone}
       onUnauthorized={() => undefined}
@@ -82,11 +81,10 @@ describe("Day section", () => {
     expect(page.getByText("at 08:09 · 60–69 today")).toBeTruthy();
   });
 
-  test("today is titled Today and stops at a now line; another day by its date", async () => {
+  test("today stops at a now line; another day doesn't", async () => {
     const today = show();
     await today.findByText("69");
 
-    expect(today.getByRole("heading", { name: "Today" })).toBeTruthy();
     expect(today.container.querySelectorAll(".trace-now")).toHaveLength(3);
     today.unmount();
 
@@ -94,7 +92,7 @@ describe("Day section", () => {
     const past = show("2026-11-01");
     await past.findByText("69");
 
-    expect(past.getByRole("heading", { name: "Sun 1 Nov" })).toBeTruthy();
+    expect(past.container.querySelectorAll(".trace-now")).toHaveLength(0);
     expect(past.getByText("at 08:09 · 60–69")).toBeTruthy();
   });
 

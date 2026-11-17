@@ -3176,8 +3176,8 @@ button.link {
   margin-bottom: 24px;
 }
 
-/* The night follows recovery and strain on the Health page, as the rows are spaced. */
-.health-rows + .night {
+/* Recovery and strain follow the day's charts, as far below them as the rows are apart. */
+.night ~ .health-rows {
   margin-top: 28px;
 }
 
@@ -3257,17 +3257,37 @@ button.link {
   font-size: var(--type-footnote);
 }
 
-.night-steps {
+/* The Health page's day, under its title: Today or "Sun 15 Nov", between a step each way. */
+.day-step {
   display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  margin-top: 20px;
-  font-size: var(--type-footnote);
+  align-items: center;
+  /* The first chevron lines up with the title. */
+  margin-left: -12px;
 }
 
-.night-steps .link-button {
-  font-size: var(--type-footnote);
+.day-step button {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
   min-height: 44px;
+}
+
+.day-step svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.day-step button:disabled {
+  color: var(--text-3);
+  cursor: default;
+}
+
+.day-step span {
+  min-width: 96px;
+  text-align: center;
 }
 
 /* ---- Day trace (docs/day-trace.md) ---- */

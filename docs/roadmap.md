@@ -45,7 +45,7 @@ Apple Reminders.
 | Settings | `settings.db`, hashed devices, sealed secrets, setup code, `bun run settings`, Settings page (General, Devices, Calendars) |
 | Health | Sleep, sleep score, sleep stages, resting HR, HRV, breathing, skin temperature, strain, zones, training load, steps, calories, VO2max, recovery, workouts, walks, lifting sets, battery; daily summary in the note; recovery tuning |
 | Activity page | Workouts and walks by week, month and 3 months; detail with HR and sets; reviews |
-| Health page | Recovery, a night's stages and the day since, then the heart, sleep and vitals trends; home's sleep rows link to the night |
+| Health page | A day stepper, then the night's stages, the day since and recovery, then the heart, sleep and vitals trends; home's sleep rows link to the night |
 | Home screen | Focus sentence and snapshot, next event, calendar, tasks, health trends with sync labels |
 | Journal, check-ins, messages | API and Siri only, no page yet |
 
