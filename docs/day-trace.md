@@ -20,7 +20,7 @@ day at a time.
 | Area | Decision |
 | --- | --- |
 | Day | Local midnight to midnight in `vault.timeZone`, cut at now for today. The section follows the page's `?night=`, so stepping a night steps the day too. |
-| Where | A Day section on the Health page, after recovery and strain, before Sleep. Titled "Today", or the date ("Sun 15 Nov"). |
+| Where | A Day section on the Health page after Sleep, before Heart, so the page reads in order: recovery, the night, the day since. Sleep's night stepper sits above both. Titled "Today", or the date ("Sun 15 Nov"). The range switch doesn't touch it. |
 | Work | On the server: one call reads the day's three streams (well under 300 ms) and buckets them, so the page gets about 1,440 points a chart, not 86,400 rows. Nothing is stored. |
 | Gaps | A bucket with no samples is missing, not zero, and the line breaks there. Heart rate of 0 is no sample. Time the strap says it was off (`wear.on` = 0) is shaded as not worn. |
 | Counting | The same helpers as the metrics: a heart-rate minute needs 30 samples (`minuteHr`), and steps come from `stepsPerMinute`, which handles the counter's wraps and resets. |
