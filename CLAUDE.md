@@ -31,6 +31,7 @@ Read the one for the area you change.
 | [calendar.md](docs/calendar.md) | CalDAV, ICS links, cache and sync, capture |
 | [strava.md](docs/strava.md) | Plan ST1–ST6: Strava runs, splitting walk-run-walk |
 | [lifting.md](docs/lifting.md) | Plan LF1–LF7: logging with next-time suggestions, exercise notes, overload charts |
+| [day-trace.md](docs/day-trace.md) | Plan DT1–DT4: a day of heart rate, steps and skin temperature on the Health page |
 | [settings.md](docs/settings.md) | `settings.db`, secrets, devices, CLI, Settings page |
 | [health-metrics.md](docs/health-metrics.md) | How each health number is computed |
 | [health-primer.html](docs/health-primer.html) | The health numbers explained from scratch; [kept current](docs/development.md#health-primer) |
