@@ -68,7 +68,7 @@ Apple Reminders.
 | 13 | Habits: ticks in the daily note, auto habits from health and workouts, streaks that forgive one miss | Built: [habits.md](habits.md); "Mark habit" waits for the command bar |
 | 14 | Fields: task and habit details as `key: value` sub-bullets, not emoji | Built: [fields.md](fields.md) |
 | 15 | Lifting: log from the control centre with a suggestion for next time, look up an exercise, one note per exercise, weight and reps charts | Planned: [lifting.md](lifting.md) |
-| 16 | Day trace: heart rate, steps and skin temperature over a day on the Health page | Built: [day-trace.md](day-trace.md); next the shared minute readout (DT4) |
+| 16 | Day trace: heart rate, steps and skin temperature over a day on the Health page | Built: [day-trace.md](day-trace.md) |
 
 ## Open questions
 

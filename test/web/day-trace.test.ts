@@ -4,11 +4,17 @@ import {
   bandPath,
   barPath,
   dayMinutes,
+  heartRateReading,
   latest,
   linePath,
+  minuteAt,
   scale,
+  skinTempReading,
+  spanAt,
   stepsMax,
+  stepsReading,
   tempRange,
+  valueAt,
   zoneOf,
   zonePaths,
 } from "../../web/lib/day-trace";
@@ -84,4 +90,82 @@ test("a 25-hour day keeps its extra hour", () => {
 
   expect(dayMinutes(trace(600))).toBe(1440);
   expect(dayMinutes(trace(1500))).toBe(1500);
+});
+
+describe("reading a minute", () => {
+  const Start = Date.parse("2026-11-03T00:00:00Z");
+  const at = (minute: number) => Start + minute * 60_000;
+  const clock = {
+    at: (minute: number) =>
+      `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`,
+    sofar: " today",
+  };
+  const trace = {
+    start: Start,
+    end: at(720),
+    heartRate: {
+      bucketMin: 1,
+      values: [...Array(600).fill(null), 150, null, 70],
+      low: [],
+      high: [],
+    },
+    steps: { bucketMin: 5, values: [...Array(120).fill(null), 84] },
+    skinTemp: { bucketMin: 1, values: [...Array(600).fill(null), 33.44] },
+    maxHr: 200,
+    spans: [
+      { kind: "walk", start: at(590), end: at(640), workoutKind: "" },
+      { kind: "workout", start: at(595), end: at(610), workoutKind: "volleyball" },
+    ],
+  } as unknown as DayTraceView;
+
+  test("the pointer's minute stays within the day so far", () => {
+    expect(minuteAt(360, 720, 1440, 1440)).toBe(720);
+    expect(minuteAt(482, 1440, 1440, 1440)).toBe(482);
+    expect(minuteAt(700, 720, 1440, 600)).toBe(599);
+    expect(minuteAt(-10, 720, 1440, 600)).toBe(0);
+  });
+
+  test("a minute reads the bucket it falls in", () => {
+    expect(valueAt(trace.steps, 603)).toBe(84);
+    expect(valueAt(trace.steps, 598)).toBeNull();
+  });
+
+  test("the narrowest span names the minute", () => {
+    expect(spanAt(trace.spans, at(600))).toBe("Volleyball");
+    expect(spanAt(trace.spans, at(620))).toBe("Walk");
+    expect(spanAt(trace.spans, at(700))).toBe("");
+  });
+
+  test("heart rate at a minute, with its zone and what was happening", () => {
+    expect(heartRateReading(trace, 600, clock)).toEqual({
+      value: "150",
+      unit: "bpm · zone 3",
+      note: "10:00 · Volleyball",
+      color: "#FF7EB6",
+    });
+    expect(heartRateReading(trace, 601, clock)).toMatchObject({ value: "–", unit: "bpm" });
+  });
+
+  test("without a minute, the latest value and the day's range", () => {
+    expect(heartRateReading(trace, null, clock)).toEqual({
+      value: "70",
+      unit: "bpm",
+      note: "at 10:02 · 70–150 today",
+      color: "#6E4A5C",
+    });
+  });
+
+  test("steps read their 5 minutes; skin temperature its minute", () => {
+    expect(stepsReading(trace, 603, clock)).toEqual({
+      value: "84",
+      unit: "steps",
+      note: "10:00–10:05 · Volleyball",
+    });
+    expect(stepsReading(trace, null, clock).value).toBe("84");
+    expect(skinTempReading(trace, 600, clock)).toEqual({
+      value: "33.4",
+      unit: "°C",
+      note: "10:00 · Volleyball",
+    });
+  });
 });

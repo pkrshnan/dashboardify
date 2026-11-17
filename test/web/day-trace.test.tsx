@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { render } from "@testing-library/preact";
+import { fireEvent, render } from "@testing-library/preact";
 import { DayTrace } from "../../web/components/day-trace";
 import { useDom } from "./dom";
 
@@ -133,5 +133,66 @@ describe("Day section", () => {
     const page = show();
 
     expect(await page.findByText("No strap data for this day.")).toBeTruthy();
+  });
+
+  describe("reading a minute", () => {
+    /** happy-dom lays nothing out, so each plot is 1,440 px wide: a pixel a minute. */
+    function plots(page: ReturnType<typeof show>) {
+      const all = [...page.container.querySelectorAll<HTMLElement>(".trace-plot")];
+      for (const plot of all) {
+        plot.getBoundingClientRect = () => ({ left: 0, width: 1440 }) as DOMRect;
+      }
+      return all;
+    }
+    const heads = (page: ReturnType<typeof show>) =>
+      [...page.container.querySelectorAll(".trace-head")].map((h) => h.textContent);
+
+    test("pointing at a minute reads it on every chart, with a line through each", async () => {
+      const page = show();
+      await page.findByText("69");
+
+      fireEvent.pointerMove(plots(page)[1] as HTMLElement, { clientX: 485, pointerType: "mouse" });
+
+      expect(heads(page)).toEqual(["Heart rate65bpm", "Steps80steps", "Skin temperature33.4°C"]);
+      expect(page.getByText("08:05–08:10 · Lifting")).toBeTruthy();
+      expect(page.getAllByText("08:05 · Lifting")).toHaveLength(2);
+      expect(page.container.querySelectorAll(".trace-cursor")).toHaveLength(3);
+    });
+
+    test("a minute without data reads –", async () => {
+      const page = show();
+      await page.findByText("69");
+
+      fireEvent.pointerMove(plots(page)[0] as HTMLElement, { clientX: 300, pointerType: "mouse" });
+
+      expect(heads(page)).toEqual(["Heart rate–bpm", "Steps–steps", "Skin temperature–°C"]);
+    });
+
+    test("the mouse leaving goes back to the latest; a finger lifting keeps the minute", async () => {
+      const page = show(DAY, true);
+      await page.findByText("69");
+      const [plot] = plots(page);
+
+      fireEvent.pointerMove(plot as HTMLElement, { clientX: 482, pointerType: "mouse" });
+      fireEvent.pointerLeave(plot as HTMLElement, { pointerType: "mouse" });
+
+      expect(heads(page)[0]).toBe("Heart rate69bpm");
+      expect(page.container.querySelector(".trace-cursor")).toBeNull();
+
+      fireEvent.pointerDown(plot as HTMLElement, { clientX: 482, pointerType: "touch" });
+      fireEvent.pointerLeave(plot as HTMLElement, { pointerType: "touch" });
+
+      expect(heads(page)[0]).toBe("Heart rate62bpm");
+    });
+
+    test("no minute after now can be read", async () => {
+      const page = show();
+      await page.findByText("69");
+
+      fireEvent.pointerMove(plots(page)[0] as HTMLElement, { clientX: 1300, pointerType: "mouse" });
+
+      expect(page.getAllByText("11:59")).toHaveLength(2);
+      expect(page.getByText("11:55–12:00")).toBeTruthy();
+    });
   });
 });
