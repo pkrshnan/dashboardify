@@ -6,6 +6,7 @@ import { isIsoDate, localTime } from "../../vault/time";
 import type { Vault } from "../../vault/vault";
 import { type ReviewKind, writeReview } from "../../vault/workout-reviews";
 import { fromDateParts, toDateParts } from "./date-time";
+import { dayTrace } from "./day-trace";
 import { emptyDay } from "./days";
 import { ApiError, invalidArgument } from "./errors";
 import type { ApiRequests } from "./requests";
@@ -24,6 +25,8 @@ export interface ActivityDeps {
   timeZone: string;
   /** Recomputes a local date's health summary, so a review shows straight away. */
   recompute: (date: string) => Promise<unknown>;
+  /** Epoch ms, for cutting today's trace at now. */
+  now?: () => number;
 }
 
 /** Workouts, walks, lifting logs and nights from the computed health tables, and reviews. */
@@ -91,6 +94,14 @@ export class ActivityService {
     }
     const runs = await this.deps.derived.readAll("stages", date);
     return nightResource(`days/${date}/night`, row, runs);
+  };
+
+  getDayTrace = async (request: ApiRequests["getDayTrace"]) => {
+    const match = /^days\/(\d{4}-\d{2}-\d{2})\/trace$/.exec(request.name ?? "");
+    if (!(match?.[1] && isIsoDate(match[1]))) {
+      invalidArgument("invalid trace name");
+    }
+    return dayTrace(this.deps, defined(match?.[1]));
   };
 
   private async day(date: string) {

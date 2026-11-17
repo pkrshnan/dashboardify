@@ -38,6 +38,13 @@ service ActivityService {
     option (google.api.http) = {get: "/v1/{name=days/*/night}"};
     option (google.api.method_signature) = "name";
   }
+
+  // Gets a day's heart rate, steps and skin temperature in buckets, with sleep, workouts, walks
+  // and time not worn as spans. A day without data is an empty trace.
+  rpc GetDayTrace(GetDayTraceRequest) returns (DayTrace) {
+    option (google.api.http) = {get: "/v1/{name=days/*/trace}"};
+    option (google.api.method_signature) = "name";
+  }
 }
 
 // How sure the workout's name is.
@@ -275,6 +282,96 @@ message StageRun {
   Stage stage = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
+// A day of strap data in buckets, for charts.
+message DayTrace {
+  option (google.api.resource) = {
+    type: "dashboardify.app/DayTrace"
+    pattern: "days/{day}/trace"
+    singular: "dayTrace"
+    plural: "dayTraces"
+  };
+
+  // `days/{day}/trace`.
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+
+  // Local midnight: the start of every series' first bucket.
+  google.protobuf.Timestamp start_time = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The next midnight, or now for today.
+  google.protobuf.Timestamp end_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Heart rate, steps and skin temperature, in that order.
+  repeated TraceSeries series = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Sleep, workouts, walks and time not worn, each cut to the day.
+  repeated TraceSpan spans = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The max HR zones are measured against: the profile's measured one, else from age.
+  optional double max_heart_rate = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// One signal over the day.
+message TraceSeries {
+  // What the values are.
+  enum Kind {
+    // Not set.
+    KIND_UNSPECIFIED = 0;
+    // Mean bpm per minute.
+    KIND_HEART_RATE = 1;
+    // Steps per 5 minutes.
+    KIND_STEPS = 2;
+    // Mean skin temperature per minute, °C.
+    KIND_SKIN_TEMPERATURE = 3;
+  }
+
+  // The signal.
+  Kind kind = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Length of each bucket.
+  int32 bucket_seconds = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // One value per bucket from the day's start; 0 at a missing index.
+  repeated double values = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Buckets without samples.
+  repeated int32 missing_indexes = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Heart rate only: each minute's lowest second, beside `values`.
+  repeated double low = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Heart rate only: each minute's highest second.
+  repeated double high = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// A stretch of the day to shade.
+message TraceSpan {
+  // What happened.
+  enum Kind {
+    // Not set.
+    KIND_UNSPECIFIED = 0;
+    // In bed, from bed to wake.
+    KIND_SLEEP = 1;
+    // A workout that wasn't dismissed.
+    KIND_WORKOUT = 2;
+    // A walk.
+    KIND_WALK = 3;
+    // The strap said it was off.
+    KIND_NOT_WORN = 4;
+  }
+
+  // What happened.
+  Kind kind = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Start, no earlier than the day's.
+  google.protobuf.Timestamp start_time = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // End, no later than the day's.
+  google.protobuf.Timestamp end_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Workouts only: lifting, running, walking, volleyball or workout.
+  string workout_kind = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
 // Request for ListActivityDays.
 message ListActivityDaysRequest {
   // First day, inclusive.
@@ -330,5 +427,15 @@ message GetNightRequest {
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference).type = "dashboardify.app/Night",
     (buf.validate.field).string.pattern = "^days/[0-9]{4}-[0-9]{2}-[0-9]{2}/night$"
+  ];
+}
+
+// Request for GetDayTrace.
+message GetDayTraceRequest {
+  // `days/{day}/trace`.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "dashboardify.app/DayTrace",
+    (buf.validate.field).string.pattern = "^days/[0-9]{4}-[0-9]{2}-[0-9]{2}/trace$"
   ];
 }
