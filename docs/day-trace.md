@@ -2,7 +2,8 @@
 
 Heart rate, steps and skin temperature over a day, as charts on the Health page, with sleep,
 workouts and walks shaded behind them so you can see why a line moves. Today by default.
-Design: https://claude.ai/artifact/PshadTmZFoNAm9Uaxjg31Q (DT3 waits for its approval). Status: planned (DT1–DT4).
+Design: https://claude.ai/artifact/PshadTmZFoNAm9Uaxjg31Q (DT3 waits for its approval). Status: DT1–DT2
+built.
 
 ## Goals
 

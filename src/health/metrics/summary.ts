@@ -286,7 +286,8 @@ function dayClimbs(heartRate: HeartRate[]): SetClimb[] {
     : [];
 }
 
-function profileMaxHr(profile: Profile): number | null {
+/** Max HR for zones and strain: the measured one, else from age. */
+export function profileMaxHr(profile: Profile): number | null {
   if (profile.maxHrMeasured !== null) {
     return profile.maxHrMeasured;
   }

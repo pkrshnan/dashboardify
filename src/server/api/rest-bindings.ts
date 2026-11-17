@@ -242,4 +242,9 @@ export const restBindings: Record<string, RestBinding> = {
     path: "/days/:day/night",
     resource: { field: "name", prefix: "days/", suffix: "/night" },
   },
+  getDayTrace: {
+    method: "GET",
+    path: "/days/:day/trace",
+    resource: { field: "name", prefix: "days/", suffix: "/trace" },
+  },
 };

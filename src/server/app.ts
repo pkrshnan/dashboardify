@@ -84,6 +84,7 @@ function healthStores(config: Config, deps: AppDeps, vault: Vault) {
     vault,
     timeZone: config.timeZone,
     recompute: deps.recompute ?? ((date: string) => summary.run(date)),
+    now: () => (deps.now?.() ?? new Date()).getTime(),
   };
   return { raw, derived, activity };
 }

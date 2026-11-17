@@ -88,6 +88,7 @@ export interface ApiRequests {
   getWorkout: NamedRequest;
   reviewWorkout: NamedRequest & { kind: string };
   getNight: NamedRequest;
+  getDayTrace: NamedRequest;
   addTask: { text: string; requestId?: string };
   log: { text: string };
   checkIn: { feel?: string; rpe?: string; tags?: string };
