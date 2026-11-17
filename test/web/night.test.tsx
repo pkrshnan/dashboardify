@@ -48,19 +48,11 @@ afterEach(() => {
   globalThis.fetch = original;
 });
 
-function showNight(date = "2026-11-03", today = "2026-11-03") {
-  const onStep = mock((_: string) => undefined);
+function showNight(date = "2026-11-03") {
   const page = render(
-    <Night
-      token="t"
-      date={date}
-      today={today}
-      timeZone="Europe/London"
-      onStep={onStep}
-      onUnauthorized={() => undefined}
-    />,
+    <Night token="t" date={date} timeZone="Europe/London" onUnauthorized={() => undefined} />,
   );
-  return { page, onStep };
+  return { page };
 }
 
 describe("night view", () => {
@@ -91,16 +83,6 @@ describe("night view", () => {
     const { page } = showNight();
 
     expect(await page.findByText("No night recorded.")).toBeTruthy();
-  });
-
-  test("steps to the night before, and only back to today", async () => {
-    const { page, onStep } = showNight();
-    await page.findByText(/^Deep 1h 25m/);
-
-    fireEvent.click(page.getByRole("button", { name: "‹ 1–2 Nov" }));
-
-    expect(onStep).toHaveBeenCalledWith("2026-11-02");
-    expect(page.queryByRole("button", { name: /›$/ })).toBeNull();
   });
 });
 

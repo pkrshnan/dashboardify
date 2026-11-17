@@ -1,4 +1,4 @@
-// The Health page's Day section: heart rate, steps and skin temperature over one day, each its own
+// The Health page's day: heart rate, steps and skin temperature over one day, each its own
 // chart on the day's 00:00–24:00 axis, with sleep, workouts, walks and time not worn shaded
 // behind (docs/day-trace.md). From GET /v1/days/{date}/trace. The SVGs stretch to the width, so
 // the scales and hours are HTML and stay readable on a phone. Hovering or dragging on any chart
@@ -30,13 +30,11 @@ import {
   ZONE_SHARES,
   zonePaths,
 } from "../lib/day-trace";
-import { shortDate } from "../lib/format";
 
 interface Props {
   token: Token;
   /** YYYY-MM-DD in the server's time zone. */
   date: string;
-  today: string;
   timeZone: string;
   isPhone: boolean;
   onUnauthorized: (setup: boolean) => void;
@@ -44,19 +42,8 @@ interface Props {
 
 type Loaded = { date: string; trace: DayTraceView | null };
 
-/** Its own page section, titled "Today" or the day ("Sun 15 Nov"). */
+/** No heading of its own: it sits under the night in the Health page's first section. */
 export function DayTrace(props: Props) {
-  return (
-    <section class="section">
-      <div class="section-head">
-        <h2>{props.date === props.today ? "Today" : shortDate(props.date)}</h2>
-      </div>
-      <DayBody {...props} />
-    </section>
-  );
-}
-
-function DayBody(props: Props) {
   const { token, date, onUnauthorized } = props;
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   useEffect(() => {

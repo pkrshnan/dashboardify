@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { render } from "@testing-library/preact";
+import { fireEvent, render } from "@testing-library/preact";
 import { METRICS } from "../../src/home/health-history";
 import { trend } from "../../src/home/trends";
 import type { HomeView } from "../../src/home/types";
@@ -86,33 +86,46 @@ const names = (el: Element) =>
   [...el.querySelectorAll(".metric-name")].map((n) => n.textContent ?? "");
 
 describe("Health page", () => {
-  test("recovery and strain head the page, then sleep, the day since, heart and vitals", () => {
+  test("the night and the day since head the page, then recovery and strain, heart, sleep and vitals", () => {
     const page = showPage();
 
     const sections = [...page.container.querySelectorAll("main > section")];
 
     expect(sections.map((s) => s.querySelector("h1, h2")?.textContent)).toEqual([
       "Health",
-      "Sleep",
-      "Today",
+      "Recovery and strain",
       "Heart",
+      "Sleep",
       "Vitals",
     ]);
     expect(sections.map(names)).toEqual([
-      ["Recovery", "Strain"],
-      ["Sleep score", "Time asleep", "Deep sleep", "REM sleep"],
       [],
+      ["Recovery", "Strain"],
       ["HRV", "Resting HR", "VO2max"],
+      ["Sleep score", "Time asleep", "Deep sleep", "REM sleep"],
       ["Breathing rate", "Skin temperature"],
     ]);
   });
 
-  test("the Day section shows the night's day", async () => {
+  test("the day under the night is the night's day", async () => {
     const page = showPage({ night: "2026-11-09" });
 
     expect(await page.findByText("No strap data for this day.")).toBeTruthy();
-    expect(page.getByRole("heading", { name: "Mon 9 Nov" })).toBeTruthy();
     expect(asked).toContain("/v1/days/2026-11-09/trace");
+  });
+
+  test("the stepper at the top names the day and steps a day each way, not past today", async () => {
+    window.location.hash = "#/health?night=2026-11-09";
+    const page = showPage({ night: "2026-11-09" });
+    await page.findByText("No night recorded.");
+
+    expect(page.getByText("Mon 9 Nov")).toBeTruthy();
+    fireEvent.click(page.getByRole("button", { name: "Day before" }));
+    expect(window.location.hash).toBe("#/health?night=2026-11-08");
+
+    page.show({});
+    expect(page.getByText("Today")).toBeTruthy();
+    expect(page.getByRole("button", { name: "Day after" }).hasAttribute("disabled")).toBe(true);
   });
 
   test("shows last night without a night in the address", async () => {

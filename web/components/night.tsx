@@ -1,5 +1,5 @@
 // The night view: a night's sleep stages as a hypnogram, from GET /v1/days/{date}/night. It heads
-// the Health page's sleep section, and home's sleep rows link to it. Stages are estimated from
+// the Health page under its day stepper, and home's sleep rows link to it. Stages are estimated from
 // the strap, so the view says so, and marks nights that look unusual.
 
 import { useEffect, useState } from "preact/hooks";
@@ -13,9 +13,7 @@ interface Props {
   token: Token;
   /** The day the night ends on, YYYY-MM-DD in the server's time zone. */
   date: string;
-  today: string;
   timeZone: string;
-  onStep: (date: string) => void;
   onUnauthorized: (setup: boolean) => void;
 }
 
@@ -50,16 +48,6 @@ export function Night(props: Props) {
       {night === undefined && <p class="muted">Loading…</p>}
       {night === null && <p class="muted">No night recorded.</p>}
       {night && <NightBody night={night} clock={clock} timeZone={props.timeZone} />}
-      <div class="night-steps">
-        <button type="button" class="link-button" onClick={() => props.onStep(addDays(date, -1))}>
-          ‹ {dateSpan(addDays(date, -2), addDays(date, -1))}
-        </button>
-        {date < props.today && (
-          <button type="button" class="link-button" onClick={() => props.onStep(addDays(date, 1))}>
-            {dateSpan(date, addDays(date, 1))} ›
-          </button>
-        )}
-      </div>
     </div>
   );
 }
