@@ -86,14 +86,15 @@ either side, shaded teal. A Running total joins the row above when the range has
 ## Health page
 
 `#/health`, with the same heading, range switch and sync labels as home. Recovery and strain
-head it, how well you recovered and how hard you pushed; then Sleep, Heart and Vitals, each a
-column of home's rows given the full width. Sleep starts with a night, last night unless `?night=2026-11-12` names one: its times ("23:41–07:05"), time asleep
+head it, how well you recovered and how hard you pushed, then a night and the day since: the
+live numbers first. Then Heart, Sleep and Vitals, each a column of home's rows given the full
+width. The night is last night unless `?night=2026-11-12` names one: its times ("23:41–07:05"), time asleep
 and score, then a hypnogram (awake, REM, light and deep lanes in shades of the sleep colour, hour
 ticks in the server's time zone), the stage totals and "Estimated", plus "· unusual night" when
 the stages look unlike yours. Links step to the night before or after and replace the history
 entry, so Back leaves the page. Every row and the range label are as of that night's day.
 
-After Sleep comes the day since (canvas https://claude.ai/artifact/PshadTmZFoNAm9Uaxjg31Q),
+After the night comes the day since (canvas https://claude.ai/artifact/PshadTmZFoNAm9Uaxjg31Q),
 titled "Today" or the day ("Sun 15 Nov"): heart rate, steps and skin temperature, each its own
 chart on a 00:00–24:00 axis (every 3 hours, 6 on the phone) under a hairline, with its latest
 value (the total for steps) in large type at the right. Sleep, workouts and walks are shaded in

@@ -1,10 +1,9 @@
-// The Health page: recovery and strain, then sleep (a night's stages over the sleep trends), the
-// day since (web/components/day-trace.tsx), heart and vitals. The trend rows are home's
+// The Health page: what is live first (recovery, strain, a night's stages and the day since,
+// web/components/day-trace.tsx), then the heart, sleep and vitals trends. The trend rows are home's
 // (web/components/health.tsx), given the page's width. The night is the address's `?night=`,
 // last night without it; the range is `?range=`. Every row is as of the night's day, so stepping
 // back a night reads as if that day were today, and the Day section shows that day.
 
-import { Fragment } from "preact";
 import { useEffect, useState } from "preact/hooks";
 import type { HealthGroup, HomeView, MetricTrend } from "../../src/home/types";
 import { fetchHome, type Token, Unauthorized } from "../api";
@@ -33,8 +32,8 @@ export const health: Module = {
 const TOP = ["recovery", "strain"];
 
 const SECTIONS: { title: string; group: HealthGroup }[] = [
-  { title: "Sleep", group: "sleep" },
   { title: "Heart", group: "heart" },
+  { title: "Sleep", group: "sleep" },
   { title: "Vitals", group: "vitals" },
 ];
 
@@ -60,36 +59,30 @@ function HealthPage({ route, home }: PageProps) {
       <section class="section">
         <PageHead date={night} range={range} view={view} />
         {rows(top)}
+        <Night
+          token={token}
+          date={night}
+          today={view.date}
+          timeZone={view.timeZone}
+          onStep={(date) => setQuery({ night: date })}
+          onUnauthorized={onUnauthorized}
+        />
       </section>
+      <DayTrace
+        token={token}
+        date={night}
+        today={view.date}
+        timeZone={view.timeZone}
+        isPhone={isPhone}
+        onUnauthorized={onUnauthorized}
+      />
       {SECTIONS.map(({ title, group }) => (
-        <Fragment key={group}>
-          <section class="section">
-            <div class="section-head">
-              <h2>{title}</h2>
-            </div>
-            {group === "sleep" && (
-              <Night
-                token={token}
-                date={night}
-                today={view.date}
-                timeZone={view.timeZone}
-                onStep={(date) => setQuery({ night: date })}
-                onUnauthorized={onUnauthorized}
-              />
-            )}
-            {rows(metrics.filter((m) => m.group === group && !TOP.includes(m.key)))}
-          </section>
-          {group === "sleep" && (
-            <DayTrace
-              token={token}
-              date={night}
-              today={view.date}
-              timeZone={view.timeZone}
-              isPhone={isPhone}
-              onUnauthorized={onUnauthorized}
-            />
-          )}
-        </Fragment>
+        <section key={group} class="section">
+          <div class="section-head">
+            <h2>{title}</h2>
+          </div>
+          {rows(metrics.filter((m) => m.group === group && !TOP.includes(m.key)))}
+        </section>
       ))}
     </main>
   );

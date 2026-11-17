@@ -3176,6 +3176,11 @@ button.link {
   margin-bottom: 24px;
 }
 
+/* The night follows recovery and strain on the Health page, as the rows are spaced. */
+.health-rows + .night {
+  margin-top: 28px;
+}
+
 .night-title {
   margin: 0;
   font-size: var(--type-headline);
