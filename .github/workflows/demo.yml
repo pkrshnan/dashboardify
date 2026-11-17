@@ -13,6 +13,9 @@ on:
       minutes:
         description: How long to keep the demo up (at most 60)
         default: "30"
+      time:
+        description: Pin the demo's clock to this London time, e.g. 21:00 (empty for now)
+        default: ""
 
 permissions:
   contents: read
@@ -59,7 +62,10 @@ jobs:
       - name: Start the demo
         env:
           DEMO_DEV: "0"
+          TIME: ${{ inputs.time }}
         run: |
+          # An empty DEMO_TIME would pin the clock to midnight, so it is only set when given.
+          if [ -n "$TIME" ]; then export DEMO_TIME="$TIME"; fi
           nohup bun run demo > demo.log 2>&1 &
           curl -sf --retry 30 --retry-delay 1 --retry-all-errors "http://localhost:$PORT/healthz"
 
