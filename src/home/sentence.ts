@@ -2,29 +2,52 @@
 // doesn't repeat the numbers shown right under it. Rule-based for now; a local model can write
 // it later from the same inputs.
 
-import type { MetricTrend, NextEvent, TaskGroup } from "./types";
+import type { AgendaEvent, MetricTrend, NextEvent, TaskGroup } from "./types";
 
 export interface SentenceInput {
   next: NextEvent | null;
+  /** Today's all-day events. */
+  allDay: AgendaEvent[];
   health: MetricTrend[];
   tasks: TaskGroup[];
 }
 
 export function daySentence(input: SentenceInput): string {
-  const parts = [eventPart(input.next), healthPart(input.health), overduePart(input.tasks)].filter(
-    (p): p is string => p !== null,
-  );
+  const parts = [
+    allDayPart(input.allDay),
+    eventPart(input.next),
+    healthPart(input.health),
+    overduePart(input.tasks),
+  ].filter((p): p is string => p !== null);
   return parts.length > 0 ? parts.join(" ") : "Nothing else on today.";
+}
+
+/**
+ * A calendar shared as free/busy only, like a work one, titles every event "Busy". Name the
+ * calendar instead, since "Busy is on now" reads badly and says nothing.
+ */
+function privateTitle(e: { title: string; calendarName?: string }): string | null {
+  if (e.title.trim().toLowerCase() !== "busy") {
+    return null;
+  }
+  return e.calendarName ? `Private ${e.calendarName} event` : "Private event";
+}
+
+/** Only private blocks: other all-day events, like a trip, are context rather than news. */
+function allDayPart(allDay: AgendaEvent[]): string | null {
+  const titles = [...new Set(allDay.map(privateTitle).filter((t): t is string => t !== null))];
+  return titles.length > 0 ? `${titles.join(" and ")} all day.` : null;
 }
 
 function eventPart(next: NextEvent | null): string | null {
   if (!next) {
     return null;
   }
+  const busy = privateTitle(next);
   if (next.inMin <= 0) {
-    return `${next.title} is on now.`;
+    return busy ? `${busy} on now.` : `${next.title} is on now.`;
   }
-  return `${next.title} at ${next.start}.`;
+  return `${busy ?? next.title} at ${next.start}.`;
 }
 
 const RECOVERY_LOW = 34;

@@ -84,6 +84,8 @@ export interface AgendaEvent {
   calendar: string | null;
   writable: boolean;
   allDay: boolean;
+  /** Server only: the calendar's display name, for the sentence. */
+  calendarName?: string;
   /** Client only: drawn while the capture box is still saving it. */
   pending?: boolean;
 }
@@ -96,6 +98,8 @@ export interface NextEvent {
   inMin: number;
   url: string | null;
   mapsUrl: string | null;
+  /** Server only: the calendar's display name, for the sentence. */
+  calendarName?: string;
 }
 
 /** A task with a time: drawn on the timeline, never in the task list. */

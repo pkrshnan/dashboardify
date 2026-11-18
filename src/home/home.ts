@@ -83,7 +83,7 @@ export async function homeView(deps: HomeDeps, now: Date, asOf?: string): Promis
     timeZone: deps.timeZone,
     date: today.toString(),
     generatedAt: now.toISOString(),
-    sentence: daySentence({ next, health, tasks }),
+    sentence: daySentence({ next, allDay: days[0]?.allDay ?? [], health, tasks }),
     next,
     days,
     tasks,

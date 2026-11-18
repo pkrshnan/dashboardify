@@ -143,6 +143,25 @@ describe("buildDays", () => {
   });
 });
 
+describe("whole days", () => {
+  test("a timed event from midnight to midnight is all-day", () => {
+    const block = { ...event(TODAY, "00:00", "00:00", "Busy"), end: at("2026-11-05", "00:00") };
+    const [first, second, third] = buildDays(TODAY, TZ, [block], []);
+
+    expect(first?.events).toEqual([]);
+    expect(first?.allDay.map((e) => [e.title, e.allDay])).toEqual([["Busy", true]]);
+    expect(second?.allDay.map((e) => e.title)).toEqual(["Busy"]);
+    expect(third?.allDay).toEqual([]);
+  });
+
+  test("one that starts or ends off midnight stays on the timeline", () => {
+    const late = { ...event(TODAY, "00:00", "00:00", "Oncall"), end: at("2026-11-04", "12:00") };
+    const [first] = buildDays(TODAY, TZ, [late], []);
+    expect(first?.events.map((e) => e.title)).toEqual(["Oncall"]);
+    expect(first?.allDay).toEqual([]);
+  });
+});
+
 describe("nextEvent", () => {
   const [today] = buildDays(TODAY, TZ, [event(TODAY, "10:00", "10:15", "Standup")], []);
 
@@ -160,6 +179,7 @@ describe("daySentence", () => {
   test("next event, a judgement on recovery, and at most one overdue mention", () => {
     const sentence = daySentence({
       next: { title: "Standup", start: "10:00", detail: "", inMin: 48, url: null, mapsUrl: null },
+      allDay: [],
       health: [recovery(62, "bad")],
       tasks: groupTasks(tasks("- [ ] Renew lease\n\t- due: 2026-10-31"), TODAY),
     });
@@ -171,6 +191,7 @@ describe("daySentence", () => {
   test("several overdue tasks get one mention", () => {
     const sentence = daySentence({
       next: null,
+      allDay: [],
       health: [recovery(70, "neutral")],
       tasks: groupTasks(
         tasks(
@@ -185,6 +206,31 @@ describe("daySentence", () => {
   });
 
   test("says so when there is nothing to say", () => {
-    expect(daySentence({ next: null, health: [], tasks: [] })).toBe("Nothing else on today.");
+    expect(daySentence({ next: null, allDay: [], health: [], tasks: [] })).toBe(
+      "Nothing else on today.",
+    );
+  });
+
+  test("a free/busy calendar's events are named by calendar, not as Busy", () => {
+    const busy = (from: string, to: string): CalendarEvent => ({
+      ...event(TODAY, from, to, "Busy"),
+      calendarName: "Work",
+    });
+    const [today] = buildDays(
+      TODAY,
+      TZ,
+      [busy("10:00", "11:00"), { ...busy("00:00", "00:00"), end: at("2026-11-05", "00:00") }],
+      [],
+    );
+    const sentence = (nowMin: number) =>
+      daySentence({
+        next: nextEvent(today, nowMin),
+        allDay: today?.allDay ?? [],
+        health: [],
+        tasks: [],
+      });
+
+    expect(sentence(9 * 60)).toBe("Private Work event all day. Private Work event at 10:00.");
+    expect(sentence(10 * 60 + 5)).toBe("Private Work event all day. Private Work event on now.");
   });
 });

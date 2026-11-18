@@ -20,9 +20,10 @@ export const WEEK_DAYS = 7;
 export function buildDays(
   today: string,
   timeZone: string,
-  events: CalendarEvent[],
+  calendarEvents: CalendarEvent[],
   tasks: FoundTask[],
 ): DayAgenda[] {
+  const events = calendarEvents.map((e) => wholeDays(e, timeZone));
   const start = Temporal.PlainDate.from(today);
   return Array.from({ length: WEEK_DAYS }, (_, i) => {
     const date = start.add({ days: i });
@@ -53,6 +54,29 @@ export function buildDays(
   });
 }
 
+/**
+ * A timed event from one local midnight to another as an all-day one. Free/busy feeds such as
+ * Google's send an all-day "Busy" block this way, which would otherwise fill the timeline and be
+ * "on now" all day.
+ */
+function wholeDays(e: CalendarEvent, timeZone: string): CalendarEvent {
+  if (e.allDay) {
+    return e;
+  }
+  const start = Temporal.Instant.fromEpochMilliseconds(e.start).toZonedDateTimeISO(timeZone);
+  const end = Temporal.Instant.fromEpochMilliseconds(e.end).toZonedDateTimeISO(timeZone);
+  const midnight = (t: Temporal.ZonedDateTime) => t.equals(t.startOfDay());
+  if (e.end <= e.start || !midnight(start) || !midnight(end)) {
+    return e;
+  }
+  return {
+    ...e,
+    allDay: true,
+    startDate: start.toPlainDate().toString(),
+    endDate: end.toPlainDate().toString(),
+  };
+}
+
 function eventsOn(events: CalendarEvent[], midnight: number, timeZone: string): AgendaEvent[] {
   const nextMidnight = midnight + DAY_MIN * 60_000;
   return events
@@ -74,6 +98,7 @@ function agendaEvent(e: CalendarEvent, midnight: number, timeZone: string): Agen
     mapsUrl: e.mapsUrl ?? null,
     event: e.event ?? null,
     calendar: e.calendar ?? null,
+    calendarName: e.calendarName,
     writable: e.writable ?? false,
     allDay: e.allDay ?? false,
   };
@@ -92,6 +117,7 @@ export function nextEvent(today: DayAgenda | undefined, nowMin: number): NextEve
     inMin: event.startMin - nowMin,
     url: event.url,
     mapsUrl: event.mapsUrl,
+    calendarName: event.calendarName,
   };
 }
 

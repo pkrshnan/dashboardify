@@ -113,6 +113,7 @@ function toCalendarEvent(event: CachedEvent, known: Map<string, Calendar>): Cale
     url: event.url.startsWith("https:") ? event.url : undefined,
     event: `events/${event.eventId}`,
     calendar: calendar?.name,
+    calendarName: calendar?.displayName,
     writable: calendar?.writable ?? false,
     allDay: event.allDay,
     startDate: event.startDate,
