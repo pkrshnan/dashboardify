@@ -19,6 +19,8 @@ export interface CalendarEvent {
   event?: string;
   /** `calendarAccounts/{a}/calendars/{c}`. */
   calendar?: string;
+  /** The calendar's display name, for "Private Work event on now." */
+  calendarName?: string;
   /** Whether it can be edited here. */
   writable?: boolean;
   /** All-day: shown as a Week marker on each day from startDate up to (not including) endDate. */

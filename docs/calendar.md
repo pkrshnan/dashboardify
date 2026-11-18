@@ -20,7 +20,8 @@ https://claude.ai/artifact/YNnwtKHE7AAzjLswS4JnSc. The original PR plan (C1–C1
 | Edits, deletes | `If-Match: <etag>`; stale returns `ABORTED` and the UI reloads. iCloud always wins; no field merging. |
 | Dedupe | The same UID and recurrence-id on several calendars is shown once, preferring the writable copy |
 | Recurring | Occurrences are expanded and shown. Creating, editing or deleting a series is `FAILED_PRECONDITION`; "every Monday" capture becomes a recurring task. |
-| All-day | Shown in a row above the Day timeline and as hollow markers in Week. Capture never creates them; "Dentist Friday" stays a dated task. |
+| All-day | Shown in a row above the Day timeline and as hollow markers in Week. Capture never creates them; "Dentist Friday" stays a dated task. A timed event from one local midnight to another counts as all-day, since free/busy feeds send all-day blocks that way. |
+| Free/busy | Events titled "Busy" are named by calendar in the home sentence: "Private Work event on now.", "… at 14:00.", "… all day." |
 | Time zones | Stored as UTC plus the event's `TZID`; new events use the Settings time zone. Floating times read in the server's zone. |
 | Libraries | Hand-written CalDAV client (`tsdav` is too much to review), `fast-xml-parser`, `ical.js` (server only) |
 
