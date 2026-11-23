@@ -13,6 +13,7 @@ import { LiftingStore } from "./lifting/lifting-store";
 import { ExerciseNotes } from "./lifting/note-sync";
 import { Notifier } from "./notifications/notifier";
 import { PushStore } from "./notifications/push-store";
+import { ReminderScheduler } from "./notifications/scheduler";
 import { PHOTON_URL, Photon } from "./places/photon";
 import { connectICloud } from "./server/api/calendar-accounts";
 import { createApp } from "./server/app";
@@ -24,6 +25,7 @@ import { StravaAccounts } from "./strava/account";
 import { RunCache } from "./strava/cache";
 import { StravaClient } from "./strava/client";
 import { StravaSync } from "./strava/sync";
+import { TaskStore } from "./vault/task-store";
 import { localDate } from "./vault/time";
 import { Vault } from "./vault/vault";
 
@@ -110,6 +112,14 @@ if (import.meta.main) {
     setsOn: (date) => derived.readAll("sets", date),
     today: () => localDate(new Date(), config.timeZone),
   }).start();
+  // Reminders read the same calendar cache and vault the home screen does.
+  const notifier = new Notifier(new PushStore(opened.store));
+  new ReminderScheduler({
+    notifier,
+    calendar,
+    tasks: new TaskStore(vault, () => general.get().tasksInbox),
+    timeZone: config.timeZone,
+  }).start();
   const app = createApp(config, {
     devices,
     tailnet,
@@ -120,7 +130,7 @@ if (import.meta.main) {
       devices,
       calendars: { accounts, cache, sync: calendarSync },
       places: new Photon(process.env.PHOTON_URL || PHOTON_URL),
-      notifier: new Notifier(new PushStore(opened.store)),
+      notifier,
     },
     vault,
     onSamples: (_stream, day) => scheduler.touchUtcDay(day),

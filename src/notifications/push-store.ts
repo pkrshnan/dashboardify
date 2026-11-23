@@ -40,6 +40,13 @@ SettingsStore.register("notifications", [
       ]);
     },
   },
+  {
+    version: 2,
+    up: (db) => {
+      // Reminders already sent, so a restart doesn't send them again. Pruned after two days.
+      db.run("CREATE TABLE sent_reminders (key TEXT PRIMARY KEY, sent_time TEXT NOT NULL)");
+    },
+  },
 ]);
 
 SettingsStore.registerSealed("push_keys", "id", ["private_key_sealed"]);
@@ -197,6 +204,21 @@ export class PushStore {
       .filter((target) => device === undefined || target.device === device);
   }
 
+  wasSent(key: string): boolean {
+    return this.store.db.query("SELECT 1 FROM sent_reminders WHERE key = ?").get(key) !== null;
+  }
+
+  /** Logs a reminder as sent, and forgets ones older than two days. */
+  markSent(key: string): void {
+    const now = this.now();
+    this.store.db
+      .query("INSERT OR REPLACE INTO sent_reminders VALUES (?, ?)")
+      .run(key, now.toISOString());
+    this.store.db
+      .query("DELETE FROM sent_reminders WHERE sent_time < ?")
+      .run(new Date(now.getTime() - SENT_KEPT_MS).toISOString());
+  }
+
   remove(id: string): boolean {
     return this.store.db.query("DELETE FROM push_subscriptions WHERE id = ?").run(id).changes > 0;
   }
@@ -230,6 +252,8 @@ export class PushStore {
 }
 
 const KEY_AAD = "push_keys/vapid/private_key_sealed";
+/** Longer than any reminder's window, so an entry is gone only once it can't fire again. */
+const SENT_KEPT_MS = 2 * 86_400_000;
 
 /** The first 16 hex digits of the endpoint's SHA-256; the web app works it out the same way. */
 export function subscriptionId(endpoint: string): string {

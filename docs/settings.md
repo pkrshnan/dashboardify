@@ -35,7 +35,7 @@ Losing it means re-entering calendar passwords; device tokens keep working.
 - `devices`: `id` (slug of the name), `display_name`, `token_hash`, `create_time`,
   `last_used_time` (written at most once a minute). Revoking deletes the row.
 - Calendar's own tables come from `src/calendar/accounts.ts`; `strava_account` (one row) from
-  `src/strava/account.ts`; `push_keys`, `push_subscriptions` and `notification_settings` from
+  `src/strava/account.ts`; `push_keys`, `push_subscriptions`, `notification_settings` and `sent_reminders` from
   `src/notifications/push-store.ts`. A subscription follows its device: revoking the device
   deletes it.
 
