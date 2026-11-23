@@ -14,6 +14,7 @@ import { JournalService as JournalSchema } from "../../gen/dashboardify/v1/journ
 import { LiftingService as LiftingSchema } from "../../gen/dashboardify/v1/lifting_pb";
 import { ListService as ListSchema } from "../../gen/dashboardify/v1/list_pb";
 import { MessageService as MessageSchema } from "../../gen/dashboardify/v1/message_pb";
+import { NotificationService as NotificationSchema } from "../../gen/dashboardify/v1/notification_pb";
 import { PlaceService as PlaceSchema } from "../../gen/dashboardify/v1/place_pb";
 import { SampleService as SampleSchema } from "../../gen/dashboardify/v1/sample_pb";
 import { SettingsService as SettingsSchema } from "../../gen/dashboardify/v1/settings_pb";
@@ -24,6 +25,7 @@ import type { HomeDeps } from "../../home/home";
 import { LiftingStore } from "../../lifting/lifting-store";
 import { ExerciseNotes } from "../../lifting/note-sync";
 import { ListStore } from "../../lists/list-store";
+import type { Notifier } from "../../notifications/notifier";
 import type { PlaceSearch } from "../../places/place";
 import type { GeneralSettings } from "../../settings/core";
 import type { DeviceStore } from "../../settings/devices";
@@ -47,6 +49,7 @@ import { JournalService } from "../api/journal";
 import { LiftingService } from "../api/lifting";
 import { ListsService } from "../api/lists";
 import { MessagesService } from "../api/messages";
+import { NotificationsService } from "../api/notifications";
 import { PlacesService } from "../api/places";
 import { SamplesService } from "../api/samples";
 import { SettingsService } from "../api/settings";
@@ -71,6 +74,8 @@ export interface SettingsDeps {
   };
   /** Place search for event locations (Photon; a fake in tests). Without it, it isn't served. */
   places?: PlaceSearch;
+  /** Web Push subscriptions and reminder settings. Without it, it isn't served. */
+  notifier?: Notifier;
 }
 
 export interface ServiceRegistration {
@@ -137,12 +142,15 @@ export function v1Services(
 }
 
 function settingsServices(settings: SettingsDeps, now: () => Date): ServiceRegistration[] {
-  const { general, devices, calendars, places } = settings;
+  const { general, devices, calendars, places, notifier } = settings;
   return [
     { schema: SettingsSchema, implementation: new SettingsService(general) },
     { schema: DeviceSchema, implementation: new DevicesService(devices, now) },
     ...(places
       ? [{ schema: PlaceSchema, implementation: new PlacesService(places, general) }]
+      : []),
+    ...(notifier
+      ? [{ schema: NotificationSchema, implementation: new NotificationsService(notifier) }]
       : []),
     ...(calendars
       ? [

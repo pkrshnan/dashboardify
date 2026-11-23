@@ -11,6 +11,8 @@ import { RawStore } from "./health/raw-store";
 import { SummaryScheduler } from "./health/scheduler";
 import { LiftingStore } from "./lifting/lifting-store";
 import { ExerciseNotes } from "./lifting/note-sync";
+import { Notifier } from "./notifications/notifier";
+import { PushStore } from "./notifications/push-store";
 import { PHOTON_URL, Photon } from "./places/photon";
 import { connectICloud } from "./server/api/calendar-accounts";
 import { createApp } from "./server/app";
@@ -118,6 +120,7 @@ if (import.meta.main) {
       devices,
       calendars: { accounts, cache, sync: calendarSync },
       places: new Photon(process.env.PHOTON_URL || PHOTON_URL),
+      notifier: new Notifier(new PushStore(opened.store)),
     },
     vault,
     onSamples: (_stream, day) => scheduler.touchUtcDay(day),

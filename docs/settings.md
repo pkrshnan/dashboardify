@@ -11,7 +11,7 @@ PR plan (S1–S8): `git show 7d6e452:docs/settings-plan.md`.
 | --- | --- |
 | Startup values | `.env`: `VAULT_PATH` (required), `PORT`, `DATA_PATH` (default `./data`), `SECRET_KEY_FILE`, `HEALTH_RAW_PATH`, `HEALTH_DERIVED_PATH`, `PHOTON_URL` |
 | Store | `bun:sqlite` in WAL mode, so the server and the CLI can use it at once |
-| Schema | Each module registers numbered migrations under its own name (`core`, `devices`, `calendar`, `strava`); `core` runs first |
+| Schema | Each module registers numbered migrations under its own name (`core`, `devices`, `calendar`, `strava`, `notifications`); `core` runs first |
 | Secrets | AES-256-GCM (`node:crypto`), random nonce per value, AAD `<table>/<row id>/<field>` so a sealed value can't be moved to another row |
 | Key | 32 random bytes in `$DATA_PATH/secret.key` (mode 0600), made on first run, or `SECRET_KEY_FILE` |
 | Device tokens | `dfy_` + 32 random bytes; only the SHA-256 hash is stored, compared in constant time; shown once |
@@ -35,7 +35,9 @@ Losing it means re-entering calendar passwords; device tokens keep working.
 - `devices`: `id` (slug of the name), `display_name`, `token_hash`, `create_time`,
   `last_used_time` (written at most once a minute). Revoking deletes the row.
 - Calendar's own tables come from `src/calendar/accounts.ts`; `strava_account` (one row) from
-  `src/strava/account.ts`.
+  `src/strava/account.ts`; `push_keys`, `push_subscriptions` and `notification_settings` from
+  `src/notifications/push-store.ts`. A subscription follows its device: revoking the device
+  deletes it.
 
 ## Code
 

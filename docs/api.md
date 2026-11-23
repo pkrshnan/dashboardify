@@ -196,6 +196,20 @@ iCloud: `{"kind": "KIND_CALDAV", "provider": "icloud", "username": …, "passwor
 one is `409`. Links: `{"kind": "KIND_ICS", "feedUrl": "webcal://…"}`, any number, each with one
 read-only calendar `…/calendars/feed`. Passwords and URLs are never returned.
 
+## Notifications
+
+| Method | Path | Does |
+| --- | --- | --- |
+| GET, PATCH | `/v1/notificationSettings` | `eventOffsetMinutes` (up to three, 1–1440), `taskReminders`, and the VAPID `publicKey` |
+| POST | `/v1/pushSubscriptions` | Add this browser: `endpoint`, `p256dh`, `auth`, `displayName`; the same endpoint again replaces its keys |
+| GET | `/v1/pushSubscriptions` | Every browser, with its `device` |
+| DELETE | `/v1/pushSubscriptions/{id}` | Stop reminders to it |
+| POST | `/v1/pushSubscriptions:test` | Send a test to the caller's browsers; returns `sent` and `failed` |
+
+`{id}` is the first 16 hex digits of the endpoint's SHA-256. Endpoints must be `https:` on
+Apple's, Google's, Mozilla's or Microsoft's push service. Endpoints and keys are never returned.
+[notifications.md](notifications.md).
+
 ## Voice RPCs
 
 RPC only, for Siri. Each response has a `message` to speak.

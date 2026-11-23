@@ -221,6 +221,29 @@ export const restBindings: Record<string, RestBinding> = {
     resource: { field: "calendarSettings.name", prefix: "calendarSettings" },
   },
   listDevices: { method: "GET", path: "/devices" },
+  getNotificationSettings: {
+    method: "GET",
+    path: "/notificationSettings",
+    resource: { field: "name", prefix: "notificationSettings" },
+  },
+  updateNotificationSettings: {
+    method: "PATCH",
+    path: "/notificationSettings",
+    bodyField: "notificationSettings",
+    resource: { field: "notificationSettings.name", prefix: "notificationSettings" },
+  },
+  createPushSubscription: {
+    method: "POST",
+    path: "/pushSubscriptions",
+    bodyField: "pushSubscription",
+  },
+  listPushSubscriptions: { method: "GET", path: "/pushSubscriptions" },
+  testNotification: { method: "POST", path: "/pushSubscriptions:test" },
+  deletePushSubscription: {
+    method: "DELETE",
+    path: "/pushSubscriptions/:id",
+    resource: { field: "name", prefix: "pushSubscriptions/" },
+  },
   deleteDevice: {
     method: "DELETE",
     path: "/devices/:id",

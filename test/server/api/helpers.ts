@@ -9,6 +9,8 @@ import { CalDavClient } from "../../../src/calendar/caldav";
 import { cacheSource } from "../../../src/calendar/source";
 import { CalendarSync } from "../../../src/calendar/sync";
 import type { CalendarSource } from "../../../src/home/calendar";
+import { Notifier } from "../../../src/notifications/notifier";
+import { PushStore } from "../../../src/notifications/push-store";
 import { Photon } from "../../../src/places/photon";
 import type { ConnectCalDav } from "../../../src/server/api/calendar-accounts";
 import { type AppDeps, createApp } from "../../../src/server/app";
@@ -46,6 +48,8 @@ export function useApi(
     feeds?: (request: Request) => Response;
     /** Answers place searches. */
     photon?: () => FakePhoton;
+    /** Answers Web Push requests. */
+    push?: (request: Request) => Response;
   } = {},
 ) {
   let dir: string;
@@ -101,6 +105,16 @@ export function useApi(
             }
             return options.photon().fetch(request);
           }),
+          notifier: new Notifier(
+            new PushStore(settings),
+            (request) => {
+              if (!options.push) {
+                throw new Error(`Test tried to push to ${request.url}`);
+              }
+              return Promise.resolve(options.push(request));
+            },
+            () => undefined,
+          ),
         },
         recompute: options.recompute,
         now: () => new Date("2026-11-03T12:00:00Z"),
