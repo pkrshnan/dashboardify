@@ -20,7 +20,8 @@ mail and messages, a relay like ntfy.
 | Delivery | Web Push (RFC 8030) straight to the browser's push service (Apple's for iPhone). iOS 16.4+ allows it only for the app added to the home screen, after the user taps a button. Android and desktop browsers work too. |
 | Crypto | Written here on `node:crypto`: VAPID (RFC 8292, an ES256 JWT) and `aes128gcm` payload encryption (RFC 8291). About 150 lines, tested against the RFC's example, so no dependency. |
 | Keys | One VAPID key pair, made on first use. The private key is sealed in `settings.db`; the public key is served for subscribing. The JWT's `sub` is the app's own address. |
-| Subscriptions | One per browser, belonging to the signed-in device (`devices/x` or `tailnet:<login>`). Endpoint and keys are sealed. Revoking a device drops its subscriptions; a `404` or `410` from the push service drops that one. |
+| Subscriptions | One per browser, belonging to the signed-in device (`devices/x` or `tailnet:<login>`), named by a hash of its endpoint so the browser can find its own. Endpoint and keys are sealed. Any signed-in device can list and remove them, as with devices. Revoking a device drops its subscriptions; a `404` or `410` from the push service drops that one. |
+| Push services | Only `https:` endpoints on Apple's, Google's, Mozilla's and Microsoft's push hosts, so a device can't point the server at the home network. |
 | Events | Timed events only, at each offset before the start: 60 and 10 minutes by default. All-day events get none. |
 | Tasks | Open tasks with a due date and time, at that time. Tasks with only a date get none. |
 | Settings | One set for every device: event offsets (minutes, up to three) and tasks on or off. |
@@ -56,7 +57,7 @@ Send a test. Built after the artboard is approved.
 | --- | --- | --- | --- |
 | NT1 | Plan | This doc, CLAUDE.md, roadmap | |
 | NT2 | Web Push | `src/notifications/web-push.ts`: keys, VAPID JWT, `aes128gcm`, `send` with fetch passed in | RFC 8291 example; the JWT verifies with the public key; `410` reads as gone |
-| NT3 | Subscriptions and settings | Proto, `src/notifications/push-store.ts` (migrations, sealed columns), the service, revoking a device; api.md, settings.md | Sealed at rest; another device can't delete yours; revoke drops them; test send |
+| NT3 | Subscriptions and settings | Proto, `src/notifications/push-store.ts` (migrations, sealed columns), the service, revoking a device; api.md, settings.md | Sealed at rest; unknown push hosts refused; revoke drops them; test send |
 | NT4 | Reminders | `src/notifications/reminders.ts`: what is due between two moments, and its text | Offsets; late but before the start; two offsets at once; all-day and dateless skipped; done tasks; a moved event; time zone |
 | NT5 | Sender | `src/notifications/scheduler.ts`: the 30-second check, the sent log, sending to every subscription; `main.ts` | Fake clock and push service: once per reminder, across a restart, gone subscriptions dropped |
 | NT6 | Service worker | `web/public/sw.js`, the `/sw.js` route, registration in `app.tsx` | Push shows the payload; a tap focuses or opens the address |

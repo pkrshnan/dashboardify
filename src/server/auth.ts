@@ -32,7 +32,9 @@ export function bearerAuth(
       return c.json({ error: "unauthorized", ...(setup?.active() && { setup: true }) }, 401);
     }
     c.set("device", device);
-    await withDevice(device, () => next());
+    // Browsers send Origin on every POST; behind Tailscale Serve the URL alone says http.
+    const origin = c.req.header("origin") ?? new URL(c.req.url).origin;
+    await withDevice(device, () => next(), origin);
   };
 }
 
