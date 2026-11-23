@@ -44,6 +44,7 @@ flowchart TD
 | `src/health/` | Raw sample store, `metrics/` (one file per idea), daily summary, `feedback/` |
 | `src/home/` | Everything the home screen shows, worked out on the server |
 | `src/places/` | Photon place search |
+| `src/notifications/` | Web Push (VAPID, payload encryption) and reminders ([notifications.md](notifications.md)) |
 | `web/` | Preact app, bundled by Bun from `web/index.html` and served by the same process |
 
 ## How a request flows
