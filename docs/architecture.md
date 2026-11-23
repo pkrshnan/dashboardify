@@ -95,4 +95,4 @@ data/ (DATA_PATH)               settings.db, secret.key, calendar-cache.db, stra
 
 Each page is a module in `web/modules/` with its own address (`#/activity?range=month`), read
 by `web/lib/router.ts`. `web/app.tsx` is the shell: sign-in, the home view, and the page for the
-address. [navigation.md](navigation.md) plans the sidebar, command bar and search.
+address. `web/public/sw.js`, served at `/sw.js`, shows reminders and caches nothing. [navigation.md](navigation.md) plans the sidebar, command bar and search.
