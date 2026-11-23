@@ -69,6 +69,7 @@ Apple Reminders.
 | 14 | Fields: task and habit details as `key: value` sub-bullets, not emoji | Built: [fields.md](fields.md) |
 | 15 | Lifting: log from the control centre with a suggestion for next time, look up an exercise, one note per exercise, weight and reps charts | Planned: [lifting.md](lifting.md) |
 | 16 | Day trace: heart rate, steps and skin temperature over a day on the Health page | Built: [day-trace.md](day-trace.md) |
+| 17 | Notifications: Web Push reminders 1 hour and 10 minutes before events, and at a task's due time | Planned: [notifications.md](notifications.md) |
 
 ## Open questions
 
