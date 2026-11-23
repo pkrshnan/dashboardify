@@ -50,7 +50,7 @@ function HomeScreen({ home, query }: { home: LoadedHome; query: Record<string, s
   const { token, isPhone } = useApp();
   const { ticked, complete, reopen } = useTicks(token, load);
   const [pending, setPending] = useState<Pending[]>([]);
-  const [panel, openEvent] = useEventPanel(token, view.timeZone, load);
+  const [panel, openEvent] = useEventPanel(token, view.timeZone, load, query.event);
   const done = new Set([...ticked].filter(([, d]) => d).map(([id]) => id));
   const capture = (
     <HomeCapture
@@ -110,19 +110,27 @@ function HomeHealth({ home }: { home: LoadedHome }) {
   );
 }
 
-/** The event panel for the event last tapped, and the function that opens one. */
-function useEventPanel(token: Token, timeZone: string, load: () => Promise<void>) {
-  const [opened, setOpened] = useState<string | null>(null);
+/**
+ * The event panel for the address's `?event=`, so a reminder can open it, and the function that
+ * opens one.
+ */
+function useEventPanel(
+  token: Token,
+  timeZone: string,
+  load: () => Promise<void>,
+  opened: string | undefined,
+) {
+  const open = (name: string | null) => setQuery({ event: name ?? "" });
   const panel = opened && (
     <EventPanel
       token={token}
       name={opened}
       timeZone={timeZone}
-      onClose={() => setOpened(null)}
+      onClose={() => open(null)}
       onChanged={load}
     />
   );
-  return [panel, setOpened] as const;
+  return [panel, open] as const;
 }
 
 /**

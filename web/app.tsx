@@ -9,6 +9,7 @@ import { fetchHome, savedToken, saveToken, type Token, Unauthorized } from "./ap
 import { Sidebar, TabBar } from "./components/nav";
 import { SignIn } from "./components/sign-in";
 import { type Now, nowIn } from "./lib/clock";
+import { startServiceWorker } from "./lib/service-worker";
 import { useRoute } from "./lib/use-route";
 import { AppContext } from "./modules/context";
 import { MODULES, MORE, pageFor } from "./modules/index";
@@ -160,4 +161,5 @@ function useMedia(query: string): boolean {
 const root = document.getElementById("app");
 if (root) {
   render(<App />, root);
+  startServiceWorker();
 }
