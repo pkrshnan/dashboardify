@@ -60,7 +60,7 @@ Send a test. Built after the artboard is approved.
 | NT3 | Subscriptions and settings | Proto, `src/notifications/push-store.ts` (migrations, sealed columns), the service, revoking a device; api.md, settings.md | Sealed at rest; unknown push hosts refused; revoke drops them; test send |
 | NT4 | Reminders | `src/notifications/reminders.ts`: what is due between two moments, and its text | Offsets; late but before the start; two offsets at once; all-day and dateless skipped; done tasks; a moved event; time zone |
 | NT5 | Sender | `src/notifications/scheduler.ts`: the 30-second check, the sent log, sending to every subscription; `main.ts` | Fake clock and push service: once per reminder, across a restart, gone subscriptions dropped |
-| NT6 | Service worker | `web/public/sw.js`, the `/sw.js` route, registration in `app.tsx` | Push shows the payload; a tap focuses or opens the address |
+| NT6 | Service worker | `web/public/sw.js`, the `/sw.js` route, registration in `app.tsx`; Today opens the event panel from `?event=` | Push shows the payload; a tap focuses or opens the address |
 | NT7 | Settings section | The Notifications section on the artboard; `web/api.ts` calls | Turn on, off, test, change times |
 
 ## Open questions
